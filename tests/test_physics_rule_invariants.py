@@ -17,6 +17,7 @@ from sample_pybullet_base import (  # noqa: E402
     weighted_scene_class_cycle,
 )
 from physics_time_step import simulation_hz_for_geometry  # noqa: E402
+from scene_kit_compiler import compile_scene_kit  # noqa: E402
 
 
 class PhysicsRuleInvariantTests(unittest.TestCase):
@@ -33,6 +34,19 @@ class PhysicsRuleInvariantTests(unittest.TestCase):
         cls.rules = json.loads(
             (ROOT / bundle["base_rules"]).read_text(encoding="utf-8")
         )
+        scene_kits = json.loads(
+            (ROOT / bundle["scene_kits"]).read_text(encoding="utf-8")
+        )
+        cls.rules["axes"]["support_axis"] = [
+            compile_scene_kit(kit)
+            for kit in scene_kits["kits"]
+            if bool(kit.get("sampling_enabled", True))
+        ]
+        cls.rules["architecture"] = {
+            "compatibility": json.loads(
+                (ROOT / bundle["compatibility"]).read_text(encoding="utf-8")
+            )
+        }
 
     @staticmethod
     def arrays(
