@@ -1,7 +1,7 @@
 # PhysSweep Tools
 
 Run commands from the project root with `.venv/bin/python`. Install
-`requirements-rigid.txt` for sampling, simulation, rendering, and validation.
+`requirements.txt` for sampling, simulation, rendering, and validation.
 Asset download, conversion, and proxy-building tools additionally require
 `requirements-assets.txt`.
 

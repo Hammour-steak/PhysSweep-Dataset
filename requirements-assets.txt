@@ -1,4 +1,4 @@
--r requirements-rigid.txt
+-r requirements.txt
 
 coacd==1.0.11
 Pillow==12.3.0

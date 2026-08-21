@@ -33,7 +33,7 @@ project. The method project never imports this repository's Python source.
 conda create --override-channels --channel conda-forge \
   --prefix .venv python=3.10 pip -y
 conda activate "$PWD/.venv"
-pip install -r requirements-rigid.txt
+pip install -r requirements.txt
 python tools/dataset_generation/build_one_object_dataset.py \
   --config configs/datasets/one_object.json \
   --dry-run
