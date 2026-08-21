@@ -14,7 +14,6 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 from sample_asset_proxy_scenes import audit_asset_trajectory  # noqa: E402
 from sample_pybullet_base import (  # noqa: E402
-    load_active_rules,
     weighted_scene_class_cycle,
 )
 from physics_time_step import simulation_hz_for_geometry  # noqa: E402
@@ -26,7 +25,14 @@ class PhysicsRuleInvariantTests(unittest.TestCase):
         cls.backend = json.loads(
             (ROOT / "configs/pybullet_backend.json").read_text(encoding="utf-8")
         )
-        cls.rules = load_active_rules(ROOT)
+        bundle = json.loads(
+            (ROOT / "configs/one_object_sampling_bundle.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        cls.rules = json.loads(
+            (ROOT / bundle["base_rules"]).read_text(encoding="utf-8")
+        )
 
     @staticmethod
     def arrays(
