@@ -1,0 +1,5521 @@
+{
+  "version": "physweep_physassets_core_object_profiles_v4",
+  "visual_sampling": {
+    "target_mesh_fraction": 1.0,
+    "require_exact_target_when_feasible": true
+  },
+  "source_core_index": "external/physassets/high_quality_selection/v7_100objects/core_assets.jsonl",
+  "profile_count": 84,
+  "profiles": [
+    {
+      "id": "physassets_1439_barrel",
+      "semantic_category": "physassets_barrel",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_1439",
+          "type": "mesh",
+          "asset_id": "physassets_1439",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-007/ef7be8efe82947c29290a18ef94a8c35.glb",
+          "sha256": "6d6a047d20083b6cb79afe034152873812f9b3a01b0b055c4ee55e6fb7464b11",
+          "alignment_euler_degrees": [
+            180.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.11945267928741324,
+            0.11945265544554338,
+            0.20000014769795638
+          ],
+          "material_hint": "barrel",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "ef7be8efe82947c29290a18ef94a8c35",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.11945267928741324,
+          0.11945267928741324,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.55,
+        "restitution": 0.16,
+        "mass_range_kg": [
+          2.0,
+          24.0
+        ]
+      },
+      "source_review": {
+        "sample_id": "1439",
+        "quality_score": 0.691024,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/1439/proxy.json",
+        "blender_import_extent": [
+          1.194525957107544,
+          1.194526195526123,
+          2.000000476837158
+        ],
+        "alignment_relative_error": 7.384897818263347e-07
+      }
+    },
+    {
+      "id": "physassets_16906_barrel",
+      "semantic_category": "physassets_barrel",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_16906",
+          "type": "mesh",
+          "asset_id": "physassets_16906",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-125/f184d645df9f428b9fe8aa8e74262b4f.glb",
+          "sha256": "a44a59e3b1cdb471b3e9b76409973ffeb670def9ce163e566c49e15089b0f96f",
+          "alignment_euler_degrees": [
+            180.0,
+            0.0,
+            90.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.15001100549352547,
+            0.1500109456661904,
+            0.20000010512880995
+          ],
+          "material_hint": "barrel",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "f184d645df9f428b9fe8aa8e74262b4f",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.15001100549352547,
+          0.15001100549352547,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.55,
+        "restitution": 0.16,
+        "mass_range_kg": [
+          2.0,
+          24.0
+        ]
+      },
+      "source_review": {
+        "sample_id": "16906",
+        "quality_score": 0.639824,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/16906/proxy.json",
+        "blender_import_extent": [
+          6.575913190841675,
+          6.575915813446045,
+          8.76724910736084
+        ],
+        "alignment_relative_error": 5.256440496759218e-07
+      }
+    },
+    {
+      "id": "physassets_14797_barrel",
+      "semantic_category": "physassets_barrel",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_14797",
+          "type": "mesh",
+          "asset_id": "physassets_14797",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-109/44962bf5f51242a790551dc6ba423ef1.glb",
+          "sha256": "3e1763c49ceb1e64eaa6fcad02512dc84a3ab751f533012c96e84019f90d20b8",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.1259005800989956,
+            0.12590070457026475,
+            0.2000000546036861
+          ],
+          "material_hint": "barrel",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "44962bf5f51242a790551dc6ba423ef1",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.12590070457026475,
+          0.12590070457026475,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.55,
+        "restitution": 0.16,
+        "mass_range_kg": [
+          2.0,
+          24.0
+        ]
+      },
+      "source_review": {
+        "sample_id": "14797",
+        "quality_score": 0.6078,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/14797/proxy.json",
+        "blender_import_extent": [
+          262.37811279296875,
+          262.3783721923828,
+          416.80218505859375
+        ],
+        "alignment_relative_error": 9.886463271010453e-07
+      }
+    },
+    {
+      "id": "physassets_9463_barrel",
+      "semantic_category": "physassets_barrel",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_9463",
+          "type": "mesh",
+          "asset_id": "physassets_9463",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-068/a02a7d2d428849a08becd358a5687613.glb",
+          "sha256": "443652651e25dabd4a7ae639a0303573e5af18fe66638da554dda301bc4c22a8",
+          "alignment_euler_degrees": [
+            180.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.13355484628632425,
+            0.13355478875720866,
+            0.20000009410366681
+          ],
+          "material_hint": "barrel",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "a02a7d2d428849a08becd358a5687613",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.13355484628632425,
+          0.13355484628632425,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.55,
+        "restitution": 0.16,
+        "mass_range_kg": [
+          2.0,
+          24.0
+        ]
+      },
+      "source_review": {
+        "sample_id": "9463",
+        "quality_score": 0.596784,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/9463/proxy.json",
+        "blender_import_extent": [
+          57.563236236572266,
+          57.56326103210449,
+          86.20172119140625
+        ],
+        "alignment_relative_error": 4.705183340170116e-07
+      }
+    },
+    {
+      "id": "physassets_17826_barrel",
+      "semantic_category": "physassets_barrel",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_17826",
+          "type": "mesh",
+          "asset_id": "physassets_17826",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-132/98f275039abc41d885068838df78e74f.glb",
+          "sha256": "fc2265a4b7b8add703ee58a3a241ddc811b1e6823b9a04a808cc610b8eeeeaef",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            90.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.13956573187898222,
+            0.13956567311610646,
+            0.2
+          ],
+          "material_hint": "barrel",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "98f275039abc41d885068838df78e74f",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.13956571801471992,
+          0.13956571801471992,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.55,
+        "restitution": 0.16,
+        "mass_range_kg": [
+          2.0,
+          24.0
+        ]
+      },
+      "source_review": {
+        "sample_id": "17826",
+        "quality_score": 0.579176,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/17826/proxy.json",
+        "blender_import_extent": [
+          0.7078246474266052,
+          0.7078249454498291,
+          1.014324843097711
+        ],
+        "alignment_relative_error": 3.217023070184056e-07
+      }
+    },
+    {
+      "id": "physassets_8294_barrel",
+      "semantic_category": "physassets_barrel",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_8294",
+          "type": "mesh",
+          "asset_id": "physassets_8294",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-060/2f2aaa1420ac435ba7c2b9bcd658beb8.glb",
+          "sha256": "01431eaacc8b973824134e2814e2e7dabcddb0eeef692ea903fbe8884271c617",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            90.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.13956573187898222,
+            0.13956567311610646,
+            0.2
+          ],
+          "material_hint": "barrel",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "2f2aaa1420ac435ba7c2b9bcd658beb8",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.13956571801471992,
+          0.13956571801471992,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.55,
+        "restitution": 0.16,
+        "mass_range_kg": [
+          2.0,
+          24.0
+        ]
+      },
+      "source_review": {
+        "sample_id": "8294",
+        "quality_score": 0.570362,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/8294/proxy.json",
+        "blender_import_extent": [
+          0.7078246474266052,
+          0.7078249454498291,
+          1.014324843097711
+        ],
+        "alignment_relative_error": 3.217023070184056e-07
+      }
+    },
+    {
+      "id": "physassets_16089_barrel",
+      "semantic_category": "physassets_barrel",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_16089",
+          "type": "mesh",
+          "asset_id": "physassets_16089",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-119/6b80d946a3024479aaeb6d0e41e534b4.glb",
+          "sha256": "026ae97eeddd38d2f4c6b5b58da04a55e5b86621c85d59cc3b4829cc86a2f01e",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.13002260519405304,
+            0.13202844466347333,
+            0.20000005980642035
+          ],
+          "material_hint": "barrel",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "6b80d946a3024479aaeb6d0e41e534b4",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.13202844466347333,
+          0.13202844466347333,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.55,
+        "restitution": 0.16,
+        "mass_range_kg": [
+          2.0,
+          24.0
+        ]
+      },
+      "source_review": {
+        "sample_id": "16089",
+        "quality_score": 0.545343,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/16089/proxy.json",
+        "blender_import_extent": [
+          1.3002259731292725,
+          1.320284366607666,
+          2.000000476837158
+        ],
+        "alignment_relative_error": 0.015192479730659287
+      }
+    },
+    {
+      "id": "physassets_14083_barrel",
+      "semantic_category": "physassets_barrel",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_14083",
+          "type": "mesh",
+          "asset_id": "physassets_14083",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-103/e526e7e23e7d43b5bff5b579ad939e5d.glb",
+          "sha256": "7f0d8fc3e01f90b36fb9c5d9ce164e4dbd7a11645c7bedeac07a42b36cc03463",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.15695633980612594,
+            0.15695619790346332,
+            0.2
+          ],
+          "material_hint": "barrel",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "e526e7e23e7d43b5bff5b579ad939e5d",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.15695630099271798,
+          0.15695630099271798,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.55,
+        "restitution": 0.16,
+        "mass_range_kg": [
+          2.0,
+          24.0
+        ]
+      },
+      "source_review": {
+        "sample_id": "14083",
+        "quality_score": 0.530754,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/14083/proxy.json",
+        "blender_import_extent": [
+          71.72935485839844,
+          71.72941970825195,
+          91.40047454833984
+        ],
+        "alignment_relative_error": 6.568022692207712e-07
+      }
+    },
+    {
+      "id": "physassets_8777_barrel",
+      "semantic_category": "physassets_barrel",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_8777",
+          "type": "mesh",
+          "asset_id": "physassets_8777",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-063/8e53d633dc1d459e94c7d041d5f05223.glb",
+          "sha256": "6e73d507ea88f5780e593749ded07e1f32bfd6de118c989314ac3321ea628113",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.18085912856711378,
+            0.18026823404903786,
+            0.20168364549051584
+          ],
+          "material_hint": "barrel",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "8e53d633dc1d459e94c7d041d5f05223",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.18085912856711378,
+          0.18085912856711378,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.55,
+        "restitution": 0.16,
+        "mass_range_kg": [
+          2.0,
+          24.0
+        ]
+      },
+      "source_review": {
+        "sample_id": "8777",
+        "quality_score": 0.527086,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/8777/proxy.json",
+        "blender_import_extent": [
+          136.1827163696289,
+          136.6291046142578,
+          152.36087952554226
+        ],
+        "alignment_relative_error": 0.008418227452579169
+      }
+    },
+    {
+      "id": "physassets_12670_barrel",
+      "semantic_category": "physassets_barrel",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_12670",
+          "type": "mesh",
+          "asset_id": "physassets_12670",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-093/4cd2aeb3ebd747a4aa33c2782510e15d.glb",
+          "sha256": "9cfa5d9eba7e8e10fac69e6947a9b25470d40589da1ac7f4a4e00e3c11d5526a",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            90.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.14935348138558469,
+            0.1493534226504035,
+            0.2000000871582155
+          ],
+          "material_hint": "barrel",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "4cd2aeb3ebd747a4aa33c2782510e15d",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.14935348138558469,
+          0.14935348138558469,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.55,
+        "restitution": 0.16,
+        "mass_range_kg": [
+          2.0,
+          24.0
+        ]
+      },
+      "source_review": {
+        "sample_id": "12670",
+        "quality_score": 0.524689,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/12670/proxy.json",
+        "blender_import_extent": [
+          1.970336139202118,
+          1.9703369140625,
+          2.638489246368408
+        ],
+        "alignment_relative_error": 4.357910773911122e-07
+      }
+    },
+    {
+      "id": "physassets_12411_barrel",
+      "semantic_category": "physassets_barrel",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_12411",
+          "type": "mesh",
+          "asset_id": "physassets_12411",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-091/7e8d8f533dc944c6a212d5f20997c69b.glb",
+          "sha256": "99e310320c5616618679a07f5c5470ae698fa5b641dce95e400c9eafc6ef82e7",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.1520290933022974,
+            0.15306795455232414,
+            0.20000016450916394
+          ],
+          "material_hint": "barrel",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "7e8d8f533dc944c6a212d5f20997c69b",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.15306795455232414,
+          0.15306795455232414,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.55,
+        "restitution": 0.16,
+        "mass_range_kg": [
+          2.0,
+          24.0
+        ]
+      },
+      "source_review": {
+        "sample_id": "12411",
+        "quality_score": 0.524274,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/12411/proxy.json",
+        "blender_import_extent": [
+          154.1620330810547,
+          155.21546936035156,
+          202.8061294555664
+        ],
+        "alignment_relative_error": 0.006786928414017602
+      }
+    },
+    {
+      "id": "physassets_16047_barrel",
+      "semantic_category": "physassets_barrel",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_16047",
+          "type": "mesh",
+          "asset_id": "physassets_16047",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-119/15d280f41a034434bf01d6955ff093a7.glb",
+          "sha256": "3fa1b4c79c134f7e1e7d531fad37a2c452753d856e84ed91028230b2f49eaae9",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20000056558817692,
+            0.2000006028604747,
+            0.16627827403689396
+          ],
+          "material_hint": "barrel",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "15d280f41a034434bf01d6955ff093a7",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.2000006028604747,
+          0.2000006028604747,
+          0.16627776032886998
+        ]
+      },
+      "physics": {
+        "friction": 0.55,
+        "restitution": 0.16,
+        "mass_range_kg": [
+          2.0,
+          24.0
+        ]
+      },
+      "source_review": {
+        "sample_id": "16047",
+        "quality_score": 0.501487,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/16047/proxy.json",
+        "blender_import_extent": [
+          0.23987579345703125,
+          0.23987583816051483,
+          0.19943010061979294
+        ],
+        "alignment_relative_error": 3.089457200796364e-06
+      }
+    },
+    {
+      "id": "physassets_14593_die",
+      "semantic_category": "physassets_block_die",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_14593",
+          "type": "mesh",
+          "asset_id": "physassets_14593",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-107/b669de5025d84c8ba920c34e2f8691c2.glb",
+          "sha256": "80f53cc916a5cc925e0dfb8f9d2345964fa81036747bc24470ed155a5ff9878d",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.19999990365669637,
+            0.1999997866685238,
+            0.19999925678091884
+          ],
+          "material_hint": "block_die",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "b669de5025d84c8ba920c34e2f8691c2",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.2,
+          0.1999997866685238,
+          0.19999925678066355
+        ]
+      },
+      "physics": {
+        "friction": 0.52,
+        "restitution": 0.2,
+        "mass_range_kg": [
+          0.08,
+          0.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "14593",
+        "quality_score": 0.409162,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/14593/proxy.json",
+        "blender_import_extent": [
+          0.8661375343799591,
+          0.8661370277404785,
+          0.8661347329616547
+        ],
+        "alignment_relative_error": 4.817165182025018e-07
+      }
+    },
+    {
+      "id": "physassets_6527_block",
+      "semantic_category": "physassets_block_die",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_6527",
+          "type": "mesh",
+          "asset_id": "physassets_6527",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-047/38347ea815fc4cb4a88ae3d0a3225efa.glb",
+          "sha256": "669e333b1e18b49baf1baf9645023c55ef48c013bbf098286a25c3a95df9b44e",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.11999997711182078,
+            0.12000004148482485,
+            0.2
+          ],
+          "material_hint": "block_die",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "38347ea815fc4cb4a88ae3d0a3225efa",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.12,
+          0.12000000476837162,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.52,
+        "restitution": 0.2,
+        "mass_range_kg": [
+          0.08,
+          0.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "6527",
+        "quality_score": 0.336621,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/6527/proxy.json",
+        "blender_import_extent": [
+          3.0,
+          3.000001609325409,
+          5.000000953674316
+        ],
+        "alignment_relative_error": 3.0597043138353796e-07
+      }
+    },
+    {
+      "id": "physassets_18691_book",
+      "semantic_category": "physassets_book",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_18691",
+          "type": "mesh",
+          "asset_id": "physassets_18691",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-138/f4f7e42405274eaab3f65a0e342940cd.glb",
+          "sha256": "388b1fe154c2edaf642ca8e82dee798ee61ad5daf9edb7baf4d7c4cc78e2284b",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            180.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.19999995527208164,
+            0.13683293696189583,
+            0.02767343287864153
+          ],
+          "material_hint": "book",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "f4f7e42405274eaab3f65a0e342940cd",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.2,
+          0.13683293696189583,
+          0.027673431417200883
+        ]
+      },
+      "physics": {
+        "friction": 0.68,
+        "restitution": 0.06,
+        "mass_range_kg": [
+          0.2,
+          1.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "18691",
+        "quality_score": 0.85174,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/18691/proxy.json",
+        "blender_import_extent": [
+          74.79488372802734,
+          51.17202949523926,
+          10.34915828704834
+        ],
+        "alignment_relative_error": 2.236395918453482e-07
+      }
+    },
+    {
+      "id": "physassets_1619_book",
+      "semantic_category": "physassets_book",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_1619",
+          "type": "mesh",
+          "asset_id": "physassets_1619",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-009/54d77ed2b16e48848425a9f36b69bb8a.glb",
+          "sha256": "5c385268c7248fef0336ed3a509e2a5b9098d018f602127fec7911650dc26a8d",
+          "alignment_euler_degrees": [
+            180.0,
+            0.0,
+            180.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.13821796075677273,
+            0.032143528780378995,
+            0.2
+          ],
+          "material_hint": "book",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "54d77ed2b16e48848425a9f36b69bb8a",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.1382179563745704,
+          0.03214355993871024,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.68,
+        "restitution": 0.06,
+        "mass_range_kg": [
+          0.2,
+          1.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "1619",
+        "quality_score": 0.786784,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/1619/proxy.json",
+        "blender_import_extent": [
+          2.085252046585083,
+          0.4849395751953125,
+          3.017338752746582
+        ],
+        "alignment_relative_error": 9.693491107058762e-07
+      }
+    },
+    {
+      "id": "physassets_16210_book",
+      "semantic_category": "physassets_book",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_16210",
+          "type": "mesh",
+          "asset_id": "physassets_16210",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-120/5109d5c4fab04719bfcf37ae153e14e8.glb",
+          "sha256": "b4b8763eb24f491583ca4d2efe6ac766bfd717af1a4b97bb74aaf659de87bdf4",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.16119018288907735,
+            0.2,
+            0.05543672817347629
+          ],
+          "material_hint": "book",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "5109d5c4fab04719bfcf37ae153e14e8",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.1611902165209974,
+          0.2,
+          0.05543672643871333
+        ]
+      },
+      "physics": {
+        "friction": 0.68,
+        "restitution": 0.06,
+        "mass_range_kg": [
+          0.2,
+          1.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "16210",
+        "quality_score": 0.671597,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/16210/proxy.json",
+        "blender_import_extent": [
+          21.62588119506836,
+          26.832752227783203,
+          7.437599956989288
+        ],
+        "alignment_relative_error": 2.0864740292767348e-07
+      }
+    },
+    {
+      "id": "physassets_11905_book",
+      "semantic_category": "physassets_book",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_11905",
+          "type": "mesh",
+          "asset_id": "physassets_11905",
+          "path": "assets/library/physassets/curated_visuals/11905/visual.glb",
+          "sha256": "5e0c8614befa4be25a05f12654d19765654610d61a3eb3b3dd1ba5f9ad40974b",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.16119018288907735,
+            0.2,
+            0.05543672817347629
+          ],
+          "material_hint": "book",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "4d8dd06b107841f685a1f345dc385170",
+            "verification_required_before_redistribution": true
+          },
+          "source_visual": {
+            "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-087/4d8dd06b107841f685a1f345dc385170.glb",
+            "sha256": "e90c44a09280e8cac47422a6e1c4dec77a122019fb22e9a0b66c2626c9103be0"
+          },
+          "curation": {
+            "status": "repaired_verified",
+            "repair_report": "assets/library/physassets/curated_visuals/11905/repair.json"
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.1611902165209974,
+          0.2,
+          0.05543672643871333
+        ]
+      },
+      "physics": {
+        "friction": 0.68,
+        "restitution": 0.06,
+        "mass_range_kg": [
+          0.2,
+          1.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "11905",
+        "quality_score": 0.618958,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/11905/proxy.json",
+        "blender_import_extent": [
+          21.62588119506836,
+          26.832752227783203,
+          7.437599956989288
+        ],
+        "alignment_relative_error": 2.0864740292767348e-07
+      }
+    },
+    {
+      "id": "physassets_13740_book",
+      "semantic_category": "physassets_book",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_13740",
+          "type": "mesh",
+          "asset_id": "physassets_13740",
+          "path": "assets/library/physassets/curated_visuals/13740/visual.glb",
+          "sha256": "9dc4c18bd7b42c69e03c173567ab5cacaf24b7361767db73ce98defa60677e07",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.16119018288907735,
+            0.2,
+            0.05543672817347629
+          ],
+          "material_hint": "book",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "4705d3b006694c2da3a6662f34060bfe",
+            "verification_required_before_redistribution": true
+          },
+          "source_visual": {
+            "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-101/4705d3b006694c2da3a6662f34060bfe.glb",
+            "sha256": "42390b880807868fe65f73ffdf6983634733f16d1623fc2fb51a10ee27fc4499"
+          },
+          "curation": {
+            "status": "repaired_verified",
+            "repair_report": "assets/library/physassets/curated_visuals/13740/repair.json"
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.1611902165209974,
+          0.2,
+          0.05543672643871333
+        ]
+      },
+      "physics": {
+        "friction": 0.68,
+        "restitution": 0.06,
+        "mass_range_kg": [
+          0.2,
+          1.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "13740",
+        "quality_score": 0.616579,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/13740/proxy.json",
+        "blender_import_extent": [
+          21.62588119506836,
+          26.832752227783203,
+          7.437599956989288
+        ],
+        "alignment_relative_error": 2.0864740292767348e-07
+      }
+    },
+    {
+      "id": "physassets_38_book",
+      "semantic_category": "physassets_book",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_38",
+          "type": "mesh",
+          "asset_id": "physassets_38",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-000/00642d469eaa4b8f9a86abd68e1cc769.glb",
+          "sha256": "d842200936d1fe64e0d55ccc3da537fd6beafa449a9eee9578065b79781defd0",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.19999995881140525,
+            0.14201698690760695,
+            0.020753544831783627
+          ],
+          "material_hint": "book",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "00642d469eaa4b8f9a86abd68e1cc769",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.2,
+          0.142016985761786,
+          0.020753544831783627
+        ]
+      },
+      "physics": {
+        "friction": 0.68,
+        "restitution": 0.06,
+        "mass_range_kg": [
+          0.2,
+          1.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "38",
+        "quality_score": 0.607472,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/38/proxy.json",
+        "blender_import_extent": [
+          301.2274169921875,
+          213.8970947265625,
+          31.257689952850342
+        ],
+        "alignment_relative_error": 2.0594297378551119e-07
+      }
+    },
+    {
+      "id": "physassets_16599_book",
+      "semantic_category": "physassets_book",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_16599",
+          "type": "mesh",
+          "asset_id": "physassets_16599",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-123/55c4bc9678da4f7e817e9b10220715ec.glb",
+          "sha256": "90440207a9e535502491847ba4f9a21d150058fd70f167f16e2192191e3a71f8",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.16119018288907735,
+            0.2,
+            0.05543672817347629
+          ],
+          "material_hint": "book",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "55c4bc9678da4f7e817e9b10220715ec",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.1611902165209974,
+          0.2,
+          0.05543672643871333
+        ]
+      },
+      "physics": {
+        "friction": 0.68,
+        "restitution": 0.06,
+        "mass_range_kg": [
+          0.2,
+          1.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "16599",
+        "quality_score": 0.60309,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/16599/proxy.json",
+        "blender_import_extent": [
+          21.62588119506836,
+          26.832752227783203,
+          7.437599956989288
+        ],
+        "alignment_relative_error": 2.0864740292767348e-07
+      }
+    },
+    {
+      "id": "physassets_19683_book",
+      "semantic_category": "physassets_book",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_19683",
+          "type": "mesh",
+          "asset_id": "physassets_19683",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-146/bb15db3af44f49108442bd6af9954822.glb",
+          "sha256": "e689cba07cbcb216e07d013e75eb3c45b24c6581e5f0417b97c27d002c31cd4b",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.16119018288907735,
+            0.2,
+            0.05543672817347629
+          ],
+          "material_hint": "book",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "bb15db3af44f49108442bd6af9954822",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.1611902165209974,
+          0.2,
+          0.05543672643871333
+        ]
+      },
+      "physics": {
+        "friction": 0.68,
+        "restitution": 0.06,
+        "mass_range_kg": [
+          0.2,
+          1.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "19683",
+        "quality_score": 0.553076,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/19683/proxy.json",
+        "blender_import_extent": [
+          21.62588119506836,
+          26.832752227783203,
+          7.437599956989288
+        ],
+        "alignment_relative_error": 2.0864740292767348e-07
+      }
+    },
+    {
+      "id": "physassets_13383_book",
+      "semantic_category": "physassets_book",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_13383",
+          "type": "mesh",
+          "asset_id": "physassets_13383",
+          "path": "assets/library/physassets/curated_visuals/13383/visual.glb",
+          "sha256": "a6b7ec07e3cbd7a21e68701a5f945f14cfe7df098a1bcf5261a095a461bfeebe",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.16119018288907735,
+            0.2,
+            0.05543672817347629
+          ],
+          "material_hint": "book",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "5b46a4763f88446b98b43f63549f8e8d",
+            "verification_required_before_redistribution": true
+          },
+          "source_visual": {
+            "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-098/5b46a4763f88446b98b43f63549f8e8d.glb",
+            "sha256": "43a08519bee2372040cf83b336cc0c9f99da06a569d7704c2364e7e1ed655e8a"
+          },
+          "curation": {
+            "status": "repaired_verified",
+            "repair_report": "assets/library/physassets/curated_visuals/13383/repair.json"
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.1611902165209974,
+          0.2,
+          0.05543672643871333
+        ]
+      },
+      "physics": {
+        "friction": 0.68,
+        "restitution": 0.06,
+        "mass_range_kg": [
+          0.2,
+          1.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "13383",
+        "quality_score": 0.534008,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/13383/proxy.json",
+        "blender_import_extent": [
+          21.62588119506836,
+          26.832752227783203,
+          7.437599956989288
+        ],
+        "alignment_relative_error": 2.0864740292767348e-07
+      }
+    },
+    {
+      "id": "physassets_11709_book",
+      "semantic_category": "physassets_book",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_11709",
+          "type": "mesh",
+          "asset_id": "physassets_11709",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-085/d84e5a3e4d9a48d8aaed93b7183235e2.glb",
+          "sha256": "4aca6ff8b94244a27187f98b27096d166f614e32396e53f54a0a2fda5bd65439",
+          "alignment_euler_degrees": [
+            180.0,
+            180.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.15000381456745923,
+            0.20000003062026944,
+            0.05433072527978035
+          ],
+          "material_hint": "book",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "d84e5a3e4d9a48d8aaed93b7183235e2",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.15000382899216774,
+          0.2,
+          0.05433072527978035
+        ]
+      },
+      "physics": {
+        "friction": 0.68,
+        "restitution": 0.06,
+        "mass_range_kg": [
+          0.2,
+          1.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "11709",
+        "quality_score": 0.522297,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/11709/proxy.json",
+        "blender_import_extent": [
+          9.620990753173828,
+          12.82766342163086,
+          3.4846807532012463
+        ],
+        "alignment_relative_error": 1.531013471556264e-07
+      }
+    },
+    {
+      "id": "physassets_3431_book",
+      "semantic_category": "physassets_book",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_3431",
+          "type": "mesh",
+          "asset_id": "physassets_3431",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-023/691a48c370b2415fbe4fcaadd2a17c32.glb",
+          "sha256": "4292c799b670304c6130fa27f608448d4c7925a4e44892cac4000dcd169e3acc",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            180.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.15,
+            0.2,
+            0.030633916407805186
+          ],
+          "material_hint": "book",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "691a48c370b2415fbe4fcaadd2a17c32",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.15000001321213122,
+          0.2,
+          0.030633902752696448
+        ]
+      },
+      "physics": {
+        "friction": 0.68,
+        "restitution": 0.06,
+        "mass_range_kg": [
+          0.2,
+          1.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "3431",
+        "quality_score": 0.518252,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/3431/proxy.json",
+        "blender_import_extent": [
+          1.9488945007324219,
+          2.5985260009765625,
+          0.3980151414871216
+        ],
+        "alignment_relative_error": 4.45751520739044e-07
+      }
+    },
+    {
+      "id": "physassets_961_book",
+      "semantic_category": "physassets_book",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_961",
+          "type": "mesh",
+          "asset_id": "physassets_961",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-003/c594cb43f36140c8a422b069d6d9714d.glb",
+          "sha256": "aaa162f795dc989874a9c3dd0f9143cb44ff703d115f6003c8355a6f420a2f20",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            180.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.19999996331819464,
+            0.14632007232419847,
+            0.029564671124832808
+          ],
+          "material_hint": "book",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "c594cb43f36140c8a422b069d6d9714d",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.2,
+          0.14632007161547467,
+          0.02956467112483281
+        ]
+      },
+      "physics": {
+        "friction": 0.68,
+        "restitution": 0.06,
+        "mass_range_kg": [
+          0.2,
+          1.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "961",
+        "quality_score": 0.507777,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/961/proxy.json",
+        "blender_import_extent": [
+          0.31929999589920044,
+          0.23360003530979156,
+          0.04720000550150871
+        ],
+        "alignment_relative_error": 1.8340902685487492e-07
+      }
+    },
+    {
+      "id": "physassets_2592_box",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_2592",
+          "type": "mesh",
+          "asset_id": "physassets_2592",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-017/097842d4ae11445f872d883cafa46b7a.glb",
+          "sha256": "69e4816474a700dc13aa6b5031e96061fa67fd822709b416a2fc7738b1b5d9c1",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            180.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.06219586922341724,
+            0.09992256810947524,
+            0.2
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "097842d4ae11445f872d883cafa46b7a",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.06219589739590126,
+          0.09992254923616736,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "2592",
+        "quality_score": 0.841262,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/2592/proxy.json",
+        "blender_import_extent": [
+          1.155593454837799,
+          1.856552004814148,
+          3.715981364250183
+        ],
+        "alignment_relative_error": 4.529637034879018e-07
+      }
+    },
+    {
+      "id": "physassets_15389_box",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_15389",
+          "type": "mesh",
+          "asset_id": "physassets_15389",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-113/e1eae1ee03a146abb703fffd3c2cf4ec.glb",
+          "sha256": "bb92874ef87ed5562e54d37b9342de624525e2ba8564bddb9c18408a306d2e3a",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            180.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.06219586922341724,
+            0.09992256810947524,
+            0.2
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "e1eae1ee03a146abb703fffd3c2cf4ec",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.06219589739590126,
+          0.09992254923616736,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "15389",
+        "quality_score": 0.838701,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/15389/proxy.json",
+        "blender_import_extent": [
+          1.155593454837799,
+          1.856552004814148,
+          3.715981364250183
+        ],
+        "alignment_relative_error": 4.529637034879018e-07
+      }
+    },
+    {
+      "id": "physassets_16301_drink_box",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_16301",
+          "type": "mesh",
+          "asset_id": "physassets_16301",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-120/f5b6d7e24df74963ac0af09c1f435143.glb",
+          "sha256": "300c61ada07cf5ae3b08a8a4427a28941112c657f35df0178779b4b477c4ccc4",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            180.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.06219586922341724,
+            0.09992256810947524,
+            0.2
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "f5b6d7e24df74963ac0af09c1f435143",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.06219589739590126,
+          0.09992254923616736,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "16301",
+        "quality_score": 0.830457,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/16301/proxy.json",
+        "blender_import_extent": [
+          1.155593454837799,
+          1.856552004814148,
+          3.715981364250183
+        ],
+        "alignment_relative_error": 4.529637034879018e-07
+      }
+    },
+    {
+      "id": "physassets_14934_carton",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_14934",
+          "type": "mesh",
+          "asset_id": "physassets_14934",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-110/52b792f591ce418a9ac2685329f4bc4a.glb",
+          "sha256": "5fbf996cd39f46b54c5ed69533033bfe8492833f65082b8a5835c61d47e78554",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.06212877831673201,
+            0.09981477348381401,
+            0.19999999999999998
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "52b792f591ce418a9ac2685329f4bc4a",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.0621287843735435,
+          0.0998147190088787,
+          0.19999999999999998
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "14934",
+        "quality_score": 0.825484,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/14934/proxy.json",
+        "blender_import_extent": [
+          0.6811086535453796,
+          1.0942546725273132,
+          2.1925705671310425
+        ],
+        "alignment_relative_error": 5.457605436707792e-07
+      }
+    },
+    {
+      "id": "physassets_17617_box",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_17617",
+          "type": "mesh",
+          "asset_id": "physassets_17617",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-130/dfbb335a32c74d9e979a868baeda2ef4.glb",
+          "sha256": "5a196541f312edfded8d7ff2a37a1e29f3505bdebb22c545f1381150d28bc914",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.1999999499524305,
+            0.03919363739439285,
+            0.15753304984803615
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "dfbb335a32c74d9e979a868baeda2ef4",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.2,
+          0.039193637338487505,
+          0.15753304984803615
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "17617",
+        "quality_score": 0.824616,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/17617/proxy.json",
+        "blender_import_extent": [
+          232.18692779541016,
+          45.50126266479492,
+          182.8856201171875
+        ],
+        "alignment_relative_error": 2.5023784752664646e-07
+      }
+    },
+    {
+      "id": "physassets_8032_box",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_8032",
+          "type": "mesh",
+          "asset_id": "physassets_8032",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-058/6494e79c39554da1a4ed68d5e1d10cb5.glb",
+          "sha256": "4eed79e136a930c0b944b79c95f711777367a2414ce1537dbe07ff764eebabd4",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.09909260511527047,
+            0.061679339193999545,
+            0.19999999178201075
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "6494e79c39554da1a4ed68d5e1d10cb5",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.09909260511527047,
+          0.061679306098118905,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "8032",
+        "quality_score": 0.811832,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/8032/proxy.json",
+        "blender_import_extent": [
+          1.8565513491630554,
+          1.1555944085121155,
+          3.7471035718917847
+        ],
+        "alignment_relative_error": 5.3657997688174e-07
+      }
+    },
+    {
+      "id": "physassets_20426_box",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_20426",
+          "type": "mesh",
+          "asset_id": "physassets_20426",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-152/31aaafe7d95e4b548bb86a9445754192.glb",
+          "sha256": "72e156a6bddcf4c713511081d7737451b512d9a01d1aa543f11acaa067398abd",
+          "alignment_euler_degrees": [
+            180.0,
+            0.0,
+            180.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.09939159075749684,
+            0.062170021086381096,
+            0.1999812246035793
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "31aaafe7d95e4b548bb86a9445754192",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.0991695730976463,
+          0.062170021086381096,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "20426",
+        "quality_score": 0.793912,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/20426/proxy.json",
+        "blender_import_extent": [
+          1.8623275756835938,
+          1.1648967862129211,
+          3.747103214263916
+        ],
+        "alignment_relative_error": 0.002238767929674688
+      }
+    },
+    {
+      "id": "physassets_7009_box",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_7009",
+          "type": "mesh",
+          "asset_id": "physassets_7009",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-050/b8cba8b5a69543ce9875c40028261490.glb",
+          "sha256": "2002131fa7f8d3b98e69f95f13df06022916946d93335a4d2f9572f9149b0e52",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            180.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.19999995388190756,
+            0.13513148929891117,
+            0.10893646780909778
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "b8cba8b5a69543ce9875c40028261490",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.2,
+          0.13513148277247589,
+          0.10893646780909778
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "7009",
+        "quality_score": 0.742677,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/7009/proxy.json",
+        "blender_import_extent": [
+          30.366575241088867,
+          20.517407417297363,
+          16.540141045115888
+        ],
+        "alignment_relative_error": 2.3059046228013358e-07
+      }
+    },
+    {
+      "id": "physassets_1559_box",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_1559",
+          "type": "mesh",
+          "asset_id": "physassets_1559",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-008/dd7183e276b3406c930e18e79a7b8c6c.glb",
+          "sha256": "1c5443ad05c48304860fd770435f3766981b7fbd09558ecce4611f71030fd5de",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.10061283199507351,
+            0.06205472147477332,
+            0.2
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "dd7183e276b3406c930e18e79a7b8c6c",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.09971051387435821,
+          0.06206559399100735,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "1559",
+        "quality_score": 0.727945,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/1559/proxy.json",
+        "blender_import_extent": [
+          1.873658835887909,
+          1.15561181306839,
+          3.7244927883148193
+        ],
+        "alignment_relative_error": 0.009049377900632205
+      }
+    },
+    {
+      "id": "physassets_13094_box",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_13094",
+          "type": "mesh",
+          "asset_id": "physassets_13094",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-096/58b83bbd84e14b6aaba941a00ac76413.glb",
+          "sha256": "dcd4ec0e53ae160e2a8ac1337a498f186d415e31d32675418f69cfb536ef74d4",
+          "alignment_euler_degrees": [
+            180.0,
+            180.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.19999997674066536,
+            0.15555558750341472,
+            0.12222221610264002
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "58b83bbd84e14b6aaba941a00ac76413",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.2,
+          0.1555555585582332,
+          0.12222221610264002
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "13094",
+        "quality_score": 0.655844,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/13094/proxy.json",
+        "blender_import_extent": [
+          3.6000006198883057,
+          2.800001382827759,
+          2.200000524520874
+        ],
+        "alignment_relative_error": 1.860761633829321e-07
+      }
+    },
+    {
+      "id": "physassets_13291_cigar_box",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_13291",
+          "type": "mesh",
+          "asset_id": "physassets_13291",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-097/bf5152c1f1fc44f4a81dbca1d502304c.glb",
+          "sha256": "677b09fcab9eead265790f0ffaabd1cb549447cf37aba1fc7891fe5833223571",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            180.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.19820227879126562,
+            0.12791043589215084,
+            0.06332296110825565
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "bf5152c1f1fc44f4a81dbca1d502304c",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.2,
+          0.12791043589215084,
+          0.06127888370728345
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "13291",
+        "quality_score": 0.624798,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/13291/proxy.json",
+        "blender_import_extent": [
+          237.39542388916016,
+          153.20384979248047,
+          75.84464359283447
+        ],
+        "alignment_relative_error": 0.033356962093766804
+      }
+    },
+    {
+      "id": "physassets_10348_box",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_10348",
+          "type": "mesh",
+          "asset_id": "physassets_10348",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-075/55c427ab7c554a13bf17f26dba37d439.glb",
+          "sha256": "63b16fd1da253d4822a579484f1edda4e44c0d92d452c18ce7c6efb1a644ab76",
+          "alignment_euler_degrees": [
+            90.0,
+            180.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.1999999366196439,
+            0.08897095013455947,
+            0.12066685642168312
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "55c427ab7c554a13bf17f26dba37d439",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.2,
+          0.08883705757488634,
+          0.12066685642168312
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "10348",
+        "quality_score": 0.620662,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/10348/proxy.json",
+        "blender_import_extent": [
+          0.31092754006385803,
+          0.18759330362081528,
+          0.13831763714551926
+        ],
+        "alignment_relative_error": 0.0015071701306659936
+      }
+    },
+    {
+      "id": "physassets_12633_first_aid_kit",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_12633",
+          "type": "mesh",
+          "asset_id": "physassets_12633",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-093/11672af57b8c4aaf9f49193a6134dc52.glb",
+          "sha256": "7378a7cda57d4e65116363238076efa49732d2d51b5968eacb9fd27aada2d981",
+          "alignment_euler_degrees": [
+            180.0,
+            180.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.1461537935154274,
+            0.20000004466809812,
+            0.038461607114698516
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "11672af57b8c4aaf9f49193a6134dc52",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.14615379554714666,
+          0.2,
+          0.038461607114698516
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "12633",
+        "quality_score": 0.593483,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/12633/proxy.json",
+        "blender_import_extent": [
+          1.4615379571914673,
+          2.000000476837158,
+          0.38461607694625854
+        ],
+        "alignment_relative_error": 2.2334049054606453e-07
+      }
+    },
+    {
+      "id": "physassets_3415_milk_carton",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_3415",
+          "type": "mesh",
+          "asset_id": "physassets_3415",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-023/43b88b2c6fa6462aa4c9d2d3c5e062a0.glb",
+          "sha256": "9535e928666db0308d6afa07bd1769b08ae6088925fa2d4a1738384755af3e13",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.09211484476702626,
+            0.05746457344768688,
+            0.2
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "43b88b2c6fa6462aa4c9d2d3c5e062a0",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.0921148778676903,
+          0.057464520942914585,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "3415",
+        "quality_score": 0.573296,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/3415/proxy.json",
+        "blender_import_extent": [
+          9.606845378875732,
+          5.99309778213501,
+          20.85840865969658
+        ],
+        "alignment_relative_error": 9.136902462991318e-07
+      }
+    },
+    {
+      "id": "physassets_7218_box",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_7218",
+          "type": "mesh",
+          "asset_id": "physassets_7218",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-052/677ac24bd6ef43029856711f76122375.glb",
+          "sha256": "77f26c2f461b3c4242ef072d6e7afcee92c3a086e5d596255208ac0f26281f46",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.1999999728459404,
+            0.10269480741482055,
+            0.06109160547510464
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "677ac24bd6ef43029856711f76122375",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.2,
+          0.10269479751586906,
+          0.06109160547510464
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "7218",
+        "quality_score": 0.561393,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/7218/proxy.json",
+        "blender_import_extent": [
+          2.0,
+          1.0269482135772705,
+          0.6109161376953125
+        ],
+        "alignment_relative_error": 1.3577029805977858e-07
+      }
+    },
+    {
+      "id": "physassets_3013_milk_carton",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_3013",
+          "type": "mesh",
+          "asset_id": "physassets_3013",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-020/52ecfc53e47541dabf49cac11b6e04bc.glb",
+          "sha256": "0ba4743c7fa0a4a18428915f64cc19fb70546c7416707b626d320f62d2ccc631",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.07279549205715169,
+            0.07279555280244393,
+            0.2
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "52ecfc53e47541dabf49cac11b6e04bc",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.07279550311211197,
+          0.072795503112112,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "3013",
+        "quality_score": 0.530636,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/3013/proxy.json",
+        "blender_import_extent": [
+          2.0,
+          2.0000016689300537,
+          5.494845747947693
+        ],
+        "alignment_relative_error": 6.82601669171031e-07
+      }
+    },
+    {
+      "id": "physassets_20799_wallet",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_20799",
+          "type": "mesh",
+          "asset_id": "physassets_20799",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-155/12129ccec914482dad760607dfb8583a.glb",
+          "sha256": "71b7d6a454edc6dabfed8958b3f579286a875f8eaef7f1f37fad981f98007d92",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            180.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.007536911093187326,
+            0.20000001279982102,
+            0.12333322357949879
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "12129ccec914482dad760607dfb8583a",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.007536913160435713,
+          0.2,
+          0.12333322357949879
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "20799",
+        "quality_score": 0.529147,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/20799/proxy.json",
+        "blender_import_extent": [
+          0.31871719658374786,
+          8.457502365112305,
+          5.215454816818237
+        ],
+        "alignment_relative_error": 2.7428316372455207e-07
+      }
+    },
+    {
+      "id": "physassets_15897_box",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_15897",
+          "type": "mesh",
+          "asset_id": "physassets_15897",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-118/05ada823740f461c94456a68f1146ee2.glb",
+          "sha256": "cfe4d97c541c30cb54112a9b31f3d742c14aba130693d598a23726a8780f02aa",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            180.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.1999999626966868,
+            0.12780820990154512,
+            0.08276240788274038
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "05ada823740f461c94456a68f1146ee2",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.2,
+          0.12780820493067835,
+          0.08276240788274038
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "15897",
+        "quality_score": 0.511917,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/15897/proxy.json",
+        "blender_import_extent": [
+          0.989660918712616,
+          0.632434070110321,
+          0.40953367948532104
+        ],
+        "alignment_relative_error": 1.865165660808188e-07
+      }
+    },
+    {
+      "id": "physassets_5429_soda_can",
+      "semantic_category": "physassets_can",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_5429",
+          "type": "mesh",
+          "asset_id": "physassets_5429",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-039/25b65c5b7abd4cf78e58dff08fe58602.glb",
+          "sha256": "d2dc711c6e4ed7df88e636f29a2297f03e325cce553b979d6a12890bd3c27290",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.10383698864451597,
+            0.10383692787932008,
+            0.2000002019902709
+          ],
+          "material_hint": "can",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "25b65c5b7abd4cf78e58dff08fe58602",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.10383698864451597,
+          0.10383698864451597,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.45,
+        "restitution": 0.22,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "5429",
+        "quality_score": 0.912976,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/5429/proxy.json",
+        "blender_import_extent": [
+          4.074150085449219,
+          4.07415246963501,
+          7.847216367721558
+        ],
+        "alignment_relative_error": 1.0099513544914451e-06
+      }
+    },
+    {
+      "id": "physassets_18020_can",
+      "semantic_category": "physassets_can",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_18020",
+          "type": "mesh",
+          "asset_id": "physassets_18020",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-134/30bfa06a68a94728ba17ca3f9c99dea8.glb",
+          "sha256": "257b886a06a99fe2a369a43c5c69087a5f023747566fb1ff42d9324bb82dd147",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.11141026438891034,
+            0.1114097807243625,
+            0.19421114534241235
+          ],
+          "material_hint": "can",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "30bfa06a68a94728ba17ca3f9c99dea8",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.1114097807243625,
+          0.1114097807243625,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.45,
+        "restitution": 0.22,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "18020",
+        "quality_score": 0.891408,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/18020/proxy.json",
+        "blender_import_extent": [
+          0.7422619163990021,
+          0.7422586940228939,
+          1.293916119117057
+        ],
+        "alignment_relative_error": 0.028944273287938305
+      }
+    },
+    {
+      "id": "physassets_487_soda_can",
+      "semantic_category": "physassets_can",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_487",
+          "type": "mesh",
+          "asset_id": "physassets_487",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-000/4ace4fbc91124683976db7e9530f98ae.glb",
+          "sha256": "d5e8ab37240fa5f1800d86138ba4b5bf2052b05d3c3a4e508ae5ab276fb8ad2c",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.10707129172873102,
+            0.10707121848927215,
+            0.2
+          ],
+          "material_hint": "can",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "4ace4fbc91124683976db7e9530f98ae",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.10707127282514595,
+          0.10707127282514595,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.45,
+        "restitution": 0.22,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "487",
+        "quality_score": 0.880205,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/487/proxy.json",
+        "blender_import_extent": [
+          0.8713802695274353,
+          0.8713808655738831,
+          1.6276648044586182
+        ],
+        "alignment_relative_error": 5.074738757337853e-07
+      }
+    },
+    {
+      "id": "physassets_3756_can",
+      "semantic_category": "physassets_can",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_3756",
+          "type": "mesh",
+          "asset_id": "physassets_3756",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-025/e73064e272d6432cb6f1101de7f03b79.glb",
+          "sha256": "f53b051cb4adbc6c23bf9e7e3287fb66f5c2f4b72c0736b9b4dccf6afa186b93",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.10448714332439545,
+            0.104487084670162,
+            0.20000000000000004
+          ],
+          "material_hint": "can",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "e73064e272d6432cb6f1101de7f03b79",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.10448712001844523,
+          0.10448712001844523,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.45,
+        "restitution": 0.22,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "3756",
+        "quality_score": 0.874022,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/3756/proxy.json",
+        "blender_import_extent": [
+          1.3803420066833496,
+          1.3803427815437317,
+          2.642129428801127
+        ],
+        "alignment_relative_error": 3.383027805226162e-07
+      }
+    },
+    {
+      "id": "physassets_13102_can",
+      "semantic_category": "physassets_can",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_13102",
+          "type": "mesh",
+          "asset_id": "physassets_13102",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-096/663b5edc92a543668c1b602981e724a4.glb",
+          "sha256": "efeeb203289c5f8bc34c32057a85932a026516190736080cbe43a7983dd1dbbf",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.13009697296847547,
+            0.13009687607846906,
+            0.2
+          ],
+          "material_hint": "can",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "663b5edc92a543668c1b602981e724a4",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.13009694650316012,
+          0.13009694650316012,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.45,
+        "restitution": 0.22,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "13102",
+        "quality_score": 0.868448,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/13102/proxy.json",
+        "blender_import_extent": [
+          0.08003279566764832,
+          0.08003285527229309,
+          0.12303569167852402
+        ],
+        "alignment_relative_error": 5.413247039529626e-07
+      }
+    },
+    {
+      "id": "physassets_15118_can",
+      "semantic_category": "physassets_can",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_15118",
+          "type": "mesh",
+          "asset_id": "physassets_15118",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-111/d0be4f93e59e4d4c970c9f4e37c03fd0.glb",
+          "sha256": "d092fc2662c21f98eff9905fc4bcdcbe4258fe0b7af149898936dc94b38af472",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.11776507087036851,
+            0.11776506427450661,
+            0.2000000715750273
+          ],
+          "material_hint": "can",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "d0be4f93e59e4d4c970c9f4e37c03fd0",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.11776507087036851,
+          0.11776507087036851,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.45,
+        "restitution": 0.22,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "15118",
+        "quality_score": 0.862762,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/15118/proxy.json",
+        "blender_import_extent": [
+          0.13302554190158844,
+          0.13302554935216904,
+          0.22591689704859164
+        ],
+        "alignment_relative_error": 3.578751364696764e-07
+      }
+    },
+    {
+      "id": "physassets_13207_can",
+      "semantic_category": "physassets_can",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_13207",
+          "type": "mesh",
+          "asset_id": "physassets_13207",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-097/32c47e171fc54617aef4c5696f27a7a5.glb",
+          "sha256": "1c81c86a86e98755e4d1b4c6a609c902d647cb93328e5d07b8397750088b8aef",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            90.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.14010766595713114,
+            0.1401076388429586,
+            0.2000000045282085
+          ],
+          "material_hint": "can",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "32c47e171fc54617aef4c5696f27a7a5",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.14010766595713114,
+          0.14010766595713114,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.45,
+        "restitution": 0.22,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "13207",
+        "quality_score": 0.854609,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/13207/proxy.json",
+        "blender_import_extent": [
+          1.539981722831726,
+          1.53998202085495,
+          2.1982837915420532
+        ],
+        "alignment_relative_error": 1.9352383298126904e-07
+      }
+    },
+    {
+      "id": "physassets_7249_can",
+      "semantic_category": "physassets_can",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_7249",
+          "type": "mesh",
+          "asset_id": "physassets_7249",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-052/990c08d7445743d8897841f82466e80a.glb",
+          "sha256": "67e56fa74cffb0582bed2d2c4904f7c5f0d9ccc5392b87f1297e39582d0c87ba",
+          "alignment_euler_degrees": [
+            180.0,
+            0.0,
+            90.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.10402823913055889,
+            0.10402820146847368,
+            0.2000077516995341
+          ],
+          "material_hint": "can",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "990c08d7445743d8897841f82466e80a",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.10402823913055889,
+          0.10402823913055889,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.45,
+        "restitution": 0.22,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "7249",
+        "quality_score": 0.848896,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/7249/proxy.json",
+        "blender_import_extent": [
+          2.6341882944107056,
+          2.634189248085022,
+          5.064569711685181
+        ],
+        "alignment_relative_error": 3.8758497670488e-05
+      }
+    },
+    {
+      "id": "physassets_2026_can",
+      "semantic_category": "physassets_can",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_2026",
+          "type": "mesh",
+          "asset_id": "physassets_2026",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-012/79bc3c7436214c39ad32e03e1b164738.glb",
+          "sha256": "cdd8187ff3c72ccce8dbc7cb1dbdb833be22d203e54786abc5dfbca94fe3fb56",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.11103590392667087,
+            0.11103584154819716,
+            0.2
+          ],
+          "material_hint": "can",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "79bc3c7436214c39ad32e03e1b164738",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.11103589116714253,
+          0.11103589116714253,
+          0.19999999999999998
+        ]
+      },
+      "physics": {
+        "friction": 0.45,
+        "restitution": 0.22,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "2026",
+        "quality_score": 0.799824,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/2026/proxy.json",
+        "blender_import_extent": [
+          6.3658998012542725,
+          6.365903377532959,
+          11.466387271881104
+        ],
+        "alignment_relative_error": 4.4687303220229806e-07
+      }
+    },
+    {
+      "id": "physassets_13003_can",
+      "semantic_category": "physassets_can",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_13003",
+          "type": "mesh",
+          "asset_id": "physassets_13003",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-095/b621c64d0ed74283873c8c2b9a949bd3.glb",
+          "sha256": "e93155008af39ce1c4d2f3eb5026042ba4db266cff58ce9b5becadc6a683c3ed",
+          "alignment_euler_degrees": [
+            180.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.1434532236283245,
+            0.14345109014120552,
+            0.2000879660308999
+          ],
+          "material_hint": "can",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "b621c64d0ed74283873c8c2b9a949bd3",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.1434532236283245,
+          0.1434532236283245,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.45,
+        "restitution": 0.22,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "13003",
+        "quality_score": 0.762907,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/13003/proxy.json",
+        "blender_import_extent": [
+          0.08604005724191666,
+          0.08604133687913418,
+          0.12001010263338685
+        ],
+        "alignment_relative_error": 0.0004398301544994432
+      }
+    },
+    {
+      "id": "physassets_8079_can",
+      "semantic_category": "physassets_can",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_8079",
+          "type": "mesh",
+          "asset_id": "physassets_8079",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-058/b668d4e063fa4ca8831297fb8a31c811.glb",
+          "sha256": "51f8f3ad8d2d53a2ace5c8c1a1973df1b2e538c34ebe636bca402b07707e3b19",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.10516331111383061,
+            0.10516325016241114,
+            0.20000155730714675
+          ],
+          "material_hint": "can",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "b668d4e063fa4ca8831297fb8a31c811",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.10516331111383061,
+          0.10516331111383061,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.45,
+        "restitution": 0.22,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "8079",
+        "quality_score": 0.757254,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/8079/proxy.json",
+        "blender_import_extent": [
+          0.12212199717760086,
+          0.12212206795811653,
+          0.2322540391178336
+        ],
+        "alignment_relative_error": 7.78653573368926e-06
+      }
+    },
+    {
+      "id": "physassets_10754_trash_can",
+      "semantic_category": "physassets_can",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_10754",
+          "type": "mesh",
+          "asset_id": "physassets_10754",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-078/78627050a0e54896b6e37285951de3fc.glb",
+          "sha256": "e7aacdfbe756244514ab8d986b17f23d4c5d4b5a7184e34ce5e86d2846b657f5",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.12074757922194294,
+            0.12074749219211943,
+            0.19999999999999998
+          ],
+          "material_hint": "can",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "78627050a0e54896b6e37285951de3fc",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.12074755519616667,
+          0.12074755519616667,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.45,
+        "restitution": 0.22,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "10754",
+        "quality_score": 0.730378,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/10754/proxy.json",
+        "blender_import_extent": [
+          0.8269706964492798,
+          0.8269712924957275,
+          1.3697521686553955
+        ],
+        "alignment_relative_error": 5.217832124293201e-07
+      }
+    },
+    {
+      "id": "physassets_19920_remote",
+      "semantic_category": "physassets_other",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_19920",
+          "type": "mesh",
+          "asset_id": "physassets_19920",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-148/9338612e9fb54a79a42f9561fc22b697.glb",
+          "sha256": "5efd7c6b4dad0cdaf7ee1b44179f4a131fe637cc40eff9495f36524f85016bc3",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.09721090264573796,
+            0.2,
+            0.03140550881373613
+          ],
+          "material_hint": "other",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "9338612e9fb54a79a42f9561fc22b697",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.09721091447280554,
+          0.2,
+          0.03140546347415178
+        ]
+      },
+      "physics": {
+        "friction": 0.5,
+        "restitution": 0.12,
+        "mass_range_kg": [
+          0.05,
+          0.6
+        ]
+      },
+      "source_review": {
+        "sample_id": "19920",
+        "quality_score": 0.613966,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/19920/proxy.json",
+        "blender_import_extent": [
+          213.26444244384766,
+          438.7665100097656,
+          68.89842748641968
+        ],
+        "alignment_relative_error": 1.4436846120147137e-06
+      }
+    },
+    {
+      "id": "physassets_12676_flashlight",
+      "semantic_category": "physassets_rod",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_12676",
+          "type": "mesh",
+          "asset_id": "physassets_12676",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-093/576daeaa281840cfb3ece4850cc42469.glb",
+          "sha256": "874c951a45b45c927fa13221458c41ea6528f4a60dde83ab856f2afab7e0005f",
+          "alignment_euler_degrees": [
+            90.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.04988987659121684,
+            0.049889972061944406,
+            0.19999999999999998
+          ],
+          "material_hint": "rod",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "576daeaa281840cfb3ece4850cc42469",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.0498899139401885,
+          0.0498899139401885,
+          0.19999999999999998
+        ]
+      },
+      "physics": {
+        "friction": 0.48,
+        "restitution": 0.12,
+        "mass_range_kg": [
+          0.08,
+          0.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "12676",
+        "quality_score": 0.361665,
+        "proxy_method": "semantic_axis_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/12676/proxy.json",
+        "blender_import_extent": [
+          1.4327820539474487,
+          5.743778705596924,
+          1.4327847957611084
+        ],
+        "alignment_relative_error": 1.1650001236285226e-06
+      }
+    },
+    {
+      "id": "physassets_15157_basketball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_15157",
+          "type": "mesh",
+          "asset_id": "physassets_15157",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-112/160d712e0098495086b6d798ceaeb24e.glb",
+          "sha256": "3dc1f9da4f71591aa3600788274f417fc10dd5beb49d9706a7e8ed1a1fd73cc8",
+          "alignment_euler_degrees": [
+            90.0,
+            270.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.1996056593888229,
+            0.2000002026233427,
+            0.2000002093968497
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "160d712e0098495086b6d798ceaeb24e",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.2000002026233427,
+          0.2000002026233427,
+          0.2000002026233427
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "15157",
+        "quality_score": 0.89471,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/15157/proxy.json",
+        "blender_import_extent": [
+          7.039745569229126,
+          7.025857925415039,
+          7.039745330810547
+        ],
+        "alignment_relative_error": 0.001972714174009248
+      }
+    },
+    {
+      "id": "physassets_732_ball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_732",
+          "type": "mesh",
+          "asset_id": "physassets_732",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-001/ffcd5b21fb21411d828c4f8a09453c4f.glb",
+          "sha256": "141212c4e4834a61a43bcb36aae1c8d2d159a26862d5f5791637221b99dcaded",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20076943163506872,
+            0.2007693691607852,
+            0.20076943163506866
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "ffcd5b21fb21411d828c4f8a09453c4f",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20076943163506866,
+          0.20076943163506866,
+          0.20076943163506866
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "732",
+        "quality_score": 0.770841,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/732/proxy.json",
+        "blender_import_extent": [
+          1.9154740571975708,
+          1.9154746532440186,
+          1.9154746532440186
+        ],
+        "alignment_relative_error": 3.111742806658175e-07
+      }
+    },
+    {
+      "id": "physassets_21246_soccer_ball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_21246",
+          "type": "mesh",
+          "asset_id": "physassets_21246",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-158/f8a64f4c4cdd46488e3beb823d0dce37.glb",
+          "sha256": "734ab8ce49c1e41d2c0bc85662ba3256dbcfb000a9a29255f7999ef425124060",
+          "alignment_euler_degrees": [
+            90.0,
+            270.0,
+            90.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20004691192975568,
+            0.20000004084279052,
+            0.19998418558968645
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "f8a64f4c4cdd46488e3beb823d0dce37",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20000004084279052,
+          0.20000004084279052,
+          0.20000004084279052
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "21246",
+        "quality_score": 0.766468,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/21246/proxy.json",
+        "blender_import_extent": [
+          1.8531880974769592,
+          1.8533350229263306,
+          1.8537693619728088
+        ],
+        "alignment_relative_error": 0.00023435538696716602
+      }
+    },
+    {
+      "id": "physassets_12070_soccer_ball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_12070",
+          "type": "mesh",
+          "asset_id": "physassets_12070",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-088/b5c5b759e12148e78ddbc9b014f07690.glb",
+          "sha256": "eb285c2be4b78db3fb3f55ab6d54c9d48497b3059b044f999bfbe62d8077e20d",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20025237934690043,
+            0.20025226960648704,
+            0.2002523749572839
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "b5c5b759e12148e78ddbc9b014f07690",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20025237495728387,
+          0.20025237495728387,
+          0.20025237495728387
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "12070",
+        "quality_score": 0.71461,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/12070/proxy.json",
+        "blender_import_extent": [
+          1.3595681190490723,
+          1.359568864107132,
+          1.3595688343048096
+        ],
+        "alignment_relative_error": 5.260901243180773e-07
+      }
+    },
+    {
+      "id": "physassets_10282_basketball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_10282",
+          "type": "mesh",
+          "asset_id": "physassets_10282",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-074/c94d08a3c24349bbbbd7213532cd05ee.glb",
+          "sha256": "bef86a1ea097717d927541ef7094b537a3104eaafab3728b2e5adbf4676e253d",
+          "alignment_euler_degrees": [
+            0.0,
+            270.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.2001195176627183,
+            0.20011947679144423,
+            0.19911259933187545
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "c94d08a3c24349bbbbd7213532cd05ee",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20011947679144423,
+          0.20011947679144423,
+          0.20011947679144423
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "10282",
+        "quality_score": 0.705511,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/10282/proxy.json",
+        "blender_import_extent": [
+          1.7422558069229126,
+          1.7510660886764526,
+          1.7510664463043213
+        ],
+        "alignment_relative_error": 0.005031381631174824
+      }
+    },
+    {
+      "id": "physassets_17381_basketball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_17381",
+          "type": "mesh",
+          "asset_id": "physassets_17381",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-129/1e7d0d1fce524233aa01b5b5d879a6a1.glb",
+          "sha256": "dd72c3077c198e985d9326efaff42d7924025ab002c76dde1150f8773704001e",
+          "alignment_euler_degrees": [
+            0.0,
+            270.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20011947847520647,
+            0.20011952728255566,
+            0.20011945407153184
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "1e7d0d1fce524233aa01b5b5d879a6a1",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20011947847520647,
+          0.20011947847520647,
+          0.20011947847520647
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "17381",
+        "quality_score": 0.700432,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/17381/proxy.json",
+        "blender_import_extent": [
+          7.820493698120117,
+          7.820496559143066,
+          7.820494651794434
+        ],
+        "alignment_relative_error": 2.438910472977333e-07
+      }
+    },
+    {
+      "id": "physassets_5822_basketball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_5822",
+          "type": "mesh",
+          "asset_id": "physassets_5822",
+          "path": "assets/library/physassets/curated_visuals/5822/visual.glb",
+          "sha256": "0cb0f325666212d22debb588393a0a32cd7a79f7f58a38a571820a12ed807ec3",
+          "alignment_euler_degrees": [
+            270.0,
+            270.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20751018079384126,
+            0.20327661690473045,
+            0.20327651882458958
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "f408ef68c38444ddb9dd2d3ba45e5227",
+            "verification_required_before_redistribution": true
+          },
+          "source_visual": {
+            "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-041/f408ef68c38444ddb9dd2d3ba45e5227.glb",
+            "sha256": "375e36043b331139bf8596294091b6e08ac2d62c318236580efef3fd28e1ac27"
+          },
+          "curation": {
+            "status": "repaired_verified",
+            "repair_report": "assets/library/physassets/curated_visuals/5822/repair.json"
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20327661690473045,
+          0.20327661690473045,
+          0.20327661690473045
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "5822",
+        "quality_score": 0.643841,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/5822/proxy.json",
+        "blender_import_extent": [
+          1.4824070930480957,
+          1.482407808303833,
+          1.5132813453674316
+        ],
+        "alignment_relative_error": 0.020826615247610848
+      }
+    },
+    {
+      "id": "physassets_12656_soccer_ball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_12656",
+          "type": "mesh",
+          "asset_id": "physassets_12656",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-093/3967341c1c7e4c1b8bc9346553157a73.glb",
+          "sha256": "5d351b3972585ef449a5c5a613988e901053f250ae9a65205c89fe7cf68c4fa7",
+          "alignment_euler_degrees": [
+            0.0,
+            270.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20177915550732828,
+            0.20177912248452676,
+            0.20177904875920258
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "3967341c1c7e4c1b8bc9346553157a73",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20177912248452676,
+          0.20177912248452676,
+          0.20177912248452676
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "12656",
+        "quality_score": 0.627379,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/12656/proxy.json",
+        "blender_import_extent": [
+          501.1418762207031,
+          501.1420593261719,
+          501.1421413421631
+        ],
+        "alignment_relative_error": 3.653763742806641e-07
+      }
+    },
+    {
+      "id": "physassets_11899_basketball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_11899",
+          "type": "mesh",
+          "asset_id": "physassets_11899",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-087/44e652f9f89e42b2b40fece12aefd303.glb",
+          "sha256": "89e96674b3d49138974d45ff8338ce87c8f471be42ad2fda87e2e737402f9574",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.2000000278153844,
+            0.19999986092249508,
+            0.20000002781538434
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "44e652f9f89e42b2b40fece12aefd303",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20000002781538434,
+          0.20000002781538434,
+          0.20000002781538434
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "11899",
+        "quality_score": 0.616146,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/11899/proxy.json",
+        "blender_import_extent": [
+          1.0,
+          1.0000008344650269,
+          1.0000008344650269
+        ],
+        "alignment_relative_error": 8.344643302373633e-07
+      }
+    },
+    {
+      "id": "physassets_9549_ball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_9549",
+          "type": "mesh",
+          "asset_id": "physassets_9549",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-069/43d50116a2af46c9b391a8549212681a.glb",
+          "sha256": "178d6dae43d92fdb40e85d274d8a73fadb0da68f74888e31bc18445fd1052f68",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20076943163506872,
+            0.2007693691607852,
+            0.20076943163506866
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "43d50116a2af46c9b391a8549212681a",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20076943163506866,
+          0.20076943163506866,
+          0.20076943163506866
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "9549",
+        "quality_score": 0.610047,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/9549/proxy.json",
+        "blender_import_extent": [
+          1.9154740571975708,
+          1.9154746532440186,
+          1.9154746532440186
+        ],
+        "alignment_relative_error": 3.111742806658175e-07
+      }
+    },
+    {
+      "id": "physassets_1297_ball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_1297",
+          "type": "mesh",
+          "asset_id": "physassets_1297",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-006/d93b3a3bd05a4278a1c5e5d2ba9b70d9.glb",
+          "sha256": "ba94a259d278db9351945b38ea28224db1cb30cb34f865f84404d29e2c56a5c3",
+          "alignment_euler_degrees": [
+            270.0,
+            270.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20000019697995966,
+            0.19960565783238768,
+            0.2000001969799596
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "d93b3a3bd05a4278a1c5e5d2ba9b70d9",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20000019697995958,
+          0.20000019697995958,
+          0.20000019697995958
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "1297",
+        "quality_score": 0.596094,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/1297/proxy.json",
+        "blender_import_extent": [
+          200.00006103515625,
+          199.60552215576172,
+          200.00006103515625
+        ],
+        "alignment_relative_error": 0.0019726937949537723
+      }
+    },
+    {
+      "id": "physassets_6107_basketball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_6107",
+          "type": "mesh",
+          "asset_id": "physassets_6107",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-044/19f76a0df81747369acf46406b36afa6.glb",
+          "sha256": "417b2dc26e9038f6486664b3c94b5f888fa07baeada60ef9aa8e8aafb16ca8e6",
+          "alignment_euler_degrees": [
+            0.0,
+            270.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20011943311150548,
+            0.20011941784360088,
+            0.2001193567719826
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "19f76a0df81747369acf46406b36afa6",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20011941784360085,
+          0.20011941784360085,
+          0.20011941784360085
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "6107",
+        "quality_score": 0.579942,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/6107/proxy.json",
+        "blender_import_extent": [
+          399.999755859375,
+          399.9998779296875,
+          399.9999084472656
+        ],
+        "alignment_relative_error": 3.0517587408858863e-07
+      }
+    },
+    {
+      "id": "physassets_15974_soccer_ball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_15974",
+          "type": "mesh",
+          "asset_id": "physassets_15974",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-118/9085d6e964a64880a6af9c73af6d1777.glb",
+          "sha256": "ca5e68c0cd55884c87c0c4296cebbe2205674d673f9fb874ff8c90cb9f241722",
+          "alignment_euler_degrees": [
+            90.0,
+            270.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20000000000001872,
+            0.2000268329837127,
+            0.19997620635104726
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "9085d6e964a64880a6af9c73af6d1777",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20000000000001875,
+          0.20000000000001875,
+          0.20000000000001875
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "15974",
+        "quality_score": 0.570727,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/15974/proxy.json",
+        "blender_import_extent": [
+          0.6863062381744385,
+          0.6863878965377808,
+          0.6864799857139587
+        ],
+        "alignment_relative_error": 0.00013416491846980757
+      }
+    },
+    {
+      "id": "physassets_9429_ball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_9429",
+          "type": "mesh",
+          "asset_id": "physassets_9429",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-068/61b41ccf0c514614a9aef40358bd50c6.glb",
+          "sha256": "3250efc7b81044b3d2e887d7d2a1d2a3a034997a83e4ed820d83606338030d19",
+          "alignment_euler_degrees": [
+            0.0,
+            270.0,
+            90.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20005443900774214,
+            0.19973111694544277,
+            0.20012320820206425
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "61b41ccf0c514614a9aef40358bd50c6",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20005443900774214,
+          0.20005443900774214,
+          0.20005443900774214
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "9429",
+        "quality_score": 0.567212,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/9429/proxy.json",
+        "blender_import_extent": [
+          0.1004730686545372,
+          0.10043854266405106,
+          0.10027621686458588
+        ],
+        "alignment_relative_error": 0.001616170397932846
+      }
+    },
+    {
+      "id": "physassets_10311_beach_ball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_10311",
+          "type": "mesh",
+          "asset_id": "physassets_10311",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-075/0c5a458e7b754fc88afdc93b79a43b96.glb",
+          "sha256": "d1df95681728ee82188907adab66640e35f95f7961dfcc5b73b87bf17fd940f5",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.2000005806430079,
+            0.20000052103820873,
+            0.20000058064300788
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "0c5a458e7b754fc88afdc93b79a43b96",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20000058064300785,
+          0.20000058064300785,
+          0.20000058064300785
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "10311",
+        "quality_score": 0.554828,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/10311/proxy.json",
+        "blender_import_extent": [
+          0.4000000059604645,
+          0.40000012516975403,
+          0.40000012516975403
+        ],
+        "alignment_relative_error": 2.980231303954989e-07
+      }
+    },
+    {
+      "id": "physassets_873_ball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_873",
+          "type": "mesh",
+          "asset_id": "physassets_873",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-003/20d2cd4a0ec3455aa821aa2f76ddb521.glb",
+          "sha256": "bbe56d2ca047393ca2062b092c67dae556c91952dffa37a16cf16205e0dd7fc3",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20000004722443337,
+            0.19999994041294583,
+            0.2000000090774735
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "20d2cd4a0ec3455aa821aa2f76ddb521",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.2000000090774735,
+          0.2000000090774735,
+          0.2000000090774735
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "873",
+        "quality_score": 0.553118,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/873/proxy.json",
+        "blender_import_extent": [
+          200.00000762939453,
+          200.00011444091797,
+          200.0000762939453
+        ],
+        "alignment_relative_error": 3.4332262279171155e-07
+      }
+    },
+    {
+      "id": "physassets_4357_basketball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_4357",
+          "type": "mesh",
+          "asset_id": "physassets_4357",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-030/80f10af6cb604d7cbbd141050d093b2b.glb",
+          "sha256": "43225fea8704ac3df8947463c2157313318762deb6ba511233b020c82849fa35",
+          "alignment_euler_degrees": [
+            180.0,
+            270.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20067288965078353,
+            0.19930090505340603,
+            0.20007485076290626
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "80f10af6cb604d7cbbd141050d093b2b",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20007485076290626,
+          0.20007485076290626,
+          0.20007485076290626
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "4357",
+        "quality_score": 0.552661,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/4357/proxy.json",
+        "blender_import_extent": [
+          0.44411712884902954,
+          0.44544462859630585,
+          0.44239915907382965
+        ],
+        "alignment_relative_error": 0.0038682808286453732
+      }
+    },
+    {
+      "id": "physassets_8393_basketball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_8393",
+          "type": "mesh",
+          "asset_id": "physassets_8393",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-060/ccfec74015ce407487891074e8d65a50.glb",
+          "sha256": "277f3ee2aff7d1273f2cd8c780bf0a70d7f5f6c8f76fc4fee0a9f8ee6393c37f",
+          "alignment_euler_degrees": [
+            0.0,
+            270.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20235952577081762,
+            0.20199645062052732,
+            0.2016092666177853
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "ccfec74015ce407487891074e8d65a50",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20199645062052732,
+          0.20199645062052732,
+          0.20199645062052732
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "8393",
+        "quality_score": 0.548809,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/8393/proxy.json",
+        "blender_import_extent": [
+          1.6579405069351196,
+          1.6611245274543762,
+          1.6641102880239487
+        ],
+        "alignment_relative_error": 0.0019167861690272058
+      }
+    },
+    {
+      "id": "physassets_10575_tennis_ball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_10575",
+          "type": "mesh",
+          "asset_id": "physassets_10575",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-077/05eb4a68e56249c5b3db4ea937a57b6e.glb",
+          "sha256": "0c56e10b4e3b1bb62341bb4ccc2f3876ae136bb9cdf4da171e8f3430fcd13d06",
+          "alignment_euler_degrees": [
+            0.0,
+            270.0,
+            90.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.2000828360522778,
+            0.20000018351919244,
+            0.19999683582093747
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "05eb4a68e56249c5b3db4ea937a57b6e",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20000018351919244,
+          0.20000018351919244,
+          0.20000018351919244
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "10575",
+        "quality_score": 0.547945,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/10575/proxy.json",
+        "blender_import_extent": [
+          6.694447994232178,
+          6.69732666015625,
+          6.6945600509643555
+        ],
+        "alignment_relative_error": 0.0004132622862190449
+      }
+    },
+    {
+      "id": "physassets_2957_basketball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_2957",
+          "type": "mesh",
+          "asset_id": "physassets_2957",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-019/e3c719662981472f8479031a074bc727.glb",
+          "sha256": "73a19468b0d24bb8fd4d44bc0baf03ebe4b35c9ebe2c6b3790295781a7c61bd6",
+          "alignment_euler_degrees": [
+            0.0,
+            270.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.199649531413562,
+            0.20116895643279945,
+            0.20000011261522604
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "e3c719662981472f8479031a074bc727",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20000011261522604,
+          0.20000011261522604,
+          0.20000011261522604
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "2957",
+        "quality_score": 0.546803,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/2957/proxy.json",
+        "blender_import_extent": [
+          1.988379955291748,
+          2.000000476837158,
+          1.9848945140838623
+        ],
+        "alignment_relative_error": 0.005844215797128588
+      }
+    },
+    {
+      "id": "physassets_5837_book",
+      "semantic_category": "physassets_book",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_5837",
+          "type": "mesh",
+          "asset_id": "physassets_5837",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-042/10965a1ebcd64aa8b5dbafce0c7926a2.glb",
+          "sha256": "8a35bb54707052c52ae5edf9a620efd46270c4e9da89771630ca9a18e7f7eacd",
+          "alignment_euler_degrees": [
+            180.0,
+            0.0,
+            180.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.1633128609867679,
+            0.19999990811077245,
+            0.08410097870931627
+          ],
+          "material_hint": "book",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "10965a1ebcd64aa8b5dbafce0c7926a2",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.1633128609867679,
+          0.2,
+          0.08410096728743946
+        ]
+      },
+      "physics": {
+        "friction": 0.68,
+        "restitution": 0.06,
+        "mass_range_kg": [
+          0.2,
+          1.8
+        ]
+      },
+      "source_review": {
+        "sample_id": "5837",
+        "quality_score": 0.501375,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/5837/proxy.json",
+        "blender_import_extent": [
+          0.20646560192108154,
+          0.2528465986251831,
+          0.10632328088831855
+        ],
+        "alignment_relative_error": 4.5944613780157795e-07
+      }
+    },
+    {
+      "id": "physassets_15412_box",
+      "semantic_category": "physassets_box_package",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_15412",
+          "type": "mesh",
+          "asset_id": "physassets_15412",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-114/1ebaeb7bd3c84808b43d7f06c7570edf.glb",
+          "sha256": "73dad069c43df2d326ae2504740e87ccebe8f133e2af016edd75d8c5fb3045f7",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.059647808773144316,
+            0.08350700907658944,
+            0.2
+          ],
+          "material_hint": "box_package",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "1ebaeb7bd3c84808b43d7f06c7570edf",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cuboid",
+        "dimensions_m": [
+          0.059647817946629995,
+          0.08350698304399501,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.58,
+        "restitution": 0.08,
+        "mass_range_kg": [
+          0.1,
+          2.5
+        ]
+      },
+      "source_review": {
+        "sample_id": "15412",
+        "quality_score": 0.510611,
+        "proxy_method": "semantic_box",
+        "proxy_json": "external/physassets/generated_proxies/current/15412/proxy.json",
+        "blender_import_extent": [
+          10.0,
+          14.000012874603271,
+          33.530150413513184
+        ],
+        "alignment_relative_error": 3.117415272161703e-07
+      }
+    },
+    {
+      "id": "physassets_18415_soda_can",
+      "semantic_category": "physassets_can",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_18415",
+          "type": "mesh",
+          "asset_id": "physassets_18415",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-136/fdc6b2fd40974708a07f1717a433e7c1.glb",
+          "sha256": "247a2eb6d3f35f242f202358e62ce482add2daf864013a79b6815423e04f24f1",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.11867666131311061,
+            0.11867660093465847,
+            0.2
+          ],
+          "material_hint": "can",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "fdc6b2fd40974708a07f1717a433e7c1",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.11867664394165345,
+          0.11867664394165345,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.45,
+        "restitution": 0.22,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "18415",
+        "quality_score": 0.712846,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/18415/proxy.json",
+        "blender_import_extent": [
+          9.372451782226562,
+          9.372456550598145,
+          15.794944763183594
+        ],
+        "alignment_relative_error": 3.6238802809684106e-07
+      }
+    },
+    {
+      "id": "physassets_7375_can",
+      "semantic_category": "physassets_can",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_7375",
+          "type": "mesh",
+          "asset_id": "physassets_7375",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-053/8ff20045aea4402bbd864e75f4099cec.glb",
+          "sha256": "1253464585dade6f7daf067fbcf8662e988c69bd15d374a8b1ce2671ee143000",
+          "alignment_euler_degrees": [
+            0.0,
+            180.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.1896693755065643,
+            0.18966933080309015,
+            0.2000000056651607
+          ],
+          "material_hint": "can",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "8ff20045aea4402bbd864e75f4099cec",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "cylinder",
+        "dimensions_m": [
+          0.1896693755065643,
+          0.1896693755065643,
+          0.2
+        ]
+      },
+      "physics": {
+        "friction": 0.45,
+        "restitution": 0.22,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "7375",
+        "quality_score": 0.683835,
+        "proxy_method": "semantic_upright_cylinder",
+        "proxy_json": "external/physassets/generated_proxies/current/7375/proxy.json",
+        "blender_import_extent": [
+          1.517354965209961,
+          1.5173553228378296,
+          1.6000003814697266
+        ],
+        "alignment_relative_error": 2.356915765935029e-07
+      }
+    },
+    {
+      "id": "physassets_8335_beach_ball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_8335",
+          "type": "mesh",
+          "asset_id": "physassets_8335",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-060/7079a5fc5bd74143b36d3f1a123a4f03.glb",
+          "sha256": "c1717b67e53d027344822041d6559ded825bff2cd4b39b4aaaed8e67bd63f868",
+          "alignment_euler_degrees": [
+            270.0,
+            90.0,
+            0.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.19999997211694942,
+            0.20000003793775673,
+            0.20000002477359524
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "7079a5fc5bd74143b36d3f1a123a4f03",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.20000002477359524,
+          0.20000002477359524,
+          0.20000002477359524
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "8335",
+        "quality_score": 0.543834,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/8335/proxy.json",
+        "blender_import_extent": [
+          0.45277971029281616,
+          0.4527795910835266,
+          0.45277974009513855
+        ],
+        "alignment_relative_error": 2.63283196494824e-07
+      }
+    },
+    {
+      "id": "physassets_8925_soccer_ball",
+      "semantic_category": "physassets_sports_ball",
+      "pose_profile": "support_normal",
+      "visual_variants": [
+        {
+          "id": "physassets_8925",
+          "type": "mesh",
+          "asset_id": "physassets_8925",
+          "path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-064/9a682652f7c848049e77a9d87c8dd999.glb",
+          "sha256": "e74ed49cc832e905df6b588cbaeb8b64550c2deb1ea955c3139029ce4d273a06",
+          "alignment_euler_degrees": [
+            0.0,
+            0.0,
+            270.0
+          ],
+          "alignment_coordinate_frame": "blender_imported_z_up",
+          "canonical_extent_m": [
+            0.20143015144809634,
+            0.20143003286395797,
+            0.2014301514480963
+          ],
+          "material_hint": "sports_ball",
+          "color": [
+            0.55,
+            0.55,
+            0.55,
+            1.0
+          ],
+          "license": {
+            "label": "Objaverse source metadata",
+            "source_uid": "9a682652f7c848049e77a9d87c8dd999",
+            "verification_required_before_redistribution": true
+          }
+        }
+      ],
+      "collision": {
+        "type": "sphere",
+        "dimensions_m": [
+          0.2014301514480963,
+          0.2014301514480963,
+          0.2014301514480963
+        ]
+      },
+      "physics": {
+        "friction": 0.72,
+        "restitution": 0.62,
+        "mass_range_kg": [
+          0.18,
+          0.75
+        ]
+      },
+      "source_review": {
+        "sample_id": "8925",
+        "quality_score": 0.517161,
+        "proxy_method": "semantic_sphere",
+        "proxy_json": "external/physassets/generated_proxies/current/8925/proxy.json",
+        "blender_import_extent": [
+          22.679096221923828,
+          22.679109573364258,
+          22.679109573364258
+        ],
+        "alignment_relative_error": 5.887109625331339e-07
+      }
+    }
+  ],
+  "policy": {
+    "asset_only": true,
+    "primitive_visual_fallback_forbidden": true,
+    "visual_and_collision_are_separate": true,
+    "visual_mesh_never_defines_runtime_collision": true,
+    "all_meshes_require_audited_alignment_and_hash": true,
+    "mesh_alignment_coordinate_frame": "blender_imported_z_up",
+    "collision_motion_exclusions": {
+      "sphere": [
+        "slide_push_1obj"
+      ]
+    },
+    "visual_curation": {
+      "source_assets_are_immutable": true,
+      "candidate_preflight_is_mandatory": true,
+      "only_admitted_visual_paths_may_enter_sampling": true
+    }
+  }
+}

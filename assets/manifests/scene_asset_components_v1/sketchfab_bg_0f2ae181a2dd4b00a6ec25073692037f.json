@@ -1,0 +1,958 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_0f2ae181a2dd4b00a6ec25073692037f",
+  "name": "Pool Table (Animation)",
+  "asset_role": "interactive_support",
+  "semantic_category": "support_game_table",
+  "admission": {
+    "reason": "bed and rails are calibrated; pocket-sink trajectories remain disabled",
+    "sampling_enabled": true,
+    "status": "approved_limited"
+  },
+  "proxy_kind": "support_compound",
+  "normalization_mode": "metric_registry_binding",
+  "mesh_component_count": 28,
+  "overall_bounds_low_m": [
+    -2.1971264,
+    -1.0478457,
+    -0.0008583
+  ],
+  "overall_bounds_high_m": [
+    1.5470288,
+    0.6558563,
+    1.6231865
+  ],
+  "overall_extent_m": [
+    3.7441552,
+    1.703702,
+    1.6240448
+  ],
+  "total_vertex_count": 12604,
+  "total_triangle_count": 17648,
+  "components": [
+    {
+      "object_name": "Ball Clube_10 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.4514883,
+        -0.2448074,
+        0.7777438
+      ],
+      "bounds_high_m": [
+        -0.3821126,
+        -0.1753845,
+        0.8408952
+      ],
+      "center_m": [
+        -0.4168004,
+        -0.2100959,
+        0.8093195
+      ],
+      "extent_m": [
+        0.0693757,
+        0.0694229,
+        0.0631514
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "10_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 2.936e-05
+    },
+    {
+      "object_name": "Ball10_19 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.1449355,
+        0.412333,
+        0.7714635
+      ],
+      "bounds_high_m": [
+        0.2162635,
+        0.4922982,
+        0.8471755
+      ],
+      "center_m": [
+        0.1805995,
+        0.4523156,
+        0.8093195
+      ],
+      "extent_m": [
+        0.071328,
+        0.0799652,
+        0.075712
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "19_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 4.169e-05
+    },
+    {
+      "object_name": "Ball11_20 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.205008,
+        -0.5607536,
+        0.7743551
+      ],
+      "bounds_high_m": [
+        0.2800791,
+        -0.4809079,
+        0.8442839
+      ],
+      "center_m": [
+        0.2425435,
+        -0.5208308,
+        0.8093195
+      ],
+      "extent_m": [
+        0.0750711,
+        0.0798457,
+        0.0699289
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "20_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 4.046e-05
+    },
+    {
+      "object_name": "Ball12_21 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.3948058,
+        0.3583793,
+        0.7671862
+      ],
+      "bounds_high_m": [
+        0.4836632,
+        0.4311803,
+        0.8514528
+      ],
+      "center_m": [
+        0.4392345,
+        0.3947798,
+        0.8093195
+      ],
+      "extent_m": [
+        0.0888574,
+        0.072801,
+        0.0842667
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "21_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 5.262e-05
+    },
+    {
+      "object_name": "Ball13_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.4729212,
+        -0.4007541,
+        0.7777438
+      ],
+      "bounds_high_m": [
+        0.5422968,
+        -0.3313312,
+        0.8408952
+      ],
+      "center_m": [
+        0.507609,
+        -0.3660426,
+        0.8093195
+      ],
+      "extent_m": [
+        0.0693757,
+        0.0694229,
+        0.0631514
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 2.936e-05
+    },
+    {
+      "object_name": "Ball14_05 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.06884,
+        0.0323299,
+        0.7747663
+      ],
+      "bounds_high_m": [
+        -0.9988728,
+        0.1075379,
+        0.8438727
+      ],
+      "center_m": [
+        -1.0338564,
+        0.0699339,
+        0.8093195
+      ],
+      "extent_m": [
+        0.0699673,
+        0.075208,
+        0.0691063
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "05_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 3.51e-05
+    },
+    {
+      "object_name": "Ball15_06 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.6840678,
+        -0.2614021,
+        0.7777438
+      ],
+      "bounds_high_m": [
+        0.7534434,
+        -0.1919792,
+        0.8408952
+      ],
+      "center_m": [
+        0.7187556,
+        -0.2266906,
+        0.8093195
+      ],
+      "extent_m": [
+        0.0693756,
+        0.0694229,
+        0.0631514
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "06_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 2.936e-05
+    },
+    {
+      "object_name": "Ball1_01 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0550007,
+        -0.3426052,
+        0.7617465
+      ],
+      "bounds_high_m": [
+        0.0419664,
+        -0.2688706,
+        0.8568925
+      ],
+      "center_m": [
+        -0.0065171,
+        -0.3057379,
+        0.8093195
+      ],
+      "extent_m": [
+        0.0969671,
+        0.0737346,
+        0.0951461
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "01_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 6.567e-05
+    },
+    {
+      "object_name": "Ball2_Material #158_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.8200743,
+        0.3436674,
+        0.7606896
+      ],
+      "bounds_high_m": [
+        0.9133044,
+        0.4197515,
+        0.8579494
+      ],
+      "center_m": [
+        0.8666894,
+        0.3817095,
+        0.8093195
+      ],
+      "extent_m": [
+        0.0932301,
+        0.0760841,
+        0.0972598
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "Material_158"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 6.659e-05
+    },
+    {
+      "object_name": "Ball3_Material #157_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.7240822,
+        0.4750376,
+        0.766987
+      ],
+      "bounds_high_m": [
+        -0.6523041,
+        0.563342,
+        0.851652
+      ],
+      "center_m": [
+        -0.6881931,
+        0.5191898,
+        0.8093195
+      ],
+      "extent_m": [
+        0.0717781,
+        0.0883044,
+        0.0846651
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "Material_157"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 5.18e-05
+    },
+    {
+      "object_name": "Ball4_24 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.6650054,
+        -0.5560684,
+        0.7642699
+      ],
+      "bounds_high_m": [
+        -0.5917865,
+        -0.4665154,
+        0.8543691
+      ],
+      "center_m": [
+        -0.628396,
+        -0.5112919,
+        0.8093195
+      ],
+      "extent_m": [
+        0.0732189,
+        0.089553,
+        0.0900992
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "24_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 5.703e-05
+    },
+    {
+      "object_name": "Ball5_Material #159_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.7196855,
+        0.0715466,
+        0.7631645
+      ],
+      "bounds_high_m": [
+        -0.6113462,
+        0.1671504,
+        0.8554745
+      ],
+      "center_m": [
+        -0.6655158,
+        0.1193485,
+        0.8093195
+      ],
+      "extent_m": [
+        0.1083393,
+        0.0956037,
+        0.0923101
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "Material_159"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 9.229e-05
+    },
+    {
+      "object_name": "Ball6_09 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.7756943,
+        0.144118,
+        0.7660238
+      ],
+      "bounds_high_m": [
+        -0.6662269,
+        0.2412606,
+        0.8526152
+      ],
+      "center_m": [
+        -0.7209606,
+        0.1926893,
+        0.8093195
+      ],
+      "extent_m": [
+        0.1094674,
+        0.0971425,
+        0.0865914
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "09_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 8.888e-05
+    },
+    {
+      "object_name": "Ball7_13 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.1159906,
+        -0.5368703,
+        0.7719484
+      ],
+      "bounds_high_m": [
+        0.1865696,
+        -0.456562,
+        0.8466906
+      ],
+      "center_m": [
+        0.1512801,
+        -0.4967161,
+        0.8093195
+      ],
+      "extent_m": [
+        0.0705791,
+        0.0803083,
+        0.0747422
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "13_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 4.089e-05
+    },
+    {
+      "object_name": "Ball8_23 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.9802318,
+        -0.0760575,
+        0.7719484
+      ],
+      "bounds_high_m": [
+        1.0508108,
+        0.0042508,
+        0.8466906
+      ],
+      "center_m": [
+        1.0155213,
+        -0.0359033,
+        0.8093195
+      ],
+      "extent_m": [
+        0.0705791,
+        0.0803083,
+        0.0747422
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "23_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 4.089e-05
+    },
+    {
+      "object_name": "Ball9_15 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2056304,
+        0.3246414,
+        0.7719484
+      ],
+      "bounds_high_m": [
+        -0.1350513,
+        0.4049498,
+        0.8466906
+      ],
+      "center_m": [
+        -0.1703409,
+        0.3647956,
+        0.8093195
+      ],
+      "extent_m": [
+        0.0705791,
+        0.0803084,
+        0.0747422
+      ],
+      "vertex_count": 559,
+      "triangle_count": 960,
+      "materials": [
+        "15_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 4.089e-05
+    },
+    {
+      "object_name": "Cue stick2_02 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        1.217329,
+        0.2674437,
+        0.0139486
+      ],
+      "bounds_high_m": [
+        1.5416212,
+        0.3230051,
+        0.8191476
+      ],
+      "center_m": [
+        1.3794751,
+        0.2952244,
+        0.4165481
+      ],
+      "extent_m": [
+        0.3242922,
+        0.0555614,
+        0.805199
+      ],
+      "vertex_count": 38,
+      "triangle_count": 36,
+      "materials": [
+        "02_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 0.00140045
+    },
+    {
+      "object_name": "Cue stick2_08 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        1.5067806,
+        0.2671105,
+        -0.0008583
+      ],
+      "bounds_high_m": [
+        1.5470288,
+        0.3051683,
+        0.0265672
+      ],
+      "center_m": [
+        1.5269047,
+        0.2861394,
+        0.0128544
+      ],
+      "extent_m": [
+        0.0402482,
+        0.0380578,
+        0.0274255
+      ],
+      "vertex_count": 232,
+      "triangle_count": 88,
+      "materials": [
+        "08_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 4.06e-06
+    },
+    {
+      "object_name": "Cue stick2_18 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.9342187,
+        0.3162516,
+        1.6035028
+      ],
+      "bounds_high_m": [
+        0.9505881,
+        0.3280647,
+        1.6231865
+      ],
+      "center_m": [
+        0.9424034,
+        0.3221581,
+        1.6133446
+      ],
+      "extent_m": [
+        0.0163694,
+        0.011813,
+        0.0196837
+      ],
+      "vertex_count": 124,
+      "triangle_count": 52,
+      "materials": [
+        "18_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 3.7e-07
+    },
+    {
+      "object_name": "Cue stick2_White_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.9339427,
+        0.2918476,
+        0.8087257
+      ],
+      "bounds_high_m": [
+        1.2461046,
+        0.3342748,
+        1.6095315
+      ],
+      "center_m": [
+        1.0900236,
+        0.3130612,
+        1.2091286
+      ],
+      "extent_m": [
+        0.3121619,
+        0.0424272,
+        0.8008059
+      ],
+      "vertex_count": 38,
+      "triangle_count": 36,
+      "materials": [
+        "White"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 0.00102378
+    },
+    {
+      "object_name": "Cue stick_02 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -2.1816132,
+        -1.040651,
+        0.8148783
+      ],
+      "bounds_high_m": [
+        -1.3355789,
+        -0.619558,
+        0.8886688
+      ],
+      "center_m": [
+        -1.7585961,
+        -0.8301045,
+        0.8517736
+      ],
+      "extent_m": [
+        0.8460343,
+        0.421093,
+        0.0737905
+      ],
+      "vertex_count": 38,
+      "triangle_count": 36,
+      "materials": [
+        "02_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 0.00253759
+    },
+    {
+      "object_name": "Cue stick_08 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -2.1971264,
+        -1.0478457,
+        0.8530919
+      ],
+      "bounds_high_m": [
+        -2.1659615,
+        -1.0046772,
+        0.8893828
+      ],
+      "center_m": [
+        -2.1815439,
+        -1.0262614,
+        0.8712373
+      ],
+      "extent_m": [
+        0.0311649,
+        0.0431685,
+        0.0362909
+      ],
+      "vertex_count": 232,
+      "triangle_count": 88,
+      "materials": [
+        "08_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 4.71e-06
+    },
+    {
+      "object_name": "Cue stick_18 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.5153991,
+        -0.2578879,
+        0.788287
+      ],
+      "bounds_high_m": [
+        -0.4940381,
+        -0.2392609,
+        0.7998552
+      ],
+      "center_m": [
+        -0.5047186,
+        -0.2485744,
+        0.7940711
+      ],
+      "extent_m": [
+        0.021361,
+        0.018627,
+        0.0115682
+      ],
+      "vertex_count": 124,
+      "triangle_count": 52,
+      "materials": [
+        "18_-_Default"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 4.4e-07
+    },
+    {
+      "object_name": "Cue stick_White_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.3485061,
+        -0.6492695,
+        0.7828581
+      ],
+      "bounds_high_m": [
+        -0.507921,
+        -0.2407011,
+        0.8442621
+      ],
+      "center_m": [
+        -0.9282136,
+        -0.4449853,
+        0.8135601
+      ],
+      "extent_m": [
+        0.8405851,
+        0.4085683,
+        0.061404
+      ],
+      "vertex_count": 38,
+      "triangle_count": 36,
+      "materials": [
+        "White"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 0.00203562
+    },
+    {
+      "object_name": "Pool Table_02 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1900206,
+        -0.6530828,
+        0.0746443
+      ],
+      "bounds_high_m": [
+        1.1900206,
+        0.6530827,
+        0.8197137
+      ],
+      "center_m": [
+        0.0,
+        -1e-07,
+        0.447179
+      ],
+      "extent_m": [
+        2.3800411,
+        1.3061656,
+        0.7450694
+      ],
+      "vertex_count": 204,
+      "triangle_count": 116,
+      "materials": [
+        "02_-_Default"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.22358051
+    },
+    {
+      "object_name": "Pool Table_03 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1927923,
+        -0.6558564,
+        0.0061769
+      ],
+      "bounds_high_m": [
+        1.1927923,
+        0.6558563,
+        0.8225869
+      ],
+      "center_m": [
+        0.0,
+        -1e-07,
+        0.4143819
+      ],
+      "extent_m": [
+        2.3855846,
+        1.3117127,
+        0.81641
+      ],
+      "vertex_count": 1428,
+      "triangle_count": 1246,
+      "materials": [
+        "03_-_Default"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.24660187
+    },
+    {
+      "object_name": "Pool Table_07 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1,
+        -0.5699999,
+        0.7799998
+      ],
+      "bounds_high_m": [
+        1.1,
+        0.5700001,
+        0.7800002
+      ],
+      "center_m": [
+        0.0,
+        1e-07,
+        0.78
+      ],
+      "extent_m": [
+        2.2,
+        1.14,
+        4e-07
+      ],
+      "vertex_count": 68,
+      "triangle_count": 66,
+      "materials": [
+        "07_-_Default"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 1e-07
+    },
+    {
+      "object_name": "Pool Table_08 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1384499,
+        -0.6336892,
+        0.6200796
+      ],
+      "bounds_high_m": [
+        1.1384499,
+        0.6336893,
+        0.8225869
+      ],
+      "center_m": [
+        0.0,
+        0.0,
+        0.7213332
+      ],
+      "extent_m": [
+        2.2768998,
+        1.2673785,
+        0.2025073
+      ],
+      "vertex_count": 1096,
+      "triangle_count": 436,
+      "materials": [
+        "08_-_Default"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.05640862
+    }
+  ]
+}

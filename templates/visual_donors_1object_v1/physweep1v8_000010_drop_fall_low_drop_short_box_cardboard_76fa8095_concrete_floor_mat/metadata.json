@@ -1,0 +1,59 @@
+{
+  "template_schema_version": "physweep_visual_donor_v1",
+  "scene_id": "physweep1v8_000010_drop_fall_low_drop_short_box_cardboard_76fa8095_concrete_floor_mat",
+  "scene_theme": "lab",
+  "materials": {
+    "floor_or_contact_surface": {
+      "asset_source": "poly_haven_curated_v2",
+      "assignment_role": "floor_or_contact_surface",
+      "role_list": "tensor_support:concrete_floor_mat",
+      "asset_id": "gravel_concrete_4k",
+      "path": "assets/library/polyhaven/materials/gravel_concrete_4k",
+      "surface_grade": "C_context_surface",
+      "object_grade": "C_context_only",
+      "v0_policy": "not_core_v0_context_or_later",
+      "map_count": 5,
+      "maps": "ANRDA",
+      "reason": "Seeded random tensor material selection for floor_or_contact_surface."
+    },
+    "wall_background": {
+      "asset_source": "poly_haven_curated_v2",
+      "assignment_role": "wall_background",
+      "role_list": "tensor_wall_background",
+      "asset_id": "brick_wall_003_4k",
+      "path": "assets/library/polyhaven/materials/brick_wall_003_4k",
+      "surface_grade": "C_wall_background",
+      "object_grade": "C_wall_background",
+      "v0_policy": "not_core_v0_context_or_later",
+      "map_count": 5,
+      "maps": "ANRDA",
+      "reason": "Seeded random tensor material selection for wall_background."
+    },
+    "object_material_reference": {
+      "asset_source": "poly_haven_curated_v2",
+      "assignment_role": "object_material_reference",
+      "role_list": "object_near",
+      "asset_id": "oak_veneer_01_4k",
+      "path": "assets/library/polyhaven/materials/oak_veneer_01_4k",
+      "surface_grade": "B_mid_far_surface",
+      "object_grade": "A_near_object",
+      "v0_policy": "use_v0_near_allowed",
+      "map_count": 5,
+      "maps": "ANRDA",
+      "reason": "Near/mid allowed for at least one role; use with controlled texture scale and role-specific sampling."
+    },
+    "environment_floor": {
+      "asset_source": "poly_haven_curated_v2",
+      "assignment_role": "environment_floor",
+      "role_list": "tensor_environment_floor:distinct_from_support",
+      "asset_id": "rectangular_parquet_4k",
+      "path": "assets/library/polyhaven/materials/rectangular_parquet_4k",
+      "surface_grade": "B_mid_far_surface",
+      "object_grade": "C_surface_only",
+      "v0_policy": "use_v0_far_mid_only",
+      "map_count": 5,
+      "maps": "ANRDA",
+      "reason": "Seeded random tensor material selection for environment_floor."
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "semantic_category": "support_table_wood",
+  "assets": [
+    {
+      "asset_id": "sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf",
+      "name": "Wooden Table",
+      "admission_status": "v0_preferred",
+      "asset_path": "assets/library/sketchfab/background/sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d",
+      "name": "Wooden Table",
+      "admission_status": "v0_usable",
+      "asset_path": "assets/library/sketchfab/background/sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa",
+      "name": "Wooden Table_8MB",
+      "admission_status": "exclude_v0",
+      "asset_path": "assets/library/sketchfab/background/sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      }
+    }
+  ]
+}

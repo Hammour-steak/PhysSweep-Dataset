@@ -1,0 +1,65 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa",
+  "name": "Wooden Table_8MB",
+  "asset_role": "interactive_support",
+  "semantic_category": "support_table_wood",
+  "admission": {
+    "reason": "small clear tabletop with measured plane",
+    "sampling_enabled": true,
+    "status": "approved"
+  },
+  "proxy_kind": "support_compound",
+  "normalization_mode": "metric_registry_binding",
+  "mesh_component_count": 1,
+  "overall_bounds_low_m": [
+    -0.9016004,
+    -0.4516048,
+    0.0
+  ],
+  "overall_bounds_high_m": [
+    0.9016004,
+    0.451555,
+    0.7800042
+  ],
+  "overall_extent_m": [
+    1.8032007,
+    0.9031599,
+    0.7800042
+  ],
+  "total_vertex_count": 9094,
+  "total_triangle_count": 12917,
+  "components": [
+    {
+      "object_name": "Object_3__0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.9016004,
+        -0.4516048,
+        0.0
+      ],
+      "bounds_high_m": [
+        0.9016004,
+        0.451555,
+        0.7800042
+      ],
+      "center_m": [
+        0.0,
+        -2.49e-05,
+        0.3900021
+      ],
+      "extent_m": [
+        1.8032007,
+        0.9031599,
+        0.7800042
+      ],
+      "vertex_count": 9094,
+      "triangle_count": 12917,
+      "materials": [
+        "Scene_-_Root"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 1.00000003
+    }
+  ]
+}

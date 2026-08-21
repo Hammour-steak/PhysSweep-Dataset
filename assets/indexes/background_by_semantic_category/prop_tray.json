@@ -1,0 +1,41 @@
+{
+  "semantic_category": "prop_tray",
+  "assets": [
+    {
+      "asset_id": "sketchfab_bg_561787127c7f4f31a553171a48be87d9",
+      "name": "wooden tray",
+      "admission_status": "v0_preferred",
+      "asset_path": "assets/library/sketchfab/background/sketchfab_bg_561787127c7f4f31a553171a48be87d9/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_5f00c9981f6a4de99f91b0a34bf88fcb",
+      "name": "Wooden_Tray",
+      "admission_status": "v0_preferred",
+      "asset_path": "assets/library/sketchfab/background/sketchfab_bg_5f00c9981f6a4de99f91b0a34bf88fcb/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_28c97506d4fd475ab017c102b670ba12",
+      "name": "Wooden tray",
+      "admission_status": "v0_usable",
+      "asset_path": "assets/library/sketchfab/background/sketchfab_bg_28c97506d4fd475ab017c102b670ba12/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "version": "physweep_compatibility_v1",
+  "motions": {
+    "slide_push_1obj": {
+      "group": "flat",
+      "scene_classes": [
+        "ground_flat",
+        "raised_flat",
+        "ground_feature",
+        "raised_feature"
+      ],
+      "topologies": [
+        "flat_surface",
+        "tray",
+        "pedestal"
+      ]
+    },
+    "roll_or_slide_1obj": {
+      "group": "flat",
+      "scene_classes": [
+        "ground_flat",
+        "raised_flat",
+        "ground_feature",
+        "raised_feature"
+      ],
+      "topologies": [
+        "flat_surface",
+        "tray",
+        "pedestal",
+        "pocketed_table"
+      ]
+    },
+    "wall_impact_1obj": {
+      "group": "flat",
+      "scene_classes": [
+        "ground_flat",
+        "raised_flat"
+      ],
+      "topologies": [
+        "flat_surface"
+      ]
+    },
+    "edge_fall_1obj": {
+      "group": "flat",
+      "scene_classes": [
+        "raised_flat"
+      ],
+      "topologies": [
+        "flat_surface"
+      ]
+    },
+    "drop_fall_1obj": {
+      "group": "flat",
+      "scene_classes": [
+        "ground_flat",
+        "raised_flat"
+      ],
+      "topologies": [
+        "flat_surface"
+      ]
+    },
+    "projectile_1obj": {
+      "group": "flat",
+      "scene_classes": [
+        "ground_flat",
+        "raised_flat"
+      ],
+      "topologies": [
+        "flat_surface"
+      ]
+    },
+    "arc_projectile_1obj": {
+      "group": "flat",
+      "scene_classes": [
+        "ground_flat",
+        "raised_flat"
+      ],
+      "topologies": [
+        "flat_surface"
+      ]
+    },
+    "slope_slide_down_1obj": {
+      "group": "slope",
+      "scene_classes": [
+        "ground_feature",
+        "raised_feature"
+      ],
+      "topologies": [
+        "inclined_ramp"
+      ]
+    },
+    "slope_slide_up_1obj": {
+      "group": "slope",
+      "scene_classes": [
+        "ground_feature",
+        "raised_feature"
+      ],
+      "topologies": [
+        "inclined_ramp"
+      ],
+      "maximum_trajectory_extent": "medium"
+    },
+    "ramp_to_flat_1obj": {
+      "group": "slope",
+      "scene_classes": [
+        "ground_feature"
+      ],
+      "topologies": [
+        "inclined_ramp"
+      ]
+    },
+    "bounce_1obj": {
+      "group": "flat",
+      "scene_classes": [
+        "ground_flat",
+        "raised_flat",
+        "ground_feature",
+        "raised_feature"
+      ],
+      "topologies": [
+        "flat_surface",
+        "tray",
+        "pedestal"
+      ]
+    }
+  }
+}

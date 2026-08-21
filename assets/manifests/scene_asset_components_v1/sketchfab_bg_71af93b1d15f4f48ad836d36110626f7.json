@@ -1,0 +1,135 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_71af93b1d15f4f48ad836d36110626f7",
+  "name": "Bookshelf [CC0]",
+  "asset_role": "render_only_context",
+  "semantic_category": "context_shelf",
+  "admission": {
+    "reason": "bookshelf stays outside the dynamic motion envelope",
+    "sampling_enabled": false,
+    "status": "visual_only",
+    "visual_sampling_enabled": true
+  },
+  "proxy_kind": "none",
+  "normalization_mode": "review_scale_only_not_metric",
+  "mesh_component_count": 3,
+  "overall_bounds_low_m": [
+    -0.2200003,
+    -0.6436779,
+    0.0
+  ],
+  "overall_bounds_high_m": [
+    0.2200032,
+    0.6436779,
+    2.3999999
+  ],
+  "overall_extent_m": [
+    0.4400034,
+    1.2873559,
+    2.3999999
+  ],
+  "total_vertex_count": 72756,
+  "total_triangle_count": 144756,
+  "components": [
+    {
+      "object_name": "Object_4",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2200003,
+        -0.6436779,
+        0.0
+      ],
+      "bounds_high_m": [
+        0.2200032,
+        0.6436779,
+        2.3999999
+      ],
+      "center_m": [
+        1.4e-06,
+        0.0,
+        1.1999999
+      ],
+      "extent_m": [
+        0.4400034,
+        1.2873559,
+        2.3999999
+      ],
+      "vertex_count": 332,
+      "triangle_count": 308,
+      "materials": [
+        "Bookshelf"
+      ],
+      "keyword_hints": [
+        "container_or_void",
+        "movable_prop"
+      ],
+      "bbox_volume_fraction": 0.99999996
+    },
+    {
+      "object_name": "Object_5",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1967393,
+        -0.5711191,
+        0.0707178
+      ],
+      "bounds_high_m": [
+        0.1395056,
+        0.5435107,
+        2.222733
+      ],
+      "center_m": [
+        -0.0286168,
+        -0.0138042,
+        1.1467254
+      ],
+      "extent_m": [
+        0.3362449,
+        1.1146297,
+        2.1520152
+      ],
+      "vertex_count": 65532,
+      "triangle_count": 130753,
+      "materials": [
+        "Book"
+      ],
+      "keyword_hints": [
+        "movable_prop"
+      ],
+      "bbox_volume_fraction": 0.59328825
+    },
+    {
+      "object_name": "Object_6",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1932423,
+        -0.1302716,
+        1.4766192
+      ],
+      "bounds_high_m": [
+        0.1360087,
+        0.4058802,
+        1.8112161
+      ],
+      "center_m": [
+        -0.0286168,
+        0.1378043,
+        1.6439177
+      ],
+      "extent_m": [
+        0.3292509,
+        0.5361517,
+        0.3345969
+      ],
+      "vertex_count": 6892,
+      "triangle_count": 13695,
+      "materials": [
+        "Book"
+      ],
+      "keyword_hints": [
+        "movable_prop"
+      ],
+      "bbox_volume_fraction": 0.04344809
+    }
+  ]
+}

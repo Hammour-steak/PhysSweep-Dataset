@@ -1,0 +1,7 @@
+-r requirements-rigid.txt
+
+coacd==1.0.11
+Pillow==12.3.0
+scipy==1.15.3
+trimesh==4.12.2
+objaverse>=0.1,<0.2

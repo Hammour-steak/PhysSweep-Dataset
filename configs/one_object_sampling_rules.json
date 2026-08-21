@@ -1,0 +1,721 @@
+{
+  "version": "physweep_one_object_sparse_tensor_rules_v5",
+  "scope": "generic_single_object_matrix_axes_and_sampling_policy",
+  "camera_observation": {
+    "version": "physweep_motion_structure_camera_observation_v2",
+    "minimum_inclined_surface_side_readability": 0.65,
+    "asset_profile_motion_intents": {
+      "resting_push": "slide_push_1obj",
+      "diagonal_push": "slide_push_1obj",
+      "vertical_drop": "drop_fall_1obj",
+      "edge_exit": "edge_fall_1obj",
+      "workbench_clear_zone_drop": "drop_fall_1obj",
+      "workbench_long_axis_push": "slide_push_1obj"
+    },
+    "motion_intents": {
+      "slide_push_1obj": {
+        "intent": "surface_travel",
+        "focus_event": {"type": "fraction", "fraction": 0.70},
+        "structure_context": "horizontal_surface",
+        "preferred_object_span_ndc": 0.135,
+        "minimum_median_object_span_ndc": 0.065,
+        "elevation_range_degrees": [18.0, 52.0]
+      },
+      "roll_or_slide_1obj": {
+        "intent": "surface_travel",
+        "focus_event": {"type": "fraction", "fraction": 0.70},
+        "structure_context": "horizontal_surface",
+        "preferred_object_span_ndc": 0.135,
+        "minimum_median_object_span_ndc": 0.065,
+        "elevation_range_degrees": [18.0, 52.0]
+      },
+      "wall_impact_1obj": {
+        "intent": "contact_event",
+        "focus_event": {"type": "required_motion_collider", "post_event_frames": 18},
+        "structure_context": "impact_boundary",
+        "preferred_object_span_ndc": 0.130,
+        "minimum_median_object_span_ndc": 0.065,
+        "elevation_range_degrees": [18.0, 48.0]
+      },
+      "edge_fall_1obj": {
+        "intent": "support_transition",
+        "focus_event": {"type": "collider_contact", "collider_id": "environment_floor", "post_event_frames": 18},
+        "structure_context": "edge_and_landing",
+        "preferred_object_span_ndc": 0.125,
+        "minimum_median_object_span_ndc": 0.060,
+        "minimum_full_trajectory_center_visible_fraction": 0.80,
+        "include_final_settled_pose": true,
+        "edge_view_obliqueness_degrees": 65.0,
+        "focal_length_candidates_mm": [40.0, 36.0],
+        "minimum_transition_margin_ndc": 0.075,
+        "maximum_camera_distance_m": 4.8,
+        "elevation_range_degrees": [20.0, 48.0]
+      },
+      "drop_fall_1obj": {
+        "intent": "contact_event",
+        "focus_event": {"type": "primary_support_contact", "post_event_frames": 10},
+        "structure_context": "horizontal_surface",
+        "preferred_object_span_ndc": 0.135,
+        "minimum_median_object_span_ndc": 0.065,
+        "elevation_range_degrees": [18.0, 50.0]
+      },
+      "projectile_1obj": {
+        "intent": "ballistic_arc",
+        "focus_event": {"type": "first_contact", "post_event_frames": 12},
+        "structure_context": "horizontal_surface",
+        "preferred_object_span_ndc": 0.130,
+        "minimum_median_object_span_ndc": 0.065,
+        "minimum_full_trajectory_center_visible_fraction": 0.30,
+        "full_trajectory_camera_target_blend": 0.10,
+        "maximum_camera_distance_above_minimum_m": 4.0,
+        "elevation_range_degrees": [22.0, 44.0]
+      },
+      "arc_projectile_1obj": {
+        "intent": "ballistic_arc",
+        "focus_event": {"type": "first_contact", "post_event_frames": 8},
+        "structure_context": "horizontal_surface",
+        "preferred_object_span_ndc": 0.130,
+        "minimum_median_object_span_ndc": 0.065,
+        "minimum_full_trajectory_center_visible_fraction": 0.30,
+        "full_trajectory_camera_target_blend": 0.10,
+        "maximum_camera_distance_above_minimum_m": 4.0,
+        "elevation_range_degrees": [22.0, 44.0]
+      },
+      "slope_slide_down_1obj": {
+        "intent": "surface_travel",
+        "focus_event": {"type": "fraction", "fraction": 0.75},
+        "structure_context": "inclined_surface",
+        "preferred_object_span_ndc": 0.130,
+        "minimum_median_object_span_ndc": 0.060,
+        "elevation_range_degrees": [18.0, 42.0]
+      },
+      "slope_slide_up_1obj": {
+        "intent": "surface_travel",
+        "focus_event": {"type": "fraction", "fraction": 0.75},
+        "structure_context": "inclined_surface",
+        "preferred_object_span_ndc": 0.130,
+        "minimum_median_object_span_ndc": 0.060,
+        "elevation_range_degrees": [18.0, 42.0]
+      },
+      "ramp_to_flat_1obj": {
+        "intent": "support_transition",
+        "focus_event": {"type": "required_motion_collider", "post_event_frames": 8},
+        "structure_context": "ramp_and_landing",
+        "preferred_object_span_ndc": 0.125,
+        "minimum_median_object_span_ndc": 0.060,
+        "minimum_full_trajectory_center_visible_fraction": 0.30,
+        "elevation_range_degrees": [18.0, 42.0]
+      },
+      "bounce_1obj": {
+        "intent": "contact_event",
+        "focus_event": {"type": "primary_support_contact", "post_event_frames": 18},
+        "structure_context": "horizontal_surface",
+        "preferred_object_span_ndc": 0.135,
+        "minimum_median_object_span_ndc": 0.065,
+        "elevation_range_degrees": [18.0, 50.0]
+      }
+    },
+    "structure_contexts": {
+      "horizontal_surface": {"minimum_anchor_visible_fraction": 1.0},
+      "inclined_surface": {"minimum_anchor_visible_fraction": 0.5},
+      "impact_boundary": {"minimum_anchor_visible_fraction": 0.5},
+      "edge_and_landing": {"minimum_anchor_visible_fraction": 1.0},
+      "ramp_and_landing": {"minimum_anchor_visible_fraction": 0.5}
+    }
+  },
+  "axes": {
+    "motion_axis": [
+      "slide_push_1obj",
+      "roll_or_slide_1obj",
+      "wall_impact_1obj",
+      "edge_fall_1obj",
+      "drop_fall_1obj",
+      "projectile_1obj",
+      "arc_projectile_1obj",
+      "slope_slide_down_1obj",
+      "slope_slide_up_1obj",
+      "ramp_to_flat_1obj",
+      "bounce_1obj"
+    ],
+    "scene_class_axis": [
+      {
+        "label": "ground_flat",
+        "weight": 0.35
+      },
+      {
+        "label": "raised_flat",
+        "weight": 0.3
+      },
+      {
+        "label": "ground_feature",
+        "weight": 0.2
+      },
+      {
+        "label": "raised_feature",
+        "weight": 0.15
+      }
+    ],
+    "camera_axis": [
+      {
+        "label": "front_left_oblique",
+        "focal_length_mm": 50.0,
+        "overrides": {
+          "view_rule": {
+            "azimuth_degrees": -55.0,
+            "elevation_degrees": 26.0
+          },
+          "distance_rule": {
+            "min_distance_m": 1.95,
+            "base_distance_m": 1.14
+          },
+          "height_rule": {
+            "min_height_above_target_m": 0.72,
+            "distance_height_scale": 0.32
+          }
+        }
+      },
+      {
+        "label": "front_right_oblique",
+        "focal_length_mm": 50.0,
+        "overrides": {
+          "view_rule": {
+            "azimuth_degrees": -125.0,
+            "elevation_degrees": 34.0
+          },
+          "distance_rule": {
+            "min_distance_m": 1.98,
+            "base_distance_m": 1.16
+          },
+          "height_rule": {
+            "min_height_above_target_m": 0.74,
+            "distance_height_scale": 0.32
+          }
+        }
+      },
+      {
+        "label": "left_oblique",
+        "focal_length_mm": 48.0,
+        "overrides": {
+          "view_rule": {
+            "azimuth_degrees": 145.0,
+            "elevation_degrees": 24.0
+          },
+          "distance_rule": {
+            "min_distance_m": 2.05,
+            "base_distance_m": 1.18
+          },
+          "height_rule": {
+            "min_height_above_target_m": 0.76,
+            "distance_height_scale": 0.34
+          }
+        }
+      },
+      {
+        "label": "right_oblique",
+        "focal_length_mm": 48.0,
+        "overrides": {
+          "view_rule": {
+            "azimuth_degrees": -25.0,
+            "elevation_degrees": 30.0
+          },
+          "distance_rule": {
+            "min_distance_m": 2.05,
+            "base_distance_m": 1.18
+          },
+          "height_rule": {
+            "min_height_above_target_m": 0.76,
+            "distance_height_scale": 0.34
+          }
+        }
+      },
+      {
+        "label": "rear_oblique",
+        "focal_length_mm": 46.0,
+        "overrides": {
+          "view_rule": {
+            "azimuth_degrees": 105.0,
+            "elevation_degrees": 40.0
+          },
+          "distance_rule": {
+            "min_distance_m": 2.18,
+            "base_distance_m": 1.24
+          },
+          "height_rule": {
+            "min_height_above_target_m": 0.84,
+            "distance_height_scale": 0.36
+          }
+        }
+      },
+      {
+        "label": "top_oblique",
+        "focal_length_mm": 44.0,
+        "overrides": {
+          "view_rule": {
+            "azimuth_degrees": -75.0,
+            "elevation_degrees": 52.0
+          },
+          "distance_rule": {
+            "min_distance_m": 2.2,
+            "base_distance_m": 1.22
+          },
+          "height_rule": {
+            "min_height_above_target_m": 1.16,
+            "distance_height_scale": 0.48
+          }
+        }
+      }
+    ],
+    "motion_direction_axis": [
+      {
+        "label": "left_to_right",
+        "angle_degrees": 0.0
+      },
+      {
+        "label": "right_to_left",
+        "angle_degrees": 180.0
+      },
+      {
+        "label": "front_to_back",
+        "angle_degrees": 90.0
+      },
+      {
+        "label": "back_to_front",
+        "angle_degrees": -90.0
+      },
+      {
+        "label": "diagonal_forward",
+        "angle_degrees": 35.0
+      },
+      {
+        "label": "diagonal_backward",
+        "angle_degrees": -145.0
+      }
+    ],
+    "motion_subtype_axis": {
+      "slide_push_1obj": [
+        {
+          "label": "short_push",
+          "speed": 0.85,
+          "start": [
+            0.22,
+            0.34
+          ]
+        },
+        {
+          "label": "medium_push",
+          "speed": 1.0,
+          "start": [
+            0.3,
+            0.44
+          ]
+        },
+        {
+          "label": "fast_push",
+          "speed": 1.25,
+          "start": [
+            0.36,
+            0.54
+          ]
+        },
+        {
+          "label": "long_slide",
+          "speed": 1.1,
+          "start": [
+            0.46,
+            0.64
+          ]
+        }
+      ],
+      "roll_or_slide_1obj": [
+        {
+          "label": "slide_dominant",
+          "speed": 0.92,
+          "spin": 0.45,
+          "start": [
+            0.26,
+            0.42
+          ]
+        },
+        {
+          "label": "mixed_roll_slide",
+          "speed": 1.0,
+          "spin": 1.0,
+          "start": [
+            0.3,
+            0.48
+          ]
+        },
+        {
+          "label": "pure_roll_like",
+          "speed": 1.05,
+          "spin": 1.45,
+          "start": [
+            0.32,
+            0.52
+          ]
+        },
+        {
+          "label": "fast_roll",
+          "speed": 1.25,
+          "spin": 1.25,
+          "start": [
+            0.4,
+            0.62
+          ]
+        }
+      ],
+      "drop_fall_1obj": [
+        {
+          "label": "low_drop",
+          "height": [
+            0.3,
+            0.42
+          ],
+          "lateral": 0.1
+        },
+        {
+          "label": "medium_drop",
+          "height": [
+            0.44,
+            0.62
+          ],
+          "lateral": 0.14
+        },
+        {
+          "label": "high_drop",
+          "height": [
+            0.64,
+            0.82
+          ],
+          "lateral": 0.16
+        },
+        {
+          "label": "off_center_drop",
+          "height": [
+            0.42,
+            0.66
+          ],
+          "lateral": 0.28
+        }
+      ],
+      "projectile_1obj": [
+        {
+          "label": "low_slow_horizontal",
+          "height": [
+            0.22,
+            0.32
+          ],
+          "speed": 0.82,
+          "start": [
+            0.36,
+            0.52
+          ]
+        },
+        {
+          "label": "low_fast_horizontal",
+          "height": [
+            0.24,
+            0.36
+          ],
+          "speed": 1.28,
+          "start": [
+            0.48,
+            0.68
+          ]
+        },
+        {
+          "label": "high_medium_horizontal",
+          "height": [
+            0.42,
+            0.58
+          ],
+          "speed": 1.0,
+          "start": [
+            0.42,
+            0.62
+          ]
+        },
+        {
+          "label": "long_horizontal",
+          "height": [
+            0.3,
+            0.48
+          ],
+          "speed": 1.18,
+          "start": [
+            0.56,
+            0.76
+          ]
+        }
+      ],
+      "arc_projectile_1obj": [
+        {
+          "label": "low_arc",
+          "height": [
+            0.16,
+            0.26
+          ],
+          "speed": 0.88,
+          "start": [
+            0.34,
+            0.5
+          ]
+        },
+        {
+          "label": "medium_arc",
+          "height": [
+            0.24,
+            0.38
+          ],
+          "speed": 1.0,
+          "start": [
+            0.4,
+            0.58
+          ]
+        },
+        {
+          "label": "high_arc",
+          "height": [
+            0.36,
+            0.52
+          ],
+          "speed": 1.12,
+          "start": [
+            0.42,
+            0.62
+          ]
+        },
+        {
+          "label": "long_arc",
+          "height": [
+            0.28,
+            0.44
+          ],
+          "speed": 1.2,
+          "start": [
+            0.54,
+            0.74
+          ]
+        }
+      ],
+      "slope_slide_down_1obj": [
+        {
+          "label": "slow_down",
+          "speed": 0.85
+        },
+        {
+          "label": "medium_down",
+          "speed": 1.0
+        },
+        {
+          "label": "fast_down",
+          "speed": 1.18
+        },
+        {
+          "label": "offset_down",
+          "speed": 0.96
+        }
+      ],
+      "slope_slide_up_1obj": [
+        {
+          "label": "slow_up",
+          "speed": 0.9
+        },
+        {
+          "label": "medium_up",
+          "speed": 1.0
+        },
+        {
+          "label": "controlled_up",
+          "speed": 0.78
+        },
+        {
+          "label": "offset_up",
+          "speed": 0.96
+        }
+      ],
+      "wall_impact_1obj": [
+        {
+          "label": "gentle_wall_impact",
+          "approach_distance_m": 0.46,
+          "impact_speed_m_s": 0.85
+        },
+        {
+          "label": "medium_wall_impact",
+          "approach_distance_m": 0.58,
+          "impact_speed_m_s": 1.1
+        },
+        {
+          "label": "fast_wall_impact",
+          "approach_distance_m": 0.68,
+          "impact_speed_m_s": 1.4
+        },
+        {
+          "label": "long_wall_approach",
+          "approach_distance_m": 0.78,
+          "impact_speed_m_s": 1.15
+        }
+      ],
+      "edge_fall_1obj": [
+        {
+          "label": "short_edge_approach",
+          "approach_distance_m": 0.36,
+          "exit_speed_m_s": 0.75
+        },
+        {
+          "label": "medium_edge_approach",
+          "approach_distance_m": 0.48,
+          "exit_speed_m_s": 0.9
+        },
+        {
+          "label": "fast_edge_exit",
+          "approach_distance_m": 0.58,
+          "exit_speed_m_s": 1.15
+        },
+        {
+          "label": "long_edge_approach",
+          "approach_distance_m": 0.7,
+          "exit_speed_m_s": 1.0
+        }
+      ],
+      "ramp_to_flat_1obj": [
+        {
+          "label": "slow_ramp_transition",
+          "speed": 0.72
+        },
+        {
+          "label": "medium_ramp_transition",
+          "speed": 0.88
+        },
+        {
+          "label": "fast_ramp_transition",
+          "speed": 1.05
+        },
+        {
+          "label": "offset_ramp_transition",
+          "speed": 0.92
+        }
+      ],
+      "bounce_1obj": [
+        {
+          "label": "low_bounce",
+          "speed": 0.86,
+          "vertical": 0.82,
+          "start": [
+            0.24,
+            0.38
+          ]
+        },
+        {
+          "label": "medium_bounce",
+          "speed": 1.0,
+          "vertical": 1.0,
+          "start": [
+            0.3,
+            0.48
+          ]
+        },
+        {
+          "label": "forward_bounce",
+          "speed": 1.18,
+          "vertical": 0.95,
+          "start": [
+            0.36,
+            0.56
+          ]
+        },
+        {
+          "label": "high_bounce",
+          "speed": 1.05,
+          "vertical": 1.28,
+          "start": [
+            0.32,
+            0.52
+          ]
+        }
+      ]
+    },
+    "object_scale_axis": [
+      {
+        "label": "small",
+        "range": [
+          0.7,
+          0.88
+        ]
+      },
+      {
+        "label": "medium",
+        "range": [
+          0.92,
+          1.12
+        ]
+      },
+      {
+        "label": "large",
+        "range": [
+          1.16,
+          1.38
+        ]
+      }
+    ],
+    "trajectory_extent_axis": [
+      {
+        "label": "short",
+        "start_multiplier": 0.82,
+        "speed_multiplier": 0.86,
+        "focus_span_multiplier": 0.92
+      },
+      {
+        "label": "medium",
+        "start_multiplier": 1.0,
+        "speed_multiplier": 1.0,
+        "focus_span_multiplier": 1.0
+      },
+      {
+        "label": "long",
+        "start_multiplier": 1.24,
+        "speed_multiplier": 1.16,
+        "focus_span_multiplier": 1.18
+      }
+    ],
+    "initial_position_zone_axis": [
+      {
+        "label": "center_start",
+        "along": 0.0,
+        "lateral": 0.0
+      },
+      {
+        "label": "left_start",
+        "along": 0.0,
+        "lateral": -0.26
+      },
+      {
+        "label": "right_start",
+        "along": 0.0,
+        "lateral": 0.26
+      },
+      {
+        "label": "near_edge_safe",
+        "along": -0.18,
+        "lateral": 0.18
+      }
+    ],
+    "surface_contrast_axis": [
+      {
+        "label": "high_contrast",
+        "object_policy": "opposite_value",
+        "qa_priority": "preferred"
+      },
+      {
+        "label": "medium_contrast",
+        "object_policy": "balanced_value",
+        "qa_priority": "preferred"
+      },
+      {
+        "label": "low_contrast_filter_candidate",
+        "object_policy": "similar_value",
+        "qa_priority": "filter_candidate"
+      }
+    ]
+  }
+}

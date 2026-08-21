@@ -1,0 +1,2221 @@
+{
+  "version": "physweep_scene_mesh_profiles_v7",
+  "sampling": {
+    "target_mesh_fraction": 0.4,
+    "exact_batch_ratio": true
+  },
+  "policy": {
+    "requires_image_texture": true,
+    "requires_hash_match": true,
+    "placement_anchor": "camera_relative_behind_motion",
+    "accepted_profile_count": 20,
+    "per_asset_web_review_required": true,
+    "per_asset_multiview_review_required": true,
+    "closed_shells_without_reviewed_opening_forbidden": true,
+    "reviewed_shell_opening_selectors_are_import_validated": true,
+    "panorama_spheres_forbidden": true,
+    "distance_rule": "half_scaled_depth_plus_reviewed_front_clearance",
+    "compatibility_rule": "exact_reviewed_support_ids",
+    "floor_alignment_rule": "anchor=-(reviewed_floor_z-source_bbox_min_z)*scale-surface_overlap",
+    "visual_and_collision_are_paired": true,
+    "collision_authority": "frozen_static_environment_proxy",
+    "environment_proxy_is_always_loaded": true,
+    "visual_and_collision_world_pose_is_identical": true,
+    "raw_visual_glb_is_never_used_as_runtime_collision": true,
+    "global_environment_floor_remains_authoritative": true
+  },
+  "sources": {
+    "downloads": [
+      "assets/library/sketchfab/visual_environments_v1/download_manifest.json",
+      "assets/library/sketchfab/visual_environment_additions_v2/download_manifest.json",
+      "assets/library/sketchfab/visual_environment_replacements_v3/download_manifest.json"
+    ],
+    "inspection": [],
+    "annotations": "configs/visual_environment_asset_annotations.json",
+    "scene_kits": "configs/scene_kits.json",
+    "collision_proxies": "configs/visual_environment_collision_proxies.json"
+  },
+  "profiles": [
+    {
+      "id": "mesh_env_living_white",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "home_office",
+      "semantic_environment_group": "home_interior",
+      "semantic_environment": "living_room_modern_bright",
+      "quality_tier": "B",
+      "themes": [
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_flat",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "wood_floor",
+        "wood_tabletop"
+      ],
+      "back_wall_distance_m": 2.198757,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 1.0,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.24,
+        "focal_length_cap_mm": 36.0,
+        "maximum_elevation_degrees": 28.0
+      },
+      "asset": {
+        "asset_id": "env_living_white_afb8cb0c",
+        "path": "assets/library/sketchfab/visual_environments_v1/env_living_white_afb8cb0c/model.glb",
+        "sha256": "79baa5a031ba3b922650512183501ccc8eb43002bba438dbf6db828f58a76916",
+        "source_bbox_size": [
+          11.809665,
+          5.715719,
+          6.72587
+        ],
+        "normalization_axis": "x",
+        "target_extent_m": 6.4,
+        "front_view_yaw_degrees": 0.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.994086,
+        "floor_alignment": {
+          "method": "reviewed_horizontal_surface",
+          "source_bbox_min_z": -2.039948,
+          "source_floor_z": -0.2056,
+          "scale": 0.541929005,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.994086,
+          "evidence": "Structure_Structure_0 finished room floor shared by furniture lower bounds"
+        },
+        "exclude_object_names": [
+          "Windows_Windows_0"
+        ],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [
+          {
+            "axis": "z",
+            "comparison": "at_or_above",
+            "value": 2.8
+          },
+          {
+            "axis": "y",
+            "comparison": "at_or_below",
+            "value": -2.45
+          }
+        ],
+        "license": "CC Attribution",
+        "source_uid": "afb8cb0cbee1488caf61471ef14041e9",
+        "review_yaw_degrees": 0,
+        "front_clearance_m": 0.65,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_living_white_afb8cb0c/collision.obj",
+          "sha256": "d1de33d64371ca49f48dd2c31d9c95754649ab3cff35570c57dcc6e6a8504413",
+          "vertex_count": 80345,
+          "face_count": 78202,
+          "bounds_min_m": [
+            -1.457497239,
+            -1.117910504,
+            0.994075477
+          ],
+          "bounds_max_m": [
+            1.454545379,
+            1.548756719,
+            2.650868893
+          ],
+          "extents_m": [
+            2.912042618,
+            2.666667223,
+            1.656793416
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.541929017322,
+            "source_bottom_center": [
+              0.0,
+              -0.397511839867,
+              -2.039947748184
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": 0.9940862726,
+            "authoritative_floor_exclusion_half_band_m": 0.0768,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_dining_modern",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "home_office",
+      "semantic_environment_group": "home_interior",
+      "semantic_environment": "dining_room_modern",
+      "quality_tier": "A",
+      "themes": [
+        "kitchen",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_flat",
+        "raised_feature",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "wood_tabletop",
+        "kitchen_counter",
+        "wood_floor",
+        "wood_tray"
+      ],
+      "back_wall_distance_m": 3.468148,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.3,
+        "focal_length_cap_mm": 40.0,
+        "maximum_elevation_degrees": 28.0
+      },
+      "asset": {
+        "asset_id": "env_dining_modern_df3f3c9f",
+        "path": "assets/library/sketchfab/visual_environments_v1/env_dining_modern_df3f3c9f/model.glb",
+        "sha256": "344dc5e53d20a833cdabd2b715e6033b7b6c6bac2213d0d17d4a572b07e416d1",
+        "source_bbox_size": [
+          6.981715,
+          8.052674,
+          4.684021
+        ],
+        "normalization_axis": "x",
+        "target_extent_m": 4.8,
+        "front_view_yaw_degrees": 0.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.599034,
+        "floor_alignment": {
+          "method": "reviewed_horizontal_surface",
+          "source_bbox_min_z": -2.342009,
+          "source_floor_z": -1.4707,
+          "scale": 0.68751016,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.599034,
+          "evidence": "Modern Dining Room_Floor_0 finished wood floor top"
+        },
+        "exclude_object_names": [
+          "Roof_Roof_0"
+        ],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "df3f3c9f6233447eb8b7ee129f3bace5",
+        "review_yaw_degrees": 0,
+        "front_clearance_m": 0.7,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_dining_modern_df3f3c9f/collision.obj",
+          "sha256": "cf616cd20016ecf9665bee6683b86ce0a734657b6586b27538f406f5f38e157a",
+          "vertex_count": 82779,
+          "face_count": 79739,
+          "bounds_min_m": [
+            -2.400000095,
+            -2.768147469,
+            2.9e-08
+          ],
+          "bounds_max_m": [
+            2.400000095,
+            2.76814723,
+            3.220311642
+          ],
+          "extents_m": [
+            4.800000191,
+            5.536294699,
+            3.220311613
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.687510140545,
+            "source_bottom_center": [
+              0.0,
+              0.692640900612,
+              -2.342008590698
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": 0.599033491649,
+            "authoritative_floor_exclusion_half_band_m": 0.0576,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_kitchen_modern",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "home_office",
+      "semantic_environment_group": "home_interior",
+      "semantic_environment": "kitchen_modern_bright",
+      "quality_tier": "A",
+      "themes": [
+        "kitchen",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_flat",
+        "raised_feature",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "kitchen_counter",
+        "wood_tabletop",
+        "wood_floor",
+        "wood_tray"
+      ],
+      "back_wall_distance_m": 4.904595,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 1.35,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.22,
+        "focal_length_cap_mm": 36.0,
+        "maximum_elevation_degrees": 30.0
+      },
+      "asset": {
+        "asset_id": "env_kitchen_modern_9843a830",
+        "path": "assets/library/sketchfab/visual_environments_v1/env_kitchen_modern_9843a830/model.glb",
+        "sha256": "832b0b48aa85a749eaf2fe516f67601d25d90be1535c24585e6e7e0d191d91e2",
+        "source_bbox_size": [
+          22.588011,
+          12.893328,
+          7.674247
+        ],
+        "normalization_axis": "y",
+        "target_extent_m": 4.8,
+        "front_view_yaw_degrees": 270.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.0,
+        "floor_alignment": {
+          "method": "source_bbox_min",
+          "source_bbox_min_z": -0.358678,
+          "source_floor_z": -0.358678,
+          "scale": 0.372285573,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.0,
+          "evidence": "Bound composite showed the source lower bound at the visible floor."
+        },
+        "exclude_object_names": [
+          "Ceiling_Ceiling_0"
+        ],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "9843a830b96142a9a53f45f25304d93c",
+        "review_yaw_degrees": 90,
+        "front_clearance_m": 0.7,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_kitchen_modern_9843a830/collision.obj",
+          "sha256": "47196656372d76ae4e2ae6aa1a9c696bd873cbd52ad43b0a5808eb81e125ac3d",
+          "vertex_count": 69437,
+          "face_count": 72542,
+          "bounds_min_m": [
+            -4.204595089,
+            -2.399999619,
+            1.72e-06
+          ],
+          "bounds_max_m": [
+            4.204595566,
+            2.399999619,
+            2.85701108
+          ],
+          "extents_m": [
+            8.409190655,
+            4.799999237,
+            2.85700936
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.372285581104,
+            "source_bottom_center": [
+              4.809594154358,
+              -1.496016263962,
+              -0.358677923679
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": -2.8413e-08,
+            "authoritative_floor_exclusion_half_band_m": 0.0576,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_kitchen_living",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "home_office",
+      "semantic_environment_group": "home_interior",
+      "semantic_environment": "kitchen_living_dark",
+      "quality_tier": "A",
+      "themes": [
+        "kitchen",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_flat",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "kitchen_counter",
+        "wood_tabletop",
+        "wood_floor"
+      ],
+      "back_wall_distance_m": 4.16099,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 0.9,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.2,
+        "focal_length_cap_mm": 36.0,
+        "maximum_elevation_degrees": 30.0
+      },
+      "asset": {
+        "asset_id": "env_kitchen_living_2684e307",
+        "path": "assets/library/sketchfab/visual_environments_v1/env_kitchen_living_2684e307/model.glb",
+        "sha256": "a1f36cce95fb2ea663b8ab116196ae4c445175345e9092a917da9fa4908ec579",
+        "source_bbox_size": [
+          10.831844,
+          7.511268,
+          3.449179
+        ],
+        "normalization_axis": "y",
+        "target_extent_m": 4.8,
+        "front_view_yaw_degrees": 90.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.059428,
+        "floor_alignment": {
+          "method": "reviewed_horizontal_surface",
+          "source_bbox_min_z": -0.092996,
+          "source_floor_z": 0.0,
+          "scale": 0.639039906,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.059428,
+          "evidence": "Plane_Material.002_0 and Plane.001_Material.001_0 floor surfaces"
+        },
+        "exclude_object_names": [
+          "Plane.007_Material.013_0",
+          "Plane.010_Material.017_0"
+        ],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "2684e30728c14b5387554b3fe594df78",
+        "review_yaw_degrees": 270,
+        "front_clearance_m": 0.7,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_kitchen_living_2684e307/collision.obj",
+          "sha256": "84076818bed12a416ac536c89bfaf9a2ed2fb371e5595fe77d0e0e16a95f8c91",
+          "vertex_count": 48620,
+          "face_count": 35945,
+          "bounds_min_m": [
+            -1.964079618,
+            -2.368755579,
+            0.0
+          ],
+          "bounds_max_m": [
+            3.460990429,
+            2.399999857,
+            2.204162836
+          ],
+          "extents_m": [
+            5.425070047,
+            4.768755436,
+            2.204162836
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.639039894629,
+            "source_bottom_center": [
+              -0.6406686306,
+              -1.223163843155,
+              -0.092995643616
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": 0.059427926297,
+            "authoritative_floor_exclusion_half_band_m": 0.0576,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_office_small",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "lab_studio",
+      "semantic_environment_group": "work_education",
+      "semantic_environment": "office_small_warm",
+      "quality_tier": "B",
+      "themes": [
+        "lab",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_flat",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "lab_bench",
+        "wood_tabletop",
+        "concrete_floor_mat"
+      ],
+      "back_wall_distance_m": 5.014,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 1.35,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.2,
+        "focal_length_cap_mm": 40.0,
+        "maximum_elevation_degrees": 26.0
+      },
+      "asset": {
+        "asset_id": "env_office_small_393a8fec",
+        "path": "assets/library/sketchfab/visual_environments_v1/env_office_small_393a8fec/model.glb",
+        "sha256": "34c9832496dc5d2ce0d6f61f45ec47ec38f9b936d2567470f324b1681f66dbeb",
+        "source_bbox_size": [
+          2.505156,
+          4.969319,
+          2.50285
+        ],
+        "normalization_axis": "x",
+        "target_extent_m": 4.4,
+        "front_view_yaw_degrees": 0.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.0,
+        "floor_alignment": {
+          "method": "source_bbox_min",
+          "source_bbox_min_z": -1.252206,
+          "source_floor_z": -1.252206,
+          "scale": 1.756377647,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.0,
+          "evidence": "Bound composite showed the source lower bound at the visible floor."
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "393a8fec31bf41a99a49a57bbcf02ac8",
+        "review_yaw_degrees": 0,
+        "front_clearance_m": 0.65,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_office_small_393a8fec/collision.obj",
+          "sha256": "773c0d5c62fe7e6a314004f25373d6ea52086d302c19a3caa16cf11d692a2f8f",
+          "vertex_count": 71842,
+          "face_count": 79877,
+          "bounds_min_m": [
+            -2.200004339,
+            -4.36400032,
+            5.27e-07
+          ],
+          "bounds_max_m": [
+            2.199999809,
+            4.364000797,
+            4.395950794
+          ],
+          "extents_m": [
+            4.400004148,
+            8.728001118,
+            4.395950267
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 1.756377785719,
+            "source_bottom_center": [
+              0.001934528351,
+              -0.740682959557,
+              -1.252206087112
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": 1.53002e-07,
+            "authoritative_floor_exclusion_half_band_m": 0.0528,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_office_modern",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "lab_studio",
+      "semantic_environment_group": "work_education",
+      "semantic_environment": "office_modern_bright",
+      "quality_tier": "A",
+      "themes": [
+        "lab",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_flat",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "lab_bench",
+        "wood_tabletop",
+        "concrete_floor_mat",
+        "wood_floor"
+      ],
+      "back_wall_distance_m": 3.794832,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.2,
+        "focal_length_cap_mm": 40.0,
+        "maximum_elevation_degrees": 28.0
+      },
+      "asset": {
+        "asset_id": "env_office_modern_1c894023",
+        "path": "assets/library/sketchfab/visual_environments_v1/env_office_modern_1c894023/model.glb",
+        "sha256": "fa85bb846b3f033bfa486253a15b3f5d402969254dc9844cc93620a08b2eae14",
+        "source_bbox_size": [
+          5.975373,
+          4.440744,
+          3.079172
+        ],
+        "normalization_axis": "y",
+        "target_extent_m": 4.6,
+        "front_view_yaw_degrees": 270.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.192034,
+        "floor_alignment": {
+          "method": "reviewed_horizontal_surface",
+          "source_bbox_min_z": -1.539586,
+          "source_floor_z": -1.3542,
+          "scale": 1.035862459,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.192034,
+          "evidence": "Window_Structure_0 visible floor top above the structural underside"
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "1c8940235d834bb09022eebf0eb0d9e8",
+        "review_yaw_degrees": 90,
+        "front_clearance_m": 0.7,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_office_modern_1c894023/collision.obj",
+          "sha256": "c4d2e77cbce64cc163b12da6308f353b38a1b2d31105f05dd17c061f5eed94bf",
+          "vertex_count": 102402,
+          "face_count": 79990,
+          "bounds_min_m": [
+            -3.09483242,
+            -2.30002737,
+            1.44e-07
+          ],
+          "bounds_max_m": [
+            3.09483242,
+            2.299999714,
+            3.189598083
+          ],
+          "extents_m": [
+            6.189664841,
+            4.600027084,
+            3.189597939
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 1.035862477001,
+            "source_bottom_center": [
+              0.43361389637,
+              -0.020963907242,
+              -1.539585828781
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": 0.192034223802,
+            "authoritative_floor_exclusion_half_band_m": 0.0552,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_cafe_cozy",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "home_office",
+      "semantic_environment_group": "hospitality",
+      "semantic_environment": "cafe_cozy_warm",
+      "quality_tier": "B",
+      "themes": [
+        "kitchen",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_flat",
+        "raised_feature",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "wood_tabletop",
+        "kitchen_counter",
+        "wood_floor",
+        "wood_tray"
+      ],
+      "back_wall_distance_m": 2.867079,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.3,
+        "focal_length_cap_mm": 40.0
+      },
+      "asset": {
+        "asset_id": "env_cafe_cozy_fb7c75da",
+        "path": "assets/library/sketchfab/visual_environments_v1/env_cafe_cozy_fb7c75da/model.glb",
+        "sha256": "3df65bcc515caf05752c13964bec07cc59c54ec32d1a0e5ebc3181dbb15e470a",
+        "source_bbox_size": [
+          4.853716,
+          4.816325,
+          3.609032
+        ],
+        "normalization_axis": "y",
+        "target_extent_m": 4.4,
+        "front_view_yaw_degrees": 270.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.197734,
+        "floor_alignment": {
+          "method": "reviewed_horizontal_surface",
+          "source_bbox_min_z": -1.828644,
+          "source_floor_z": -1.6122,
+          "scale": 0.913559612,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.197734,
+          "evidence": "Repeated cafe room floor top shared by Object_4 through Object_8"
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "fb7c75dae56a43d5aa75d23e17c63d03",
+        "review_yaw_degrees": 90,
+        "front_clearance_m": 0.65,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_cafe_cozy_fb7c75da/collision.obj",
+          "sha256": "8f2737b18de51d6d7efa17cf7ae279e5fd2990a9532509ba9aaa73f35c4f1d00",
+          "vertex_count": 80057,
+          "face_count": 77901,
+          "bounds_min_m": [
+            -2.217080355,
+            -2.200247049,
+            9.03e-07
+          ],
+          "bounds_max_m": [
+            2.217032671,
+            2.199766636,
+            3.295984983
+          ],
+          "extents_m": [
+            4.434113026,
+            4.400013685,
+            3.295984081
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.913559667207,
+            "source_bottom_center": [
+              0.0,
+              -0.001373767853,
+              -1.828643679619
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": 0.197734215922,
+            "authoritative_floor_exclusion_half_band_m": 0.0528,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_garage_workshop",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "garage_workshop",
+      "semantic_environment_group": "industrial",
+      "semantic_environment": "garage_workshop_small",
+      "quality_tier": "B",
+      "themes": [
+        "lab",
+        "studio",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_feature",
+        "ground_flat",
+        "raised_feature",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "concrete_floor_mat",
+        "rubber_floor",
+        "lab_bench",
+        "raised_ramp_long_shallow",
+        "raised_ramp_standard",
+        "raised_ramp_short_steep",
+        "raised_channel_ramp",
+        "ground_ramp_long_shallow",
+        "ground_ramp_standard",
+        "ground_ramp_short_steep",
+        "ground_channel_ramp"
+      ],
+      "back_wall_distance_m": 4.236848,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.3,
+        "focal_length_cap_mm": 40.0,
+        "maximum_elevation_degrees": 24.0
+      },
+      "asset": {
+        "asset_id": "env_garage_desert_ef8bb817",
+        "path": "assets/library/sketchfab/visual_environments_v1/env_garage_desert_ef8bb817/model.glb",
+        "sha256": "c7b4ff2e22365a9b22160289f6c437e1497d19571eabf6526ecffbe741566912",
+        "source_bbox_size": [
+          17.147207,
+          21.826794,
+          12.096289
+        ],
+        "normalization_axis": "x",
+        "target_extent_m": 5.4,
+        "front_view_yaw_degrees": 0.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.0,
+        "floor_alignment": {
+          "method": "source_bbox_min",
+          "source_bbox_min_z": -0.029276,
+          "source_floor_z": -0.029276,
+          "scale": 0.314920092,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.0,
+          "evidence": "Bound composite showed the source lower bound at the visible floor."
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "ef8bb81713814d688487a81ae2467a51",
+        "review_yaw_degrees": 0,
+        "front_clearance_m": 0.8,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_garage_desert_ef8bb817/collision.obj",
+          "sha256": "d43e5e799fa1bfb0a0526aa6bb2930e56ff9bbb071dcb91b85e53a0f3ea7641e",
+          "vertex_count": 9702,
+          "face_count": 9621,
+          "bounds_min_m": [
+            -2.700000048,
+            -3.436847925,
+            -0.0
+          ],
+          "bounds_max_m": [
+            2.700000048,
+            3.436847925,
+            3.809364319
+          ],
+          "extents_m": [
+            5.400000095,
+            6.87369585,
+            3.809364319
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.314920086874,
+            "source_bottom_center": [
+              0.0,
+              -2.339790821075,
+              -0.029275668785
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": -1.04306e-07,
+            "authoritative_floor_exclusion_half_band_m": 0.0648,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_parking_structure",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "garage_workshop",
+      "semantic_environment_group": "industrial",
+      "semantic_environment": "industrial_parking_structure",
+      "quality_tier": "C",
+      "themes": [
+        "lab",
+        "studio",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_feature",
+        "ground_flat",
+        "raised_feature"
+      ],
+      "support_ids": [
+        "concrete_floor_mat",
+        "rubber_floor",
+        "raised_ramp_long_shallow",
+        "raised_ramp_standard",
+        "raised_ramp_short_steep",
+        "raised_channel_ramp",
+        "ground_ramp_long_shallow",
+        "ground_ramp_standard",
+        "ground_ramp_short_steep",
+        "ground_channel_ramp"
+      ],
+      "back_wall_distance_m": 2.883197,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.2,
+        "focal_length_cap_mm": 40.0,
+        "maximum_elevation_degrees": 26.0
+      },
+      "asset": {
+        "asset_id": "env_parking_garage_f36802d7",
+        "path": "assets/library/sketchfab/visual_environments_v1/env_parking_garage_f36802d7/model.glb",
+        "sha256": "e71200dd1e989f7ad136007a6c342e448e7bbe11a5e79a7924f2be6cfb575873",
+        "source_bbox_size": [
+          19.141937,
+          5.283154,
+          2.629147
+        ],
+        "normalization_axis": "x",
+        "target_extent_m": 6.4,
+        "front_view_yaw_degrees": 0.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.0,
+        "floor_alignment": {
+          "method": "source_bbox_min",
+          "source_bbox_min_z": 0.003578,
+          "source_floor_z": 0.003578,
+          "scale": 0.334344429,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.0,
+          "evidence": "Bound composite showed the source lower bound at the visible floor."
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "f36802d76b044b518aaea6706a1a2d40",
+        "review_yaw_degrees": 0,
+        "front_clearance_m": 2.0,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_parking_garage_f36802d7/collision.obj",
+          "sha256": "7c5be6d53365b198970aee10e3460a344b22741deb422053d77856d4acebb9fd",
+          "vertex_count": 57439,
+          "face_count": 49638,
+          "bounds_min_m": [
+            -3.19846487,
+            -0.882445753,
+            -0.00568633
+          ],
+          "bounds_max_m": [
+            3.200266123,
+            0.883264303,
+            0.879256308
+          ],
+          "extents_m": [
+            6.398730993,
+            1.765710056,
+            0.884942638
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.334344424729,
+            "source_bottom_center": [
+              -0.015869617462,
+              0.305966258049,
+              0.003578340169
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": -1.13734e-07,
+            "authoritative_floor_exclusion_half_band_m": 0.0768,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_gallery_exterior",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "outdoor_courtyard",
+      "semantic_environment_group": "outdoor_architecture",
+      "semantic_environment": "modern_gallery_exterior",
+      "quality_tier": "B",
+      "themes": [
+        "lab",
+        "studio",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_feature",
+        "ground_flat",
+        "raised_feature"
+      ],
+      "support_ids": [
+        "concrete_floor_mat",
+        "low_pedestal",
+        "raised_ramp_long_shallow",
+        "raised_ramp_standard",
+        "raised_ramp_short_steep",
+        "raised_channel_ramp",
+        "ground_ramp_long_shallow",
+        "ground_ramp_standard",
+        "ground_ramp_short_steep",
+        "ground_channel_ramp"
+      ],
+      "back_wall_distance_m": 2.298109,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.3,
+        "focal_length_cap_mm": 40.0
+      },
+      "asset": {
+        "asset_id": "env_gallery_studio_789cdada",
+        "path": "assets/library/sketchfab/visual_environments_v1/env_gallery_studio_789cdada/model.glb",
+        "sha256": "30731f9cd9e336d5b925284027a34323b7145d32a1777191cff155e6fe01d737",
+        "source_bbox_size": [
+          8.553122,
+          15.98598,
+          3.318244
+        ],
+        "normalization_axis": "y",
+        "target_extent_m": 5.6,
+        "front_view_yaw_degrees": 270.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.0,
+        "floor_alignment": {
+          "method": "source_bbox_min",
+          "source_bbox_min_z": -1.659122,
+          "source_floor_z": -1.659122,
+          "scale": 0.350306956,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.0,
+          "evidence": "Bound composite showed the source lower bound at the visible floor."
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "789cdada4ffb4924bbda9897c1df51ca",
+        "review_yaw_degrees": 90,
+        "front_clearance_m": 0.8,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_gallery_studio_789cdada/collision.obj",
+          "sha256": "3e5075d4d40d05753f5f6523c3507246eac7fe484871c52ac7d6e3e405acc49a",
+          "vertex_count": 83158,
+          "face_count": 79711,
+          "bounds_min_m": [
+            -1.498108983,
+            -2.799999952,
+            0.000850602
+          ],
+          "bounds_max_m": [
+            1.498108983,
+            2.799999952,
+            1.162403464
+          ],
+          "extents_m": [
+            2.996217966,
+            5.599999905,
+            1.161552862
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.350306955728,
+            "source_bottom_center": [
+              0.0,
+              0.0,
+              -1.659121751785
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": -8.6951e-08,
+            "authoritative_floor_exclusion_half_band_m": 0.0672,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_graffiti_courtyard",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "outdoor_courtyard",
+      "semantic_environment_group": "outdoor_architecture",
+      "semantic_environment": "urban_graffiti_courtyard",
+      "quality_tier": "A",
+      "themes": [
+        "lab",
+        "studio",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_feature",
+        "ground_flat",
+        "raised_feature"
+      ],
+      "support_ids": [
+        "concrete_floor_mat",
+        "rubber_floor",
+        "low_pedestal",
+        "raised_ramp_long_shallow",
+        "raised_ramp_standard",
+        "raised_ramp_short_steep",
+        "raised_channel_ramp",
+        "ground_ramp_long_shallow",
+        "ground_ramp_standard",
+        "ground_ramp_short_steep",
+        "ground_channel_ramp"
+      ],
+      "back_wall_distance_m": 2.229586,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.3,
+        "focal_length_cap_mm": 40.0,
+        "maximum_elevation_degrees": 20.0
+      },
+      "asset": {
+        "asset_id": "env_graffiti_lab_7e764b49",
+        "path": "assets/library/sketchfab/visual_environments_v1/env_graffiti_lab_7e764b49/model.glb",
+        "sha256": "b5488b4ad70dd5d48ce5e1eaa956ae302f9c52296b2dadf6e63493ffeefdc667",
+        "source_bbox_size": [
+          11.719662,
+          6.422316,
+          4.399041
+        ],
+        "normalization_axis": "x",
+        "target_extent_m": 5.4,
+        "front_view_yaw_degrees": 0.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.0,
+        "floor_alignment": {
+          "method": "source_bbox_min",
+          "source_bbox_min_z": -0.096312,
+          "source_floor_z": -0.096312,
+          "scale": 0.460764141,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.0,
+          "evidence": "Bound composite showed the source lower bound at the visible floor."
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "7e764b495119439ba91174d0b8fa3965",
+        "review_yaw_degrees": 0,
+        "front_clearance_m": 0.75,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_graffiti_lab_7e764b49/collision.obj",
+          "sha256": "524dc8fbc1ad2b4b13728b72bfb712354cadef2eca48dd2cc0615a52012914d1",
+          "vertex_count": 5036,
+          "face_count": 4182,
+          "bounds_min_m": [
+            -2.699999809,
+            -1.479586482,
+            -4e-09
+          ],
+          "bounds_max_m": [
+            2.699999809,
+            1.479586482,
+            2.026920319
+          ],
+          "extents_m": [
+            5.399999619,
+            2.959172964,
+            2.026920322
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.460764152789,
+            "source_bottom_center": [
+              -0.858372449875,
+              -3.203328132629,
+              -0.096311554313
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": -2.05357e-07,
+            "authoritative_floor_exclusion_half_band_m": 0.0648,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_house_exterior",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "outdoor_courtyard",
+      "semantic_environment_group": "outdoor_architecture",
+      "semantic_environment": "residential_house_exterior",
+      "quality_tier": "B",
+      "themes": [
+        "lab",
+        "studio",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_feature",
+        "ground_flat",
+        "raised_feature"
+      ],
+      "support_ids": [
+        "concrete_floor_mat",
+        "wood_floor",
+        "low_pedestal",
+        "raised_ramp_long_shallow",
+        "raised_ramp_standard",
+        "raised_ramp_short_steep",
+        "raised_channel_ramp",
+        "ground_ramp_long_shallow",
+        "ground_ramp_standard",
+        "ground_ramp_short_steep",
+        "ground_channel_ramp"
+      ],
+      "back_wall_distance_m": 3.589151,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.3,
+        "focal_length_cap_mm": 40.0
+      },
+      "asset": {
+        "asset_id": "env_house_interior_c57c2019",
+        "path": "assets/library/sketchfab/visual_environments_v1/env_house_interior_c57c2019/model.glb",
+        "sha256": "15905b7a6dcaaa0967bbddd0a6b5a23d2a6dd9027bf2469c8f651017778d090f",
+        "source_bbox_size": [
+          8.266943,
+          8.709388,
+          7.339621
+        ],
+        "normalization_axis": "x",
+        "target_extent_m": 5.2,
+        "front_view_yaw_degrees": 0.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.0,
+        "floor_alignment": {
+          "method": "source_bbox_min",
+          "source_bbox_min_z": -0.000562,
+          "source_floor_z": -0.000562,
+          "scale": 0.629011232,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.0,
+          "evidence": "Bound composite showed the source lower bound at the visible floor."
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "c57c2019e5c84e1a8cd0c37c5b87b7ec",
+        "review_yaw_degrees": 0,
+        "front_clearance_m": 0.85,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_house_interior_c57c2019/collision.obj",
+          "sha256": "221027f796ca990ef1efd55245aa1396609d6d8ca01928431d7a48b95b26cfeb",
+          "vertex_count": 84546,
+          "face_count": 77290,
+          "bounds_min_m": [
+            -2.599999666,
+            -2.739151478,
+            0.0
+          ],
+          "bounds_max_m": [
+            2.599999905,
+            2.739151239,
+            4.616703033
+          ],
+          "extents_m": [
+            5.199999571,
+            5.478302717,
+            4.616703033
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.629011233523,
+            "source_bottom_center": [
+              -0.027995824814,
+              -0.211227893829,
+              -0.000562429428
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": 2.70115e-07,
+            "authoritative_floor_exclusion_half_band_m": 0.0624,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_art_studio",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "lab_studio",
+      "semantic_environment_group": "work_education",
+      "semantic_environment": "art_workshop",
+      "quality_tier": "A",
+      "themes": [
+        "lab",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_flat",
+        "raised_feature",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "wood_tabletop",
+        "lab_bench",
+        "wood_floor",
+        "wood_tray"
+      ],
+      "back_wall_distance_m": 2.885149,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 0.8,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.32,
+        "focal_length_cap_mm": 36.0,
+        "maximum_elevation_degrees": 32.0
+      },
+      "asset": {
+        "asset_id": "env_art_studio_fdd57e78",
+        "path": "assets/library/sketchfab/visual_environments_v1/env_art_studio_fdd57e78/model.glb",
+        "sha256": "066fe4416c17f5d50416c965005fe9b0ed568a7905daabf03b5ebfb3107cba06",
+        "source_bbox_size": [
+          3.159667,
+          3.180661,
+          2.748912
+        ],
+        "normalization_axis": "y",
+        "target_extent_m": 4.5,
+        "front_view_yaw_degrees": 90.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.339694,
+        "floor_alignment": {
+          "method": "reviewed_horizontal_surface",
+          "source_bbox_min_z": -0.0,
+          "source_floor_z": 0.2401,
+          "scale": 1.414800257,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.339694,
+          "evidence": "Object_34 and Object_133 finished wood floor top"
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "fdd57e783d744886bc37cdfb76cf9475",
+        "review_yaw_degrees": 270,
+        "front_clearance_m": 0.65,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_art_studio_fdd57e78/collision.obj",
+          "sha256": "14aa1bec8829380856bbe8e2dde03a5332feadcb2f607e64ada2ca4f82a40323",
+          "vertex_count": 182343,
+          "face_count": 79064,
+          "bounds_min_m": [
+            -2.235149384,
+            -2.249999762,
+            -0.0
+          ],
+          "bounds_max_m": [
+            2.235149145,
+            2.250000238,
+            3.889160872
+          ],
+          "extents_m": [
+            4.470298529,
+            4.5,
+            3.889160872
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 1.414800167308,
+            "source_bottom_center": [
+              -0.059446036816,
+              0.236634016037,
+              -2.45469e-07
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": 0.33969386746,
+            "authoritative_floor_exclusion_half_band_m": 0.054,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_kitchen_small",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "home_office",
+      "semantic_environment_group": "home_interior",
+      "semantic_environment": "kitchen_small_white",
+      "quality_tier": "A",
+      "themes": [
+        "kitchen",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_flat",
+        "raised_feature",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "kitchen_counter",
+        "wood_tabletop",
+        "wood_floor",
+        "wood_tray"
+      ],
+      "back_wall_distance_m": 5.135944,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 1.25,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.28,
+        "focal_length_cap_mm": 32.0
+      },
+      "asset": {
+        "asset_id": "env_kitchen_small_2cc658a9",
+        "path": "assets/library/sketchfab/visual_environment_additions_v2/env_kitchen_small_2cc658a9/model.glb",
+        "sha256": "163aacb4c2d842e45531f9f8aa5e5dc6f695b4786dc608058bab2ac0ac00d16e",
+        "source_bbox_size": [
+          5.579949,
+          9.627437,
+          3.501226
+        ],
+        "normalization_axis": "x",
+        "target_extent_m": 5.2,
+        "front_view_yaw_degrees": 0.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.0,
+        "floor_alignment": {
+          "method": "source_bbox_min",
+          "source_bbox_min_z": -1.752967,
+          "source_floor_z": -1.752967,
+          "scale": 0.931908159,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.0,
+          "evidence": "Bound composite showed the source lower bound at the visible floor."
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "2cc658a96e304a6d9db1813233ed90d1",
+        "review_yaw_degrees": 0,
+        "front_clearance_m": 0.65,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_kitchen_small_2cc658a9/collision.obj",
+          "sha256": "cf187eb2c5c3d9aaf7c1f59b6eac696cb369474f6f15aa3925f0bcd3f06a426e",
+          "vertex_count": 118116,
+          "face_count": 79586,
+          "bounds_min_m": [
+            -2.599999905,
+            -4.485942841,
+            9.1e-08
+          ],
+          "bounds_max_m": [
+            2.600000143,
+            4.486385822,
+            3.262821198
+          ],
+          "extents_m": [
+            5.200000048,
+            8.972328663,
+            3.262821107
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.931908095726,
+            "source_bottom_center": [
+              -0.11774122715,
+              -0.888147473335,
+              -1.752967119217
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": 1.11099e-07,
+            "authoritative_floor_exclusion_half_band_m": 0.0624,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_cafe_small",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "home_office",
+      "semantic_environment_group": "hospitality",
+      "semantic_environment": "cafe_small_bright",
+      "quality_tier": "A",
+      "themes": [
+        "kitchen",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_flat",
+        "raised_feature",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "kitchen_counter",
+        "wood_tabletop",
+        "wood_floor",
+        "wood_tray"
+      ],
+      "back_wall_distance_m": 1.990717,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 0.8,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.32,
+        "focal_length_cap_mm": 36.0
+      },
+      "asset": {
+        "asset_id": "env_cafe_small_0c4d6d98",
+        "path": "assets/library/sketchfab/visual_environment_additions_v2/env_cafe_small_0c4d6d98/model.glb",
+        "sha256": "bb0ecb8b6002da425e4dee7adb50ffdab8df653513ab9aebfe7f0afda5527402",
+        "source_bbox_size": [
+          19.096758,
+          6.769618,
+          3.4526
+        ],
+        "normalization_axis": "x",
+        "target_extent_m": 7.0,
+        "front_view_yaw_degrees": 0.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.0,
+        "floor_alignment": {
+          "method": "source_bbox_min",
+          "source_bbox_min_z": -1.886166,
+          "source_floor_z": -1.886166,
+          "scale": 0.366554365,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.0,
+          "evidence": "Bound composite showed the source lower bound at the visible floor."
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "0c4d6d98c48c46e6b71f2914fd049c8e",
+        "review_yaw_degrees": 0,
+        "front_clearance_m": 0.75,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_cafe_small_0c4d6d98/collision.obj",
+          "sha256": "1883de42c9a2c99b70689a7fb9c7f0a0ef39bfbf2ad9a8961d25019be20422f6",
+          "vertex_count": 73572,
+          "face_count": 60455,
+          "bounds_min_m": [
+            -3.500000238,
+            -1.240716577,
+            1.53e-07
+          ],
+          "bounds_max_m": [
+            3.5,
+            1.240716457,
+            1.265565395
+          ],
+          "extents_m": [
+            7.000000238,
+            2.481433034,
+            1.265565242
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.366554367017,
+            "source_bottom_center": [
+              -4.222458839417,
+              0.433038949966,
+              -1.886166095734
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": 3.5092e-08,
+            "authoritative_floor_exclusion_half_band_m": 0.08,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_industrial_brick",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "garage_workshop",
+      "semantic_environment_group": "industrial",
+      "semantic_environment": "industrial_brick_facade",
+      "quality_tier": "A",
+      "themes": [
+        "lab",
+        "studio",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_feature",
+        "ground_flat",
+        "raised_feature",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "concrete_floor_mat",
+        "rubber_floor",
+        "lab_bench",
+        "raised_ramp_long_shallow",
+        "raised_ramp_standard",
+        "raised_ramp_short_steep",
+        "raised_channel_ramp",
+        "ground_ramp_long_shallow",
+        "ground_ramp_standard",
+        "ground_ramp_short_steep",
+        "ground_channel_ramp"
+      ],
+      "back_wall_distance_m": 4.004292,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 1.0,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.18,
+        "focal_length_cap_mm": 40.0,
+        "maximum_elevation_degrees": 20.0
+      },
+      "asset": {
+        "asset_id": "env_garage_scan_6fbb2f49",
+        "path": "assets/library/sketchfab/visual_environment_additions_v2/env_garage_scan_6fbb2f49/model.glb",
+        "sha256": "90471e83600b19259e9e63d27d404e1dcaae87e4b703c32f638a64730a66f755",
+        "source_bbox_size": [
+          31.315544,
+          28.669752,
+          12.300454
+        ],
+        "normalization_axis": "x",
+        "target_extent_m": 7.0,
+        "front_view_yaw_degrees": 180.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.0,
+        "floor_alignment": {
+          "method": "source_bbox_min",
+          "source_bbox_min_z": 0.013589,
+          "source_floor_z": 0.013589,
+          "scale": 0.223531164,
+          "surface_overlap_m": 0.0,
+          "computed_anchor_z_m": -0.0,
+          "evidence": "Bound composite showed the source lower bound at the visible floor."
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "6fbb2f4999e84adc86687e6833322ff2",
+        "review_yaw_degrees": 180,
+        "front_clearance_m": 0.8,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_garage_scan_6fbb2f49/collision.obj",
+          "sha256": "dc38b328b6c86e516bdc109157b1b16a8de0a5fdab956d159bb827e06dd38b00",
+          "vertex_count": 106617,
+          "face_count": 78856,
+          "bounds_min_m": [
+            -3.41003561,
+            -0.902026951,
+            6.3e-08
+          ],
+          "bounds_max_m": [
+            3.310990572,
+            0.838154733,
+            2.753782988
+          ],
+          "extents_m": [
+            6.721026182,
+            1.740181684,
+            2.753782925
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.223531163032,
+            "source_bottom_center": [
+              -5.435596942902,
+              2.080641746521,
+              0.013588943519
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": 1.2625e-08,
+            "authoritative_floor_exclusion_half_band_m": 0.08,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_duplex_modern",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "home_office",
+      "semantic_environment_group": "home_interior",
+      "semantic_environment": "duplex_modern_open",
+      "quality_tier": "B",
+      "themes": [
+        "studio",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_flat",
+        "raised_feature",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "wood_floor",
+        "wood_tabletop",
+        "low_pedestal"
+      ],
+      "back_wall_distance_m": 3.038248,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 0.8,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.32,
+        "focal_length_cap_mm": 36.0
+      },
+      "asset": {
+        "asset_id": "env_duplex_modern_70ab4f41",
+        "path": "assets/library/sketchfab/visual_environment_additions_v2/env_duplex_modern_70ab4f41/model.glb",
+        "sha256": "fa01983a0c4a7b89370c0b77f5adfb4de957dbdb211ce0e395e2c8a93644c8de",
+        "source_bbox_size": [
+          8.77,
+          6.919979,
+          5.529352
+        ],
+        "normalization_axis": "x",
+        "target_extent_m": 5.8,
+        "front_view_yaw_degrees": 0.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.025,
+        "floor_alignment": {
+          "method": "source_bbox_min",
+          "source_bbox_min_z": -0.017753,
+          "source_floor_z": -0.017753,
+          "scale": 0.661345496,
+          "surface_overlap_m": 0.025,
+          "computed_anchor_z_m": -0.025,
+          "evidence": "Bound composite showed the source lower bound at the visible floor."
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "70ab4f4164b54afbad87f174f8b285c1",
+        "review_yaw_degrees": 0,
+        "front_clearance_m": 0.75,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_duplex_modern_70ab4f41/collision.obj",
+          "sha256": "a0bf3328b284a36614bf0fb3a8e959e7b533ce927d11d36fc1ccfe4a287d01b1",
+          "vertex_count": 13516,
+          "face_count": 7666,
+          "bounds_min_m": [
+            -2.899998665,
+            -2.288248539,
+            3.278e-06
+          ],
+          "bounds_max_m": [
+            2.900001049,
+            2.288249016,
+            3.656811953
+          ],
+          "extents_m": [
+            5.799999714,
+            4.576497555,
+            3.656808674
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.661345461489,
+            "source_bottom_center": [
+              31.436891555786,
+              15.701864242554,
+              -0.017753243446
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": 1.61002e-07,
+            "authoritative_floor_exclusion_half_band_m": 0.0696,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_bathroom_modern",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "home_office",
+      "semantic_environment_group": "home_interior",
+      "semantic_environment": "bathroom_modern_bright",
+      "quality_tier": "A",
+      "themes": [
+        "lab",
+        "studio"
+      ],
+      "scene_classes": [
+        "ground_flat",
+        "raised_feature"
+      ],
+      "support_ids": [
+        "concrete_floor_mat",
+        "rubber_floor",
+        "low_pedestal"
+      ],
+      "back_wall_distance_m": 4.875116,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 1.25,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.42,
+        "focal_length_cap_mm": 36.0
+      },
+      "asset": {
+        "asset_id": "env_bathroom_modern_9ba7e0a0",
+        "path": "assets/library/sketchfab/visual_environment_additions_v2/env_bathroom_modern_9ba7e0a0/model.glb",
+        "sha256": "17998b3de1b3b5fa4067fc6408d8ea60f87f70028b8acf8fc34de9fc057a4811",
+        "source_bbox_size": [
+          4.350654,
+          7.659174,
+          3.002345
+        ],
+        "normalization_axis": "x",
+        "target_extent_m": 4.8,
+        "front_view_yaw_degrees": 0.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.233827,
+        "floor_alignment": {
+          "method": "reviewed_horizontal_surface",
+          "source_bbox_min_z": -1.501174,
+          "source_floor_z": -1.2983,
+          "scale": 1.103282403,
+          "surface_overlap_m": 0.01,
+          "computed_anchor_z_m": -0.233827,
+          "evidence": "Modern Bathroom_Structure_0 finished tile floor top"
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "9ba7e0a094694335bd8f4656611c0676",
+        "review_yaw_degrees": 0,
+        "front_clearance_m": 0.65,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_bathroom_modern_9ba7e0a0/collision.obj",
+          "sha256": "1065a4f865779f8cf937ae8a3d9134d7af99c4940ddf7f630c37ff30c5b0782b",
+          "vertex_count": 161137,
+          "face_count": 79842,
+          "bounds_min_m": [
+            -2.399999857,
+            -4.225115776,
+            1.14e-07
+          ],
+          "bounds_max_m": [
+            2.399999857,
+            4.225116253,
+            3.312434435
+          ],
+          "extents_m": [
+            4.799999714,
+            8.450232029,
+            3.312434321
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 1.103282371306,
+            "source_bottom_center": [
+              0.0,
+              0.194249033928,
+              -1.501173973083
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": 0.2238272781,
+            "authoritative_floor_exclusion_half_band_m": 0.0576,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_classroom_bright",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "lab_studio",
+      "semantic_environment_group": "work_education",
+      "semantic_environment": "classroom_bright",
+      "quality_tier": "A",
+      "themes": [
+        "lab"
+      ],
+      "scene_classes": [
+        "ground_flat",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "lab_bench",
+        "concrete_floor_mat",
+        "rubber_floor"
+      ],
+      "back_wall_distance_m": 5.008129,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 1.05,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.32,
+        "focal_length_cap_mm": 34.0
+      },
+      "asset": {
+        "asset_id": "env_classroom_bright_f61f4b6a",
+        "path": "assets/library/sketchfab/visual_environment_replacements_v3/env_classroom_bright_f61f4b6a/model.glb",
+        "sha256": "93f361f70aaa32626e5c00b21aec329afbd6f35925745a9d3ff96970b750fcb4",
+        "source_bbox_size": [
+          7.207788,
+          10.707614,
+          3.169499
+        ],
+        "normalization_axis": "x",
+        "target_extent_m": 5.8,
+        "front_view_yaw_degrees": 0.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.025,
+        "floor_alignment": {
+          "method": "source_bbox_min",
+          "source_bbox_min_z": -0.002117,
+          "source_floor_z": -0.002117,
+          "scale": 0.804685154,
+          "surface_overlap_m": 0.025,
+          "computed_anchor_z_m": -0.025,
+          "evidence": "Bound composite showed the source lower bound at the visible floor."
+        },
+        "exclude_object_names": [],
+        "exclude_object_name_prefixes": [
+          "Ceiling.",
+          "Wall03."
+        ],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "f61f4b6aef7248a4947b56a726b4553f",
+        "review_yaw_degrees": 0,
+        "front_clearance_m": 0.7,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_classroom_bright_f61f4b6a/collision.obj",
+          "sha256": "efce69bb9f84eca89d765b95e98f0b85df1cb0f7160b8654119fdf31c4816309",
+          "vertex_count": 53014,
+          "face_count": 75467,
+          "bounds_min_m": [
+            -2.872757912,
+            -4.237356663,
+            -4.4279e-05
+          ],
+          "bounds_max_m": [
+            2.899991751,
+            4.241117001,
+            2.550448895
+          ],
+          "extents_m": [
+            5.772749662,
+            8.478473663,
+            2.550493173
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.804685208734,
+            "source_bottom_center": [
+              0.002998948097,
+              0.370775222778,
+              -0.002116531366
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": -3.77102e-07,
+            "authoritative_floor_exclusion_half_band_m": 0.0696,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    },
+    {
+      "id": "mesh_env_warehouse_services",
+      "visual_type": "mesh_backdrop",
+      "environment_category": "garage_workshop",
+      "semantic_environment_group": "industrial",
+      "semantic_environment": "warehouse_services_hall",
+      "quality_tier": "B",
+      "themes": [
+        "lab",
+        "studio",
+        "wood_table"
+      ],
+      "scene_classes": [
+        "ground_feature",
+        "ground_flat",
+        "raised_feature",
+        "raised_flat"
+      ],
+      "support_ids": [
+        "concrete_floor_mat",
+        "rubber_floor",
+        "lab_bench",
+        "raised_ramp_long_shallow",
+        "raised_ramp_standard",
+        "raised_ramp_short_steep",
+        "raised_channel_ramp",
+        "ground_ramp_long_shallow",
+        "ground_ramp_standard",
+        "ground_ramp_short_steep",
+        "ground_channel_ramp"
+      ],
+      "back_wall_distance_m": 4.200001,
+      "wall_enabled": false,
+      "side_wall": null,
+      "decor": [],
+      "camera_context": {
+        "depth_offset_m": 1.4,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.18,
+        "focal_length_cap_mm": 36.0,
+        "minimum_elevation_degrees": 24.0,
+        "maximum_elevation_degrees": 32.0
+      },
+      "asset": {
+        "asset_id": "env_office_studio_8fc52866",
+        "path": "assets/library/sketchfab/visual_environment_replacements_v3/env_office_studio_8fc52866/model.glb",
+        "sha256": "98e553167e2f0f1fd28820147c3f5f457c5108e364579ffa51f656d2a913084a",
+        "source_bbox_size": [
+          20.259703,
+          20.259708,
+          4.381991
+        ],
+        "normalization_axis": "x",
+        "target_extent_m": 6.8,
+        "front_view_yaw_degrees": 0.0,
+        "lateral_offset_m": 0.0,
+        "outward_offset_m": 0.0,
+        "anchor_z_m": -0.025,
+        "floor_alignment": {
+          "method": "source_bbox_min",
+          "source_bbox_min_z": -0.124046,
+          "source_floor_z": -0.124046,
+          "scale": 0.335641643,
+          "surface_overlap_m": 0.025,
+          "computed_anchor_z_m": -0.025,
+          "evidence": "Bound composite showed the source lower bound at the visible floor."
+        },
+        "exclude_object_names": [
+          "defaultMaterial.028",
+          "defaultMaterial.090"
+        ],
+        "exclude_object_name_prefixes": [],
+        "source_space_face_exclusions": [],
+        "license": "CC Attribution",
+        "source_uid": "8fc5286645384538a7c405b4457f562a",
+        "review_yaw_degrees": 0,
+        "front_clearance_m": 0.8,
+        "collision_proxy": {
+          "schema_version": "physweep_visual_environment_collision_proxy_v1",
+          "representation": "static_concave_mesh",
+          "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+          "path": "assets/proxies/environment/env_office_studio_8fc52866/collision.obj",
+          "sha256": "e6f86f3fd31fea3ee0cb068be2cfca8c4ea559cb89c3e94275b1ad3dc8429482",
+          "vertex_count": 89242,
+          "face_count": 79930,
+          "bounds_min_m": [
+            -3.399999619,
+            -3.184740067,
+            0.000473093
+          ],
+          "bounds_max_m": [
+            3.399999619,
+            3.400000811,
+            1.470778823
+          ],
+          "extents_m": [
+            6.799999237,
+            6.584740877,
+            1.47030573
+          ],
+          "flags": [
+            "GEOM_FORCE_CONCAVE_TRIMESH"
+          ],
+          "transform_contract": {
+            "frame": "normalized_visual_asset_local_bottom_center_z_up",
+            "scale": 0.335641648181,
+            "source_bottom_center": [
+              -0.467432022095,
+              -1.07978105545,
+              -0.124045886099
+            ],
+            "world_pose_is_frozen_in_scene_metadata": true,
+            "authoritative_floor_z_m": -3.823e-08,
+            "authoritative_floor_exclusion_half_band_m": 0.08,
+            "authoritative_floor_minimum_abs_normal_z": 0.94
+          }
+        }
+      }
+    }
+  ]
+}

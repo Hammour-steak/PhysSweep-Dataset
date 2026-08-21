@@ -1,0 +1,18 @@
+{
+  "semantic_category": "ball_generic",
+  "assets": [
+    {
+      "asset_id": "sketchfab_f33ed1f09bef4d9bb757c25c1304ec96",
+      "name": "Rubber Band Ball",
+      "admission_status": "physweep_v0_approved",
+      "asset_path": "assets/library/sketchfab/foreground/sketchfab_f33ed1f09bef4d9bb757c25c1304ec96/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      }
+    }
+  ]
+}

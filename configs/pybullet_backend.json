@@ -1,0 +1,310 @@
+{
+  "version": "physweep_pybullet_backend_v1",
+  "backend_id": "pybullet_rigid_v1",
+  "scope": "generic_single_body_and_specialized_rigid_scenes",
+  "engine": {
+    "connection_mode": "DIRECT",
+    "gravity_m_s2": [0.0, 0.0, -9.81],
+    "minimum_simulation_hz": 960,
+    "output_fps": 24,
+    "duration_s": 3.0,
+    "solver_iterations": 100,
+    "adaptive_time_step": {
+      "enabled": true,
+      "maximum_hz": 7680,
+      "reference_speed_m_s": 5.2,
+      "maximum_travel_fraction_of_min_extent_per_step": 0.015,
+      "round_to_output_fps_multiple": true
+    },
+    "deterministic_overlapping_pairs": true,
+    "restitution_velocity_threshold_m_s": 0.05,
+    "contact_breaking_threshold_m": 0.001
+  },
+  "contact": {
+    "clearance_m": 0.003,
+    "support_lateral_friction": 1.0,
+    "support_restitution": 1.0,
+    "linear_damping": 0.015,
+    "angular_damping": 0.025,
+    "rolling_friction_by_shape": {
+      "cuboid": 0.0,
+      "sphere": 0.002,
+      "cylinder": 0.0015
+    },
+    "rolling_deceleration_calibration_m_s2": 0.22,
+    "rolling_speed_safety_factor": 1.38,
+    "rolling_speed_max_m_s": 1.8,
+    "spinning_friction_by_shape": {
+      "cuboid": 0.0,
+      "sphere": 0.0002,
+      "cylinder": 0.001
+    }
+  },
+  "base_parameter_rules": {
+    "object_scale_readability": {
+      "minimum_characteristic_extent_m": 0.09,
+      "maximum_readability_uplift_scale": 1.3,
+      "sphere_characteristic": "diameter",
+      "cylinder_characteristic": "diameter",
+      "cuboid_characteristic": "second_largest_extent",
+      "semantic_category_overrides": {
+        "physassets_book": {
+          "characteristic_rule": "largest_extent",
+          "minimum_characteristic_extent_m": 0.22
+        }
+      }
+    },
+    "restitution_by_motion": {
+      "bounce_1obj": [0.60, 0.76],
+      "wall_impact_1obj": [0.42, 0.66],
+      "drop_fall_1obj": [0.06, 0.22],
+      "projectile_1obj": [0.05, 0.18],
+      "arc_projectile_1obj": [0.05, 0.18],
+      "default": [0.04, 0.20]
+    },
+    "bounce_observation": {
+      "minimum_rebound_height": {
+        "fraction_of_vertical_extent": 0.16,
+        "minimum_m": 0.025,
+        "maximum_m": 0.045
+      },
+      "restitution_observation_ratio_range_by_shape": {
+        "cuboid": [0.40, 1.30],
+        "cylinder": [0.40, 1.30],
+        "sphere": [0.50, 1.30]
+      }
+    }
+  },
+  "asset_proxy_rules": {
+    "sampling": {
+      "maximum_attempts_per_scene": 6
+    },
+    "engine": {
+      "restitution_velocity_threshold_m_s": 0.08,
+      "enable_cone_friction": true,
+      "use_split_impulse": true
+    },
+    "contact": {
+      "ground": {"lateral_friction": 0.75, "restitution": 0.08},
+      "support": {"lateral_friction": 0.62, "restitution": 0.06},
+      "static_prop": {"lateral_friction": 0.58, "restitution": 0.06},
+      "dynamic_defaults": {
+        "linear_damping": 0.025,
+        "angular_damping": 0.035,
+        "rolling_friction": 0.0008,
+        "spinning_friction": 0.0003,
+        "contact_processing_threshold_m": 0.0
+      }
+    },
+    "placement": {
+      "minimum_safe_half_extent_x_m": 0.08,
+      "minimum_safe_half_extent_y_m": 0.04,
+      "support_margin_x_m": 0.06,
+      "support_margin_y_m": 0.05,
+      "support_clearance_m": 0.004,
+      "yaw_degrees": [-28.0, 28.0],
+      "static_prop_yaw_degrees": [-12.0, 12.0],
+      "prop_lane_yaw_attempts": 8,
+      "static_prop_support_margin_m": 0.012,
+      "prop_lane_support_margin_m": 0.012,
+      "prop_lane_minimum_clearance_m": 0.02
+    },
+    "motion_profiles": {
+      "vertical_drop": {
+        "start_x_safe_fraction": [-0.18, 0.18],
+        "drop_height_m": [0.22, 0.40]
+      },
+      "resting_push": {
+        "start_x_safe_fraction": -0.58,
+        "velocity_x_m_s": [0.72, 1.05],
+        "target_coast_fraction_of_available_distance": [0.46, 0.64],
+        "minimum_coast_distance_m": 0.28,
+        "maximum_coast_distance_m": 0.58,
+        "minimum_coast_speed_margin": [1.06, 1.14],
+        "maximum_launch_speed_m_s": 2.4
+      },
+      "diagonal_push": {
+        "start_x_safe_fraction": -0.55,
+        "start_y_safe_fraction": -0.30,
+        "velocity_x_m_s": [0.72, 1.02],
+        "velocity_y_m_s": [0.12, 0.28],
+        "angular_velocity_z_rad_s": [-1.2, 1.2],
+        "target_coast_fraction_of_available_distance": [0.44, 0.60],
+        "minimum_coast_distance_m": 0.26,
+        "maximum_coast_distance_m": 0.52,
+        "minimum_coast_speed_margin": [1.06, 1.14],
+        "maximum_launch_speed_m_s": 2.4
+      },
+      "edge_exit": {
+        "start_x_safe_fraction": [0.52, 0.68],
+        "support_clearance_m": 0.001,
+        "minimum_proxy_volume_fill_ratio": 0.35,
+        "minimum_coast_speed_margin": [1.40, 1.50],
+        "non_round_tipping_energy_multiplier": 1.0,
+        "maximum_launch_speed_m_s": 4.0
+      },
+      "workbench_clear_zone_drop": {
+        "start_y_safe_fraction": [-0.18, 0.18],
+        "drop_height_m": [0.22, 0.36]
+      },
+      "workbench_long_axis_push": {
+        "start_y_safe_fraction": -0.58,
+        "velocity_y_m_s": [0.72, 1.02],
+        "target_coast_fraction_of_available_distance": [0.46, 0.64],
+        "minimum_coast_distance_m": 0.30,
+        "maximum_coast_distance_m": 0.62,
+        "minimum_coast_speed_margin": [1.06, 1.14],
+        "maximum_launch_speed_m_s": 2.6
+      }
+    },
+    "round_proxy_motion": {
+      "target_duration_s": [2.4, 3.2],
+      "minimum_launch_speed_m_s": 0.14,
+      "maximum_launch_speed_m_s": 0.55
+    },
+    "quality": {
+      "minimum_active_duration_s_by_profile": {
+        "vertical_drop": 0.18,
+        "resting_push": 0.50,
+        "diagonal_push": 0.45,
+        "edge_exit": 0.60,
+        "workbench_clear_zone_drop": 0.18,
+        "workbench_long_axis_push": 0.45
+      },
+      "minimum_visible_motion_m": 0.10,
+      "maximum_linear_speed_m_s": 7.0,
+      "maximum_angular_speed_rad_s": 60.0,
+      "minimum_world_z_m": -0.08,
+      "drop_minimum_airborne_frames": 3,
+      "drop_minimum_vertical_extent_m": 0.16,
+      "push_initial_contact_frames": 4,
+      "push_minimum_support_contact_fraction": 0.50,
+      "push_minimum_projected_displacement_m": 0.08,
+      "diagonal_minimum_x_displacement_m": 0.07,
+      "diagonal_minimum_y_displacement_m": 0.015,
+      "edge_minimum_initial_support_frames": 3,
+      "edge_exit_consecutive_frames": 3,
+      "edge_minimum_vertical_drop_m": 0.18,
+      "edge_minimum_support_height_drop_fraction": 0.45,
+      "workbench_minimum_support_contact_fraction": 0.35,
+      "workbench_minimum_projected_displacement_m": 0.12
+    }
+  },
+  "billiards_rules": {
+    "ball_radius_m": 0.028575,
+    "ball_mass_kg": 0.17,
+    "engine": {
+      "solver_iterations": 180,
+      "restitution_velocity_threshold_m_s": 0.02,
+      "enable_cone_friction": true,
+      "use_split_impulse": true
+    },
+    "support_dynamics": {"lateral_friction": 0.20, "restitution": 0.82},
+    "ball_dynamics": {
+      "lateral_friction": 0.16,
+      "restitution": 0.92,
+      "linear_damping": 0.025,
+      "angular_damping": 0.010,
+      "rolling_friction": 0.0025,
+      "spinning_friction": 0.0006,
+      "contact_processing_threshold_m": 0.0
+    },
+    "initial_states": {
+      "single_ball_free_roll": [
+        {"object_id": "cue_ball", "position_xy_m": [-0.58, -0.16], "velocity_m_s": [0.48, 0.08, 0.0]}
+      ],
+      "single_ball_rail_rebound": [
+        {"object_id": "cue_ball", "position_xy_m": [-0.55, -0.24], "velocity_m_s": [0.45, 0.75, 0.0]}
+      ],
+      "three_ball_collision": [
+        {"object_id": "cue_ball", "position_xy_m": [-0.55, 0.0], "velocity_m_s": [0.92, 0.0, 0.0]},
+        {"object_id": "object_ball_1", "position_xy_m": [0.05, 0.0], "velocity_m_s": [0.0, 0.0, 0.0]},
+        {"object_id": "object_ball_2", "position_xy_m": [0.103, 0.026], "velocity_m_s": [0.0, 0.0, 0.0]}
+      ]
+    },
+    "quality": {
+      "minimum_visible_motion_m": 0.35,
+      "maximum_bed_penetration_m": 0.008,
+      "maximum_abs_x_m": 1.16,
+      "maximum_abs_y_m": 0.59,
+      "maximum_unforced_speed_gain_ratio": 1.03,
+      "minimum_rail_contact_height_above_bed_m": 0.012,
+      "minimum_pre_rebound_normal_speed_m_s": 0.10,
+      "minimum_post_rebound_normal_speed_m_s": 0.05,
+      "rail_rebound_speed_ratio": [0.05, 1.05]
+    }
+  },
+  "quality": {
+    "active_speed_threshold_m_s": 0.03,
+    "minimum_active_duration_s_by_motion": {
+      "slide_push_1obj": 0.45,
+      "roll_or_slide_1obj": 0.50,
+      "wall_impact_1obj": 0.20,
+      "edge_fall_1obj": 0.60,
+      "drop_fall_1obj": 0.18,
+      "projectile_1obj": 0.30,
+      "arc_projectile_1obj": 0.45,
+      "slope_slide_down_1obj": 1.15,
+      "slope_slide_up_1obj": 1.30,
+      "ramp_to_flat_1obj": 0.85,
+      "bounce_1obj": 0.95
+    },
+    "maximum_initial_penetration_m": 0.0005,
+    "maximum_trajectory_penetration_m": 0.008,
+    "maximum_trajectory_penetration_fraction_of_min_extent": 0.10,
+    "audit_distance_absolute_tolerance_m": 0.0001,
+    "audit_distance_relative_tolerance_fraction": 0.02,
+    "audit_dimensionless_ratio_tolerance": 0.02,
+    "audit_extremum_interval_error_multiplier": 2.0,
+    "maximum_unforced_lateral_drift_m": 0.035,
+    "minimum_visible_motion_m": 0.12,
+    "maximum_linear_speed_m_s": 5.2,
+    "maximum_angular_speed_rad_s": 60.0,
+    "maximum_rotational_surface_speed_m_s": 4.5,
+    "rolling_coupling_ratio_range": [0.75, 1.35],
+    "parameter_match_absolute_tolerance": 0.000001,
+    "maximum_primitive_inertia_relative_error": 0.000001,
+    "maximum_unforced_energy_gain_fraction": 0.05,
+    "maximum_unforced_energy_gain_j_per_kg": 0.01,
+    "maximum_gravity_fit_relative_error": 0.04,
+    "maximum_ballistic_theory_rmse_m": 0.02,
+    "maximum_ballistic_theory_error_m": 0.04,
+    "maximum_airborne_horizontal_velocity_drift_m_s": 0.08,
+    "maximum_coulomb_friction_utilization": 1.05,
+    "minimum_kinetic_sliding_friction_utilization": 0.7,
+    "rest_drift_window_frames": 12,
+    "rest_linear_speed_threshold_m_s": 0.06,
+    "rest_angular_speed_threshold_rad_s": 0.1,
+    "maximum_rest_drift_m": 0.012,
+    "allow_exit_after_primary_motion": true,
+    "minimum_full_trajectory_center_visible_fraction": 0.50,
+    "minimum_primary_trajectory_center_visible_fraction": 0.75,
+    "full_trajectory_camera_target_blend": 0.30,
+    "minimum_initial_object_span_ndc": 0.06,
+    "minimum_initial_object_visible_fraction": 0.65,
+    "initial_object_center_margin_ndc": 0.02,
+    "camera_object_span_reference_m": 0.18,
+    "maximum_initial_object_span_ndc": 0.38,
+    "maximum_initial_object_span_cap_ndc": 0.50,
+    "minimum_support_context_visible_fraction": 0.50,
+    "minimum_primary_trajectory_unoccluded_fraction": 0.90,
+    "minimum_full_trajectory_unoccluded_fraction": 0.35,
+    "minimum_camera_distance_floor_m": 1.25,
+    "minimum_camera_distance_offset_m": 0.42,
+    "minimum_camera_distance_support_diagonal_scale": 0.28,
+    "preferred_camera_distance_offset_m": 0.20,
+    "camera_distance_penalty_weight": 0.15,
+    "maximum_camera_distance_above_minimum_m": 1.70,
+    "soft_maximum_focus_span_ndc": 1.0,
+    "maximum_focus_span_ndc": 1.70,
+    "focus_span_penalty_weight": 0.12,
+    "maximum_camera_distance_m": 5.0
+  },
+  "invariants": {
+    "metadata_is_immutable_during_simulation": true,
+    "one_scene_uses_one_physics_backend": true,
+    "no_scene_id_specific_branches": true,
+    "unsupported_combinations_are_rejected_not_substituted": true,
+    "renderer_reads_only_bound_metadata_and_trajectory": true
+  }
+}

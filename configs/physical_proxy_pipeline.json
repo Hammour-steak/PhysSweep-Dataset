@@ -1,0 +1,37 @@
+{
+  "version": "physweep_physical_proxy_release_v1",
+  "catalog": {
+    "manifest": "assets/proxies/catalog.json",
+    "records": "assets/proxies/objects/records.jsonl",
+    "validation": "assets/proxies/objects/validation.json"
+  },
+  "inventory": {
+    "sketchfab_root": "assets/library/sketchfab",
+    "asset_proxy_registry": "configs/asset_proxy_registry.json",
+    "object_profiles": "configs/physassets_core_object_profiles.json",
+    "support_profiles": "configs/support_mesh_profiles.json",
+    "environment_proxies": "configs/visual_environment_collision_proxies.json"
+  },
+  "scope": {
+    "physassets": "all generated primitive candidates",
+    "sketchfab": "every locally downloaded GLB has one catalog disposition",
+    "static_extraction_state": "catalogued",
+    "static_support_runtime": "exact_proxy_enabled"
+  },
+  "policy": {
+    "catalog_is_the_only_runtime_physical_asset_index": true,
+    "raw_sources_are_immutable": true,
+    "visual_assets_and_physical_proxies_are_separate": true,
+    "dynamic_triangle_mesh_is_never_used_directly": true,
+    "concave_triangle_mesh_is_static_only": true,
+    "coacd_is_reserved_for_complex_dynamic_assets": true,
+    "source_hash_or_source_proxy_hash_is_required": true,
+    "asset_ids_are_forbidden_in_motion_code": true,
+    "rules_dispatch_on_capabilities_not_asset_ids": true,
+    "static_support_requires_visual_collision_surface_parity": true,
+    "trimesh_static_extraction_is_provisional_only": true,
+    "sampling_requires_runtime_validation": true,
+    "failed_or_pending_records_remain_catalogued_but_unsampleable": true,
+    "release_is_validated_before_atomic_promotion": true
+  }
+}

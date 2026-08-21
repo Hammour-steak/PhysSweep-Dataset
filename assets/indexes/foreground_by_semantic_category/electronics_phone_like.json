@@ -1,0 +1,18 @@
+{
+  "semantic_category": "electronics_phone_like",
+  "assets": [
+    {
+      "asset_id": "sketchfab_f4d11e48cc52479c802ec2cf0d629f68",
+      "name": "Modern Generic Smartphone",
+      "admission_status": "physweep_v0_approved",
+      "asset_path": "assets/library/sketchfab/foreground/sketchfab_f4d11e48cc52479c802ec2cf0d629f68/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      }
+    }
+  ]
+}

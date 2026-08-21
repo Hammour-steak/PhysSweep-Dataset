@@ -1,0 +1,35 @@
+{
+  "schema_version": "physweep_asset_semantic_scene_rules_v1",
+  "generic_one_object": {
+    "excluded_support_categories": [
+      "support_game_table"
+    ]
+  },
+  "specialized_scene_families": {
+    "billiards_single_ball": {
+      "support_category": "support_game_table",
+      "dynamic_object_count": 1,
+      "dynamic_semantics": [
+        "cue_ball"
+      ],
+      "profiles": [
+        "single_ball_free_roll",
+        "single_ball_rail_rebound"
+      ],
+      "pocket_sink_supported": false
+    },
+    "billiards_collision": {
+      "support_category": "support_game_table",
+      "dynamic_object_count": 3,
+      "dynamic_semantics": [
+        "cue_ball",
+        "object_ball_1",
+        "object_ball_2"
+      ],
+      "profiles": [
+        "three_ball_collision"
+      ],
+      "pocket_sink_supported": false
+    }
+  }
+}

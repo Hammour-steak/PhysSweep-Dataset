@@ -1,0 +1,220 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_c6ca6667fd7d4381bd184874dcf44075",
+  "name": "Stack Of Old Books",
+  "asset_role": "static_prop",
+  "semantic_category": "prop_books",
+  "admission": {
+    "reason": "old book stack has a tight box proxy",
+    "sampling_enabled": true,
+    "status": "approved"
+  },
+  "proxy_kind": "static_compound",
+  "normalization_mode": "metric_registry_binding",
+  "mesh_component_count": 6,
+  "overall_bounds_low_m": [
+    -0.1699893,
+    -0.105,
+    -0.0
+  ],
+  "overall_bounds_high_m": [
+    0.1699893,
+    0.105,
+    0.1040039
+  ],
+  "overall_extent_m": [
+    0.3399785,
+    0.21,
+    0.1040039
+  ],
+  "total_vertex_count": 1026,
+  "total_triangle_count": 876,
+  "components": [
+    {
+      "object_name": "defaultMaterial",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1593612,
+        0.0383576,
+        -0.0
+      ],
+      "bounds_high_m": [
+        -0.0979823,
+        0.0807653,
+        0.0883593
+      ],
+      "center_m": [
+        -0.1286718,
+        0.0595615,
+        0.0441796
+      ],
+      "extent_m": [
+        0.0613789,
+        0.0424077,
+        0.0883593
+      ],
+      "vertex_count": 166,
+      "triangle_count": 136,
+      "materials": [
+        "lambert1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.03097389
+    },
+    {
+      "object_name": "defaultMaterial.001",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0228868,
+        -0.0738801,
+        0.0003881
+      ],
+      "bounds_high_m": [
+        0.1699893,
+        0.0516827,
+        0.0222847
+      ],
+      "center_m": [
+        0.0964381,
+        -0.0110987,
+        0.0113364
+      ],
+      "extent_m": [
+        0.1471024,
+        0.1255628,
+        0.0218967
+      ],
+      "vertex_count": 176,
+      "triangle_count": 156,
+      "materials": [
+        "lambert1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.0544677
+    },
+    {
+      "object_name": "defaultMaterial.002",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1381713,
+        -0.0738801,
+        0.0821072
+      ],
+      "bounds_high_m": [
+        0.008931,
+        0.0516827,
+        0.1040039
+      ],
+      "center_m": [
+        -0.0646201,
+        -0.0110987,
+        0.0930555
+      ],
+      "extent_m": [
+        0.1471024,
+        0.1255628,
+        0.0218967
+      ],
+      "vertex_count": 176,
+      "triangle_count": 156,
+      "materials": [
+        "lambert1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.0544677
+    },
+    {
+      "object_name": "defaultMaterial.003",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1543664,
+        -0.0714778,
+        0.0600573
+      ],
+      "bounds_high_m": [
+        0.0234213,
+        0.0607515,
+        0.0814154
+      ],
+      "center_m": [
+        -0.0654725,
+        -0.0053632,
+        0.0707363
+      ],
+      "extent_m": [
+        0.1777877,
+        0.1322292,
+        0.021358
+      ],
+      "vertex_count": 166,
+      "triangle_count": 136,
+      "materials": [
+        "lambert1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.06761909
+    },
+    {
+      "object_name": "defaultMaterial.004",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1699893,
+        -0.0708942,
+        0.0368214
+      ],
+      "bounds_high_m": [
+        0.0183078,
+        0.0680088,
+        0.059944
+      ],
+      "center_m": [
+        -0.0758407,
+        -0.0014427,
+        0.0483827
+      ],
+      "extent_m": [
+        0.1882971,
+        0.138903,
+        0.0231226
+      ],
+      "vertex_count": 166,
+      "triangle_count": 136,
+      "materials": [
+        "lambert1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.08144634
+    },
+    {
+      "object_name": "defaultMaterial.005",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1550372,
+        -0.105,
+        0.000331
+      ],
+      "bounds_high_m": [
+        0.0395754,
+        0.105,
+        0.036983
+      ],
+      "center_m": [
+        -0.0577309,
+        0.0,
+        0.018657
+      ],
+      "extent_m": [
+        0.1946125,
+        0.21,
+        0.0366521
+      ],
+      "vertex_count": 176,
+      "triangle_count": 156,
+      "materials": [
+        "lambert1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.20172909
+    }
+  ]
+}

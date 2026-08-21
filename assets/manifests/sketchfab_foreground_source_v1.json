@@ -1,0 +1,2329 @@
+{
+  "version": "physweep_real_object_admission_v1",
+  "created_at": "2026-07-10T07:25:26.383577+00:00",
+  "geometry_audit": "assets/foreground_curation/real_object_geometry_audit_v1.json",
+  "policy": {
+    "source_files_are_immutable": true,
+    "visual_scale": "uniform_scale_preserve_glb_aspect_ratio",
+    "canonical_extent": "semantic_physical_scale_times_oriented_glb_aspect_ratio",
+    "collision_extent": "must_equal_normalized_visual_bbox_extent_on_all_axes",
+    "sampling_gate": [
+      "physweep_v0_approved"
+    ],
+    "review_excluded_from_sampling": true
+  },
+  "counts": {
+    "physweep_v0_approved": 14,
+    "physweep_v0_review": 2
+  },
+  "records": [
+    {
+      "candidate_id": "sketchfab_f33ed1f09bef4d9bb757c25c1304ec96",
+      "name": "Rubber Band Ball",
+      "semantic_category": "ball_generic",
+      "scene_role": "foreground_rigid_moving",
+      "shape_family": "sphere",
+      "size_class": "small",
+      "material_hint": "rubber",
+      "admission_status": "physweep_v0_approved",
+      "selection_rank": 10,
+      "notes": "Clean import, textured asset, and simple dynamic proxy.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_f33ed1f09bef4d9bb757c25c1304ec96/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 1763484,
+      "sha256": "17fd89f63db86277188be922b2e27bb40107202871be2d7e29a5cdfa406dfcfd",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "010a20463d8d4cad8b9a3eaa432c0616",
+        "username": "xavierdh",
+        "display_name": "xavierdh",
+        "profile_url": "https://sketchfab.com/xavierdh"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-f33ed1f09bef4d9bb757c25c1304ec96",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_f33ed1f09bef4d9bb757c25c1304ec96.png",
+      "import_ok": true,
+      "mesh_count": 2,
+      "polygon_count": 20982,
+      "texture_image_count": 1,
+      "has_image_texture": true,
+      "bbox_size": [
+        68.608017,
+        67.691986,
+        69.53476
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_proxy_allowed",
+        "collision_proxy": {
+          "proxy_type": "sphere",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.157868,
+            0.15576,
+            0.16
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "small",
+          "canonical_extent_m": [
+            0.157868,
+            0.15576,
+            0.16
+          ],
+          "mass_range_kg": [
+            0.04,
+            0.45
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "rubber",
+          "friction": 0.78,
+          "restitution": 0.55,
+          "density_hint": "low_medium"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_f33ed1f09bef4d9bb757c25c1304ec96",
+        "source_uid": "f33ed1f09bef4d9bb757c25c1304ec96",
+        "name": "Rubber Band Ball",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_f33ed1f09bef4d9bb757c25c1304ec96/model.glb",
+        "size_bytes": 1763484,
+        "sha256": "17fd89f63db86277188be922b2e27bb40107202871be2d7e29a5cdfa406dfcfd",
+        "classification": {
+          "semantic_category": "ball_generic",
+          "scene_role": "foreground_rigid_moving",
+          "shape_family": "sphere",
+          "collision_proxy": "sphere",
+          "size_class": "small",
+          "material_hint": "rubber",
+          "technical_tier": "v0_ready_candidate",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "010a20463d8d4cad8b9a3eaa432c0616",
+          "username": "xavierdh",
+          "display_name": "xavierdh",
+          "profile_url": "https://sketchfab.com/xavierdh"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-f33ed1f09bef4d9bb757c25c1304ec96",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_f33ed1f09bef4d9bb757c25c1304ec96/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_f33ed1f09bef4d9bb757c25c1304ec96/source_api_response.json",
+        "downloaded_at": "2026-07-04T08:01:52.804666+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          68.608015,
+          67.691986,
+          69.534756
+        ],
+        "visual_alignment_degrees": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "semantic_max_dimension_m": 0.16,
+        "normalized_visual_extent_m": [
+          0.157868,
+          0.15576,
+          0.16
+        ],
+        "collision_proxy_extent_m": [
+          0.157868,
+          0.15576,
+          0.16
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "passed_v1_contact_sheet_2026_07_10",
+        "review_reason": null
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_f33ed1f09bef4d9bb757c25c1304ec96/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_76fa80950b1f48a8ad6a8441fe443241",
+      "name": "Cardboard box",
+      "semantic_category": "box_cardboard",
+      "scene_role": "foreground_rigid_moving",
+      "shape_family": "box",
+      "size_class": "medium",
+      "material_hint": "cardboard",
+      "admission_status": "physweep_v0_approved",
+      "selection_rank": 10,
+      "notes": "Clean import, textured asset, and simple dynamic proxy.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_76fa80950b1f48a8ad6a8441fe443241/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 797764,
+      "sha256": "32bb0395672f3efcaaf9efa9c0f4cb05211d71b68073e7c016b65e3713419407",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "0ed2671b072447a79a8dfa896237cd23",
+        "username": "macriciox",
+        "display_name": "macriciox",
+        "profile_url": "https://sketchfab.com/macriciox"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-76fa80950b1f48a8ad6a8441fe443241",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_76fa80950b1f48a8ad6a8441fe443241.png",
+      "import_ok": true,
+      "mesh_count": 1,
+      "polygon_count": 216,
+      "texture_image_count": 1,
+      "has_image_texture": true,
+      "bbox_size": [
+        0.773568,
+        0.39287,
+        0.639849
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_proxy_allowed",
+        "collision_proxy": {
+          "proxy_type": "box",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.42,
+            0.347399,
+            0.213304
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "medium",
+          "canonical_extent_m": [
+            0.42,
+            0.347399,
+            0.213304
+          ],
+          "mass_range_kg": [
+            0.15,
+            1.8
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "cardboard",
+          "friction": 0.62,
+          "restitution": 0.1,
+          "density_hint": "low"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_76fa80950b1f48a8ad6a8441fe443241",
+        "source_uid": "76fa80950b1f48a8ad6a8441fe443241",
+        "name": "Cardboard box",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_76fa80950b1f48a8ad6a8441fe443241/model.glb",
+        "size_bytes": 797764,
+        "sha256": "32bb0395672f3efcaaf9efa9c0f4cb05211d71b68073e7c016b65e3713419407",
+        "classification": {
+          "semantic_category": "box_cardboard",
+          "scene_role": "foreground_rigid_moving",
+          "shape_family": "box",
+          "collision_proxy": "box",
+          "size_class": "medium",
+          "material_hint": "cardboard",
+          "technical_tier": "v0_ready_candidate",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "0ed2671b072447a79a8dfa896237cd23",
+          "username": "macriciox",
+          "display_name": "macriciox",
+          "profile_url": "https://sketchfab.com/macriciox"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-76fa80950b1f48a8ad6a8441fe443241",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_76fa80950b1f48a8ad6a8441fe443241/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_76fa80950b1f48a8ad6a8441fe443241/source_api_response.json",
+        "downloaded_at": "2026-07-04T08:01:24.068641+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          0.773568,
+          0.39287,
+          0.639849
+        ],
+        "visual_alignment_degrees": [
+          90.0,
+          0.0,
+          0.0
+        ],
+        "semantic_max_dimension_m": 0.42,
+        "normalized_visual_extent_m": [
+          0.42,
+          0.347399,
+          0.213304
+        ],
+        "collision_proxy_extent_m": [
+          0.42,
+          0.347399,
+          0.213304
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "passed_v1_contact_sheet_2026_07_10",
+        "review_reason": null
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_76fa80950b1f48a8ad6a8441fe443241/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_4ae035ea89ea40bbaa82403b9c36afab",
+      "name": "A Wooden Crate",
+      "semantic_category": "box_crate",
+      "scene_role": "foreground_rigid_moving",
+      "shape_family": "box",
+      "size_class": "medium",
+      "material_hint": "wood",
+      "admission_status": "physweep_v0_approved",
+      "selection_rank": 10,
+      "notes": "Clean import, textured asset, and simple dynamic proxy.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_4ae035ea89ea40bbaa82403b9c36afab/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 5380964,
+      "sha256": "4e1d435fbdb735b6b45fc5fc77d0910aaa4bc079f8df23a324748843fdf5f2dd",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "896966eb302947e686de3525fc1c5c2f",
+        "username": "Banketo",
+        "display_name": "Krystian Zem",
+        "profile_url": "https://sketchfab.com/Banketo"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-4ae035ea89ea40bbaa82403b9c36afab",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_4ae035ea89ea40bbaa82403b9c36afab.png",
+      "import_ok": true,
+      "mesh_count": 2,
+      "polygon_count": 952,
+      "texture_image_count": 6,
+      "has_image_texture": true,
+      "bbox_size": [
+        37.460304,
+        53.36174,
+        18.34758
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_proxy_allowed",
+        "collision_proxy": {
+          "proxy_type": "box",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.42,
+            0.294843,
+            0.14441
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "medium",
+          "canonical_extent_m": [
+            0.42,
+            0.294843,
+            0.14441
+          ],
+          "mass_range_kg": [
+            0.15,
+            1.8
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "wood",
+          "friction": 0.55,
+          "restitution": 0.18,
+          "density_hint": "medium"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_4ae035ea89ea40bbaa82403b9c36afab",
+        "source_uid": "4ae035ea89ea40bbaa82403b9c36afab",
+        "name": "A Wooden Crate",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_4ae035ea89ea40bbaa82403b9c36afab/model.glb",
+        "size_bytes": 5380964,
+        "sha256": "4e1d435fbdb735b6b45fc5fc77d0910aaa4bc079f8df23a324748843fdf5f2dd",
+        "classification": {
+          "semantic_category": "box_crate",
+          "scene_role": "foreground_rigid_moving",
+          "shape_family": "box",
+          "collision_proxy": "box_or_convex_hull",
+          "size_class": "medium",
+          "material_hint": "wood",
+          "technical_tier": "v0_ready_candidate",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "896966eb302947e686de3525fc1c5c2f",
+          "username": "Banketo",
+          "display_name": "Krystian Zem",
+          "profile_url": "https://sketchfab.com/Banketo"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-4ae035ea89ea40bbaa82403b9c36afab",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_4ae035ea89ea40bbaa82403b9c36afab/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_4ae035ea89ea40bbaa82403b9c36afab/source_api_response.json",
+        "downloaded_at": "2026-07-04T08:01:40.706951+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          37.460304,
+          53.361738,
+          18.347581
+        ],
+        "visual_alignment_degrees": [
+          0.0,
+          0.0,
+          90.0
+        ],
+        "semantic_max_dimension_m": 0.42,
+        "normalized_visual_extent_m": [
+          0.42,
+          0.294843,
+          0.14441
+        ],
+        "collision_proxy_extent_m": [
+          0.42,
+          0.294843,
+          0.14441
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "passed_v1_contact_sheet_2026_07_10",
+        "review_reason": null
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_4ae035ea89ea40bbaa82403b9c36afab/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_f4d11e48cc52479c802ec2cf0d629f68",
+      "name": "Modern Generic Smartphone",
+      "semantic_category": "electronics_phone_like",
+      "scene_role": "foreground_rigid_moving",
+      "shape_family": "thin_box",
+      "size_class": "small_flat",
+      "material_hint": "plastic_glass",
+      "admission_status": "physweep_v0_approved",
+      "selection_rank": 10,
+      "notes": "Clean import, textured asset, and simple dynamic proxy.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_f4d11e48cc52479c802ec2cf0d629f68/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 470608,
+      "sha256": "039260946fd0d7791b8cefb569653dccf59d1e3bfcaec313bc3861590d4a9a5b",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "e0990d5fa91b4c6991dd71809ed47c25",
+        "username": "Ottto3ds",
+        "display_name": "Ottto3d",
+        "profile_url": "https://sketchfab.com/Ottto3ds"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-f4d11e48cc52479c802ec2cf0d629f68",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_f4d11e48cc52479c802ec2cf0d629f68.png",
+      "import_ok": true,
+      "mesh_count": 1,
+      "polygon_count": 2706,
+      "texture_image_count": 3,
+      "has_image_texture": true,
+      "bbox_size": [
+        0.077724,
+        0.009676,
+        0.157557
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_proxy_allowed",
+        "collision_proxy": {
+          "proxy_type": "box",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.16,
+            0.078929,
+            0.009826
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "small_flat",
+          "canonical_extent_m": [
+            0.16,
+            0.078929,
+            0.009826
+          ],
+          "mass_range_kg": [
+            0.03,
+            0.35
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "plastic_glass",
+          "friction": 0.34,
+          "restitution": 0.22,
+          "density_hint": "medium"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_f4d11e48cc52479c802ec2cf0d629f68",
+        "source_uid": "f4d11e48cc52479c802ec2cf0d629f68",
+        "name": "Modern Generic Smartphone",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_f4d11e48cc52479c802ec2cf0d629f68/model.glb",
+        "size_bytes": 470608,
+        "sha256": "039260946fd0d7791b8cefb569653dccf59d1e3bfcaec313bc3861590d4a9a5b",
+        "classification": {
+          "semantic_category": "electronics_phone_like",
+          "scene_role": "foreground_rigid_moving",
+          "shape_family": "thin_box",
+          "collision_proxy": "box",
+          "size_class": "small_flat",
+          "material_hint": "plastic_glass",
+          "technical_tier": "v0_ready_candidate",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "e0990d5fa91b4c6991dd71809ed47c25",
+          "username": "Ottto3ds",
+          "display_name": "Ottto3d",
+          "profile_url": "https://sketchfab.com/Ottto3ds"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-f4d11e48cc52479c802ec2cf0d629f68",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_f4d11e48cc52479c802ec2cf0d629f68/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_f4d11e48cc52479c802ec2cf0d629f68/source_api_response.json",
+        "downloaded_at": "2026-07-04T08:02:41.612734+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          0.077724,
+          0.009676,
+          0.157557
+        ],
+        "visual_alignment_degrees": [
+          90.0,
+          0.0,
+          90.0
+        ],
+        "semantic_max_dimension_m": 0.16,
+        "normalized_visual_extent_m": [
+          0.16,
+          0.078929,
+          0.009826
+        ],
+        "collision_proxy_extent_m": [
+          0.16,
+          0.078929,
+          0.009826
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "passed_v1_contact_sheet_2026_07_10",
+        "review_reason": null
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_f4d11e48cc52479c802ec2cf0d629f68/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_b0902ff83cf946c984f9f7e0197ddb7f",
+      "name": "Remote Control",
+      "semantic_category": "electronics_remote",
+      "scene_role": "foreground_rigid_moving",
+      "shape_family": "thin_box",
+      "size_class": "small_flat",
+      "material_hint": "plastic",
+      "admission_status": "physweep_v0_approved",
+      "selection_rank": 10,
+      "notes": "Clean import, textured asset, and simple dynamic proxy.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_b0902ff83cf946c984f9f7e0197ddb7f/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 2831756,
+      "sha256": "4478515666ebf80a68f1dcb052f8fbf813c880c684bc700f295b4b9567891579",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "273d1165d30f427eaf34087fa3451e4e",
+        "username": "mehmetkiran",
+        "display_name": "mehmetkiran",
+        "profile_url": "https://sketchfab.com/mehmetkiran"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-b0902ff83cf946c984f9f7e0197ddb7f",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_b0902ff83cf946c984f9f7e0197ddb7f.png",
+      "import_ok": true,
+      "mesh_count": 2,
+      "polygon_count": 2384,
+      "texture_image_count": 5,
+      "has_image_texture": true,
+      "bbox_size": [
+        1.285561,
+        4.84378,
+        0.613904
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_proxy_allowed",
+        "collision_proxy": {
+          "proxy_type": "box",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.2,
+            0.053081,
+            0.025348
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "small_flat",
+          "canonical_extent_m": [
+            0.2,
+            0.053081,
+            0.025348
+          ],
+          "mass_range_kg": [
+            0.03,
+            0.35
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "plastic",
+          "friction": 0.38,
+          "restitution": 0.3,
+          "density_hint": "low_medium"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_b0902ff83cf946c984f9f7e0197ddb7f",
+        "source_uid": "b0902ff83cf946c984f9f7e0197ddb7f",
+        "name": "Remote Control",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_b0902ff83cf946c984f9f7e0197ddb7f/model.glb",
+        "size_bytes": 2831756,
+        "sha256": "4478515666ebf80a68f1dcb052f8fbf813c880c684bc700f295b4b9567891579",
+        "classification": {
+          "semantic_category": "electronics_remote",
+          "scene_role": "foreground_rigid_moving",
+          "shape_family": "thin_box",
+          "collision_proxy": "box",
+          "size_class": "small_flat",
+          "material_hint": "plastic",
+          "technical_tier": "v0_ready_candidate",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "273d1165d30f427eaf34087fa3451e4e",
+          "username": "mehmetkiran",
+          "display_name": "mehmetkiran",
+          "profile_url": "https://sketchfab.com/mehmetkiran"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-b0902ff83cf946c984f9f7e0197ddb7f",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_b0902ff83cf946c984f9f7e0197ddb7f/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_b0902ff83cf946c984f9f7e0197ddb7f/source_api_response.json",
+        "downloaded_at": "2026-07-04T08:02:33.865252+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          1.285561,
+          4.84378,
+          0.613903
+        ],
+        "visual_alignment_degrees": [
+          0.0,
+          0.0,
+          90.0
+        ],
+        "semantic_max_dimension_m": 0.2,
+        "normalized_visual_extent_m": [
+          0.2,
+          0.053081,
+          0.025348
+        ],
+        "collision_proxy_extent_m": [
+          0.2,
+          0.053081,
+          0.025348
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "passed_v1_contact_sheet_2026_07_10",
+        "review_reason": null
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_b0902ff83cf946c984f9f7e0197ddb7f/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_dae37cc4869a4155b6999efe26df710c",
+      "name": "Closed Magazine",
+      "semantic_category": "office_book",
+      "scene_role": "foreground_rigid_moving",
+      "shape_family": "thin_box",
+      "size_class": "small_flat",
+      "material_hint": "paper",
+      "admission_status": "physweep_v0_approved",
+      "selection_rank": 10,
+      "notes": "Clean import, textured asset, and simple dynamic proxy.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_dae37cc4869a4155b6999efe26df710c/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 450588,
+      "sha256": "49aefb633d237b8f4aaf7a31408460f8a7a8e8447269df427c7ca14788238139",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "54012d0645b24fcd87b725db9e5a7ada",
+        "username": "abdillaamy",
+        "display_name": "abdillaamy",
+        "profile_url": "https://sketchfab.com/abdillaamy"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-dae37cc4869a4155b6999efe26df710c",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_dae37cc4869a4155b6999efe26df710c.png",
+      "import_ok": true,
+      "mesh_count": 1,
+      "polygon_count": 1758,
+      "texture_image_count": 1,
+      "has_image_texture": true,
+      "bbox_size": [
+        13.746311,
+        23.74826,
+        0.702425
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_proxy_allowed",
+        "collision_proxy": {
+          "proxy_type": "box",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.28,
+            0.162074,
+            0.008282
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "small_flat",
+          "canonical_extent_m": [
+            0.28,
+            0.162074,
+            0.008282
+          ],
+          "mass_range_kg": [
+            0.03,
+            0.35
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "paper",
+          "friction": 0.6,
+          "restitution": 0.08,
+          "density_hint": "low"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_dae37cc4869a4155b6999efe26df710c",
+        "source_uid": "dae37cc4869a4155b6999efe26df710c",
+        "name": "Closed Magazine",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_dae37cc4869a4155b6999efe26df710c/model.glb",
+        "size_bytes": 450588,
+        "sha256": "49aefb633d237b8f4aaf7a31408460f8a7a8e8447269df427c7ca14788238139",
+        "classification": {
+          "semantic_category": "office_book",
+          "scene_role": "foreground_rigid_moving",
+          "shape_family": "thin_box",
+          "collision_proxy": "box",
+          "size_class": "small_flat",
+          "material_hint": "paper",
+          "technical_tier": "v0_ready_candidate",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "54012d0645b24fcd87b725db9e5a7ada",
+          "username": "abdillaamy",
+          "display_name": "abdillaamy",
+          "profile_url": "https://sketchfab.com/abdillaamy"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-dae37cc4869a4155b6999efe26df710c",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_dae37cc4869a4155b6999efe26df710c/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_dae37cc4869a4155b6999efe26df710c/source_api_response.json",
+        "downloaded_at": "2026-07-04T08:01:15.964722+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          13.746312,
+          23.74826,
+          0.702425
+        ],
+        "visual_alignment_degrees": [
+          0.0,
+          0.0,
+          90.0
+        ],
+        "semantic_max_dimension_m": 0.28,
+        "normalized_visual_extent_m": [
+          0.28,
+          0.162074,
+          0.008282
+        ],
+        "collision_proxy_extent_m": [
+          0.28,
+          0.162074,
+          0.008282
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "passed_v1_contact_sheet_2026_07_10",
+        "review_reason": null
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_dae37cc4869a4155b6999efe26df710c/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_3be00aa2664f4bc0b5be8b8630c2d540",
+      "name": "Gas Cylinder",
+      "semantic_category": "primitive_cylinder",
+      "scene_role": "foreground_rigid_moving",
+      "shape_family": "cylinder",
+      "size_class": "small",
+      "material_hint": "metal",
+      "admission_status": "physweep_v0_approved",
+      "selection_rank": 10,
+      "notes": "Clean import, textured asset, and simple dynamic proxy.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_3be00aa2664f4bc0b5be8b8630c2d540/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 1504364,
+      "sha256": "5f65d6e9de02bbd36914811a86c0d9edd3e1dee7caddd9158673c2b6dfb19e2b",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "ee2175dae36a43ef8821920cac83d5ef",
+        "username": "Sneege",
+        "display_name": "Sneege",
+        "profile_url": "https://sketchfab.com/Sneege"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-3be00aa2664f4bc0b5be8b8630c2d540",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_3be00aa2664f4bc0b5be8b8630c2d540.png",
+      "import_ok": true,
+      "mesh_count": 1,
+      "polygon_count": 3320,
+      "texture_image_count": 3,
+      "has_image_texture": true,
+      "bbox_size": [
+        2.044522,
+        2.044523,
+        2.799516
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_proxy_allowed",
+        "collision_proxy": {
+          "proxy_type": "cylinder",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.182578,
+            0.182578,
+            0.25
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "small",
+          "canonical_extent_m": [
+            0.182578,
+            0.182578,
+            0.25
+          ],
+          "mass_range_kg": [
+            0.04,
+            0.45
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "metal",
+          "friction": 0.35,
+          "restitution": 0.35,
+          "density_hint": "high"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_3be00aa2664f4bc0b5be8b8630c2d540",
+        "source_uid": "3be00aa2664f4bc0b5be8b8630c2d540",
+        "name": "Gas Cylinder",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_3be00aa2664f4bc0b5be8b8630c2d540/model.glb",
+        "size_bytes": 1504364,
+        "sha256": "5f65d6e9de02bbd36914811a86c0d9edd3e1dee7caddd9158673c2b6dfb19e2b",
+        "classification": {
+          "semantic_category": "primitive_cylinder",
+          "scene_role": "foreground_rigid_moving",
+          "shape_family": "cylinder",
+          "collision_proxy": "cylinder",
+          "size_class": "small",
+          "material_hint": "metal",
+          "technical_tier": "v0_ready_candidate",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "ee2175dae36a43ef8821920cac83d5ef",
+          "username": "Sneege",
+          "display_name": "Sneege",
+          "profile_url": "https://sketchfab.com/Sneege"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-3be00aa2664f4bc0b5be8b8630c2d540",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_3be00aa2664f4bc0b5be8b8630c2d540/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_3be00aa2664f4bc0b5be8b8630c2d540/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:59:39.056694+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          2.044522,
+          2.044523,
+          2.799516
+        ],
+        "visual_alignment_degrees": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "semantic_max_dimension_m": 0.25,
+        "normalized_visual_extent_m": [
+          0.182578,
+          0.182578,
+          0.25
+        ],
+        "collision_proxy_extent_m": [
+          0.182578,
+          0.182578,
+          0.25
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "passed_v1_contact_sheet_2026_07_10",
+        "review_reason": null
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_3be00aa2664f4bc0b5be8b8630c2d540/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_beb69bc08a8f487ab8c5207fb155cbf2",
+      "name": "Glass Bottle",
+      "semantic_category": "tabletop_container_bottle",
+      "scene_role": "foreground_rigid_target",
+      "shape_family": "tall_cylindrical",
+      "size_class": "small_tall",
+      "material_hint": "glass",
+      "admission_status": "physweep_v0_approved",
+      "selection_rank": 10,
+      "notes": "Clean import, textured asset, and simple dynamic proxy.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_beb69bc08a8f487ab8c5207fb155cbf2/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 1651656,
+      "sha256": "221603a334358f4ec2ebe67df96eef859065f464199738436f2dd2a5e69870c1",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "1e2427c49a3147deac52a75e4a3a2d3b",
+        "username": "topfrank2013",
+        "display_name": "Francesco Coldesina",
+        "profile_url": "https://sketchfab.com/topfrank2013"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-beb69bc08a8f487ab8c5207fb155cbf2",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_beb69bc08a8f487ab8c5207fb155cbf2.png",
+      "import_ok": true,
+      "mesh_count": 1,
+      "polygon_count": 7182,
+      "texture_image_count": 3,
+      "has_image_texture": true,
+      "bbox_size": [
+        2.588181,
+        2.5933,
+        10.305
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_proxy_allowed",
+        "collision_proxy": {
+          "proxy_type": "cylinder",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.075347,
+            0.075496,
+            0.3
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "small_tall",
+          "canonical_extent_m": [
+            0.075347,
+            0.075496,
+            0.3
+          ],
+          "mass_range_kg": [
+            0.05,
+            0.65
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "glass",
+          "friction": 0.3,
+          "restitution": 0.22,
+          "density_hint": "medium"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_beb69bc08a8f487ab8c5207fb155cbf2",
+        "source_uid": "beb69bc08a8f487ab8c5207fb155cbf2",
+        "name": "Glass Bottle",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_beb69bc08a8f487ab8c5207fb155cbf2/model.glb",
+        "size_bytes": 1651656,
+        "sha256": "221603a334358f4ec2ebe67df96eef859065f464199738436f2dd2a5e69870c1",
+        "classification": {
+          "semantic_category": "tabletop_container_bottle",
+          "scene_role": "foreground_rigid_target",
+          "shape_family": "tall_cylindrical",
+          "collision_proxy": "stacked_cylinders",
+          "size_class": "small_tall",
+          "material_hint": "glass",
+          "technical_tier": "v0_ready_candidate",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "1e2427c49a3147deac52a75e4a3a2d3b",
+          "username": "topfrank2013",
+          "display_name": "Francesco Coldesina",
+          "profile_url": "https://sketchfab.com/topfrank2013"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-beb69bc08a8f487ab8c5207fb155cbf2",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_beb69bc08a8f487ab8c5207fb155cbf2/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_beb69bc08a8f487ab8c5207fb155cbf2/source_api_response.json",
+        "downloaded_at": "2026-07-04T08:00:15.545658+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          2.588181,
+          2.5933,
+          10.305
+        ],
+        "visual_alignment_degrees": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "semantic_max_dimension_m": 0.3,
+        "normalized_visual_extent_m": [
+          0.075347,
+          0.075496,
+          0.3
+        ],
+        "collision_proxy_extent_m": [
+          0.075347,
+          0.075496,
+          0.3
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "passed_v1_contact_sheet_2026_07_10",
+        "review_reason": null
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_beb69bc08a8f487ab8c5207fb155cbf2/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_046b94a7775e496aac26ad8c699496e6",
+      "name": "Ceramic Bowl",
+      "semantic_category": "tabletop_container_bowl",
+      "scene_role": "foreground_rigid_target",
+      "shape_family": "open_bowl",
+      "size_class": "small",
+      "material_hint": "ceramic",
+      "admission_status": "physweep_v0_approved",
+      "selection_rank": 30,
+      "notes": "Use with explicit primitive/compound proxy fit.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_046b94a7775e496aac26ad8c699496e6/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 2504680,
+      "sha256": "6f0aa5d33f90ac8160339329bce871491e24b06d9d4a4bb2cd18dbffe39811bb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "01f9a7f3dc7848529d8b44a46585e122",
+        "username": "mickeymoose1204",
+        "display_name": "mickeymoose1204",
+        "profile_url": "https://sketchfab.com/mickeymoose1204"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-046b94a7775e496aac26ad8c699496e6",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_046b94a7775e496aac26ad8c699496e6.png",
+      "import_ok": true,
+      "mesh_count": 1,
+      "polygon_count": 2944,
+      "texture_image_count": 4,
+      "has_image_texture": true,
+      "bbox_size": [
+        2.425348,
+        2.425349,
+        1.236079
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_allowed_with_proxy_fit_check",
+        "collision_proxy": {
+          "proxy_type": "cylinder",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.16,
+            0.16,
+            0.081544
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "small",
+          "canonical_extent_m": [
+            0.16,
+            0.16,
+            0.081544
+          ],
+          "mass_range_kg": [
+            0.04,
+            0.45
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "ceramic",
+          "friction": 0.44,
+          "restitution": 0.18,
+          "density_hint": "medium_high"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_046b94a7775e496aac26ad8c699496e6",
+        "source_uid": "046b94a7775e496aac26ad8c699496e6",
+        "name": "Ceramic Bowl",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_046b94a7775e496aac26ad8c699496e6/model.glb",
+        "size_bytes": 2504680,
+        "sha256": "6f0aa5d33f90ac8160339329bce871491e24b06d9d4a4bb2cd18dbffe39811bb",
+        "classification": {
+          "semantic_category": "tabletop_container_bowl",
+          "scene_role": "foreground_rigid_target",
+          "shape_family": "open_bowl",
+          "collision_proxy": "cylinder_or_convex_hull",
+          "size_class": "small",
+          "material_hint": "ceramic",
+          "technical_tier": "manual_review",
+          "technical_reasons": [
+            "collision_proxy_needs_manual_check"
+          ]
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "01f9a7f3dc7848529d8b44a46585e122",
+          "username": "mickeymoose1204",
+          "display_name": "mickeymoose1204",
+          "profile_url": "https://sketchfab.com/mickeymoose1204"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-046b94a7775e496aac26ad8c699496e6",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_046b94a7775e496aac26ad8c699496e6/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_046b94a7775e496aac26ad8c699496e6/source_api_response.json",
+        "downloaded_at": "2026-07-04T08:00:02.735117+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          2.425348,
+          2.425349,
+          1.236079
+        ],
+        "visual_alignment_degrees": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "semantic_max_dimension_m": 0.16,
+        "normalized_visual_extent_m": [
+          0.16,
+          0.16,
+          0.081544
+        ],
+        "collision_proxy_extent_m": [
+          0.16,
+          0.16,
+          0.081544
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "passed_v1_contact_sheet_2026_07_10",
+        "review_reason": null
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_046b94a7775e496aac26ad8c699496e6/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_640b0c8287274629a7f4ff3ce74a5999",
+      "name": "Tin Can",
+      "semantic_category": "tabletop_container_can",
+      "scene_role": "foreground_rigid_moving",
+      "shape_family": "cylinder",
+      "size_class": "small_tall",
+      "material_hint": "metal",
+      "admission_status": "physweep_v0_approved",
+      "selection_rank": 10,
+      "notes": "Clean import, textured asset, and simple dynamic proxy.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_640b0c8287274629a7f4ff3ce74a5999/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 1519292,
+      "sha256": "667112caf04d98ad652bccdb4c1add15c7f09f9e3fec5d929e0560a2059c9322",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "9aa4351f505d48308dca388e8618c017",
+        "username": "JrMadMan",
+        "display_name": "JrMadMan",
+        "profile_url": "https://sketchfab.com/JrMadMan"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-640b0c8287274629a7f4ff3ce74a5999",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_640b0c8287274629a7f4ff3ce74a5999.png",
+      "import_ok": true,
+      "mesh_count": 1,
+      "polygon_count": 1568,
+      "texture_image_count": 3,
+      "has_image_texture": true,
+      "bbox_size": [
+        0.126506,
+        0.126506,
+        0.162778
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_proxy_allowed",
+        "collision_proxy": {
+          "proxy_type": "cylinder",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.09326,
+            0.09326,
+            0.12
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "small_tall",
+          "canonical_extent_m": [
+            0.09326,
+            0.09326,
+            0.12
+          ],
+          "mass_range_kg": [
+            0.05,
+            0.65
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "metal",
+          "friction": 0.35,
+          "restitution": 0.35,
+          "density_hint": "high"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_640b0c8287274629a7f4ff3ce74a5999",
+        "source_uid": "640b0c8287274629a7f4ff3ce74a5999",
+        "name": "Tin Can",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_640b0c8287274629a7f4ff3ce74a5999/model.glb",
+        "size_bytes": 1519292,
+        "sha256": "667112caf04d98ad652bccdb4c1add15c7f09f9e3fec5d929e0560a2059c9322",
+        "classification": {
+          "semantic_category": "tabletop_container_can",
+          "scene_role": "foreground_rigid_moving",
+          "shape_family": "cylinder",
+          "collision_proxy": "cylinder",
+          "size_class": "small_tall",
+          "material_hint": "metal",
+          "technical_tier": "v0_ready_candidate",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "9aa4351f505d48308dca388e8618c017",
+          "username": "JrMadMan",
+          "display_name": "JrMadMan",
+          "profile_url": "https://sketchfab.com/JrMadMan"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-640b0c8287274629a7f4ff3ce74a5999",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_640b0c8287274629a7f4ff3ce74a5999/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_640b0c8287274629a7f4ff3ce74a5999/source_api_response.json",
+        "downloaded_at": "2026-07-04T08:00:36.034717+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          0.126506,
+          0.126506,
+          0.162778
+        ],
+        "visual_alignment_degrees": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "semantic_max_dimension_m": 0.12,
+        "normalized_visual_extent_m": [
+          0.09326,
+          0.09326,
+          0.12
+        ],
+        "collision_proxy_extent_m": [
+          0.09326,
+          0.09326,
+          0.12
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "passed_v1_contact_sheet_2026_07_10",
+        "review_reason": null
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_640b0c8287274629a7f4ff3ce74a5999/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_1551616939cc4da7a9d731dfddd4090f",
+      "name": "Plastic Cup",
+      "semantic_category": "tabletop_container_cup",
+      "scene_role": "foreground_rigid_target",
+      "shape_family": "tapered_cylinder",
+      "size_class": "small_tall",
+      "material_hint": "plastic",
+      "admission_status": "physweep_v0_approved",
+      "selection_rank": 10,
+      "notes": "Clean import, textured asset, and simple dynamic proxy.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_1551616939cc4da7a9d731dfddd4090f/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 624884,
+      "sha256": "ac981575192413ce95fc4f72a9c8cd8aae4d73793e367b9da6a34d516481dc90",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "37bd0cb159c04da39186791027c5bd04",
+        "username": "cirby2180",
+        "display_name": "c_irby_paint",
+        "profile_url": "https://sketchfab.com/cirby2180"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-1551616939cc4da7a9d731dfddd4090f",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_1551616939cc4da7a9d731dfddd4090f.png",
+      "import_ok": true,
+      "mesh_count": 2,
+      "polygon_count": 992,
+      "texture_image_count": 4,
+      "has_image_texture": true,
+      "bbox_size": [
+        1.803254,
+        1.808993,
+        2.0
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_proxy_allowed",
+        "collision_proxy": {
+          "proxy_type": "cylinder",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.108195,
+            0.10854,
+            0.12
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "small_tall",
+          "canonical_extent_m": [
+            0.108195,
+            0.10854,
+            0.12
+          ],
+          "mass_range_kg": [
+            0.05,
+            0.65
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "plastic",
+          "friction": 0.38,
+          "restitution": 0.3,
+          "density_hint": "low_medium"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_1551616939cc4da7a9d731dfddd4090f",
+        "source_uid": "1551616939cc4da7a9d731dfddd4090f",
+        "name": "Plastic Cup",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_1551616939cc4da7a9d731dfddd4090f/model.glb",
+        "size_bytes": 624884,
+        "sha256": "ac981575192413ce95fc4f72a9c8cd8aae4d73793e367b9da6a34d516481dc90",
+        "classification": {
+          "semantic_category": "tabletop_container_cup",
+          "scene_role": "foreground_rigid_target",
+          "shape_family": "tapered_cylinder",
+          "collision_proxy": "cylinder",
+          "size_class": "small_tall",
+          "material_hint": "plastic",
+          "technical_tier": "v0_ready_candidate",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "37bd0cb159c04da39186791027c5bd04",
+          "username": "cirby2180",
+          "display_name": "c_irby_paint",
+          "profile_url": "https://sketchfab.com/cirby2180"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-1551616939cc4da7a9d731dfddd4090f",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_1551616939cc4da7a9d731dfddd4090f/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_1551616939cc4da7a9d731dfddd4090f/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:59:54.376053+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          1.803254,
+          1.808993,
+          2.000001
+        ],
+        "visual_alignment_degrees": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "semantic_max_dimension_m": 0.12,
+        "normalized_visual_extent_m": [
+          0.108195,
+          0.10854,
+          0.12
+        ],
+        "collision_proxy_extent_m": [
+          0.108195,
+          0.10854,
+          0.12
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "passed_v1_contact_sheet_2026_07_10",
+        "review_reason": null
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_1551616939cc4da7a9d731dfddd4090f/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_d1e446a8f9df4df3923cf230bceef54f",
+      "name": "Ceramic Mug",
+      "semantic_category": "tabletop_container_mug",
+      "scene_role": "foreground_rigid_target",
+      "shape_family": "cylindrical_with_handle",
+      "size_class": "small",
+      "material_hint": "ceramic",
+      "admission_status": "physweep_v0_review",
+      "selection_rank": 30,
+      "notes": "Use with explicit primitive/compound proxy fit.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_d1e446a8f9df4df3923cf230bceef54f/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 2217984,
+      "sha256": "f114ea187eebdbbc31f165e99e28bfb7e0e9fb62b2f8a740ae7811e1f627a908",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "9a53bab003d84ae39e64cc948286c33a",
+        "username": "Marancj01",
+        "display_name": "Marancj01",
+        "profile_url": "https://sketchfab.com/Marancj01"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-d1e446a8f9df4df3923cf230bceef54f",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_d1e446a8f9df4df3923cf230bceef54f.png",
+      "import_ok": true,
+      "mesh_count": 1,
+      "polygon_count": 26048,
+      "texture_image_count": 3,
+      "has_image_texture": true,
+      "bbox_size": [
+        2.509988,
+        3.631652,
+        2.200016
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_allowed_with_proxy_fit_check",
+        "collision_proxy": {
+          "proxy_type": "cylinder",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.09676,
+            0.14,
+            0.084811
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "small",
+          "canonical_extent_m": [
+            0.09676,
+            0.14,
+            0.084811
+          ],
+          "mass_range_kg": [
+            0.04,
+            0.45
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "ceramic",
+          "friction": 0.44,
+          "restitution": 0.18,
+          "density_hint": "medium_high"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_d1e446a8f9df4df3923cf230bceef54f",
+        "source_uid": "d1e446a8f9df4df3923cf230bceef54f",
+        "name": "Ceramic Mug",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_d1e446a8f9df4df3923cf230bceef54f/model.glb",
+        "size_bytes": 2217984,
+        "sha256": "f114ea187eebdbbc31f165e99e28bfb7e0e9fb62b2f8a740ae7811e1f627a908",
+        "classification": {
+          "semantic_category": "tabletop_container_mug",
+          "scene_role": "foreground_rigid_target",
+          "shape_family": "cylindrical_with_handle",
+          "collision_proxy": "cylinder_plus_box_handle",
+          "size_class": "small",
+          "material_hint": "ceramic",
+          "technical_tier": "v0_ready_candidate",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "9a53bab003d84ae39e64cc948286c33a",
+          "username": "Marancj01",
+          "display_name": "Marancj01",
+          "profile_url": "https://sketchfab.com/Marancj01"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-d1e446a8f9df4df3923cf230bceef54f",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_d1e446a8f9df4df3923cf230bceef54f/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_d1e446a8f9df4df3923cf230bceef54f/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:59:47.594718+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          2.509988,
+          3.631652,
+          2.200016
+        ],
+        "visual_alignment_degrees": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "semantic_max_dimension_m": 0.14,
+        "normalized_visual_extent_m": [
+          0.09676,
+          0.14,
+          0.084811
+        ],
+        "collision_proxy_extent_m": [
+          0.09676,
+          0.14,
+          0.084811
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "pending",
+        "review_reason": "handle_requires_visual_review_of_cylinder_proxy_coverage"
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_d1e446a8f9df4df3923cf230bceef54f/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_76a3f7bf75d049458dfaa48aa342e0b8",
+      "name": "Baluster vase, from a five-piece garniture",
+      "semantic_category": "tabletop_decor_vase",
+      "scene_role": "foreground_rigid_target",
+      "shape_family": "tall_cylindrical",
+      "size_class": "small_tall",
+      "material_hint": "ceramic",
+      "admission_status": "physweep_v0_approved",
+      "selection_rank": 35,
+      "notes": "Usable, but moderately heavy for repeated rendering.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_76a3f7bf75d049458dfaa48aa342e0b8/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 8184704,
+      "sha256": "387e946e5999c719db18bd74b4124e9643a813b5323dc2da9aa5809054b9f0e3",
+      "license": {
+        "requested_slug": "cc0",
+        "label": "CC0 Public Domain",
+        "uid": "7c23a1ba438d4306920229c12afcb5f9",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": false
+      },
+      "author": {
+        "uid": "27357ad36f1b4038aa95f6290e6e39be",
+        "username": "Smithsonian",
+        "display_name": "The Smithsonian Institution",
+        "profile_url": "https://sketchfab.com/Smithsonian"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-76a3f7bf75d049458dfaa48aa342e0b8",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_76a3f7bf75d049458dfaa48aa342e0b8.png",
+      "import_ok": true,
+      "mesh_count": 2,
+      "polygon_count": 149999,
+      "texture_image_count": 3,
+      "has_image_texture": true,
+      "bbox_size": [
+        0.170849,
+        0.171853,
+        0.405293
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_proxy_allowed",
+        "collision_proxy": {
+          "proxy_type": "cylinder",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.126463,
+            0.127206,
+            0.3
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "small_tall",
+          "canonical_extent_m": [
+            0.126463,
+            0.127206,
+            0.3
+          ],
+          "mass_range_kg": [
+            0.05,
+            0.65
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "ceramic",
+          "friction": 0.44,
+          "restitution": 0.18,
+          "density_hint": "medium_high"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_76a3f7bf75d049458dfaa48aa342e0b8",
+        "source_uid": "76a3f7bf75d049458dfaa48aa342e0b8",
+        "name": "Baluster vase, from a five-piece garniture",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_76a3f7bf75d049458dfaa48aa342e0b8/model.glb",
+        "size_bytes": 8184704,
+        "sha256": "387e946e5999c719db18bd74b4124e9643a813b5323dc2da9aa5809054b9f0e3",
+        "classification": {
+          "semantic_category": "tabletop_decor_vase",
+          "scene_role": "foreground_rigid_target",
+          "shape_family": "tall_cylindrical",
+          "collision_proxy": "stacked_cylinders",
+          "size_class": "small_tall",
+          "material_hint": "ceramic",
+          "technical_tier": "manual_review",
+          "technical_reasons": [
+            "moderately_heavy_mesh"
+          ]
+        },
+        "license": {
+          "requested_slug": "cc0",
+          "label": "CC0 Public Domain",
+          "uid": "7c23a1ba438d4306920229c12afcb5f9",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": false
+        },
+        "author": {
+          "uid": "27357ad36f1b4038aa95f6290e6e39be",
+          "username": "Smithsonian",
+          "display_name": "The Smithsonian Institution",
+          "profile_url": "https://sketchfab.com/Smithsonian"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-76a3f7bf75d049458dfaa48aa342e0b8",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_76a3f7bf75d049458dfaa48aa342e0b8/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_76a3f7bf75d049458dfaa48aa342e0b8/source_api_response.json",
+        "downloaded_at": "2026-07-04T08:00:46.307052+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          0.170849,
+          0.171853,
+          0.405293
+        ],
+        "visual_alignment_degrees": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "semantic_max_dimension_m": 0.3,
+        "normalized_visual_extent_m": [
+          0.126463,
+          0.127206,
+          0.3
+        ],
+        "collision_proxy_extent_m": [
+          0.126463,
+          0.127206,
+          0.3
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "passed_v1_contact_sheet_2026_07_10",
+        "review_reason": null
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_76a3f7bf75d049458dfaa48aa342e0b8/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_ebb7c4102dc94ef7ba14d9c5df43c448",
+      "name": "Decorated Dinner Plate",
+      "semantic_category": "tabletop_plate",
+      "scene_role": "foreground_rigid_target",
+      "shape_family": "thin_cylinder",
+      "size_class": "small_flat",
+      "material_hint": "ceramic",
+      "admission_status": "physweep_v0_approved",
+      "selection_rank": 10,
+      "notes": "Clean import, textured asset, and simple dynamic proxy.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_ebb7c4102dc94ef7ba14d9c5df43c448/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 1269824,
+      "sha256": "6a4f36e7e41b9cf4cc404cd43456e80d0d89ea91e931a5afba3c7ec3954c8bc6",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "6ea76f8795d845c2a554f1a9024f85cd",
+        "username": "EmilSan08",
+        "display_name": "EmilSan08",
+        "profile_url": "https://sketchfab.com/EmilSan08"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-ebb7c4102dc94ef7ba14d9c5df43c448",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_ebb7c4102dc94ef7ba14d9c5df43c448.png",
+      "import_ok": true,
+      "mesh_count": 1,
+      "polygon_count": 4416,
+      "texture_image_count": 3,
+      "has_image_texture": true,
+      "bbox_size": [
+        23.938675,
+        23.938681,
+        1.554227
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_proxy_allowed",
+        "collision_proxy": {
+          "proxy_type": "cylinder",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.28,
+            0.28,
+            0.018179
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "small_flat",
+          "canonical_extent_m": [
+            0.28,
+            0.28,
+            0.018179
+          ],
+          "mass_range_kg": [
+            0.03,
+            0.35
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "ceramic",
+          "friction": 0.44,
+          "restitution": 0.18,
+          "density_hint": "medium_high"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_ebb7c4102dc94ef7ba14d9c5df43c448",
+        "source_uid": "ebb7c4102dc94ef7ba14d9c5df43c448",
+        "name": "Decorated Dinner Plate",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_ebb7c4102dc94ef7ba14d9c5df43c448/model.glb",
+        "size_bytes": 1269824,
+        "sha256": "6a4f36e7e41b9cf4cc404cd43456e80d0d89ea91e931a5afba3c7ec3954c8bc6",
+        "classification": {
+          "semantic_category": "tabletop_plate",
+          "scene_role": "foreground_rigid_target",
+          "shape_family": "thin_cylinder",
+          "collision_proxy": "thin_cylinder",
+          "size_class": "small_flat",
+          "material_hint": "ceramic",
+          "technical_tier": "v0_ready_candidate",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "6ea76f8795d845c2a554f1a9024f85cd",
+          "username": "EmilSan08",
+          "display_name": "EmilSan08",
+          "profile_url": "https://sketchfab.com/EmilSan08"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-ebb7c4102dc94ef7ba14d9c5df43c448",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_ebb7c4102dc94ef7ba14d9c5df43c448/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_ebb7c4102dc94ef7ba14d9c5df43c448/source_api_response.json",
+        "downloaded_at": "2026-07-04T08:00:55.183996+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          23.938675,
+          23.938681,
+          1.554227
+        ],
+        "visual_alignment_degrees": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "semantic_max_dimension_m": 0.28,
+        "normalized_visual_extent_m": [
+          0.28,
+          0.28,
+          0.018179
+        ],
+        "collision_proxy_extent_m": [
+          0.28,
+          0.28,
+          0.018179
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "passed_v1_contact_sheet_2026_07_10",
+        "review_reason": null
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_ebb7c4102dc94ef7ba14d9c5df43c448/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_cb444316e5cd4b9498c98804e6daaafc",
+      "name": "Toy car",
+      "semantic_category": "toy_vehicle",
+      "scene_role": "foreground_rigid_moving",
+      "shape_family": "vehicle_compound",
+      "size_class": "medium",
+      "material_hint": "plastic",
+      "admission_status": "physweep_v0_approved",
+      "selection_rank": 30,
+      "notes": "Use with explicit primitive/compound proxy fit.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_cb444316e5cd4b9498c98804e6daaafc/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 8107764,
+      "sha256": "f4b356582a2489bc46bdb1c09ee98b81a7caafb7107cc9474b8bbdecfc2dd740",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "ffc78efecd7c4f438d8b231d7d67fe31",
+        "username": "asleshka",
+        "display_name": "asleshka",
+        "profile_url": "https://sketchfab.com/asleshka"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-cb444316e5cd4b9498c98804e6daaafc",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_cb444316e5cd4b9498c98804e6daaafc.png",
+      "import_ok": true,
+      "mesh_count": 9,
+      "polygon_count": 50638,
+      "texture_image_count": 7,
+      "has_image_texture": true,
+      "bbox_size": [
+        19.502745,
+        6.75535,
+        7.788637
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_allowed_with_proxy_fit_check",
+        "collision_proxy": {
+          "proxy_type": "box",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.3,
+            0.103914,
+            0.119808
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "medium",
+          "canonical_extent_m": [
+            0.3,
+            0.103914,
+            0.119808
+          ],
+          "mass_range_kg": [
+            0.15,
+            1.8
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "plastic",
+          "friction": 0.38,
+          "restitution": 0.3,
+          "density_hint": "low_medium"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_cb444316e5cd4b9498c98804e6daaafc",
+        "source_uid": "cb444316e5cd4b9498c98804e6daaafc",
+        "name": "Toy car",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_cb444316e5cd4b9498c98804e6daaafc/model.glb",
+        "size_bytes": 8107764,
+        "sha256": "f4b356582a2489bc46bdb1c09ee98b81a7caafb7107cc9474b8bbdecfc2dd740",
+        "classification": {
+          "semantic_category": "toy_vehicle",
+          "scene_role": "foreground_rigid_moving",
+          "shape_family": "vehicle_compound",
+          "collision_proxy": "box_plus_wheels",
+          "size_class": "medium",
+          "material_hint": "plastic",
+          "technical_tier": "v0_ready_candidate",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "ffc78efecd7c4f438d8b231d7d67fe31",
+          "username": "asleshka",
+          "display_name": "asleshka",
+          "profile_url": "https://sketchfab.com/asleshka"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-cb444316e5cd4b9498c98804e6daaafc",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_cb444316e5cd4b9498c98804e6daaafc/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_cb444316e5cd4b9498c98804e6daaafc/source_api_response.json",
+        "downloaded_at": "2026-07-04T08:02:15.435386+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          19.502745,
+          6.75535,
+          7.788637
+        ],
+        "visual_alignment_degrees": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "semantic_max_dimension_m": 0.3,
+        "normalized_visual_extent_m": [
+          0.3,
+          0.103914,
+          0.119808
+        ],
+        "collision_proxy_extent_m": [
+          0.3,
+          0.103914,
+          0.119808
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "passed_v1_contact_sheet_2026_07_10",
+        "review_reason": null
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_cb444316e5cd4b9498c98804e6daaafc/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_81578532781542c590668ab67d1121e9",
+      "name": "Tools / 4 Way Lug Wrench",
+      "semantic_category": "hand_tool_wrench",
+      "scene_role": "foreground_rigid_moving",
+      "shape_family": "elongated_compound",
+      "size_class": "medium",
+      "material_hint": "metal",
+      "admission_status": "physweep_v0_review",
+      "selection_rank": 30,
+      "notes": "Use with explicit primitive/compound proxy fit.",
+      "archive_path": "assets/library/sketchfab/foreground/sketchfab_81578532781542c590668ab67d1121e9/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 1149760,
+      "sha256": "53fdc7baf214d70e79f2373619d65f724a5a8bf87779055295251b46c52488f2",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "e5c9363854a245588f603729d0da7fc0",
+        "username": "roy.3dartist",
+        "display_name": "ROY",
+        "profile_url": "https://sketchfab.com/roy.3dartist"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-81578532781542c590668ab67d1121e9",
+      "preview_image": "outputs/sketchfab_foreground_asset_previews_v0/images/sketchfab_81578532781542c590668ab67d1121e9.png",
+      "import_ok": true,
+      "mesh_count": 1,
+      "polygon_count": 29824,
+      "texture_image_count": 1,
+      "has_image_texture": true,
+      "bbox_size": [
+        0.441332,
+        0.051484,
+        0.441332
+      ],
+      "simulation_profile": {
+        "visual_mesh_use": "render_mesh_only",
+        "physics_body": "rigid_body",
+        "dynamic_use": "dynamic_allowed_with_proxy_fit_check",
+        "collision_proxy": {
+          "proxy_type": "box",
+          "dimension_source": "normalized_visual_bbox_extent",
+          "extent_m": [
+            0.42,
+            0.42,
+            0.048995
+          ]
+        },
+        "canonical_scale": {
+          "size_class": "medium",
+          "canonical_extent_m": [
+            0.42,
+            0.42,
+            0.048995
+          ],
+          "mass_range_kg": [
+            0.15,
+            1.8
+          ],
+          "scale_policy": "uniform_scale_preserve_glb_aspect_ratio_v1"
+        },
+        "default_material": {
+          "material_hint": "metal",
+          "friction": 0.35,
+          "restitution": 0.35,
+          "density_hint": "high"
+        }
+      },
+      "source_record": {
+        "candidate_id": "sketchfab_81578532781542c590668ab67d1121e9",
+        "source_uid": "81578532781542c590668ab67d1121e9",
+        "name": "Tools / 4 Way Lug Wrench",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/foreground/sketchfab_81578532781542c590668ab67d1121e9/model.glb",
+        "size_bytes": 1149760,
+        "sha256": "53fdc7baf214d70e79f2373619d65f724a5a8bf87779055295251b46c52488f2",
+        "classification": {
+          "semantic_category": "hand_tool_wrench",
+          "scene_role": "foreground_rigid_moving",
+          "shape_family": "elongated_compound",
+          "collision_proxy": "convex_hull_or_capsule",
+          "size_class": "medium",
+          "material_hint": "metal",
+          "technical_tier": "v0_ready_candidate",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "allowed_for_candidate_pool": true,
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "e5c9363854a245588f603729d0da7fc0",
+          "username": "roy.3dartist",
+          "display_name": "ROY",
+          "profile_url": "https://sketchfab.com/roy.3dartist"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-81578532781542c590668ab67d1121e9",
+        "attribution_path": "assets/library/sketchfab/foreground/sketchfab_81578532781542c590668ab67d1121e9/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/foreground/sketchfab_81578532781542c590668ab67d1121e9/source_api_response.json",
+        "downloaded_at": "2026-07-04T08:02:26.157366+00:00"
+      },
+      "preprocessing": {
+        "version": "physweep_real_object_preprocessing_v1",
+        "source_bbox": [
+          0.441332,
+          0.051484,
+          0.441332
+        ],
+        "visual_alignment_degrees": [
+          90.0,
+          0.0,
+          0.0
+        ],
+        "semantic_max_dimension_m": 0.42,
+        "normalized_visual_extent_m": [
+          0.42,
+          0.42,
+          0.048995
+        ],
+        "collision_proxy_extent_m": [
+          0.42,
+          0.42,
+          0.048995
+        ],
+        "axis_extent_match_ratio": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "geometry_gate": "pass",
+        "visual_review_status": "pending",
+        "review_reason": "cross_wrench_box_proxy_contains_large_empty_regions"
+      },
+      "attribution_path": "assets/library/sketchfab/foreground/sketchfab_81578532781542c590668ab67d1121e9/attribution.json"
+    }
+  ]
+}

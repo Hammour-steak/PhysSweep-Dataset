@@ -1,0 +1,69 @@
+{
+  "version": "physweep_object_visual_preflight_v6",
+  "report_version": "physweep_object_visual_preflight_report_v6",
+  "source_profiles": "configs/physassets_core_object_profiles_source.json",
+  "output_report": "assets/manifests/object_visual_preflight_report.json",
+  "review_root": "assets/library/physassets/curation_evidence/preflight_v2/reviews",
+  "proxy_evidence": {
+    "core_index": "external/physassets/high_quality_selection/v7_100objects/core_assets.jsonl",
+    "overlay_root": "external/physassets/high_quality_selection/current/proxy_overlays",
+    "required_overlay_views": [
+      "front",
+      "side",
+      "top"
+    ],
+    "physical_proxy_catalog": "assets/proxies/catalog.json",
+    "maximum_proxy_to_visual_hull_volume_ratio": 1.25,
+    "maximum_alignment_relative_error": 0.06
+  },
+  "reviewed_transparency_exceptions": [
+    {
+      "visual_asset_id": "physassets_1619",
+      "material_names": [
+        "material"
+      ],
+      "reason": "the protruding red book gem is an intentional translucent component visible in the source turntable"
+    },
+    {
+      "visual_asset_id": "physassets_10754",
+      "material_names": [
+        "Material_45_0"
+      ],
+      "reason": "the alpha texture encodes the perforated trash-can basket and matches the source turntable"
+    },
+    {
+      "visual_asset_id": "physassets_12676",
+      "material_names": [
+        "None"
+      ],
+      "reason": "the shared material includes the translucent flashlight lens and is coherent in all raw review views"
+    }
+  ],
+  "policy": {
+    "every_profile_and_mesh_visual_must_be_inspected": true,
+    "source_hash_mismatch_is_a_hard_error": true,
+    "four_raw_review_views_are_required": [
+      "front",
+      "side",
+      "top",
+      "back"
+    ],
+    "collision_proxy_binding_is_recorded": true,
+    "proxy_evidence_is_mandatory": true,
+    "minimum_review_subject_fraction": 0.02,
+    "maximum_review_subject_fraction": 0.8,
+    "review_background_distance_threshold": 0.035,
+    "implicit_source_approval_is_forbidden": true,
+    "repairable_findings_require_a_repair_recipe": true,
+    "opaque_semantic_categories": [
+      "physassets_barrel",
+      "physassets_block_die",
+      "physassets_book",
+      "physassets_box_package",
+      "physassets_can",
+      "physassets_other",
+      "physassets_rod",
+      "physassets_sports_ball"
+    ]
+  }
+}

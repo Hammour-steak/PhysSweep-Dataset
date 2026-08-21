@@ -1,0 +1,97 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_96a804790eff41b3b2376f3608fde7df",
+  "name": "Wooden Wall Bookshelf",
+  "asset_role": "render_only_context",
+  "semantic_category": "context_shelf",
+  "admission": {
+    "reason": "wall shelf is decor and not an interaction surface",
+    "sampling_enabled": false,
+    "status": "visual_only",
+    "visual_sampling_enabled": true
+  },
+  "proxy_kind": "none",
+  "normalization_mode": "review_scale_only_not_metric",
+  "mesh_component_count": 2,
+  "overall_bounds_low_m": [
+    -1.2,
+    -0.3000001,
+    0.0
+  ],
+  "overall_bounds_high_m": [
+    1.2,
+    0.3000001,
+    0.4487065
+  ],
+  "overall_extent_m": [
+    2.4000001,
+    0.6000001,
+    0.4487065
+  ],
+  "total_vertex_count": 916,
+  "total_triangle_count": 724,
+  "components": [
+    {
+      "object_name": "defaultMaterial",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1105365,
+        -0.2505613,
+        0.0
+      ],
+      "bounds_high_m": [
+        1.1105365,
+        0.2977573,
+        0.4001629
+      ],
+      "center_m": [
+        0.0,
+        0.023598,
+        0.2000814
+      ],
+      "extent_m": [
+        2.2210729,
+        0.5483185,
+        0.4001629
+      ],
+      "vertex_count": 820,
+      "triangle_count": 680,
+      "materials": [
+        "1001"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.75423651
+    },
+    {
+      "object_name": "defaultMaterial.001",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.2,
+        -0.3000001,
+        0.4007065
+      ],
+      "bounds_high_m": [
+        1.2,
+        0.3000001,
+        0.4487065
+      ],
+      "center_m": [
+        0.0,
+        0.0,
+        0.4247065
+      ],
+      "extent_m": [
+        2.4000001,
+        0.6000001,
+        0.048
+      ],
+      "vertex_count": 96,
+      "triangle_count": 44,
+      "materials": [
+        "1001"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.10697415
+    }
+  ]
+}

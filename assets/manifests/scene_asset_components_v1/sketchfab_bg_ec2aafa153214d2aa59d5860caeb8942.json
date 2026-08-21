@@ -1,0 +1,204 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_ec2aafa153214d2aa59d5860caeb8942",
+  "name": "Ceramic Plate",
+  "asset_role": "static_prop",
+  "semantic_category": "prop_tableware",
+  "admission": {
+    "reason": "source orientation and extremely thin asymmetric bounds do not support a trustworthy plate proxy yet",
+    "sampling_enabled": false,
+    "status": "review"
+  },
+  "proxy_kind": "none",
+  "normalization_mode": "metric_registry_binding",
+  "mesh_component_count": 5,
+  "overall_bounds_low_m": [
+    -0.14,
+    -0.0219996,
+    0.0
+  ],
+  "overall_bounds_high_m": [
+    0.14,
+    0.0219996,
+    0.007236
+  ],
+  "overall_extent_m": [
+    0.28,
+    0.0439993,
+    0.007236
+  ],
+  "total_vertex_count": 16950,
+  "total_triangle_count": 31680,
+  "components": [
+    {
+      "object_name": "Plate1_aiStandardSurface1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0804688,
+        -0.0219996,
+        0.0
+      ],
+      "bounds_high_m": [
+        -0.0364695,
+        0.0219996,
+        0.007236
+      ],
+      "center_m": [
+        -0.0584691,
+        0.0,
+        0.003618
+      ],
+      "extent_m": [
+        0.0439993,
+        0.0439993,
+        0.007236
+      ],
+      "vertex_count": 3390,
+      "triangle_count": 6336,
+      "materials": [
+        "aiStandardSurface1"
+      ],
+      "keyword_hints": [
+        "movable_prop",
+        "fixture_or_obstacle"
+      ],
+      "bbox_volume_fraction": 0.15714118
+    },
+    {
+      "object_name": "Plate2_aiStandardSurface1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0344052,
+        -0.0219996,
+        0.0
+      ],
+      "bounds_high_m": [
+        0.0784045,
+        0.0219996,
+        0.007236
+      ],
+      "center_m": [
+        0.0564049,
+        0.0,
+        0.003618
+      ],
+      "extent_m": [
+        0.0439993,
+        0.0439993,
+        0.007236
+      ],
+      "vertex_count": 3390,
+      "triangle_count": 6336,
+      "materials": [
+        "aiStandardSurface1"
+      ],
+      "keyword_hints": [
+        "movable_prop",
+        "fixture_or_obstacle"
+      ],
+      "bbox_volume_fraction": 0.15714118
+    },
+    {
+      "object_name": "Plate3_aiStandardSurface1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0960007,
+        -0.0219996,
+        0.0
+      ],
+      "bounds_high_m": [
+        0.14,
+        0.0219996,
+        0.007236
+      ],
+      "center_m": [
+        0.1180004,
+        0.0,
+        0.003618
+      ],
+      "extent_m": [
+        0.0439993,
+        0.0439993,
+        0.007236
+      ],
+      "vertex_count": 3390,
+      "triangle_count": 6336,
+      "materials": [
+        "aiStandardSurface1"
+      ],
+      "keyword_hints": [
+        "movable_prop",
+        "fixture_or_obstacle"
+      ],
+      "bbox_volume_fraction": 0.15714118
+    },
+    {
+      "object_name": "Plate4_aiStandardSurface1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.14,
+        -0.0219996,
+        0.0
+      ],
+      "bounds_high_m": [
+        -0.0960007,
+        0.0219996,
+        0.007236
+      ],
+      "center_m": [
+        -0.1180004,
+        0.0,
+        0.003618
+      ],
+      "extent_m": [
+        0.0439993,
+        0.0439993,
+        0.007236
+      ],
+      "vertex_count": 3390,
+      "triangle_count": 6336,
+      "materials": [
+        "aiStandardSurface1"
+      ],
+      "keyword_hints": [
+        "movable_prop",
+        "fixture_or_obstacle"
+      ],
+      "bbox_volume_fraction": 0.15714118
+    },
+    {
+      "object_name": "Plate_aiStandardSurface1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0222699,
+        -0.0219996,
+        0.0
+      ],
+      "bounds_high_m": [
+        0.0217294,
+        0.0219996,
+        0.007236
+      ],
+      "center_m": [
+        -0.0002702,
+        0.0,
+        0.003618
+      ],
+      "extent_m": [
+        0.0439993,
+        0.0439993,
+        0.007236
+      ],
+      "vertex_count": 3390,
+      "triangle_count": 6336,
+      "materials": [
+        "aiStandardSurface1"
+      ],
+      "keyword_hints": [
+        "movable_prop",
+        "fixture_or_obstacle"
+      ],
+      "bbox_volume_fraction": 0.15714118
+    }
+  ]
+}

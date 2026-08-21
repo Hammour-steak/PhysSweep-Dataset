@@ -1,0 +1,55 @@
+{
+  "counts": {
+    "active_matrix_selected": 131,
+    "by_collection": {
+      "physassets": 2798,
+      "sketchfab": 122
+    },
+    "by_grade": {
+      "A": 121,
+      "B": 1304,
+      "C": 1441,
+      "reject": 54
+    },
+    "by_representation": {
+      "analytic_compound": 2825,
+      "none": 74,
+      "static_concave_mesh": 21
+    },
+    "by_role": {
+      "dynamic_object": 2814,
+      "interactive_support": 21,
+      "rejected": 40,
+      "render_only_context": 32,
+      "static_prop": 11,
+      "support_candidate": 2
+    },
+    "proxy_ready": 1406,
+    "sampling_ready": 131,
+    "total": 2920
+  },
+  "generator_path": "tools/publish_asset_catalog.py",
+  "generator_sha256": "0cae337dee1ca3e7fdadfd67f8f5807fbf34bedaef65148d227c818d0bc92eff",
+  "policy_path": "configs/physical_proxy_pipeline.json",
+  "policy_sha256": "d23ac60970a1d35ff47f61ef8874330899ef409601b34509aad4efdb03f93bff",
+  "records_path": "assets/proxies/objects/records.jsonl",
+  "records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+  "scope": {
+    "physassets": "all generated primitive candidates",
+    "sketchfab": "every locally downloaded GLB has one catalog disposition",
+    "static_extraction_state": "catalogued",
+    "static_support_runtime": "exact_proxy_enabled"
+  },
+  "validation": {
+    "counts": {
+      "failed": 0,
+      "passed": 134,
+      "tested": 134
+    },
+    "path": "assets/proxies/objects/validation.json",
+    "scope": "active_and_static_mesh",
+    "sha256": "047d4529b62f79a724e2b9612273b9ba340073826e87c3c1f5bfaf4fb654baf0",
+    "version": "physweep_physical_proxy_validation_v2"
+  },
+  "version": "physweep_physical_proxy_catalog_v1"
+}

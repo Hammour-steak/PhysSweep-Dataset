@@ -1,0 +1,60 @@
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+/.venv/
+/envs/
+/checkpoints/
+/cache/
+
+# Bundled applications and upstream staging
+/runtime/
+/external/
+
+# Generated datasets, renders, and logs
+/datasets/
+/outputs/
+/logs/
+/artifacts/
+/archive/run_history/
+*.log
+*.pid
+
+# Downloaded binary asset libraries and generated review images
+/assets/library/
+/assets/proxies/**
+!assets/proxies/README.md
+!assets/proxies/catalog.json
+!assets/proxies/objects/
+assets/proxies/objects/**
+!assets/proxies/objects/records.jsonl
+!assets/proxies/objects/validation.json
+assets/material_curation/previews*/
+assets/material_curation/visual_review*/
+
+# Editor and Blender scratch files
+.DS_Store
+Thumbs.db
+*.blend1
+*.blend2
+*.tmp
+*.bak
+
+# Secrets and machine-local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*_ssh
+id_rsa*
+id_ed25519*
+
+# Packaging and coverage output
+/build/
+/dist/
+*.egg-info/
+.coverage
+htmlcov/

@@ -1,0 +1,20 @@
+{
+  "categories": {
+    "ball_generic": 1,
+    "box_cardboard": 1,
+    "box_crate": 1,
+    "electronics_phone_like": 1,
+    "electronics_remote": 1,
+    "hand_tool_wrench": 1,
+    "office_book": 1,
+    "primitive_cylinder": 1,
+    "tabletop_container_bottle": 1,
+    "tabletop_container_bowl": 1,
+    "tabletop_container_can": 1,
+    "tabletop_container_cup": 1,
+    "tabletop_container_mug": 1,
+    "tabletop_decor_vase": 1,
+    "tabletop_plate": 1,
+    "toy_vehicle": 1
+  }
+}

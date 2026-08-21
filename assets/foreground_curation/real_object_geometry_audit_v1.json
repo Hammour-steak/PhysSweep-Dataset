@@ -1,0 +1,689 @@
+{
+  "version": "physweep_foreground_geometry_audit_v1",
+  "created_at": "2026-07-10T07:03:53.117285+00:00",
+  "source_manifest": "assets/manifests/sketchfab_foreground_source_v1.json",
+  "thresholds": {
+    "approve_max_axis_size_error_ratio": 1.35,
+    "review_max_axis_size_error_ratio": 1.6
+  },
+  "rotation_candidates": 24,
+  "counts": {
+    "approved": 3,
+    "review": 3,
+    "quarantine": 10
+  },
+  "records": [
+    {
+      "asset_id": "sketchfab_f33ed1f09bef4d9bb757c25c1304ec96",
+      "name": "Rubber Band Ball",
+      "semantic_category": "ball_generic",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_f33ed1f09bef4d9bb757c25c1304ec96/model.glb",
+      "source_mesh_count": 2,
+      "source_bbox": [
+        68.608015,
+        67.691986,
+        69.534756
+      ],
+      "canonical_extent_m": [
+        0.16,
+        0.16,
+        0.16
+      ],
+      "recommended_visual_alignment_degrees": [
+        0.0,
+        0.0,
+        270.0
+      ],
+      "oriented_source_bbox": [
+        67.691994,
+        68.608021,
+        69.534756
+      ],
+      "uniform_scale": 0.00230101,
+      "predicted_visual_extent_m": [
+        0.15576,
+        0.157868,
+        0.16
+      ],
+      "axis_size_error_ratio": [
+        1.0272,
+        1.0135,
+        1.0
+      ],
+      "max_axis_size_error_ratio": 1.0272,
+      "rms_log_size_error": 0.017334,
+      "status": "approved",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_76fa80950b1f48a8ad6a8441fe443241",
+      "name": "Cardboard box",
+      "semantic_category": "box_cardboard",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_76fa80950b1f48a8ad6a8441fe443241/model.glb",
+      "source_mesh_count": 1,
+      "source_bbox": [
+        0.773568,
+        0.39287,
+        0.639849
+      ],
+      "canonical_extent_m": [
+        0.42,
+        0.28,
+        0.22
+      ],
+      "recommended_visual_alignment_degrees": [
+        90.0,
+        180.0,
+        0.0
+      ],
+      "oriented_source_bbox": [
+        0.773568,
+        0.639849,
+        0.39287
+      ],
+      "uniform_scale": 0.54293884,
+      "predicted_visual_extent_m": [
+        0.42,
+        0.347399,
+        0.213305
+      ],
+      "axis_size_error_ratio": [
+        1.0,
+        1.2407,
+        1.0314
+      ],
+      "max_axis_size_error_ratio": 1.2407,
+      "rms_log_size_error": 0.125797,
+      "status": "approved",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_4ae035ea89ea40bbaa82403b9c36afab",
+      "name": "A Wooden Crate",
+      "semantic_category": "box_crate",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_4ae035ea89ea40bbaa82403b9c36afab/model.glb",
+      "source_mesh_count": 2,
+      "source_bbox": [
+        37.460304,
+        53.361738,
+        18.347581
+      ],
+      "canonical_extent_m": [
+        0.42,
+        0.28,
+        0.22
+      ],
+      "recommended_visual_alignment_degrees": [
+        0.0,
+        180.0,
+        270.0
+      ],
+      "oriented_source_bbox": [
+        53.361738,
+        37.4603,
+        18.347584
+      ],
+      "uniform_scale": 0.00787081,
+      "predicted_visual_extent_m": [
+        0.42,
+        0.294843,
+        0.14441
+      ],
+      "axis_size_error_ratio": [
+        1.0,
+        1.053,
+        1.5234
+      ],
+      "max_axis_size_error_ratio": 1.5234,
+      "rms_log_size_error": 0.244869,
+      "status": "review",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_f4d11e48cc52479c802ec2cf0d629f68",
+      "name": "Modern Generic Smartphone",
+      "semantic_category": "electronics_phone_like",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_f4d11e48cc52479c802ec2cf0d629f68/model.glb",
+      "source_mesh_count": 1,
+      "source_bbox": [
+        0.077724,
+        0.009676,
+        0.157557
+      ],
+      "canonical_extent_m": [
+        0.28,
+        0.18,
+        0.035
+      ],
+      "recommended_visual_alignment_degrees": [
+        90.0,
+        180.0,
+        90.0
+      ],
+      "oriented_source_bbox": [
+        0.157557,
+        0.077724,
+        0.009676
+      ],
+      "uniform_scale": 1.77713602,
+      "predicted_visual_extent_m": [
+        0.28,
+        0.138127,
+        0.017195
+      ],
+      "axis_size_error_ratio": [
+        1.0,
+        1.3031,
+        2.0354
+      ],
+      "max_axis_size_error_ratio": 2.0354,
+      "rms_log_size_error": 0.437876,
+      "status": "quarantine",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_b0902ff83cf946c984f9f7e0197ddb7f",
+      "name": "Remote Control",
+      "semantic_category": "electronics_remote",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_b0902ff83cf946c984f9f7e0197ddb7f/model.glb",
+      "source_mesh_count": 2,
+      "source_bbox": [
+        1.285561,
+        4.84378,
+        0.613903
+      ],
+      "canonical_extent_m": [
+        0.28,
+        0.18,
+        0.035
+      ],
+      "recommended_visual_alignment_degrees": [
+        0.0,
+        180.0,
+        90.0
+      ],
+      "oriented_source_bbox": [
+        4.84378,
+        1.285561,
+        0.613904
+      ],
+      "uniform_scale": 0.0578061,
+      "predicted_visual_extent_m": [
+        0.28,
+        0.074313,
+        0.035487
+      ],
+      "axis_size_error_ratio": [
+        1.0,
+        2.4222,
+        1.0139
+      ],
+      "max_axis_size_error_ratio": 2.4222,
+      "rms_log_size_error": 0.510825,
+      "status": "quarantine",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_dae37cc4869a4155b6999efe26df710c",
+      "name": "Closed Magazine",
+      "semantic_category": "office_book",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_dae37cc4869a4155b6999efe26df710c/model.glb",
+      "source_mesh_count": 1,
+      "source_bbox": [
+        13.746312,
+        23.74826,
+        0.702425
+      ],
+      "canonical_extent_m": [
+        0.28,
+        0.18,
+        0.035
+      ],
+      "recommended_visual_alignment_degrees": [
+        0.0,
+        180.0,
+        0.0
+      ],
+      "oriented_source_bbox": [
+        13.746312,
+        23.74826,
+        0.702426
+      ],
+      "uniform_scale": 0.01179034,
+      "predicted_visual_extent_m": [
+        0.162074,
+        0.28,
+        0.008282
+      ],
+      "axis_size_error_ratio": [
+        1.7276,
+        1.5556,
+        4.2261
+      ],
+      "max_axis_size_error_ratio": 4.2261,
+      "rms_log_size_error": 0.925821,
+      "status": "quarantine",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_3be00aa2664f4bc0b5be8b8630c2d540",
+      "name": "Gas Cylinder",
+      "semantic_category": "primitive_cylinder",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_3be00aa2664f4bc0b5be8b8630c2d540/model.glb",
+      "source_mesh_count": 1,
+      "source_bbox": [
+        2.044522,
+        2.044523,
+        2.799516
+      ],
+      "canonical_extent_m": [
+        0.16,
+        0.16,
+        0.16
+      ],
+      "recommended_visual_alignment_degrees": [
+        90.0,
+        180.0,
+        90.0
+      ],
+      "oriented_source_bbox": [
+        2.799517,
+        2.044523,
+        2.044524
+      ],
+      "uniform_scale": 0.05715272,
+      "predicted_visual_extent_m": [
+        0.16,
+        0.11685,
+        0.11685
+      ],
+      "axis_size_error_ratio": [
+        1.0,
+        1.3693,
+        1.3693
+      ],
+      "max_axis_size_error_ratio": 1.3693,
+      "rms_log_size_error": 0.25661,
+      "status": "review",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_beb69bc08a8f487ab8c5207fb155cbf2",
+      "name": "Glass Bottle",
+      "semantic_category": "tabletop_container_bottle",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_beb69bc08a8f487ab8c5207fb155cbf2/model.glb",
+      "source_mesh_count": 1,
+      "source_bbox": [
+        2.588181,
+        2.5933,
+        10.305
+      ],
+      "canonical_extent_m": [
+        0.11,
+        0.11,
+        0.32
+      ],
+      "recommended_visual_alignment_degrees": [
+        0.0,
+        180.0,
+        90.0
+      ],
+      "oriented_source_bbox": [
+        2.5933,
+        2.588182,
+        10.305
+      ],
+      "uniform_scale": 0.03105289,
+      "predicted_visual_extent_m": [
+        0.080529,
+        0.080371,
+        0.32
+      ],
+      "axis_size_error_ratio": [
+        1.366,
+        1.3687,
+        1.0
+      ],
+      "max_axis_size_error_ratio": 1.3687,
+      "rms_log_size_error": 0.255438,
+      "status": "review",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_046b94a7775e496aac26ad8c699496e6",
+      "name": "Ceramic Bowl",
+      "semantic_category": "tabletop_container_bowl",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_046b94a7775e496aac26ad8c699496e6/model.glb",
+      "source_mesh_count": 1,
+      "source_bbox": [
+        2.425348,
+        2.425349,
+        1.236079
+      ],
+      "canonical_extent_m": [
+        0.16,
+        0.16,
+        0.16
+      ],
+      "recommended_visual_alignment_degrees": [
+        0.0,
+        90.0,
+        270.0
+      ],
+      "oriented_source_bbox": [
+        2.425349,
+        1.236079,
+        2.425348
+      ],
+      "uniform_scale": 0.06596989,
+      "predicted_visual_extent_m": [
+        0.16,
+        0.081544,
+        0.16
+      ],
+      "axis_size_error_ratio": [
+        1.0,
+        1.9621,
+        1.0
+      ],
+      "max_axis_size_error_ratio": 1.9621,
+      "rms_log_size_error": 0.389152,
+      "status": "quarantine",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_640b0c8287274629a7f4ff3ce74a5999",
+      "name": "Tin Can",
+      "semantic_category": "tabletop_container_can",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_640b0c8287274629a7f4ff3ce74a5999/model.glb",
+      "source_mesh_count": 1,
+      "source_bbox": [
+        0.126506,
+        0.126506,
+        0.162778
+      ],
+      "canonical_extent_m": [
+        0.11,
+        0.11,
+        0.32
+      ],
+      "recommended_visual_alignment_degrees": [
+        0.0,
+        180.0,
+        0.0
+      ],
+      "oriented_source_bbox": [
+        0.126506,
+        0.126506,
+        0.162778
+      ],
+      "uniform_scale": 1.96586648,
+      "predicted_visual_extent_m": [
+        0.248695,
+        0.248695,
+        0.32
+      ],
+      "axis_size_error_ratio": [
+        2.2609,
+        2.2609,
+        1.0
+      ],
+      "max_axis_size_error_ratio": 2.2609,
+      "rms_log_size_error": 0.666054,
+      "status": "quarantine",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_1551616939cc4da7a9d731dfddd4090f",
+      "name": "Plastic Cup",
+      "semantic_category": "tabletop_container_cup",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_1551616939cc4da7a9d731dfddd4090f/model.glb",
+      "source_mesh_count": 2,
+      "source_bbox": [
+        1.803254,
+        1.808993,
+        2.000001
+      ],
+      "canonical_extent_m": [
+        0.11,
+        0.11,
+        0.32
+      ],
+      "recommended_visual_alignment_degrees": [
+        0.0,
+        180.0,
+        0.0
+      ],
+      "oriented_source_bbox": [
+        1.803254,
+        1.808993,
+        2.000001
+      ],
+      "uniform_scale": 0.15999994,
+      "predicted_visual_extent_m": [
+        0.288521,
+        0.289439,
+        0.32
+      ],
+      "axis_size_error_ratio": [
+        2.6229,
+        2.6313,
+        1.0
+      ],
+      "max_axis_size_error_ratio": 2.6313,
+      "rms_log_size_error": 0.788634,
+      "status": "quarantine",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_d1e446a8f9df4df3923cf230bceef54f",
+      "name": "Ceramic Mug",
+      "semantic_category": "tabletop_container_mug",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_d1e446a8f9df4df3923cf230bceef54f/model.glb",
+      "source_mesh_count": 1,
+      "source_bbox": [
+        2.509988,
+        3.631652,
+        2.200016
+      ],
+      "canonical_extent_m": [
+        0.16,
+        0.16,
+        0.16
+      ],
+      "recommended_visual_alignment_degrees": [
+        0.0,
+        90.0,
+        270.0
+      ],
+      "oriented_source_bbox": [
+        3.631652,
+        2.200016,
+        2.509988
+      ],
+      "uniform_scale": 0.04405708,
+      "predicted_visual_extent_m": [
+        0.16,
+        0.096926,
+        0.110583
+      ],
+      "axis_size_error_ratio": [
+        1.0,
+        1.6507,
+        1.4469
+      ],
+      "max_axis_size_error_ratio": 1.6507,
+      "rms_log_size_error": 0.359485,
+      "status": "quarantine",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_76a3f7bf75d049458dfaa48aa342e0b8",
+      "name": "Baluster vase, from a five-piece garniture",
+      "semantic_category": "tabletop_decor_vase",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_76a3f7bf75d049458dfaa48aa342e0b8/model.glb",
+      "source_mesh_count": 2,
+      "source_bbox": [
+        0.170849,
+        0.171853,
+        0.405293
+      ],
+      "canonical_extent_m": [
+        0.11,
+        0.11,
+        0.32
+      ],
+      "recommended_visual_alignment_degrees": [
+        0.0,
+        180.0,
+        0.0
+      ],
+      "oriented_source_bbox": [
+        0.170849,
+        0.171853,
+        0.405293
+      ],
+      "uniform_scale": 0.7895528,
+      "predicted_visual_extent_m": [
+        0.134895,
+        0.135687,
+        0.32
+      ],
+      "axis_size_error_ratio": [
+        1.2263,
+        1.2335,
+        1.0
+      ],
+      "max_axis_size_error_ratio": 1.2335,
+      "rms_log_size_error": 0.168983,
+      "status": "approved",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_ebb7c4102dc94ef7ba14d9c5df43c448",
+      "name": "Decorated Dinner Plate",
+      "semantic_category": "tabletop_plate",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_ebb7c4102dc94ef7ba14d9c5df43c448/model.glb",
+      "source_mesh_count": 1,
+      "source_bbox": [
+        23.938675,
+        23.938681,
+        1.554227
+      ],
+      "canonical_extent_m": [
+        0.28,
+        0.18,
+        0.035
+      ],
+      "recommended_visual_alignment_degrees": [
+        0.0,
+        180.0,
+        0.0
+      ],
+      "oriented_source_bbox": [
+        23.938675,
+        23.938681,
+        1.554229
+      ],
+      "uniform_scale": 0.01169655,
+      "predicted_visual_extent_m": [
+        0.28,
+        0.28,
+        0.018179
+      ],
+      "axis_size_error_ratio": [
+        1.0,
+        1.5556,
+        1.9253
+      ],
+      "max_axis_size_error_ratio": 1.9253,
+      "rms_log_size_error": 0.456194,
+      "status": "quarantine",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_cb444316e5cd4b9498c98804e6daaafc",
+      "name": "Toy car",
+      "semantic_category": "toy_vehicle",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_cb444316e5cd4b9498c98804e6daaafc/model.glb",
+      "source_mesh_count": 9,
+      "source_bbox": [
+        19.502745,
+        6.75535,
+        7.788637
+      ],
+      "canonical_extent_m": [
+        0.42,
+        0.28,
+        0.22
+      ],
+      "recommended_visual_alignment_degrees": [
+        90.0,
+        0.0,
+        180.0
+      ],
+      "oriented_source_bbox": [
+        19.502745,
+        7.788638,
+        6.75535
+      ],
+      "uniform_scale": 0.02153543,
+      "predicted_visual_extent_m": [
+        0.42,
+        0.167732,
+        0.145479
+      ],
+      "axis_size_error_ratio": [
+        1.0,
+        1.6693,
+        1.5122
+      ],
+      "max_axis_size_error_ratio": 1.6693,
+      "rms_log_size_error": 0.380192,
+      "status": "quarantine",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    },
+    {
+      "asset_id": "sketchfab_81578532781542c590668ab67d1121e9",
+      "name": "Tools / 4 Way Lug Wrench",
+      "semantic_category": "hand_tool_wrench",
+      "source_path": "assets/library/sketchfab/foreground/sketchfab_81578532781542c590668ab67d1121e9/model.glb",
+      "source_mesh_count": 1,
+      "source_bbox": [
+        0.441332,
+        0.051484,
+        0.441332
+      ],
+      "canonical_extent_m": [
+        0.42,
+        0.28,
+        0.22
+      ],
+      "recommended_visual_alignment_degrees": [
+        90.0,
+        180.0,
+        0.0
+      ],
+      "oriented_source_bbox": [
+        0.441332,
+        0.441332,
+        0.051484
+      ],
+      "uniform_scale": 0.95166474,
+      "predicted_visual_extent_m": [
+        0.42,
+        0.42,
+        0.048996
+      ],
+      "axis_size_error_ratio": [
+        1.0,
+        1.5,
+        4.4902
+      ],
+      "max_axis_size_error_ratio": 4.4902,
+      "rms_log_size_error": 0.898162,
+      "status": "quarantine",
+      "reason": "uniform_visual_scale_and_axis-aligned_orientation_must_match_canonical_collision_extent"
+    }
+  ]
+}

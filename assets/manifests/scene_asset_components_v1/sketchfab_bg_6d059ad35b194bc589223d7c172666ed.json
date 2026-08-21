@@ -1,0 +1,166 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_6d059ad35b194bc589223d7c172666ed",
+  "name": "Ceramic Plate Set",
+  "asset_role": "static_prop",
+  "semantic_category": "prop_tableware",
+  "admission": {
+    "reason": "four visible plates are represented as four thin cylinders",
+    "sampling_enabled": true,
+    "status": "approved"
+  },
+  "proxy_kind": "static_compound",
+  "normalization_mode": "metric_registry_binding",
+  "mesh_component_count": 4,
+  "overall_bounds_low_m": [
+    -0.2249517,
+    -0.0694,
+    0.0
+  ],
+  "overall_bounds_high_m": [
+    0.2249517,
+    0.0694,
+    0.0085105
+  ],
+  "overall_extent_m": [
+    0.4499034,
+    0.1388,
+    0.0085105
+  ],
+  "total_vertex_count": 8632,
+  "total_triangle_count": 15360,
+  "components": [
+    {
+      "object_name": "Object_10",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2249517,
+        -0.0315474,
+        0.0
+      ],
+      "bounds_high_m": [
+        -0.161857,
+        0.0315474,
+        0.0084137
+      ],
+      "center_m": [
+        -0.1934043,
+        0.0,
+        0.0042069
+      ],
+      "extent_m": [
+        0.0630947,
+        0.0630947,
+        0.0084137
+      ],
+      "vertex_count": 2089,
+      "triangle_count": 3840,
+      "materials": [
+        "ceramic_plate"
+      ],
+      "keyword_hints": [
+        "movable_prop"
+      ],
+      "bbox_volume_fraction": 0.06302475
+    },
+    {
+      "object_name": "Object_4",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0861517,
+        -0.0694,
+        0.0
+      ],
+      "bounds_high_m": [
+        0.2249517,
+        0.0694,
+        0.0085105
+      ],
+      "center_m": [
+        0.1555517,
+        0.0,
+        0.0042552
+      ],
+      "extent_m": [
+        0.1388,
+        0.1388,
+        0.0085104
+      ],
+      "vertex_count": 2198,
+      "triangle_count": 3840,
+      "materials": [
+        "ceramic_plate"
+      ],
+      "keyword_hints": [
+        "movable_prop"
+      ],
+      "bbox_volume_fraction": 0.30850859
+    },
+    {
+      "object_name": "Object_6",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0433968,
+        -0.0567812,
+        0.0
+      ],
+      "bounds_high_m": [
+        0.0701656,
+        0.0567812,
+        0.0084914
+      ],
+      "center_m": [
+        0.0133844,
+        0.0,
+        0.0042457
+      ],
+      "extent_m": [
+        0.1135624,
+        0.1135624,
+        0.0084914
+      ],
+      "vertex_count": 2152,
+      "triangle_count": 3840,
+      "materials": [
+        "ceramic_plate"
+      ],
+      "keyword_hints": [
+        "movable_prop"
+      ],
+      "bbox_volume_fraction": 0.20605672
+    },
+    {
+      "object_name": "Object_8",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1470991,
+        -0.0441648,
+        0.0
+      ],
+      "bounds_high_m": [
+        -0.0587694,
+        0.0441648,
+        0.008462
+      ],
+      "center_m": [
+        -0.1029343,
+        0.0,
+        0.004231
+      ],
+      "extent_m": [
+        0.0883297,
+        0.0883297,
+        0.008462
+      ],
+      "vertex_count": 2193,
+      "triangle_count": 3840,
+      "materials": [
+        "ceramic_plate"
+      ],
+      "keyword_hints": [
+        "movable_prop"
+      ],
+      "bbox_volume_fraction": 0.12422954
+    }
+  ]
+}

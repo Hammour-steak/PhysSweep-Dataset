@@ -1,0 +1,2581 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_e0f8dc2f81d440a09e9519fdc9e74cb2",
+  "name": "Office Desk",
+  "asset_role": "interactive_support",
+  "semantic_category": "support_office_desk",
+  "admission": {
+    "reason": "desk, chair, and upper shelving overlap the candidate support region",
+    "sampling_enabled": false,
+    "status": "rejected"
+  },
+  "proxy_kind": "none",
+  "normalization_mode": "review_scale_only_not_metric",
+  "mesh_component_count": 81,
+  "overall_bounds_low_m": [
+    -0.9015509,
+    -1.1999999,
+    -0.0
+  ],
+  "overall_bounds_high_m": [
+    0.9015508,
+    1.1999999,
+    1.4579707
+  ],
+  "overall_extent_m": [
+    1.8031017,
+    2.3999999,
+    1.4579708
+  ],
+  "total_vertex_count": 212586,
+  "total_triangle_count": 110026,
+  "components": [
+    {
+      "object_name": "Ballpen1228A4_StaticMeshComponent0_MI_Metal_Corrogated_Shiny_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0079187,
+        0.3556107,
+        0.9454476
+      ],
+      "bounds_high_m": [
+        0.1043059,
+        0.4376103,
+        0.9538377
+      ],
+      "center_m": [
+        0.0561123,
+        0.3966105,
+        0.9496427
+      ],
+      "extent_m": [
+        0.0963872,
+        0.0819996,
+        0.0083901
+      ],
+      "vertex_count": 5650,
+      "triangle_count": 2518,
+      "materials": [
+        "MI_Metal_Corrogated_Shiny"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 1.051e-05
+    },
+    {
+      "object_name": "Ballpen1228A4_StaticMeshComponent0_MI_Object_103_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0093829,
+        0.3566701,
+        0.9454476
+      ],
+      "bounds_high_m": [
+        0.0967871,
+        0.4318619,
+        0.9538377
+      ],
+      "center_m": [
+        0.053085,
+        0.394266,
+        0.9496427
+      ],
+      "extent_m": [
+        0.0874042,
+        0.0751918,
+        0.0083901
+      ],
+      "vertex_count": 1108,
+      "triangle_count": 560,
+      "materials": [
+        "MI_Object_103"
+      ],
+      "keyword_hints": [
+        "game_piece"
+      ],
+      "bbox_volume_fraction": 8.74e-06
+    },
+    {
+      "object_name": "cup1228A6_StaticMeshComponent0_MI_plasticwhite03_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0795719,
+        0.8830929,
+        0.9454479
+      ],
+      "bounds_high_m": [
+        0.0170746,
+        0.987989,
+        1.040203
+      ],
+      "center_m": [
+        -0.0312487,
+        0.9355409,
+        0.9928254
+      ],
+      "extent_m": [
+        0.0966466,
+        0.1048961,
+        0.0947551
+      ],
+      "vertex_count": 4022,
+      "triangle_count": 2156,
+      "materials": [
+        "MI_plasticwhite03"
+      ],
+      "keyword_hints": [
+        "movable_prop"
+      ],
+      "bbox_volume_fraction": 0.00015225
+    },
+    {
+      "object_name": "deskoffice1228A6_StaticMeshComponent0_MI_Color_C06_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.122144,
+        -0.5076736,
+        0.0363639
+      ],
+      "bounds_high_m": [
+        0.7581909,
+        1.0878065,
+        0.9090849
+      ],
+      "center_m": [
+        0.3180234,
+        0.2900665,
+        0.4727244
+      ],
+      "extent_m": [
+        0.8803349,
+        1.59548,
+        0.872721
+      ],
+      "vertex_count": 72,
+      "triangle_count": 36,
+      "materials": [
+        "MI_Color_C06"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.19428285
+    },
+    {
+      "object_name": "deskoffice1228A6_StaticMeshComponent0_MI_Object_51_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1585074,
+        -0.5440369,
+        0.8727214
+      ],
+      "bounds_high_m": [
+        0.7945547,
+        1.1241709,
+        0.948474
+      ],
+      "center_m": [
+        0.3180236,
+        0.290067,
+        0.9105977
+      ],
+      "extent_m": [
+        0.953062,
+        1.6682078,
+        0.0757526
+      ],
+      "vertex_count": 2012,
+      "triangle_count": 1076,
+      "materials": [
+        "MI_Object_51"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.01908924
+    },
+    {
+      "object_name": "deskoffice1228A6_StaticMeshComponent0_MI_Object_62_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1524468,
+        -0.5379764,
+        0.9090849
+      ],
+      "bounds_high_m": [
+        0.7884941,
+        1.1181104,
+        0.9454482
+      ],
+      "center_m": [
+        0.3180236,
+        0.290067,
+        0.9272665
+      ],
+      "extent_m": [
+        0.9409408,
+        1.6560868,
+        0.0363634
+      ],
+      "vertex_count": 200,
+      "triangle_count": 152,
+      "materials": [
+        "MI_Object_62_1"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.0089811
+    },
+    {
+      "object_name": "deskoffice1228A6_StaticMeshComponent0_MI_Object_73_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.071588,
+        -0.5076728,
+        5e-07
+      ],
+      "bounds_high_m": [
+        0.707636,
+        1.0878063,
+        0.036364
+      ],
+      "center_m": [
+        0.318024,
+        0.2900668,
+        0.0181823
+      ],
+      "extent_m": [
+        0.779224,
+        1.5954791,
+        0.0363634
+      ],
+      "vertex_count": 560,
+      "triangle_count": 368,
+      "materials": [
+        "MI_Object_73"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.00716535
+    },
+    {
+      "object_name": "desktop1228A3_StaticMeshComponent0_MI_Color_A05_2_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.2378817,
+        -0.3698805,
+        0.061355
+      ],
+      "bounds_high_m": [
+        0.2491415,
+        -0.2693504,
+        0.3213212
+      ],
+      "center_m": [
+        0.2435116,
+        -0.3196155,
+        0.1913381
+      ],
+      "extent_m": [
+        0.0112597,
+        0.1005301,
+        0.2599662
+      ],
+      "vertex_count": 192,
+      "triangle_count": 144,
+      "materials": [
+        "MI_Color_A05_2"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 4.664e-05
+    },
+    {
+      "object_name": "desktop1228A3_StaticMeshComponent0_MI_Color_B01_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.2443943,
+        -0.4218444,
+        0.0273111
+      ],
+      "bounds_high_m": [
+        0.2443945,
+        -0.2173866,
+        0.469962
+      ],
+      "center_m": [
+        0.2443944,
+        -0.3196155,
+        0.2486366
+      ],
+      "extent_m": [
+        2e-07,
+        0.2044578,
+        0.4426509
+      ],
+      "vertex_count": 152,
+      "triangle_count": 152,
+      "materials": [
+        "MI_Color_B01"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.0
+    },
+    {
+      "object_name": "desktop1228A3_StaticMeshComponent0_MI_Color_L25_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.2378817,
+        -0.432511,
+        -0.0
+      ],
+      "bounds_high_m": [
+        0.6637554,
+        -0.20672,
+        0.5019617
+      ],
+      "center_m": [
+        0.4508185,
+        -0.3196155,
+        0.2509808
+      ],
+      "extent_m": [
+        0.4258737,
+        0.2257911,
+        0.5019617
+      ],
+      "vertex_count": 2670,
+      "triangle_count": 1492,
+      "materials": [
+        "MI_Color_L25"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.00765029
+    },
+    {
+      "object_name": "documents1228F_455_StaticMeshComponent0_MI_Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.2960461,
+        -0.9930475,
+        0.8541378
+      ],
+      "bounds_high_m": [
+        0.6901035,
+        -0.7719618,
+        1.1644386
+      ],
+      "center_m": [
+        0.4930748,
+        -0.8825047,
+        1.0092882
+      ],
+      "extent_m": [
+        0.3940574,
+        0.2210857,
+        0.3103008
+      ],
+      "vertex_count": 472,
+      "triangle_count": 280,
+      "materials": [
+        "MI_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00428472
+    },
+    {
+      "object_name": "documents1228F_455_StaticMeshComponent0_MI_Object_41_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.293112,
+        -1.0005847,
+        0.8492894
+      ],
+      "bounds_high_m": [
+        0.6930279,
+        -0.7727763,
+        1.1692871
+      ],
+      "center_m": [
+        0.49307,
+        -0.8866805,
+        1.0092882
+      ],
+      "extent_m": [
+        0.3999159,
+        0.2278084,
+        0.3199977
+      ],
+      "vertex_count": 12305,
+      "triangle_count": 6778,
+      "materials": [
+        "MI_Object_41"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00462067
+    },
+    {
+      "object_name": "documents1228H12_StaticMeshComponent0_MI_Chrome1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.5974796,
+        0.1518834,
+        0.9454479
+      ],
+      "bounds_high_m": [
+        0.801396,
+        0.4504488,
+        1.293584
+      ],
+      "center_m": [
+        0.6994378,
+        0.3011661,
+        1.119516
+      ],
+      "extent_m": [
+        0.2039164,
+        0.2985653,
+        0.3481361
+      ],
+      "vertex_count": 3128,
+      "triangle_count": 2104,
+      "materials": [
+        "MI_Chrome1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00335939
+    },
+    {
+      "object_name": "documents1228H12_StaticMeshComponent0_MI_Color_008_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.731154,
+        0.1570258,
+        1.2673264
+      ],
+      "bounds_high_m": [
+        0.7354327,
+        0.1590453,
+        1.2692899
+      ],
+      "center_m": [
+        0.7332934,
+        0.1580356,
+        1.2683081
+      ],
+      "extent_m": [
+        0.0042787,
+        0.0020194,
+        0.0019635
+      ],
+      "vertex_count": 18,
+      "triangle_count": 6,
+      "materials": [
+        "MI_Color_008"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.0
+    },
+    {
+      "object_name": "documents1228H12_StaticMeshComponent0_MI_Color_A05_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.5626372,
+        0.1540989,
+        1.264372
+      ],
+      "bounds_high_m": [
+        0.5686408,
+        0.161939,
+        1.272212
+      ],
+      "center_m": [
+        0.565639,
+        0.158019,
+        1.268292
+      ],
+      "extent_m": [
+        0.0060036,
+        0.0078401,
+        0.00784
+      ],
+      "vertex_count": 1275,
+      "triangle_count": 646,
+      "materials": [
+        "MI_Color_A05"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 6e-08
+    },
+    {
+      "object_name": "documents1228H12_StaticMeshComponent0_MI_Color_B04_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.5634498,
+        0.2084245,
+        1.0135485
+      ],
+      "bounds_high_m": [
+        0.7943631,
+        0.4416819,
+        1.242215
+      ],
+      "center_m": [
+        0.6789065,
+        0.3250532,
+        1.1278818
+      ],
+      "extent_m": [
+        0.2309133,
+        0.2332574,
+        0.2286665
+      ],
+      "vertex_count": 195,
+      "triangle_count": 129,
+      "materials": [
+        "MI_Color_B04_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00195212
+    },
+    {
+      "object_name": "documents1228H12_StaticMeshComponent0_MI_Color_D01_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.5751831,
+        0.1541793,
+        1.2645588
+      ],
+      "bounds_high_m": [
+        0.7194232,
+        0.1618587,
+        1.2720253
+      ],
+      "center_m": [
+        0.6473031,
+        0.158019,
+        1.2682921
+      ],
+      "extent_m": [
+        0.1442401,
+        0.0076794,
+        0.0074666
+      ],
+      "vertex_count": 24,
+      "triangle_count": 12,
+      "materials": [
+        "MI_Color_D01"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 1.31e-06
+    },
+    {
+      "object_name": "documents1228H12_StaticMeshComponent0_MI_Color_F06_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.6123064,
+        0.1098451,
+        0.9454479
+      ],
+      "bounds_high_m": [
+        0.801396,
+        0.3643888,
+        1.1987795
+      ],
+      "center_m": [
+        0.7068512,
+        0.2371169,
+        1.0721137
+      ],
+      "extent_m": [
+        0.1890896,
+        0.2545437,
+        0.2533315
+      ],
+      "vertex_count": 1200,
+      "triangle_count": 872,
+      "materials": [
+        "MI_Color_F06"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00193259
+    },
+    {
+      "object_name": "documents1228H12_StaticMeshComponent0_MI_Color_G05_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.5634499,
+        0.246,
+        1.0135485
+      ],
+      "bounds_high_m": [
+        0.7943631,
+        0.3277434,
+        1.242215
+      ],
+      "center_m": [
+        0.6789065,
+        0.2868717,
+        1.1278818
+      ],
+      "extent_m": [
+        0.2309133,
+        0.0817433,
+        0.2286665
+      ],
+      "vertex_count": 130,
+      "triangle_count": 86,
+      "materials": [
+        "MI_Color_G05"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00068411
+    },
+    {
+      "object_name": "documents1228H12_StaticMeshComponent0_MI_Color_M04_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.5634499,
+        0.2084245,
+        0.9483271
+      ],
+      "bounds_high_m": [
+        0.7943631,
+        0.4416819,
+        1.0135485
+      ],
+      "center_m": [
+        0.6789065,
+        0.3250532,
+        0.9809378
+      ],
+      "extent_m": [
+        0.2309133,
+        0.2332574,
+        0.0652214
+      ],
+      "vertex_count": 260,
+      "triangle_count": 130,
+      "materials": [
+        "MI_Color_M04"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00055679
+    },
+    {
+      "object_name": "documents1228H12_StaticMeshComponent0_MI_Color_M05_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.5223287,
+        0.1387669,
+        0.9540566
+      ],
+      "bounds_high_m": [
+        0.7914177,
+        0.1991644,
+        1.2985109
+      ],
+      "center_m": [
+        0.6568732,
+        0.1689657,
+        1.1262837
+      ],
+      "extent_m": [
+        0.2690889,
+        0.0603975,
+        0.3444543
+      ],
+      "vertex_count": 616,
+      "triangle_count": 408,
+      "materials": [
+        "MI_Color_M05"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00088729
+    },
+    {
+      "object_name": "documents1228H12_StaticMeshComponent0_MI_Metal_Aluminum_Anodize",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.5684098,
+        0.1537974,
+        1.264021
+      ],
+      "bounds_high_m": [
+        0.5791085,
+        0.1623378,
+        1.2724878
+      ],
+      "center_m": [
+        0.5737592,
+        0.1580676,
+        1.2682544
+      ],
+      "extent_m": [
+        0.0106987,
+        0.0085404,
+        0.0084667
+      ],
+      "vertex_count": 3738,
+      "triangle_count": 1770,
+      "materials": [
+        "MI_Metal_Aluminum_Anodized"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 1.2e-07
+    },
+    {
+      "object_name": "documents1228H12_StaticMeshComponent0_MI_Object_0137_Black__0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.5907969,
+        0.1542575,
+        1.2677975
+      ],
+      "bounds_high_m": [
+        0.6306795,
+        0.1551723,
+        1.2705319
+      ],
+      "center_m": [
+        0.6107382,
+        0.1547149,
+        1.2691647
+      ],
+      "extent_m": [
+        0.0398826,
+        0.0009148,
+        0.0027344
+      ],
+      "vertex_count": 389,
+      "triangle_count": 356,
+      "materials": [
+        "MI_Object_0137_Black"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 2e-08
+    },
+    {
+      "object_name": "documents1228H12_StaticMeshComponent0_MI_Object_66_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.7194232,
+        0.1541794,
+        1.2645588
+      ],
+      "bounds_high_m": [
+        0.7312915,
+        0.1618587,
+        1.2720253
+      ],
+      "center_m": [
+        0.7253573,
+        0.1580191,
+        1.2682921
+      ],
+      "extent_m": [
+        0.0118683,
+        0.0076793,
+        0.0074666
+      ],
+      "vertex_count": 24,
+      "triangle_count": 12,
+      "materials": [
+        "MI_Object_66"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 1.1e-07
+    },
+    {
+      "object_name": "documents1228H12_StaticMeshComponent0_MI_paper01_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.5505831,
+        0.1377886,
+        0.9525186
+      ],
+      "bounds_high_m": [
+        0.7906747,
+        0.4392639,
+        1.2723385
+      ],
+      "center_m": [
+        0.6706289,
+        0.2885263,
+        1.1124285
+      ],
+      "extent_m": [
+        0.2400917,
+        0.3014754,
+        0.3198199
+      ],
+      "vertex_count": 4334,
+      "triangle_count": 1808,
+      "materials": [
+        "MI_paper01"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00366906
+    },
+    {
+      "object_name": "documents1228H12_StaticMeshComponent0_MI_W1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.5634498,
+        0.2140991,
+        1.1818318
+      ],
+      "bounds_high_m": [
+        0.5658742,
+        0.4360072,
+        1.2365404
+      ],
+      "center_m": [
+        0.564662,
+        0.3250531,
+        1.2091861
+      ],
+      "extent_m": [
+        0.0024244,
+        0.2219082,
+        0.0547086
+      ],
+      "vertex_count": 20,
+      "triangle_count": 10,
+      "materials": [
+        "MI_W1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 4.67e-06
+    },
+    {
+      "object_name": "documents1228J2_StaticMeshComponent0_MI_Color_B04_1_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.4827359,
+        0.631345,
+        1.2293042
+      ],
+      "bounds_high_m": [
+        0.7112249,
+        1.0790908,
+        1.4579707
+      ],
+      "center_m": [
+        0.5969804,
+        0.8552179,
+        1.3436375
+      ],
+      "extent_m": [
+        0.228489,
+        0.4477458,
+        0.2286665
+      ],
+      "vertex_count": 414,
+      "triangle_count": 258,
+      "materials": [
+        "MI_Color_B04_1_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00370782
+    },
+    {
+      "object_name": "documents1228J2_StaticMeshComponent0_MI_Color_F06_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.5291682,
+        0.5884674,
+        1.1612036
+      ],
+      "bounds_high_m": [
+        0.7182577,
+        1.0830092,
+        1.4145353
+      ],
+      "center_m": [
+        0.623713,
+        0.8357383,
+        1.2878695
+      ],
+      "extent_m": [
+        0.1890895,
+        0.4945419,
+        0.2533317
+      ],
+      "vertex_count": 3600,
+      "triangle_count": 2593,
+      "materials": [
+        "MI_Color_F06_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00375474
+    },
+    {
+      "object_name": "documents1228J2_StaticMeshComponent0_MI_Color_G05_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.4803117,
+        0.6761932,
+        1.2293042
+      ],
+      "bounds_high_m": [
+        0.7088006,
+        0.9590917,
+        1.4579707
+      ],
+      "center_m": [
+        0.5945562,
+        0.8176425,
+        1.3436375
+      ],
+      "extent_m": [
+        0.2284889,
+        0.2828985,
+        0.2286665
+      ],
+      "vertex_count": 207,
+      "triangle_count": 129,
+      "materials": [
+        "MI_Color_G05_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00234271
+    },
+    {
+      "object_name": "documents1228J2_StaticMeshComponent0_MI_Color_M04_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.4803117,
+        0.5937696,
+        1.1640829
+      ],
+      "bounds_high_m": [
+        0.7112249,
+        1.0790908,
+        1.2293043
+      ],
+      "center_m": [
+        0.5957683,
+        0.8364302,
+        1.1966936
+      ],
+      "extent_m": [
+        0.2309132,
+        0.4853213,
+        0.0652214
+      ],
+      "vertex_count": 624,
+      "triangle_count": 312,
+      "materials": [
+        "MI_Color_M04_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00115848
+    },
+    {
+      "object_name": "documents1228J2_StaticMeshComponent0_MI_Default_2_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.4826151,
+        0.5961875,
+        1.1682743
+      ],
+      "bounds_high_m": [
+        0.7075365,
+        1.0766728,
+        1.4537793
+      ],
+      "center_m": [
+        0.5950758,
+        0.8364302,
+        1.3110268
+      ],
+      "extent_m": [
+        0.2249214,
+        0.4804853,
+        0.2855051
+      ],
+      "vertex_count": 1092,
+      "triangle_count": 732,
+      "materials": [
+        "MI_Default_2"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.0048904
+    },
+    {
+      "object_name": "documents1228J2_StaticMeshComponent0_MI_Object_131_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.4803117,
+        0.5937696,
+        1.2293042
+      ],
+      "bounds_high_m": [
+        0.7088006,
+        1.0415154,
+        1.4579707
+      ],
+      "center_m": [
+        0.5945562,
+        0.8176425,
+        1.3436375
+      ],
+      "extent_m": [
+        0.2284889,
+        0.4477458,
+        0.2286665
+      ],
+      "vertex_count": 207,
+      "triangle_count": 129,
+      "materials": [
+        "MI_Object_131"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00370782
+    },
+    {
+      "object_name": "documents1228J2_StaticMeshComponent0_MI_W1_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.4803117,
+        0.5994442,
+        1.3975875
+      ],
+      "bounds_high_m": [
+        0.4827359,
+        1.0734162,
+        1.4522963
+      ],
+      "center_m": [
+        0.4815238,
+        0.8364302,
+        1.4249419
+      ],
+      "extent_m": [
+        0.0024242,
+        0.4739721,
+        0.0547087
+      ],
+      "vertex_count": 48,
+      "triangle_count": 24,
+      "materials": [
+        "MI_W1_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 9.96e-06
+    },
+    {
+      "object_name": "documents1228J4_458_StaticMeshComponent0_MI_Color_B04_1_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1760396,
+        -1.007154,
+        0.9173899
+      ],
+      "bounds_high_m": [
+        0.2717066,
+        -0.7786642,
+        1.1460564
+      ],
+      "center_m": [
+        0.0478335,
+        -0.8929091,
+        1.0317232
+      ],
+      "extent_m": [
+        0.4477461,
+        0.2284898,
+        0.2286665
+      ],
+      "vertex_count": 414,
+      "triangle_count": 258,
+      "materials": [
+        "MI_Color_B04_1_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00370784
+    },
+    {
+      "object_name": "documents1228J4_458_StaticMeshComponent0_MI_Color_F06_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2189171,
+        -1.014187,
+        0.8492894
+      ],
+      "bounds_high_m": [
+        0.275625,
+        -0.8250966,
+        1.1026208
+      ],
+      "center_m": [
+        0.0283539,
+        -0.9196418,
+        0.9759551
+      ],
+      "extent_m": [
+        0.4945421,
+        0.1890904,
+        0.2533315
+      ],
+      "vertex_count": 3600,
+      "triangle_count": 2593,
+      "materials": [
+        "MI_Color_F06_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00375476
+    },
+    {
+      "object_name": "documents1228J4_458_StaticMeshComponent0_MI_Color_G05_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1311914,
+        -1.0047297,
+        0.9173899
+      ],
+      "bounds_high_m": [
+        0.1517074,
+        -0.7762402,
+        1.1460564
+      ],
+      "center_m": [
+        0.010258,
+        -0.890485,
+        1.0317232
+      ],
+      "extent_m": [
+        0.2828989,
+        0.2284895,
+        0.2286665
+      ],
+      "vertex_count": 207,
+      "triangle_count": 129,
+      "materials": [
+        "MI_Color_G05_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00234272
+    },
+    {
+      "object_name": "documents1228J4_458_StaticMeshComponent0_MI_Color_M04_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.213615,
+        -1.0071541,
+        0.8521686
+      ],
+      "bounds_high_m": [
+        0.2717066,
+        -0.7762401,
+        0.9173899
+      ],
+      "center_m": [
+        0.0290458,
+        -0.8916971,
+        0.8847792
+      ],
+      "extent_m": [
+        0.4853216,
+        0.2309141,
+        0.0652214
+      ],
+      "vertex_count": 624,
+      "triangle_count": 312,
+      "materials": [
+        "MI_Color_M04_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00115848
+    },
+    {
+      "object_name": "documents1228J4_458_StaticMeshComponent0_MI_Default_2_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2111971,
+        -1.0034657,
+        0.85636
+      ],
+      "bounds_high_m": [
+        0.2692885,
+        -0.7785434,
+        1.1418649
+      ],
+      "center_m": [
+        0.0290457,
+        -0.8910045,
+        0.9991125
+      ],
+      "extent_m": [
+        0.4804856,
+        0.2249222,
+        0.2855049
+      ],
+      "vertex_count": 1092,
+      "triangle_count": 732,
+      "materials": [
+        "MI_Default_2"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00489042
+    },
+    {
+      "object_name": "documents1228J4_458_StaticMeshComponent0_MI_Object_131_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.213615,
+        -1.0047299,
+        0.9173899
+      ],
+      "bounds_high_m": [
+        0.2341311,
+        -0.7762401,
+        1.1460564
+      ],
+      "center_m": [
+        0.010258,
+        -0.890485,
+        1.0317232
+      ],
+      "extent_m": [
+        0.4477461,
+        0.2284898,
+        0.2286665
+      ],
+      "vertex_count": 207,
+      "triangle_count": 129,
+      "materials": [
+        "MI_Object_131"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00370784
+    },
+    {
+      "object_name": "documents1228J4_458_StaticMeshComponent0_MI_W1_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2079405,
+        -0.7786651,
+        1.0856732
+      ],
+      "bounds_high_m": [
+        0.2660316,
+        -0.7762401,
+        1.1403818
+      ],
+      "center_m": [
+        0.0290455,
+        -0.7774526,
+        1.1130275
+      ],
+      "extent_m": [
+        0.473972,
+        0.002425,
+        0.0547086
+      ],
+      "vertex_count": 48,
+      "triangle_count": 24,
+      "materials": [
+        "MI_W1_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 9.97e-06
+    },
+    {
+      "object_name": "drawer1228C6_StaticMeshComponent0_MI_Color_A01_3_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.262738,
+        -1.0565848,
+        0.8221897
+      ],
+      "bounds_high_m": [
+        0.8113574,
+        -0.5826439,
+        0.8492903
+      ],
+      "center_m": [
+        0.2743097,
+        -0.8196144,
+        0.83574
+      ],
+      "extent_m": [
+        1.0740953,
+        0.473941,
+        0.0271005
+      ],
+      "vertex_count": 12,
+      "triangle_count": 6,
+      "materials": [
+        "MI_Color_A01_3"
+      ],
+      "keyword_hints": [
+        "container_or_void"
+      ],
+      "bbox_volume_fraction": 0.00218657
+    },
+    {
+      "object_name": "drawer1228C6_StaticMeshComponent0_MI_Color_I05_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2627387,
+        -1.0565848,
+        0.0472724
+      ],
+      "bounds_high_m": [
+        0.8113574,
+        -0.5826438,
+        0.8492903
+      ],
+      "center_m": [
+        0.2743093,
+        -0.8196143,
+        0.4482813
+      ],
+      "extent_m": [
+        1.0740961,
+        0.473941,
+        0.8020178
+      ],
+      "vertex_count": 364,
+      "triangle_count": 216,
+      "materials": [
+        "MI_Color_I05_1"
+      ],
+      "keyword_hints": [
+        "container_or_void"
+      ],
+      "bbox_volume_fraction": 0.06470997
+    },
+    {
+      "object_name": "drawer1228C6_StaticMeshComponent0_MI_Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2475871,
+        -0.8717983,
+        0.2067338
+      ],
+      "bounds_high_m": [
+        -0.2413317,
+        -0.7687687,
+        0.7727904
+      ],
+      "center_m": [
+        -0.2444594,
+        -0.8202835,
+        0.4897621
+      ],
+      "extent_m": [
+        0.0062554,
+        0.1030296,
+        0.5660566
+      ],
+      "vertex_count": 640,
+      "triangle_count": 424,
+      "materials": [
+        "MI_Default"
+      ],
+      "keyword_hints": [
+        "container_or_void"
+      ],
+      "bbox_volume_fraction": 5.782e-05
+    },
+    {
+      "object_name": "drawer1228D16_StaticMeshComponent0_MI_plasticwhite03_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.4584878,
+        0.9135589,
+        0.9454478
+      ],
+      "bounds_high_m": [
+        0.7045478,
+        1.0868921,
+        1.1612041
+      ],
+      "center_m": [
+        0.5815178,
+        1.0002255,
+        1.053326
+      ],
+      "extent_m": [
+        0.2460599,
+        0.1733332,
+        0.2157563
+      ],
+      "vertex_count": 316,
+      "triangle_count": 190,
+      "materials": [
+        "MI_plasticwhite03"
+      ],
+      "keyword_hints": [
+        "container_or_void"
+      ],
+      "bbox_volume_fraction": 0.0014585
+    },
+    {
+      "object_name": "drawer1228D17_StaticMeshComponent0_MI_plasticwhite03_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.4584878,
+        0.7393007,
+        0.9454478
+      ],
+      "bounds_high_m": [
+        0.7045478,
+        0.912634,
+        1.1612041
+      ],
+      "center_m": [
+        0.5815178,
+        0.8259673,
+        1.053326
+      ],
+      "extent_m": [
+        0.2460599,
+        0.1733332,
+        0.2157563
+      ],
+      "vertex_count": 316,
+      "triangle_count": 190,
+      "materials": [
+        "MI_plasticwhite03"
+      ],
+      "keyword_hints": [
+        "container_or_void"
+      ],
+      "bbox_volume_fraction": 0.0014585
+    },
+    {
+      "object_name": "drawer1228D18_StaticMeshComponent0_MI_plasticwhite03_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.4584878,
+        0.5631341,
+        0.9454478
+      ],
+      "bounds_high_m": [
+        0.7045478,
+        0.7364674,
+        1.1612041
+      ],
+      "center_m": [
+        0.5815178,
+        0.6498007,
+        1.053326
+      ],
+      "extent_m": [
+        0.2460599,
+        0.1733332,
+        0.2157563
+      ],
+      "vertex_count": 316,
+      "triangle_count": 190,
+      "materials": [
+        "MI_plasticwhite03"
+      ],
+      "keyword_hints": [
+        "container_or_void"
+      ],
+      "bbox_volume_fraction": 0.0014585
+    },
+    {
+      "object_name": "keyboard1228A6_StaticMeshComponent0_MI_keyboadcolor_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0459456,
+        -0.1076064,
+        0.9454479
+      ],
+      "bounds_high_m": [
+        0.3929617,
+        0.3669453,
+        0.9829236
+      ],
+      "center_m": [
+        0.1735081,
+        0.1296694,
+        0.9641858
+      ],
+      "extent_m": [
+        0.4389073,
+        0.4745517,
+        0.0374757
+      ],
+      "vertex_count": 20544,
+      "triangle_count": 13218,
+      "materials": [
+        "MI_keyboadcolor"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00123716
+    },
+    {
+      "object_name": "monitor1228A6_StaticMeshComponent0_MI_Object_67_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.3096159,
+        -0.4847109,
+        1.059297
+      ],
+      "bounds_high_m": [
+        0.6093161,
+        0.0554892,
+        1.4190601
+      ],
+      "center_m": [
+        0.459466,
+        -0.2146108,
+        1.2391785
+      ],
+      "extent_m": [
+        0.2997002,
+        0.5402002,
+        0.3597631
+      ],
+      "vertex_count": 28,
+      "triangle_count": 26,
+      "materials": [
+        "MI_Object_67"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00923162
+    },
+    {
+      "object_name": "monitor1228A6_StaticMeshComponent0_MI_Object_74_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.2966728,
+        -0.5143293,
+        1.0367452
+      ],
+      "bounds_high_m": [
+        0.6457414,
+        0.07449,
+        1.4366986
+      ],
+      "center_m": [
+        0.4712071,
+        -0.2199197,
+        1.2367219
+      ],
+      "extent_m": [
+        0.3490686,
+        0.5888193,
+        0.3999534
+      ],
+      "vertex_count": 896,
+      "triangle_count": 502,
+      "materials": [
+        "MI_Object_74"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.01302933
+    },
+    {
+      "object_name": "monitor1228A6_StaticMeshComponent0_MI_plasticwhite03_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.329508,
+        -0.5231313,
+        0.9451191
+      ],
+      "bounds_high_m": [
+        0.7145504,
+        0.0363649,
+        1.3998947
+      ],
+      "center_m": [
+        0.5220292,
+        -0.2433832,
+        1.1725069
+      ],
+      "extent_m": [
+        0.3850424,
+        0.5594961,
+        0.4547756
+      ],
+      "vertex_count": 936,
+      "triangle_count": 546,
+      "materials": [
+        "MI_plasticwhite03"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.01552825
+    },
+    {
+      "object_name": "mouse1228A10_StaticMeshComponent0_MI_plasticwhite03_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0935629,
+        -0.4080123,
+        0.9455736
+      ],
+      "bounds_high_m": [
+        0.2044867,
+        -0.3437881,
+        0.9771953
+      ],
+      "center_m": [
+        0.1490248,
+        -0.3759002,
+        0.9613844
+      ],
+      "extent_m": [
+        0.1109238,
+        0.0642242,
+        0.0316217
+      ],
+      "vertex_count": 3996,
+      "triangle_count": 2180,
+      "materials": [
+        "MI_plasticwhite03"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 3.57e-05
+    },
+    {
+      "object_name": "Notepaper1228B8_464_StaticMeshComponent0_MI_0046_Gold_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.3372525,
+        -0.362002,
+        0.9631645
+      ],
+      "bounds_high_m": [
+        0.403587,
+        -0.2424504,
+        1.0583144
+      ],
+      "center_m": [
+        0.3704198,
+        -0.3022262,
+        1.0107395
+      ],
+      "extent_m": [
+        0.0663345,
+        0.1195516,
+        0.0951499
+      ],
+      "vertex_count": 1676,
+      "triangle_count": 592,
+      "materials": [
+        "MI_0046_Gold"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.0001196
+    },
+    {
+      "object_name": "Notepaper1228B9_StaticMeshComponent0_MI_0046_Gold_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.3914041,
+        -0.2431999,
+        0.96451
+      ],
+      "bounds_high_m": [
+        0.4577385,
+        -0.1236483,
+        1.05966
+      ],
+      "center_m": [
+        0.4245713,
+        -0.1834241,
+        1.012085
+      ],
+      "extent_m": [
+        0.0663345,
+        0.1195516,
+        0.0951499
+      ],
+      "vertex_count": 1676,
+      "triangle_count": 592,
+      "materials": [
+        "MI_0046_Gold"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.0001196
+    },
+    {
+      "object_name": "Notepaper1228D10_StaticMeshComponent0.001_MI_Object_13_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0887922,
+        1.1326871,
+        1.3455257
+      ],
+      "bounds_high_m": [
+        0.1010368,
+        1.1417016,
+        1.3577703
+      ],
+      "center_m": [
+        0.0949145,
+        1.1371943,
+        1.351648
+      ],
+      "extent_m": [
+        0.0122447,
+        0.0090145,
+        0.0122446
+      ],
+      "vertex_count": 2184,
+      "triangle_count": 1080,
+      "materials": [
+        "MI_Object_13"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 2.1e-07
+    },
+    {
+      "object_name": "Notepaper1228D10_StaticMeshComponent0.001_MI_paper01_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0941225,
+        1.1417016,
+        1.3508557
+      ],
+      "bounds_high_m": [
+        0.0957065,
+        1.152315,
+        1.3524404
+      ],
+      "center_m": [
+        0.0949145,
+        1.1470083,
+        1.351648
+      ],
+      "extent_m": [
+        0.0015839,
+        0.0106134,
+        0.0015846
+      ],
+      "vertex_count": 168,
+      "triangle_count": 72,
+      "materials": [
+        "MI_paper01"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.0
+    },
+    {
+      "object_name": "Notepaper1228D10_StaticMeshComponent0_MI_paper01_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0225699,
+        1.144699,
+        1.1049416
+      ],
+      "bounds_high_m": [
+        0.2152879,
+        1.1484827,
+        1.37106
+      ],
+      "center_m": [
+        0.096359,
+        1.1465908,
+        1.2380008
+      ],
+      "extent_m": [
+        0.2378578,
+        0.0037837,
+        0.2661184
+      ],
+      "vertex_count": 246,
+      "triangle_count": 200,
+      "materials": [
+        "MI_paper01"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 3.796e-05
+    },
+    {
+      "object_name": "Notepaper1228D11_StaticMeshComponent0_MI_paper01_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.8469574,
+        -0.6165743,
+        1.0820333
+      ],
+      "bounds_high_m": [
+        0.8507416,
+        -0.3787164,
+        1.3481517
+      ],
+      "center_m": [
+        0.8488495,
+        -0.4976453,
+        1.2150925
+      ],
+      "extent_m": [
+        0.0037842,
+        0.2378579,
+        0.2661184
+      ],
+      "vertex_count": 246,
+      "triangle_count": 200,
+      "materials": [
+        "MI_paper01"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 3.797e-05
+    },
+    {
+      "object_name": "Notepaper1228D12_StaticMeshComponent0_MI_paper01_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.8469574,
+        -0.8716646,
+        1.0820333
+      ],
+      "bounds_high_m": [
+        0.8507416,
+        -0.6338068,
+        1.3481517
+      ],
+      "center_m": [
+        0.8488495,
+        -0.7527357,
+        1.2150925
+      ],
+      "extent_m": [
+        0.0037842,
+        0.2378579,
+        0.2661184
+      ],
+      "vertex_count": 246,
+      "triangle_count": 200,
+      "materials": [
+        "MI_paper01"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 3.797e-05
+    },
+    {
+      "object_name": "Notepaper1228D13_StaticMeshComponent0_MI_paper01_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.8469574,
+        -1.1237382,
+        1.0820333
+      ],
+      "bounds_high_m": [
+        0.8507416,
+        -0.8858802,
+        1.3481517
+      ],
+      "center_m": [
+        0.8488495,
+        -1.0048092,
+        1.2150925
+      ],
+      "extent_m": [
+        0.0037842,
+        0.2378579,
+        0.2661184
+      ],
+      "vertex_count": 246,
+      "triangle_count": 200,
+      "materials": [
+        "MI_paper01"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 3.797e-05
+    },
+    {
+      "object_name": "Notepaper1228D14_StaticMeshComponent0_MI_paper01_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.4929509,
+        -1.1500762,
+        1.0700668
+      ],
+      "bounds_high_m": [
+        0.7308087,
+        -1.1462924,
+        1.3361852
+      ],
+      "center_m": [
+        0.6118798,
+        -1.1481843,
+        1.203126
+      ],
+      "extent_m": [
+        0.2378578,
+        0.0037837,
+        0.2661184
+      ],
+      "vertex_count": 246,
+      "triangle_count": 200,
+      "materials": [
+        "MI_paper01"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 3.796e-05
+    },
+    {
+      "object_name": "Notepaper1228D15_StaticMeshComponent0_MI_paper01_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.2341192,
+        -1.1500762,
+        1.0700668
+      ],
+      "bounds_high_m": [
+        0.471977,
+        -1.1462924,
+        1.3361852
+      ],
+      "center_m": [
+        0.3530481,
+        -1.1481843,
+        1.203126
+      ],
+      "extent_m": [
+        0.2378578,
+        0.0037837,
+        0.2661184
+      ],
+      "vertex_count": 246,
+      "triangle_count": 200,
+      "materials": [
+        "MI_paper01"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 3.796e-05
+    },
+    {
+      "object_name": "Notepaper1228D16_StaticMeshComponent0_MI_paper01_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0712692,
+        -1.1497157,
+        1.0346053
+      ],
+      "bounds_high_m": [
+        0.203472,
+        -1.1453453,
+        1.3419893
+      ],
+      "center_m": [
+        0.0661014,
+        -1.1475305,
+        1.1882973
+      ],
+      "extent_m": [
+        0.2747412,
+        0.0043703,
+        0.307384
+      ],
+      "vertex_count": 246,
+      "triangle_count": 200,
+      "materials": [
+        "MI_paper01"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 5.85e-05
+    },
+    {
+      "object_name": "Notepaper122bA2_StaticMeshComponent0_MI_0046_Gold_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2588198,
+        1.146914,
+        1.1066303
+      ],
+      "bounds_high_m": [
+        -0.057986,
+        1.1483828,
+        1.3701323
+      ],
+      "center_m": [
+        -0.1584029,
+        1.1476484,
+        1.2383813
+      ],
+      "extent_m": [
+        0.2008338,
+        0.0014688,
+        0.263502
+      ],
+      "vertex_count": 7236,
+      "triangle_count": 3200,
+      "materials": [
+        "MI_0046_Gold"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 1.232e-05
+    },
+    {
+      "object_name": "Officechair1228C6_StaticMeshComponent0_MI_Color_M08_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.9015509,
+        -0.2818966,
+        0.000368
+      ],
+      "bounds_high_m": [
+        0.1212621,
+        0.691772,
+        1.2474149
+      ],
+      "center_m": [
+        -0.3901444,
+        0.2049377,
+        0.6238915
+      ],
+      "extent_m": [
+        1.022813,
+        0.9736685,
+        1.247047
+      ],
+      "vertex_count": 49450,
+      "triangle_count": 21930,
+      "materials": [
+        "MI_Color_M08"
+      ],
+      "keyword_hints": [
+        "movable_prop"
+      ],
+      "bbox_volume_fraction": 0.19683845
+    },
+    {
+      "object_name": "Officechair1228C6_StaticMeshComponent0_MI_plasticGrey_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.8333552,
+        -0.1302618,
+        0.5537037
+      ],
+      "bounds_high_m": [
+        -0.5436379,
+        0.6089574,
+        1.250048
+      ],
+      "center_m": [
+        -0.6884966,
+        0.2393478,
+        0.9018759
+      ],
+      "extent_m": [
+        0.2897173,
+        0.7392192,
+        0.6963444
+      ],
+      "vertex_count": 5922,
+      "triangle_count": 2088,
+      "materials": [
+        "MI_plasticGrey"
+      ],
+      "keyword_hints": [
+        "movable_prop"
+      ],
+      "bbox_volume_fraction": 0.02363695
+    },
+    {
+      "object_name": "paper1228A5_StaticMeshComponent0_MI_paper001_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0642374,
+        0.4320581,
+        0.9454479
+      ],
+      "bounds_high_m": [
+        0.2217157,
+        0.7524123,
+        0.9578556
+      ],
+      "center_m": [
+        0.0787391,
+        0.5922352,
+        0.9516518
+      ],
+      "extent_m": [
+        0.2859531,
+        0.3203541,
+        0.0124078
+      ],
+      "vertex_count": 3468,
+      "triangle_count": 1600,
+      "materials": [
+        "MI_paper001"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00018015
+    },
+    {
+      "object_name": "partition1228A4_StaticMeshComponent0.001_MI_Color_M03_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.283905,
+        1.1515139,
+        0.9278488
+      ],
+      "bounds_high_m": [
+        0.8478335,
+        1.1999992,
+        1.3925787
+      ],
+      "center_m": [
+        0.2819643,
+        1.1757566,
+        1.1602137
+      ],
+      "extent_m": [
+        1.1317385,
+        0.0484853,
+        0.46473
+      ],
+      "vertex_count": 20,
+      "triangle_count": 10,
+      "materials": [
+        "MI_Color_M03"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00404182
+    },
+    {
+      "object_name": "partition1228A4_StaticMeshComponent0.001_MI_Color_M05_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2839051,
+        1.1515139,
+        6e-07
+      ],
+      "bounds_high_m": [
+        0.8478332,
+        1.1999999,
+        0.242423
+      ],
+      "center_m": [
+        0.281964,
+        1.1757569,
+        0.1212118
+      ],
+      "extent_m": [
+        1.1317382,
+        0.048486,
+        0.2424225
+      ],
+      "vertex_count": 20,
+      "triangle_count": 10,
+      "materials": [
+        "MI_Color_M05_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00210841
+    },
+    {
+      "object_name": "partition1228A4_StaticMeshComponent0.001_MI_Color_M06_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2995785,
+        1.1515132,
+        5e-07
+      ],
+      "bounds_high_m": [
+        0.8635066,
+        1.1999999,
+        1.396947
+      ],
+      "center_m": [
+        0.281964,
+        1.1757566,
+        0.6984738
+      ],
+      "extent_m": [
+        1.1630851,
+        0.0484867,
+        1.3969465
+      ],
+      "vertex_count": 131,
+      "triangle_count": 76,
+      "materials": [
+        "MI_Color_M06_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.0124863
+    },
+    {
+      "object_name": "partition1228A4_StaticMeshComponent0.001_MI_Object_78_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2839051,
+        1.1515139,
+        0.242423
+      ],
+      "bounds_high_m": [
+        0.8478335,
+        1.1999999,
+        0.9278488
+      ],
+      "center_m": [
+        0.2819642,
+        1.1757569,
+        0.5851359
+      ],
+      "extent_m": [
+        1.1317386,
+        0.048486,
+        0.6854257
+      ],
+      "vertex_count": 16,
+      "triangle_count": 8,
+      "materials": [
+        "MI_Object_78"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00596132
+    },
+    {
+      "object_name": "partition1228A4_StaticMeshComponent0.002_MI_Color_M03_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.283905,
+        -1.1999992,
+        0.9278488
+      ],
+      "bounds_high_m": [
+        0.8478335,
+        -1.1515139,
+        1.3925787
+      ],
+      "center_m": [
+        0.2819643,
+        -1.1757566,
+        1.1602137
+      ],
+      "extent_m": [
+        1.1317385,
+        0.0484853,
+        0.46473
+      ],
+      "vertex_count": 20,
+      "triangle_count": 10,
+      "materials": [
+        "MI_Color_M03"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00404182
+    },
+    {
+      "object_name": "partition1228A4_StaticMeshComponent0.002_MI_Color_M05_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2839051,
+        -1.1999992,
+        6e-07
+      ],
+      "bounds_high_m": [
+        0.8478332,
+        -1.1515132,
+        0.242423
+      ],
+      "center_m": [
+        0.281964,
+        -1.1757562,
+        0.1212118
+      ],
+      "extent_m": [
+        1.1317382,
+        0.048486,
+        0.2424225
+      ],
+      "vertex_count": 20,
+      "triangle_count": 10,
+      "materials": [
+        "MI_Color_M05_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00210841
+    },
+    {
+      "object_name": "partition1228A4_StaticMeshComponent0.002_MI_Color_M06_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2995785,
+        -1.1999999,
+        5e-07
+      ],
+      "bounds_high_m": [
+        0.8635066,
+        -1.1515132,
+        1.396947
+      ],
+      "center_m": [
+        0.281964,
+        -1.1757566,
+        0.6984738
+      ],
+      "extent_m": [
+        1.1630851,
+        0.0484867,
+        1.3969465
+      ],
+      "vertex_count": 131,
+      "triangle_count": 76,
+      "materials": [
+        "MI_Color_M06_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.0124863
+    },
+    {
+      "object_name": "partition1228A4_StaticMeshComponent0.002_MI_Object_78_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2839051,
+        -1.1999992,
+        0.242423
+      ],
+      "bounds_high_m": [
+        0.8478335,
+        -1.1515132,
+        0.9278488
+      ],
+      "center_m": [
+        0.2819642,
+        -1.1757562,
+        0.5851359
+      ],
+      "extent_m": [
+        1.1317386,
+        0.048486,
+        0.6854257
+      ],
+      "vertex_count": 16,
+      "triangle_count": 8,
+      "materials": [
+        "MI_Object_78"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00596132
+    },
+    {
+      "object_name": "partition1228A4_StaticMeshComponent0_MI_Color_M03_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.8530649,
+        -1.1472791,
+        0.9278482
+      ],
+      "bounds_high_m": [
+        0.9015501,
+        1.1481161,
+        1.3925787
+      ],
+      "center_m": [
+        0.8773075,
+        0.0004185,
+        1.1602135
+      ],
+      "extent_m": [
+        0.0484852,
+        2.2953953,
+        0.4647305
+      ],
+      "vertex_count": 20,
+      "triangle_count": 10,
+      "materials": [
+        "MI_Color_M03"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00819762
+    },
+    {
+      "object_name": "partition1228A4_StaticMeshComponent0_MI_Color_M05_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.8530649,
+        -1.147279,
+        2e-07
+      ],
+      "bounds_high_m": [
+        0.9015508,
+        1.1481158,
+        0.2424233
+      ],
+      "center_m": [
+        0.8773079,
+        0.0004184,
+        0.1212118
+      ],
+      "extent_m": [
+        0.0484859,
+        2.2953948,
+        0.2424231
+      ],
+      "vertex_count": 20,
+      "triangle_count": 10,
+      "materials": [
+        "MI_Color_M05_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00427628
+    },
+    {
+      "object_name": "partition1228A4_StaticMeshComponent0_MI_Color_M06_1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.8530642,
+        -1.1629525,
+        2e-07
+      ],
+      "bounds_high_m": [
+        0.9015508,
+        1.1637896,
+        1.3969471
+      ],
+      "center_m": [
+        0.8773075,
+        0.0004185,
+        0.6984737
+      ],
+      "extent_m": [
+        0.0484866,
+        2.3267422,
+        1.396947
+      ],
+      "vertex_count": 131,
+      "triangle_count": 76,
+      "materials": [
+        "MI_Color_M06_1"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.02497869
+    },
+    {
+      "object_name": "partition1228A4_StaticMeshComponent0_MI_Object_78_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.8530649,
+        -1.1472794,
+        0.2424226
+      ],
+      "bounds_high_m": [
+        0.9015508,
+        1.148116,
+        0.9278489
+      ],
+      "center_m": [
+        0.8773079,
+        0.0004183,
+        0.5851358
+      ],
+      "extent_m": [
+        0.0484859,
+        2.2953954,
+        0.6854263
+      ],
+      "vertex_count": 16,
+      "triangle_count": 8,
+      "materials": [
+        "MI_Object_78"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.01209076
+    },
+    {
+      "object_name": "telephone1228A6_StaticMeshComponent0_MI_Color_M07_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.3639542,
+        0.9041288,
+        1.0515352
+      ],
+      "bounds_high_m": [
+        0.4393396,
+        0.986019,
+        1.0721432
+      ],
+      "center_m": [
+        0.4016469,
+        0.9450739,
+        1.0618392
+      ],
+      "extent_m": [
+        0.0753855,
+        0.0818901,
+        0.0206079
+      ],
+      "vertex_count": 4,
+      "triangle_count": 2,
+      "materials": [
+        "MI_Color_M07"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 2.016e-05
+    },
+    {
+      "object_name": "telephone1228A6_StaticMeshComponent0_MI_plasticwhite03_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0661012,
+        0.7332975,
+        0.9447215
+      ],
+      "bounds_high_m": [
+        0.4662272,
+        1.1280466,
+        1.0998861
+      ],
+      "center_m": [
+        0.2661642,
+        0.9306721,
+        1.0223038
+      ],
+      "extent_m": [
+        0.400126,
+        0.3947491,
+        0.1551645
+      ],
+      "vertex_count": 52008,
+      "triangle_count": 26426,
+      "materials": [
+        "MI_plasticwhite03"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00388445
+    },
+    {
+      "object_name": "tissue1228A2_StaticMeshComponent0_MI_white_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.286745,
+        0.632372,
+        0.9454479
+      ],
+      "bounds_high_m": [
+        0.3805624,
+        0.7363715,
+        1.0974602
+      ],
+      "center_m": [
+        0.3336537,
+        0.6843717,
+        1.021454
+      ],
+      "extent_m": [
+        0.0938174,
+        0.1039995,
+        0.1520122
+      ],
+      "vertex_count": 997,
+      "triangle_count": 629,
+      "materials": [
+        "MI_white"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00023508
+    }
+  ]
+}

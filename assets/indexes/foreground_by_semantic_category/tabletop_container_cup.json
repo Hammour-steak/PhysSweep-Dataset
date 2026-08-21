@@ -1,0 +1,18 @@
+{
+  "semantic_category": "tabletop_container_cup",
+  "assets": [
+    {
+      "asset_id": "sketchfab_1551616939cc4da7a9d731dfddd4090f",
+      "name": "Plastic Cup",
+      "admission_status": "physweep_v0_approved",
+      "asset_path": "assets/library/sketchfab/foreground/sketchfab_1551616939cc4da7a9d731dfddd4090f/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      }
+    }
+  ]
+}

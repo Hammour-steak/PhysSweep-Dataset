@@ -1,0 +1,91 @@
+{
+  "version": "physweep_support_mesh_profiles_v1",
+  "sampling": {
+    "balanced_mesh_proxy_cycle": true,
+    "target_mesh_fraction_per_support": 0.5
+  },
+  "policy": {
+    "collision_authority": "exact_static_proxy_when_selected",
+    "immutable_binding_required": true,
+    "fallback_phase": "before_metadata_freeze_only",
+    "maximum_axis_scale_ratio": 1.9,
+    "support_plane_tolerance_m": 0.004,
+    "source_bbox_relative_tolerance": 0.005
+  },
+  "profiles": [
+    {
+      "id": "real_wooden_table_a",
+      "visual_type": "mesh_support",
+      "support_ids": ["wood_tabletop"],
+      "asset_id": "sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf",
+      "path": "assets/library/sketchfab/background/sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf/model.glb",
+      "sha256": "7ff85832318de6bbfeac39cd76ca760b7e278645f872dfe96b5712fb2e517f94",
+      "source_bbox_size": [2.00381708, 1.00000119, 0.81932068],
+      "source_support_plane_z_from_bottom": 0.81373415,
+      "alignment_yaw_degrees": 0.0,
+      "material_policy": "embedded_pbr",
+      "requires_image_texture": true,
+      "license": "CC Attribution"
+    },
+    {
+      "id": "real_office_desk_a",
+      "visual_type": "mesh_support",
+      "support_ids": ["wood_tabletop"],
+      "asset_id": "sketchfab_bg_459ebb7c75a14feb8ad690d00a085b9f",
+      "path": "assets/library/sketchfab/background/sketchfab_bg_459ebb7c75a14feb8ad690d00a085b9f/model.glb",
+      "sha256": "c57bbf4305e7e0e273e069cc00bc2fbd5664f273a1cf185b3cbfb15b96cf3367",
+      "source_bbox_size": [5.49000359, 2.24591112, 1.89005899],
+      "source_support_plane_z_from_bottom": 1.89005858,
+      "alignment_yaw_degrees": 0.0,
+      "material_policy": "embedded_pbr",
+      "requires_image_texture": true,
+      "license": "CC Attribution"
+    },
+    {
+      "id": "real_lab_bench_kit_a",
+      "visual_type": "mesh_support",
+      "support_ids": ["lab_bench"],
+      "asset_id": "sketchfab_bg_bb73599044cf49e186b75842d63a280e",
+      "path": "assets/library/sketchfab/background/sketchfab_bg_bb73599044cf49e186b75842d63a280e/model.glb",
+      "sha256": "a998e903ccd573395efadcffc299250157e41659a7123b6545cc715618aa070a",
+      "source_bbox_size": [0.90411019, 2.00000024, 0.95965576],
+      "source_support_plane_z_from_bottom": 0.9546881,
+      "alignment_yaw_degrees": 90.0,
+      "material_policy": "support_surface_pbr_override",
+      "requires_image_texture": false,
+      "license": "CC Attribution"
+    },
+    {
+      "id": "real_kitchen_counter_a",
+      "visual_type": "mesh_support",
+      "support_ids": ["kitchen_counter"],
+      "asset_id": "sketchfab_bg_e46deaab889548948a31e4264de61e5a",
+      "path": "assets/library/sketchfab/background/sketchfab_bg_e46deaab889548948a31e4264de61e5a/model.glb",
+      "sha256": "7b2b30fb13685ad181820f6dc9f70efca773e6c851cd7e39ffd0217482ac8429",
+      "source_bbox_size": [2.3752718, 6.82000113, 4.19815207],
+      "source_support_plane_z_from_bottom": 3.17032284,
+      "alignment_yaw_degrees": 90.0,
+      "material_policy": "embedded_pbr",
+      "requires_image_texture": true,
+      "safe_surface_fraction": {
+        "center_xy": [0.2, 0.0],
+        "size_xy": [0.42, 0.72]
+      },
+      "license": "CC Attribution"
+    }
+  ],
+  "rejected_candidates": [
+    {
+      "asset_id": "sketchfab_bg_9634d6a81a494925a909512c8048f446",
+      "reason": "tabletop clutter and required axis-scale ratio exceed the v1 admission limit"
+    },
+    {
+      "asset_id": "sketchfab_bg_1ac2a62c52a848bbaf746146dc7253f8",
+      "reason": "bottles and instruments occupy the dynamic support region"
+    },
+    {
+      "asset_id": "sketchfab_bg_c4bcfe2f81ca48198c2459e13e45de43",
+      "reason": "optical uprights occupy the dynamic support region"
+    }
+  ]
+}

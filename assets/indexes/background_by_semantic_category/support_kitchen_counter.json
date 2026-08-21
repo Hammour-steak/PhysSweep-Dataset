@@ -1,0 +1,41 @@
+{
+  "semantic_category": "support_kitchen_counter",
+  "assets": [
+    {
+      "asset_id": "sketchfab_bg_e46deaab889548948a31e4264de61e5a",
+      "name": "Kitchen Counter",
+      "admission_status": "v0_preferred",
+      "asset_path": "assets/library/sketchfab/background/sketchfab_bg_e46deaab889548948a31e4264de61e5a/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_89b2524c56d347fb90c4f0306c169446",
+      "name": "Store | Kitchen counter with trays",
+      "admission_status": "exclude_v0",
+      "asset_path": "assets/library/sketchfab/background/sketchfab_bg_89b2524c56d347fb90c4f0306c169446/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_d2918a9d978144f38012973b28eea9f6",
+      "name": "Basic Kitchen Cabinets and Counter",
+      "admission_status": "exclude_v0",
+      "asset_path": "assets/library/sketchfab/background/sketchfab_bg_d2918a9d978144f38012973b28eea9f6/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      }
+    }
+  ]
+}

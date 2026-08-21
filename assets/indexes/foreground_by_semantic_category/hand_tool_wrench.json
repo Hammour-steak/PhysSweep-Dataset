@@ -1,0 +1,18 @@
+{
+  "semantic_category": "hand_tool_wrench",
+  "assets": [
+    {
+      "asset_id": "sketchfab_81578532781542c590668ab67d1121e9",
+      "name": "Tools / 4 Way Lug Wrench",
+      "admission_status": "physweep_v0_review",
+      "asset_path": "assets/library/sketchfab/foreground/sketchfab_81578532781542c590668ab67d1121e9/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      }
+    }
+  ]
+}

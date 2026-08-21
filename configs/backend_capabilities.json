@@ -1,0 +1,97 @@
+{
+  "version": "physweep_backend_capabilities_v1",
+  "active_backend": "pybullet_rigid_v1",
+  "metadata_schema": "physweep_pybullet_rigid_metadata_v1",
+  "generic_base_scope": {
+    "dynamic_body_count": 1,
+    "body_model": "rigid_body",
+    "shapes": [
+      "cuboid",
+      "sphere",
+      "cylinder"
+    ],
+    "motions": [
+      "slide_push_1obj",
+      "roll_or_slide_1obj",
+      "wall_impact_1obj",
+      "edge_fall_1obj",
+      "drop_fall_1obj",
+      "projectile_1obj",
+      "arc_projectile_1obj",
+      "slope_slide_down_1obj",
+      "slope_slide_up_1obj",
+      "ramp_to_flat_1obj",
+      "bounce_1obj"
+    ],
+    "support_shapes": [
+      "rectangular_slab",
+      "tray_surface",
+      "pedestal_block",
+      "inclined_ramp"
+    ],
+    "scene_classes": [
+      "ground_flat",
+      "raised_flat",
+      "ground_feature",
+      "raised_feature"
+    ],
+    "support_types": [
+      "wood_tabletop",
+      "lab_bench",
+      "kitchen_counter",
+      "concrete_floor_mat",
+      "wood_floor",
+      "rubber_floor",
+      "wood_tray",
+      "low_pedestal",
+      "raised_ramp_long_shallow",
+      "raised_ramp_standard",
+      "raised_ramp_short_steep",
+      "raised_channel_ramp",
+      "ground_ramp_long_shallow",
+      "ground_ramp_standard",
+      "ground_ramp_short_steep",
+      "ground_channel_ramp"
+    ]
+  },
+  "specialized_scopes": {
+    "asset_proxy_single_object": {
+      "dynamic_body_count": 1,
+      "body_model": "rigid_compound_proxy",
+      "profiles": [
+        "vertical_drop",
+        "resting_push",
+        "diagonal_push",
+        "edge_exit",
+        "workbench_clear_zone_drop",
+        "workbench_long_axis_push"
+      ]
+    },
+    "billiards": {
+      "dynamic_body_counts": [
+        1,
+        3
+      ],
+      "body_model": "rigid_sphere",
+      "profiles": [
+        "single_ball_free_roll",
+        "single_ball_rail_rebound",
+        "three_ball_collision"
+      ],
+      "pocket_sink_supported": false
+    }
+  },
+  "unsupported": [
+    "general_multi_object_matrix",
+    "deformable_objects",
+    "fluid_objects",
+    "articulated_objects",
+    "arbitrary_mesh_collision"
+  ],
+  "policy": {
+    "unsupported_combinations_are_rejected": true,
+    "unsupported_combinations_are_never_substituted": true,
+    "simulation_never_mutates_sampled_metadata": true,
+    "rendering_never_changes_physics": true
+  }
+}

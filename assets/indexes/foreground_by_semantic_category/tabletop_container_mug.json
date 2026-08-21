@@ -1,0 +1,18 @@
+{
+  "semantic_category": "tabletop_container_mug",
+  "assets": [
+    {
+      "asset_id": "sketchfab_d1e446a8f9df4df3923cf230bceef54f",
+      "name": "Ceramic Mug",
+      "admission_status": "physweep_v0_review",
+      "asset_path": "assets/library/sketchfab/foreground/sketchfab_d1e446a8f9df4df3923cf230bceef54f/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      }
+    }
+  ]
+}

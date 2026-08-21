@@ -1,0 +1,67 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d",
+  "name": "Wooden Table",
+  "asset_role": "interactive_support",
+  "semantic_category": "support_table_wood",
+  "admission": {
+    "reason": "continuous rustic tabletop with measured orientation",
+    "sampling_enabled": true,
+    "status": "approved"
+  },
+  "proxy_kind": "support_compound",
+  "normalization_mode": "metric_registry_binding",
+  "mesh_component_count": 1,
+  "overall_bounds_low_m": [
+    -1.1049868,
+    -0.4873166,
+    1e-07
+  ],
+  "overall_bounds_high_m": [
+    1.1031879,
+    0.4750004,
+    0.78
+  ],
+  "overall_extent_m": [
+    2.2081747,
+    0.962317,
+    0.78
+  ],
+  "total_vertex_count": 648,
+  "total_triangle_count": 324,
+  "components": [
+    {
+      "object_name": "Wooden_table_1_Material #35_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1049868,
+        -0.4873166,
+        1e-07
+      ],
+      "bounds_high_m": [
+        1.1031879,
+        0.4750004,
+        0.78
+      ],
+      "center_m": [
+        -0.0008994,
+        -0.0061581,
+        0.39
+      ],
+      "extent_m": [
+        2.2081747,
+        0.962317,
+        0.78
+      ],
+      "vertex_count": 648,
+      "triangle_count": 324,
+      "materials": [
+        "Material_35"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.99999998
+    }
+  ]
+}

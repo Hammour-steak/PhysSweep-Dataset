@@ -1,0 +1,231 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_e46deaab889548948a31e4264de61e5a",
+  "name": "Kitchen Counter",
+  "asset_role": "render_only_context",
+  "semantic_category": "support_kitchen_counter",
+  "admission": {
+    "reason": "composition validation showed that the sink interrupts the countertop while the slab proxy incorrectly treats it as continuous",
+    "sampling_enabled": false,
+    "status": "visual_only",
+    "visual_sampling_enabled": true
+  },
+  "proxy_kind": "none",
+  "normalization_mode": "review_scale_only_not_metric",
+  "mesh_component_count": 6,
+  "overall_bounds_low_m": [
+    -1.1999999,
+    -0.4179365,
+    0.0
+  ],
+  "overall_bounds_high_m": [
+    1.1999999,
+    0.4179364,
+    1.4773554
+  ],
+  "overall_extent_m": [
+    2.3999999,
+    0.8358729,
+    1.4773554
+  ],
+  "total_vertex_count": 2660,
+  "total_triangle_count": 2952,
+  "components": [
+    {
+      "object_name": "Kitchen_Basin_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.9005302,
+        -0.125724,
+        0.7641034
+      ],
+      "bounds_high_m": [
+        -0.2587781,
+        0.4110879,
+        1.1110878
+      ],
+      "center_m": [
+        -0.5796542,
+        0.1426819,
+        0.9375956
+      ],
+      "extent_m": [
+        0.6417521,
+        0.5368119,
+        0.3469844
+      ],
+      "vertex_count": 120,
+      "triangle_count": 92,
+      "materials": [
+        "Basin"
+      ],
+      "keyword_hints": [
+        "container_or_void"
+      ],
+      "bbox_volume_fraction": 0.04033322
+    },
+    {
+      "object_name": "Kitchen_Doors_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1584011,
+        0.3538621,
+        0.1977459
+      ],
+      "bounds_high_m": [
+        1.0949426,
+        0.389053,
+        1.0071262
+      ],
+      "center_m": [
+        -0.0317293,
+        0.3714576,
+        0.602436
+      ],
+      "extent_m": [
+        2.2533437,
+        0.0351909,
+        0.8093803
+      ],
+      "vertex_count": 168,
+      "triangle_count": 84,
+      "materials": [
+        "Doors"
+      ],
+      "keyword_hints": [
+        "room_shell"
+      ],
+      "bbox_volume_fraction": 0.02165579
+    },
+    {
+      "object_name": "Kitchen_Faucet_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.7825696,
+        -0.2543148,
+        1.1094875
+      ],
+      "bounds_high_m": [
+        -0.3711943,
+        0.0335975,
+        1.4773554
+      ],
+      "center_m": [
+        -0.576882,
+        -0.1103587,
+        1.2934214
+      ],
+      "extent_m": [
+        0.4113753,
+        0.2879123,
+        0.3678678
+      ],
+      "vertex_count": 1049,
+      "triangle_count": 1120,
+      "materials": [
+        "Faucet"
+      ],
+      "keyword_hints": [
+        "fixture_or_obstacle"
+      ],
+      "bbox_volume_fraction": 0.01470123
+    },
+    {
+      "object_name": "Kitchen_Handles_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1248515,
+        0.3452073,
+        0.5332671
+      ],
+      "bounds_high_m": [
+        0.8819408,
+        0.4179364,
+        0.9327496
+      ],
+      "center_m": [
+        -0.1214553,
+        0.3815719,
+        0.7330084
+      ],
+      "extent_m": [
+        2.0067922,
+        0.0727291,
+        0.3994825
+      ],
+      "vertex_count": 1171,
+      "triangle_count": 1568,
+      "materials": [
+        "Handles"
+      ],
+      "keyword_hints": [
+        "fixture_or_obstacle"
+      ],
+      "bbox_volume_fraction": 0.01967306
+    },
+    {
+      "object_name": "Kitchen_Main_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1964808,
+        -0.3721888,
+        0.0
+      ],
+      "bounds_high_m": [
+        1.1964811,
+        0.3668144,
+        1.0696734
+      ],
+      "center_m": [
+        2e-07,
+        -0.0026872,
+        0.5348367
+      ],
+      "extent_m": [
+        2.3929619,
+        0.7390033,
+        1.0696734
+      ],
+      "vertex_count": 104,
+      "triangle_count": 60,
+      "materials": [
+        "Main"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.63825893
+    },
+    {
+      "object_name": "Kitchen_Top_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1999999,
+        -0.4179365,
+        1.0523124
+      ],
+      "bounds_high_m": [
+        1.1999999,
+        0.4125621,
+        1.1156565
+      ],
+      "center_m": [
+        0.0,
+        -0.0026872,
+        1.0839844
+      ],
+      "extent_m": [
+        2.3999999,
+        0.8304986,
+        0.0633441
+      ],
+      "vertex_count": 48,
+      "triangle_count": 28,
+      "materials": [
+        "material"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.042601
+    }
+  ]
+}

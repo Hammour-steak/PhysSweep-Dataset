@@ -1,0 +1,18 @@
+{
+  "semantic_category": "electronics_remote",
+  "assets": [
+    {
+      "asset_id": "sketchfab_b0902ff83cf946c984f9f7e0197ddb7f",
+      "name": "Remote Control",
+      "admission_status": "physweep_v0_approved",
+      "asset_path": "assets/library/sketchfab/foreground/sketchfab_b0902ff83cf946c984f9f7e0197ddb7f/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      }
+    }
+  ]
+}

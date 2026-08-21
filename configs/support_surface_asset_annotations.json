@@ -1,0 +1,180 @@
+{
+  "version": "physweep_support_surface_asset_annotations_v2",
+  "policy": {
+    "selection_date": "2026-08-04",
+    "source_plane_is_measured_from_blender_geometry": true,
+    "target_dimensions_are_semantic_metric_priors": true,
+    "usable_surface_is_strictly_inside_visible_top": true,
+    "exact_static_mesh_validation_is_required_before_sampling": true
+  },
+  "records": [
+    {
+      "asset_id": "support_workbench_01c0b599",
+      "decision": "admit",
+      "plane_rank": 0,
+      "target_support_size_xy_m": [0.8, 1.6],
+      "target_support_plane_z_m": 0.8,
+      "collider_shape": "box",
+      "collider_thickness_m": 0.055,
+      "safe_surface_fraction_xy": [0.78, 0.82],
+      "dynamic_pool_id": "lab_tabletop",
+      "profiles": ["vertical_drop"],
+      "review_reason": "clean light-wood workbench with a continuous measured top"
+    },
+    {
+      "asset_id": "support_writing_desk_f411b33b",
+      "decision": "admit",
+      "plane_rank": 0,
+      "target_support_size_xy_m": [1.5, 0.8],
+      "target_support_plane_z_m": 0.78,
+      "collider_shape": "box",
+      "collider_thickness_m": 0.06,
+      "safe_surface_fraction_xy": [0.78, 0.72],
+      "dynamic_pool_id": "office_tabletop",
+      "profiles": ["vertical_drop"],
+      "review_reason": "distinct trestle writing desk with an unobstructed top"
+    },
+    {
+      "asset_id": "support_dining_table_ed94c79a",
+      "decision": "admit",
+      "plane_rank": 0,
+      "target_support_size_xy_m": [2.0, 0.9],
+      "target_support_plane_z_m": 0.76,
+      "collider_shape": "box",
+      "collider_thickness_m": 0.065,
+      "safe_surface_fraction_xy": [0.84, 0.78],
+      "dynamic_pool_id": "general_tabletop",
+      "profiles": ["vertical_drop"],
+      "review_reason": "large dark dining table with a dominant continuous top"
+    },
+    {
+      "asset_id": "support_wood_table_4618e562",
+      "decision": "admit",
+      "plane_rank": 0,
+      "source_support_bounds_xy": [-0.384602, 0.375714, -0.950947, 0.949618],
+      "target_support_size_xy_m": [0.9, 1.8],
+      "target_support_plane_z_m": 0.78,
+      "collider_shape": "box",
+      "collider_thickness_m": 0.06,
+      "safe_surface_fraction_xy": [0.78, 0.82],
+      "dynamic_pool_id": "general_tabletop",
+      "profiles": ["vertical_drop"],
+      "review_reason": "game-ready timber table; two coplanar top clusters are merged"
+    },
+    {
+      "asset_id": "support_old_table_e53a5ef2",
+      "decision": "admit",
+      "plane_rank": 0,
+      "target_support_size_xy_m": [0.9, 1.7],
+      "target_support_plane_z_m": 0.76,
+      "collider_shape": "box",
+      "collider_thickness_m": 0.065,
+      "safe_surface_fraction_xy": [0.78, 0.78],
+      "dynamic_pool_id": "general_tabletop",
+      "profiles": ["vertical_drop"],
+      "review_reason": "weathered rectangular table with stable top-plane evidence"
+    },
+    {
+      "asset_id": "support_rattan_coffee_c434f22e",
+      "decision": "admit",
+      "plane_rank": 4,
+      "target_support_size_xy_m": [1.2, 0.65],
+      "target_support_plane_z_m": 0.45,
+      "collider_shape": "box",
+      "collider_thickness_m": 0.045,
+      "collider_size_fraction_xy": [0.82, 0.7],
+      "safe_surface_fraction_xy": [0.64, 0.52],
+      "dynamic_pool_id": "general_tabletop",
+      "profiles": ["vertical_drop"],
+      "review_reason": "oval rattan coffee table uses an inscribed rectangular interaction zone"
+    },
+    {
+      "asset_id": "support_work_table_239b18eb",
+      "decision": "admit",
+      "plane_rank": 0,
+      "target_support_size_xy_m": [1.2, 0.7],
+      "target_support_plane_z_m": 0.78,
+      "collider_shape": "box",
+      "collider_thickness_m": 0.05,
+      "safe_surface_fraction_xy": [0.8, 0.75],
+      "dynamic_pool_id": "lab_tabletop",
+      "profiles": ["vertical_drop"],
+      "review_reason": "minimal metal work table with a clean rectangular top"
+    },
+    {
+      "asset_id": "support_school_picnic_8e2a51a4",
+      "decision": "admit",
+      "plane_rank": 0,
+      "target_support_size_xy_m": [0.75, 1.8],
+      "target_support_plane_z_m": 0.72,
+      "collider_shape": "box",
+      "collider_thickness_m": 0.055,
+      "safe_surface_fraction_xy": [0.72, 0.82],
+      "dynamic_pool_id": "general_tabletop",
+      "profiles": ["vertical_drop"],
+      "review_reason": "school picnic table retains benches visually but exposes only the central tabletop"
+    },
+    {
+      "asset_id": "support_weathered_round_6cd4d250",
+      "decision": "admit",
+      "plane_rank": 1,
+      "target_support_size_xy_m": [0.75, 0.75],
+      "target_support_plane_z_m": 0.7,
+      "collider_shape": "cylinder",
+      "collider_thickness_m": 0.05,
+      "safe_surface_fraction_xy": [0.68, 0.68],
+      "dynamic_pool_id": "general_tabletop",
+      "profiles": ["vertical_drop"],
+      "review_reason": "weathered round metal top with measured circular support"
+    },
+    {
+      "asset_id": "support_concrete_desk_ce2eb8c2",
+      "decision": "admit",
+      "plane_rank": 0,
+      "target_support_size_xy_m": [1.5, 0.75],
+      "target_support_plane_z_m": 0.82,
+      "collider_shape": "box",
+      "collider_thickness_m": 0.07,
+      "safe_surface_fraction_xy": [0.78, 0.72],
+      "dynamic_pool_id": "lab_tabletop",
+      "profiles": ["vertical_drop"],
+      "review_reason": "industrial concrete-and-metal desk with a broad clear glass top"
+    },
+    {
+      "asset_id": "support_pub_table_9e540ae2",
+      "decision": "admit",
+      "plane_rank": 0,
+      "target_support_size_xy_m": [0.65, 0.65],
+      "target_support_plane_z_m": 1.05,
+      "collider_shape": "cylinder",
+      "collider_thickness_m": 0.055,
+      "safe_surface_fraction_xy": [0.68, 0.68],
+      "dynamic_pool_id": "general_tabletop",
+      "profiles": ["vertical_drop"],
+      "review_reason": "tall pub table adds a compact high-support scene"
+    },
+    {
+      "asset_id": "support_school_desk_4044a253",
+      "decision": "admit",
+      "plane_rank": 0,
+      "target_support_size_xy_m": [1.0, 0.7],
+      "target_support_plane_z_m": 0.75,
+      "collider_shape": "box",
+      "collider_thickness_m": 0.055,
+      "safe_surface_fraction_xy": [0.72, 0.7],
+      "dynamic_pool_id": "office_tabletop",
+      "profiles": ["vertical_drop"],
+      "review_reason": "school desk has a continuous top and distinctive classroom frame"
+    },
+    {
+      "asset_id": "support_wood_table_0de098dd",
+      "decision": "reject",
+      "reason": "visually redundant with stronger admitted rustic tables"
+    },
+    {
+      "asset_id": "support_glass_desk_99319069",
+      "decision": "reject",
+      "reason": "GLB contains an oversized untextured plane that dominates bounds and surface detection"
+    }
+  ]
+}

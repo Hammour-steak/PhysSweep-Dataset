@@ -1,0 +1,2415 @@
+{
+  "curation_id": "physweep_sketchfab_background_admission_v1",
+  "created_at": "2026-07-04T07:18:46.986859+00:00",
+  "selection_policy": {
+    "metadata_allowed_statuses": [
+      "v0_preferred",
+      "v0_usable"
+    ],
+    "selection_order": "semantic_category then selection_rank",
+    "exclude_policy": "exclude_v0 is never selected automatically; manual_review requires explicit opt-in."
+  },
+  "counts": {
+    "total": 36,
+    "by_admission": {
+      "exclude_v0": 5,
+      "manual_review": 4,
+      "v0_preferred": 18,
+      "v0_usable": 9
+    },
+    "by_semantic_category": {
+      "context_room_corner": 2,
+      "context_shelf": 3,
+      "context_wall_window": 3,
+      "prop_books": 3,
+      "prop_lamp": 3,
+      "prop_tableware": 2,
+      "prop_tray": 3,
+      "support_game_table": 2,
+      "support_kitchen_counter": 3,
+      "support_lab_bench": 3,
+      "support_office_desk": 4,
+      "support_table_wood": 3,
+      "support_workbench": 2
+    }
+  },
+  "records": [
+    {
+      "candidate_id": "sketchfab_bg_29a550112e7e41528d7d01697231c11b",
+      "name": "Wall Floor Model Corner Room",
+      "semantic_category": "context_room_corner",
+      "library_role": "background_context",
+      "scene_use": "wall_floor_corner",
+      "admission_status": "v0_preferred",
+      "selection_rank": 1,
+      "notes": "Good room-corner context with floor/wall.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_29a550112e7e41528d7d01697231c11b/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 1942648,
+      "sha256": "6d50b835c617c40573260c366f17b1ea583d7db5a23574d02aeba07a17fd4f46",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "dcddf90070c746faa40ead8a406f4424",
+        "username": "NeilJones",
+        "display_name": "Aerial_Knight",
+        "profile_url": "https://sketchfab.com/NeilJones"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-29a550112e7e41528d7d01697231c11b",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_29a550112e7e41528d7d01697231c11b",
+        "source_uid": "29a550112e7e41528d7d01697231c11b",
+        "name": "Wall Floor Model Corner Room",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_29a550112e7e41528d7d01697231c11b/model.glb",
+        "size_bytes": 1942648,
+        "sha256": "6d50b835c617c40573260c366f17b1ea583d7db5a23574d02aeba07a17fd4f46",
+        "classification": {
+          "semantic_category": "context_room_corner",
+          "library_role": "background_context",
+          "scene_use": "wall_floor_corner",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "dcddf90070c746faa40ead8a406f4424",
+          "username": "NeilJones",
+          "display_name": "Aerial_Knight",
+          "profile_url": "https://sketchfab.com/NeilJones"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-29a550112e7e41528d7d01697231c11b",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_29a550112e7e41528d7d01697231c11b/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_29a550112e7e41528d7d01697231c11b/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:05.453486+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_29a550112e7e41528d7d01697231c11b/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_fb3d849c6de346079d338251533a84e6",
+      "name": "Graffiti on a wall - Low Poly",
+      "semantic_category": "context_room_corner",
+      "library_role": "background_context",
+      "scene_use": "wall_floor_corner",
+      "admission_status": "exclude_v0",
+      "selection_rank": 99,
+      "notes": "Graffiti wall is visually noisy and stylistically less useful for v0.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_fb3d849c6de346079d338251533a84e6/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 1163876,
+      "sha256": "b760cd9e26a3d9ea96f0ac3a2184ff446474d2a9bbb2d1648c25c81328d47103",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "47655f6e4d584523b0f77ebe922ced8a",
+        "username": "leoskateman",
+        "display_name": "L\u00e9onard_Doye / Leoskateman",
+        "profile_url": "https://sketchfab.com/leoskateman"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-fb3d849c6de346079d338251533a84e6",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_fb3d849c6de346079d338251533a84e6",
+        "source_uid": "fb3d849c6de346079d338251533a84e6",
+        "name": "Graffiti on a wall - Low Poly",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_fb3d849c6de346079d338251533a84e6/model.glb",
+        "size_bytes": 1163876,
+        "sha256": "b760cd9e26a3d9ea96f0ac3a2184ff446474d2a9bbb2d1648c25c81328d47103",
+        "classification": {
+          "semantic_category": "context_room_corner",
+          "library_role": "background_context",
+          "scene_use": "wall_floor_corner",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "47655f6e4d584523b0f77ebe922ced8a",
+          "username": "leoskateman",
+          "display_name": "L\u00e9onard_Doye / Leoskateman",
+          "profile_url": "https://sketchfab.com/leoskateman"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-fb3d849c6de346079d338251533a84e6",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_fb3d849c6de346079d338251533a84e6/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_fb3d849c6de346079d338251533a84e6/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:05.456583+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_fb3d849c6de346079d338251533a84e6/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_8df6adc634bd4004894a5e70565dc52a",
+      "name": "Bookshelf",
+      "semantic_category": "context_shelf",
+      "library_role": "background_context",
+      "scene_use": "static_backdrop_prop",
+      "admission_status": "v0_preferred",
+      "selection_rank": 1,
+      "notes": "Textured bookshelf with strong background signal.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_8df6adc634bd4004894a5e70565dc52a/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 8619544,
+      "sha256": "28fc505acc3ea4e432dae6e653c46a59863591f23fcbf26908d6c80c3568a7fe",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "90f7c9c341f3423eb4e360c2a378ab86",
+        "username": "idmental.id",
+        "display_name": "Idmenthal",
+        "profile_url": "https://sketchfab.com/idmental.id"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-8df6adc634bd4004894a5e70565dc52a",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_8df6adc634bd4004894a5e70565dc52a",
+        "source_uid": "8df6adc634bd4004894a5e70565dc52a",
+        "name": "Bookshelf",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_8df6adc634bd4004894a5e70565dc52a/model.glb",
+        "size_bytes": 8619544,
+        "sha256": "28fc505acc3ea4e432dae6e653c46a59863591f23fcbf26908d6c80c3568a7fe",
+        "classification": {
+          "semantic_category": "context_shelf",
+          "library_role": "background_context",
+          "scene_use": "static_backdrop_prop",
+          "technical_tier": "v0_ready_medium",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "90f7c9c341f3423eb4e360c2a378ab86",
+          "username": "idmental.id",
+          "display_name": "Idmenthal",
+          "profile_url": "https://sketchfab.com/idmental.id"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-8df6adc634bd4004894a5e70565dc52a",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_8df6adc634bd4004894a5e70565dc52a/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_8df6adc634bd4004894a5e70565dc52a/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:08.688228+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_8df6adc634bd4004894a5e70565dc52a/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_96a804790eff41b3b2376f3608fde7df",
+      "name": "Wooden Wall Bookshelf",
+      "semantic_category": "context_shelf",
+      "library_role": "background_context",
+      "scene_use": "static_backdrop_prop",
+      "admission_status": "v0_usable",
+      "selection_rank": 2,
+      "notes": "Horizontal wall shelf; usable as background accent.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_96a804790eff41b3b2376f3608fde7df/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 2009144,
+      "sha256": "a240db51fde58f2ec5f4cb84241d383c229a708067506b06bd0a2455a6f47980",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "cc6f5c5f782c4b4fbc0c082a3bcd7ca0",
+        "username": "sanzid",
+        "display_name": "Sanzid",
+        "profile_url": "https://sketchfab.com/sanzid"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-96a804790eff41b3b2376f3608fde7df",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_96a804790eff41b3b2376f3608fde7df",
+        "source_uid": "96a804790eff41b3b2376f3608fde7df",
+        "name": "Wooden Wall Bookshelf",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_96a804790eff41b3b2376f3608fde7df/model.glb",
+        "size_bytes": 2009144,
+        "sha256": "a240db51fde58f2ec5f4cb84241d383c229a708067506b06bd0a2455a6f47980",
+        "classification": {
+          "semantic_category": "context_shelf",
+          "library_role": "background_context",
+          "scene_use": "static_backdrop_prop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "cc6f5c5f782c4b4fbc0c082a3bcd7ca0",
+          "username": "sanzid",
+          "display_name": "Sanzid",
+          "profile_url": "https://sketchfab.com/sanzid"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-96a804790eff41b3b2376f3608fde7df",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_96a804790eff41b3b2376f3608fde7df/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_96a804790eff41b3b2376f3608fde7df/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:08.672757+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_96a804790eff41b3b2376f3608fde7df/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_71af93b1d15f4f48ad836d36110626f7",
+      "name": "Bookshelf [CC0]",
+      "semantic_category": "context_shelf",
+      "library_role": "background_context",
+      "scene_use": "static_backdrop_prop",
+      "admission_status": "manual_review",
+      "selection_rank": 50,
+      "notes": "Preview is cropped/ambiguous; keep as CC0 candidate pending manual fit.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_71af93b1d15f4f48ad836d36110626f7/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 4603668,
+      "sha256": "d8b0e75d567cd1b3996116681a1b5460dc113de7f70faa42cb335fe7979b2636",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "2e6243afc78346b8a0bda6908bd87e7b",
+        "username": "crufro",
+        "display_name": "Crew Froebel",
+        "profile_url": "https://sketchfab.com/crufro"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-71af93b1d15f4f48ad836d36110626f7",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_71af93b1d15f4f48ad836d36110626f7",
+        "source_uid": "71af93b1d15f4f48ad836d36110626f7",
+        "name": "Bookshelf [CC0]",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_71af93b1d15f4f48ad836d36110626f7/model.glb",
+        "size_bytes": 4603668,
+        "sha256": "d8b0e75d567cd1b3996116681a1b5460dc113de7f70faa42cb335fe7979b2636",
+        "classification": {
+          "semantic_category": "context_shelf",
+          "library_role": "background_context",
+          "scene_use": "static_backdrop_prop",
+          "technical_tier": "v0_ready_medium",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "2e6243afc78346b8a0bda6908bd87e7b",
+          "username": "crufro",
+          "display_name": "Crew Froebel",
+          "profile_url": "https://sketchfab.com/crufro"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-71af93b1d15f4f48ad836d36110626f7",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_71af93b1d15f4f48ad836d36110626f7/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_71af93b1d15f4f48ad836d36110626f7/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:13.378437+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_71af93b1d15f4f48ad836d36110626f7/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_4bc3743598f7498587468962b3c05e0e",
+      "name": "Wall with Window",
+      "semantic_category": "context_wall_window",
+      "library_role": "background_context",
+      "scene_use": "wall_window_backdrop",
+      "admission_status": "v0_preferred",
+      "selection_rank": 1,
+      "notes": "Simple wall with window, good neutral context.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_4bc3743598f7498587468962b3c05e0e/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 1991372,
+      "sha256": "a39ea86b261e782cdf97f1230ad551b9f480531589019c07b231787521ce3786",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "0c215b37f2e54be08a2c1d45d12e18e0",
+        "username": "miranda.j.rice",
+        "display_name": "miranda.j.rice",
+        "profile_url": "https://sketchfab.com/miranda.j.rice"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-4bc3743598f7498587468962b3c05e0e",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_4bc3743598f7498587468962b3c05e0e",
+        "source_uid": "4bc3743598f7498587468962b3c05e0e",
+        "name": "Wall with Window",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_4bc3743598f7498587468962b3c05e0e/model.glb",
+        "size_bytes": 1991372,
+        "sha256": "a39ea86b261e782cdf97f1230ad551b9f480531589019c07b231787521ce3786",
+        "classification": {
+          "semantic_category": "context_wall_window",
+          "library_role": "background_context",
+          "scene_use": "wall_window_backdrop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "0c215b37f2e54be08a2c1d45d12e18e0",
+          "username": "miranda.j.rice",
+          "display_name": "miranda.j.rice",
+          "profile_url": "https://sketchfab.com/miranda.j.rice"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-4bc3743598f7498587468962b3c05e0e",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_4bc3743598f7498587468962b3c05e0e/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_4bc3743598f7498587468962b3c05e0e/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:05.462075+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_4bc3743598f7498587468962b3c05e0e/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_4fa72fdbaa98467bb60d3233d5b36c57",
+      "name": "Wall With Window",
+      "semantic_category": "context_wall_window",
+      "library_role": "background_context",
+      "scene_use": "wall_window_backdrop",
+      "admission_status": "v0_usable",
+      "selection_rank": 2,
+      "notes": "Plain wall-window asset, no texture but useful as neutral context.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_4fa72fdbaa98467bb60d3233d5b36c57/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 84048,
+      "sha256": "c2b08ebc588bdc51e398381fe47e86c7dc9e87b6b9c7b42e311867c22ea55d7b",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "8d4a347589c34ae0902d1a2770ed0c1a",
+        "username": "Birdy.82",
+        "display_name": "Birdy.82",
+        "profile_url": "https://sketchfab.com/Birdy.82"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-4fa72fdbaa98467bb60d3233d5b36c57",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_4fa72fdbaa98467bb60d3233d5b36c57",
+        "source_uid": "4fa72fdbaa98467bb60d3233d5b36c57",
+        "name": "Wall With Window",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_4fa72fdbaa98467bb60d3233d5b36c57/model.glb",
+        "size_bytes": 84048,
+        "sha256": "c2b08ebc588bdc51e398381fe47e86c7dc9e87b6b9c7b42e311867c22ea55d7b",
+        "classification": {
+          "semantic_category": "context_wall_window",
+          "library_role": "background_context",
+          "scene_use": "wall_window_backdrop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "8d4a347589c34ae0902d1a2770ed0c1a",
+          "username": "Birdy.82",
+          "display_name": "Birdy.82",
+          "profile_url": "https://sketchfab.com/Birdy.82"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-4fa72fdbaa98467bb60d3233d5b36c57",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_4fa72fdbaa98467bb60d3233d5b36c57/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_4fa72fdbaa98467bb60d3233d5b36c57/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:05.456887+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_4fa72fdbaa98467bb60d3233d5b36c57/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_7dc703b7aebb446fb271d71dc8ec3e04",
+      "name": "Wall with window",
+      "semantic_category": "context_wall_window",
+      "library_role": "background_context",
+      "scene_use": "wall_window_backdrop",
+      "admission_status": "v0_usable",
+      "selection_rank": 3,
+      "notes": "Alternate neutral wall-window context.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_7dc703b7aebb446fb271d71dc8ec3e04/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 37836,
+      "sha256": "8c35b2f719de958f2b78bbcb442fb74ce763f67e95b2b2d09b2799c0b037223c",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "8d4a347589c34ae0902d1a2770ed0c1a",
+        "username": "Birdy.82",
+        "display_name": "Birdy.82",
+        "profile_url": "https://sketchfab.com/Birdy.82"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-7dc703b7aebb446fb271d71dc8ec3e04",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_7dc703b7aebb446fb271d71dc8ec3e04",
+        "source_uid": "7dc703b7aebb446fb271d71dc8ec3e04",
+        "name": "Wall with window",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_7dc703b7aebb446fb271d71dc8ec3e04/model.glb",
+        "size_bytes": 37836,
+        "sha256": "8c35b2f719de958f2b78bbcb442fb74ce763f67e95b2b2d09b2799c0b037223c",
+        "classification": {
+          "semantic_category": "context_wall_window",
+          "library_role": "background_context",
+          "scene_use": "wall_window_backdrop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "8d4a347589c34ae0902d1a2770ed0c1a",
+          "username": "Birdy.82",
+          "display_name": "Birdy.82",
+          "profile_url": "https://sketchfab.com/Birdy.82"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-7dc703b7aebb446fb271d71dc8ec3e04",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_7dc703b7aebb446fb271d71dc8ec3e04/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_7dc703b7aebb446fb271d71dc8ec3e04/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:08.667079+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_7dc703b7aebb446fb271d71dc8ec3e04/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_c6ca6667fd7d4381bd184874dcf44075",
+      "name": "Stack Of Old Books",
+      "semantic_category": "prop_books",
+      "library_role": "background_prop",
+      "scene_use": "tabletop_static_prop",
+      "admission_status": "v0_preferred",
+      "selection_rank": 1,
+      "notes": "Good textured old book stacks.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_c6ca6667fd7d4381bd184874dcf44075/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 4127268,
+      "sha256": "1179374cc6473480bf55367294a85140e8e39037e5f6c7120aaa879898f19abc",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "76ad567d6a9945018ce125130813060f",
+        "username": "inzanebeast",
+        "display_name": "Arjun Perayil",
+        "profile_url": "https://sketchfab.com/inzanebeast"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-c6ca6667fd7d4381bd184874dcf44075",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_c6ca6667fd7d4381bd184874dcf44075",
+        "source_uid": "c6ca6667fd7d4381bd184874dcf44075",
+        "name": "Stack Of Old Books",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_c6ca6667fd7d4381bd184874dcf44075/model.glb",
+        "size_bytes": 4127268,
+        "sha256": "1179374cc6473480bf55367294a85140e8e39037e5f6c7120aaa879898f19abc",
+        "classification": {
+          "semantic_category": "prop_books",
+          "library_role": "background_prop",
+          "scene_use": "tabletop_static_prop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "76ad567d6a9945018ce125130813060f",
+          "username": "inzanebeast",
+          "display_name": "Arjun Perayil",
+          "profile_url": "https://sketchfab.com/inzanebeast"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-c6ca6667fd7d4381bd184874dcf44075",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_c6ca6667fd7d4381bd184874dcf44075/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_c6ca6667fd7d4381bd184874dcf44075/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:13.408617+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_c6ca6667fd7d4381bd184874dcf44075/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_975887dad9a2474bacb9fec3850c48c5",
+      "name": "Stack of Books 3D scan",
+      "semantic_category": "prop_books",
+      "library_role": "background_prop",
+      "scene_use": "tabletop_static_prop",
+      "admission_status": "v0_usable",
+      "selection_rank": 2,
+      "notes": "Light-colored stack of books; usable but lower contrast.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_975887dad9a2474bacb9fec3850c48c5/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 2529684,
+      "sha256": "68da6e4c6920daf10dcd4818de4fcc76365aae1ce014d5e079068f73e72229b6",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "e357dcd8b40949e3b8010109e12e0d85",
+        "username": "zdenkoroman",
+        "display_name": "grafi",
+        "profile_url": "https://sketchfab.com/zdenkoroman"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-975887dad9a2474bacb9fec3850c48c5",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_975887dad9a2474bacb9fec3850c48c5",
+        "source_uid": "975887dad9a2474bacb9fec3850c48c5",
+        "name": "Stack of Books 3D scan",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_975887dad9a2474bacb9fec3850c48c5/model.glb",
+        "size_bytes": 2529684,
+        "sha256": "68da6e4c6920daf10dcd4818de4fcc76365aae1ce014d5e079068f73e72229b6",
+        "classification": {
+          "semantic_category": "prop_books",
+          "library_role": "background_prop",
+          "scene_use": "tabletop_static_prop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "e357dcd8b40949e3b8010109e12e0d85",
+          "username": "zdenkoroman",
+          "display_name": "grafi",
+          "profile_url": "https://sketchfab.com/zdenkoroman"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-975887dad9a2474bacb9fec3850c48c5",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_975887dad9a2474bacb9fec3850c48c5/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_975887dad9a2474bacb9fec3850c48c5/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:13.401983+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_975887dad9a2474bacb9fec3850c48c5/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_9f203d88994d4ce4a0a32e4fd66a0115",
+      "name": "Books",
+      "semantic_category": "prop_books",
+      "library_role": "background_prop",
+      "scene_use": "tabletop_static_prop",
+      "admission_status": "manual_review",
+      "selection_rank": 50,
+      "notes": "Vertical book cluster; maybe useful as shelf/context rather than tabletop prop.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_9f203d88994d4ce4a0a32e4fd66a0115/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 10355584,
+      "sha256": "888f864cb0635d96874a1b4991201dc3465ac18e88576c4b0a687e0e0de07593",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "f0dc40144f1e4d9ebab380aa6e04e187",
+        "username": "Tomations",
+        "display_name": "Tomations",
+        "profile_url": "https://sketchfab.com/Tomations"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-9f203d88994d4ce4a0a32e4fd66a0115",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_9f203d88994d4ce4a0a32e4fd66a0115",
+        "source_uid": "9f203d88994d4ce4a0a32e4fd66a0115",
+        "name": "Books",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_9f203d88994d4ce4a0a32e4fd66a0115/model.glb",
+        "size_bytes": 10355584,
+        "sha256": "888f864cb0635d96874a1b4991201dc3465ac18e88576c4b0a687e0e0de07593",
+        "classification": {
+          "semantic_category": "prop_books",
+          "library_role": "background_prop",
+          "scene_use": "tabletop_static_prop",
+          "technical_tier": "v0_ready_medium",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "f0dc40144f1e4d9ebab380aa6e04e187",
+          "username": "Tomations",
+          "display_name": "Tomations",
+          "profile_url": "https://sketchfab.com/Tomations"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-9f203d88994d4ce4a0a32e4fd66a0115",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_9f203d88994d4ce4a0a32e4fd66a0115/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_9f203d88994d4ce4a0a32e4fd66a0115/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:19.739465+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_9f203d88994d4ce4a0a32e4fd66a0115/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_693529b6817a4632bc812394a48f06b0",
+      "name": "Old Desk Lamp",
+      "semantic_category": "prop_lamp",
+      "library_role": "background_prop",
+      "scene_use": "tabletop_static_prop",
+      "admission_status": "v0_preferred",
+      "selection_rank": 1,
+      "notes": "Good textured old desk lamp.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_693529b6817a4632bc812394a48f06b0/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 2806492,
+      "sha256": "5c9d68808db444abb571b5b8bb9d49a7355136d6f8af0e64bbc4088185ebd313",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "4cc0cfd656de40c4a8f289bf2d31772f",
+        "username": "maxencerouillet",
+        "display_name": "Maxence Rouillet",
+        "profile_url": "https://sketchfab.com/maxencerouillet"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-693529b6817a4632bc812394a48f06b0",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_693529b6817a4632bc812394a48f06b0",
+        "source_uid": "693529b6817a4632bc812394a48f06b0",
+        "name": "Old Desk Lamp",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_693529b6817a4632bc812394a48f06b0/model.glb",
+        "size_bytes": 2806492,
+        "sha256": "5c9d68808db444abb571b5b8bb9d49a7355136d6f8af0e64bbc4088185ebd313",
+        "classification": {
+          "semantic_category": "prop_lamp",
+          "library_role": "background_prop",
+          "scene_use": "tabletop_static_prop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "4cc0cfd656de40c4a8f289bf2d31772f",
+          "username": "maxencerouillet",
+          "display_name": "Maxence Rouillet",
+          "profile_url": "https://sketchfab.com/maxencerouillet"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-693529b6817a4632bc812394a48f06b0",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_693529b6817a4632bc812394a48f06b0/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_693529b6817a4632bc812394a48f06b0/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:13.388492+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_693529b6817a4632bc812394a48f06b0/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_b9458e04d30e4b6284d46d35880a9b95",
+      "name": "Desk lamp",
+      "semantic_category": "prop_lamp",
+      "library_role": "background_prop",
+      "scene_use": "tabletop_static_prop",
+      "admission_status": "v0_preferred",
+      "selection_rank": 2,
+      "notes": "Good green desk lamp, useful visual variety.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_b9458e04d30e4b6284d46d35880a9b95/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 3257896,
+      "sha256": "e046ac3ddf4ef742fa373d45d11a61a21a08c8a224214dcc139c566d336d474c",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "ec75b4585fe443ebb33b478b0288a9b1",
+        "username": "7ASSAN",
+        "display_name": "HASSAN",
+        "profile_url": "https://sketchfab.com/7ASSAN"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-b9458e04d30e4b6284d46d35880a9b95",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_b9458e04d30e4b6284d46d35880a9b95",
+        "source_uid": "b9458e04d30e4b6284d46d35880a9b95",
+        "name": "Desk lamp",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_b9458e04d30e4b6284d46d35880a9b95/model.glb",
+        "size_bytes": 3257896,
+        "sha256": "e046ac3ddf4ef742fa373d45d11a61a21a08c8a224214dcc139c566d336d474c",
+        "classification": {
+          "semantic_category": "prop_lamp",
+          "library_role": "background_prop",
+          "scene_use": "tabletop_static_prop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "ec75b4585fe443ebb33b478b0288a9b1",
+          "username": "7ASSAN",
+          "display_name": "HASSAN",
+          "profile_url": "https://sketchfab.com/7ASSAN"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-b9458e04d30e4b6284d46d35880a9b95",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_b9458e04d30e4b6284d46d35880a9b95/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_b9458e04d30e4b6284d46d35880a9b95/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:13.395964+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_b9458e04d30e4b6284d46d35880a9b95/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_7377ec591df04445a1aae370017aaa13",
+      "name": "Desk lamp",
+      "semantic_category": "prop_lamp",
+      "library_role": "background_prop",
+      "scene_use": "tabletop_static_prop",
+      "admission_status": "v0_usable",
+      "selection_rank": 3,
+      "notes": "Desk lamp has no texture but geometry is clean.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_7377ec591df04445a1aae370017aaa13/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 1207908,
+      "sha256": "2a6ad4f151c3925e182f976ca13d39bbef0da117960e6867bff188f183181298",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "036fededae264e94b75752b3c1733416",
+        "username": "BlueHour",
+        "display_name": "KaramellGlass",
+        "profile_url": "https://sketchfab.com/BlueHour"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-7377ec591df04445a1aae370017aaa13",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_7377ec591df04445a1aae370017aaa13",
+        "source_uid": "7377ec591df04445a1aae370017aaa13",
+        "name": "Desk lamp",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_7377ec591df04445a1aae370017aaa13/model.glb",
+        "size_bytes": 1207908,
+        "sha256": "2a6ad4f151c3925e182f976ca13d39bbef0da117960e6867bff188f183181298",
+        "classification": {
+          "semantic_category": "prop_lamp",
+          "library_role": "background_prop",
+          "scene_use": "tabletop_static_prop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "036fededae264e94b75752b3c1733416",
+          "username": "BlueHour",
+          "display_name": "KaramellGlass",
+          "profile_url": "https://sketchfab.com/BlueHour"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-7377ec591df04445a1aae370017aaa13",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_7377ec591df04445a1aae370017aaa13/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_7377ec591df04445a1aae370017aaa13/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:13.382064+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_7377ec591df04445a1aae370017aaa13/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_ec2aafa153214d2aa59d5860caeb8942",
+      "name": "Ceramic Plate",
+      "semantic_category": "prop_tableware",
+      "library_role": "background_prop",
+      "scene_use": "tabletop_static_prop",
+      "admission_status": "v0_preferred",
+      "selection_rank": 1,
+      "notes": "Decorative ceramic plates with good texture.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_ec2aafa153214d2aa59d5860caeb8942/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 1063892,
+      "sha256": "55b9d5415ddc0a01530294e66fffba1df221997a4334f47333eaccd900ff1576",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "a46c6eb0c2c74ef58f690fabe92fa956",
+        "username": "kusa192",
+        "display_name": "kusa192",
+        "profile_url": "https://sketchfab.com/kusa192"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-ec2aafa153214d2aa59d5860caeb8942",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_ec2aafa153214d2aa59d5860caeb8942",
+        "source_uid": "ec2aafa153214d2aa59d5860caeb8942",
+        "name": "Ceramic Plate",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_ec2aafa153214d2aa59d5860caeb8942/model.glb",
+        "size_bytes": 1063892,
+        "sha256": "55b9d5415ddc0a01530294e66fffba1df221997a4334f47333eaccd900ff1576",
+        "classification": {
+          "semantic_category": "prop_tableware",
+          "library_role": "background_prop",
+          "scene_use": "tabletop_static_prop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "a46c6eb0c2c74ef58f690fabe92fa956",
+          "username": "kusa192",
+          "display_name": "kusa192",
+          "profile_url": "https://sketchfab.com/kusa192"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-ec2aafa153214d2aa59d5860caeb8942",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_ec2aafa153214d2aa59d5860caeb8942/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_ec2aafa153214d2aa59d5860caeb8942/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:19.745720+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_ec2aafa153214d2aa59d5860caeb8942/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_6d059ad35b194bc589223d7c172666ed",
+      "name": "Ceramic Plate Set",
+      "semantic_category": "prop_tableware",
+      "library_role": "background_prop",
+      "scene_use": "tabletop_static_prop",
+      "admission_status": "v0_usable",
+      "selection_rank": 2,
+      "notes": "White plate set, usable but low contrast.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_6d059ad35b194bc589223d7c172666ed/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 1193384,
+      "sha256": "ba523120f0ad53a62d2d819b1d30ccaaab21619f016154c90dcae21f2cd043db",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "7b255fbe21ac4082b4d540d405040f94",
+        "username": "certifieddoc",
+        "display_name": "CertifiedDoc",
+        "profile_url": "https://sketchfab.com/certifieddoc"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-6d059ad35b194bc589223d7c172666ed",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_6d059ad35b194bc589223d7c172666ed",
+        "source_uid": "6d059ad35b194bc589223d7c172666ed",
+        "name": "Ceramic Plate Set",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_6d059ad35b194bc589223d7c172666ed/model.glb",
+        "size_bytes": 1193384,
+        "sha256": "ba523120f0ad53a62d2d819b1d30ccaaab21619f016154c90dcae21f2cd043db",
+        "classification": {
+          "semantic_category": "prop_tableware",
+          "library_role": "background_prop",
+          "scene_use": "tabletop_static_prop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "7b255fbe21ac4082b4d540d405040f94",
+          "username": "certifieddoc",
+          "display_name": "CertifiedDoc",
+          "profile_url": "https://sketchfab.com/certifieddoc"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-6d059ad35b194bc589223d7c172666ed",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_6d059ad35b194bc589223d7c172666ed/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_6d059ad35b194bc589223d7c172666ed/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:19.743015+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_6d059ad35b194bc589223d7c172666ed/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_561787127c7f4f31a553171a48be87d9",
+      "name": "wooden tray",
+      "semantic_category": "prop_tray",
+      "library_role": "background_prop",
+      "scene_use": "tabletop_static_prop",
+      "admission_status": "v0_preferred",
+      "selection_rank": 1,
+      "notes": "Round wooden tray with good texture.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_561787127c7f4f31a553171a48be87d9/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 493412,
+      "sha256": "31ceff6c4a1681da8a74c31909995c12c49206702a54362ec514031006ea7e7f",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "93c43f5edfa4430885fd7faf98760f1b",
+        "username": "moonomori",
+        "display_name": "moonomori",
+        "profile_url": "https://sketchfab.com/moonomori"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-561787127c7f4f31a553171a48be87d9",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_561787127c7f4f31a553171a48be87d9",
+        "source_uid": "561787127c7f4f31a553171a48be87d9",
+        "name": "wooden tray",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_561787127c7f4f31a553171a48be87d9/model.glb",
+        "size_bytes": 493412,
+        "sha256": "31ceff6c4a1681da8a74c31909995c12c49206702a54362ec514031006ea7e7f",
+        "classification": {
+          "semantic_category": "prop_tray",
+          "library_role": "background_prop",
+          "scene_use": "tabletop_static_prop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "93c43f5edfa4430885fd7faf98760f1b",
+          "username": "moonomori",
+          "display_name": "moonomori",
+          "profile_url": "https://sketchfab.com/moonomori"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-561787127c7f4f31a553171a48be87d9",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_561787127c7f4f31a553171a48be87d9/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_561787127c7f4f31a553171a48be87d9/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:19.748590+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_561787127c7f4f31a553171a48be87d9/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_5f00c9981f6a4de99f91b0a34bf88fcb",
+      "name": "Wooden_Tray",
+      "semantic_category": "prop_tray",
+      "library_role": "background_prop",
+      "scene_use": "tabletop_static_prop",
+      "admission_status": "v0_preferred",
+      "selection_rank": 2,
+      "notes": "Clean wooden tray/bowl asset.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_5f00c9981f6a4de99f91b0a34bf88fcb/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 705356,
+      "sha256": "9477352850eb68f952b8f4fb49c565dd650d6c68e62ab6ffd81a0e113664283a",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "5c82588de7ae477785644331d6964911",
+        "username": "KHS_Asset",
+        "display_name": "KOREA HERITAGE SERVICE [KHS]",
+        "profile_url": "https://sketchfab.com/KHS_Asset"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-5f00c9981f6a4de99f91b0a34bf88fcb",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_5f00c9981f6a4de99f91b0a34bf88fcb",
+        "source_uid": "5f00c9981f6a4de99f91b0a34bf88fcb",
+        "name": "Wooden_Tray",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_5f00c9981f6a4de99f91b0a34bf88fcb/model.glb",
+        "size_bytes": 705356,
+        "sha256": "9477352850eb68f952b8f4fb49c565dd650d6c68e62ab6ffd81a0e113664283a",
+        "classification": {
+          "semantic_category": "prop_tray",
+          "library_role": "background_prop",
+          "scene_use": "tabletop_static_prop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "5c82588de7ae477785644331d6964911",
+          "username": "KHS_Asset",
+          "display_name": "KOREA HERITAGE SERVICE [KHS]",
+          "profile_url": "https://sketchfab.com/KHS_Asset"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-5f00c9981f6a4de99f91b0a34bf88fcb",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_5f00c9981f6a4de99f91b0a34bf88fcb/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_5f00c9981f6a4de99f91b0a34bf88fcb/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:23.594883+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_5f00c9981f6a4de99f91b0a34bf88fcb/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_28c97506d4fd475ab017c102b670ba12",
+      "name": "Wooden tray",
+      "semantic_category": "prop_tray",
+      "library_role": "background_prop",
+      "scene_use": "tabletop_static_prop",
+      "admission_status": "v0_usable",
+      "selection_rank": 3,
+      "notes": "Blue-edged tray, usable with color caution.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_28c97506d4fd475ab017c102b670ba12/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 797372,
+      "sha256": "bb176a8202d0d88c85b7d63da605936acf72228110a79a854e377d5fe33dafca",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "46ed392b141a48298af992217e0e733b",
+        "username": "Aullwen",
+        "display_name": "Aullwen",
+        "profile_url": "https://sketchfab.com/Aullwen"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-28c97506d4fd475ab017c102b670ba12",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_28c97506d4fd475ab017c102b670ba12",
+        "source_uid": "28c97506d4fd475ab017c102b670ba12",
+        "name": "Wooden tray",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_28c97506d4fd475ab017c102b670ba12/model.glb",
+        "size_bytes": 797372,
+        "sha256": "bb176a8202d0d88c85b7d63da605936acf72228110a79a854e377d5fe33dafca",
+        "classification": {
+          "semantic_category": "prop_tray",
+          "library_role": "background_prop",
+          "scene_use": "tabletop_static_prop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "46ed392b141a48298af992217e0e733b",
+          "username": "Aullwen",
+          "display_name": "Aullwen",
+          "profile_url": "https://sketchfab.com/Aullwen"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-28c97506d4fd475ab017c102b670ba12",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_28c97506d4fd475ab017c102b670ba12/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_28c97506d4fd475ab017c102b670ba12/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:19.747680+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_28c97506d4fd475ab017c102b670ba12/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_0f2ae181a2dd4b00a6ec25073692037f",
+      "name": "Pool Table (Animation)",
+      "semantic_category": "support_game_table",
+      "library_role": "background_support",
+      "scene_use": "game_table",
+      "admission_status": "v0_preferred",
+      "selection_rank": 1,
+      "notes": "Good pool table scene with balls/cues, useful as game-table context.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_0f2ae181a2dd4b00a6ec25073692037f/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 5359644,
+      "sha256": "a4b03cb0889ae926c14d32476a7d5d16c6b779fdd1ef3ee8d98ac573b76d6239",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "0e0c195effa7483aa10059bcd1d3c4c5",
+        "username": "Yanez-Designs",
+        "display_name": "Yanez Designs",
+        "profile_url": "https://sketchfab.com/Yanez-Designs"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-0f2ae181a2dd4b00a6ec25073692037f",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_0f2ae181a2dd4b00a6ec25073692037f",
+        "source_uid": "0f2ae181a2dd4b00a6ec25073692037f",
+        "name": "Pool Table (Animation)",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_0f2ae181a2dd4b00a6ec25073692037f/model.glb",
+        "size_bytes": 5359644,
+        "sha256": "a4b03cb0889ae926c14d32476a7d5d16c6b779fdd1ef3ee8d98ac573b76d6239",
+        "classification": {
+          "semantic_category": "support_game_table",
+          "library_role": "background_support",
+          "scene_use": "game_table",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "0e0c195effa7483aa10059bcd1d3c4c5",
+          "username": "Yanez-Designs",
+          "display_name": "Yanez Designs",
+          "profile_url": "https://sketchfab.com/Yanez-Designs"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-0f2ae181a2dd4b00a6ec25073692037f",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_0f2ae181a2dd4b00a6ec25073692037f/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_0f2ae181a2dd4b00a6ec25073692037f/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.372812+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_0f2ae181a2dd4b00a6ec25073692037f/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_ea1b9673f09b4d809c90ab48b1eceb50",
+      "name": "Pool Table",
+      "semantic_category": "support_game_table",
+      "library_role": "background_support",
+      "scene_use": "game_table",
+      "admission_status": "manual_review",
+      "selection_rank": 50,
+      "notes": "Includes a floor plane and very small table; usable only after manual camera/scale tuning.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_ea1b9673f09b4d809c90ab48b1eceb50/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 3952648,
+      "sha256": "0c92db2699eab0e4e14b8b3cb2de3afce61505783cae1c5823a0e3e77e09e284",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "e7e12a357a3745a28fd92afef95d3745",
+        "username": "juanpavelazquez123",
+        "display_name": "Juanpa Velazquez",
+        "profile_url": "https://sketchfab.com/juanpavelazquez123"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-ea1b9673f09b4d809c90ab48b1eceb50",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_ea1b9673f09b4d809c90ab48b1eceb50",
+        "source_uid": "ea1b9673f09b4d809c90ab48b1eceb50",
+        "name": "Pool Table",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_ea1b9673f09b4d809c90ab48b1eceb50/model.glb",
+        "size_bytes": 3952648,
+        "sha256": "0c92db2699eab0e4e14b8b3cb2de3afce61505783cae1c5823a0e3e77e09e284",
+        "classification": {
+          "semantic_category": "support_game_table",
+          "library_role": "background_support",
+          "scene_use": "game_table",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "e7e12a357a3745a28fd92afef95d3745",
+          "username": "juanpavelazquez123",
+          "display_name": "Juanpa Velazquez",
+          "profile_url": "https://sketchfab.com/juanpavelazquez123"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-ea1b9673f09b4d809c90ab48b1eceb50",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_ea1b9673f09b4d809c90ab48b1eceb50/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_ea1b9673f09b4d809c90ab48b1eceb50/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.376622+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_ea1b9673f09b4d809c90ab48b1eceb50/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_e46deaab889548948a31e4264de61e5a",
+      "name": "Kitchen Counter",
+      "semantic_category": "support_kitchen_counter",
+      "library_role": "background_support",
+      "scene_use": "kitchen_countertop",
+      "admission_status": "v0_preferred",
+      "selection_rank": 1,
+      "notes": "High quality textured kitchen counter with usable countertop.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_e46deaab889548948a31e4264de61e5a/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 10361724,
+      "sha256": "7b2b30fb13685ad181820f6dc9f70efca773e6c851cd7e39ffd0217482ac8429",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "4586e0f533674b83b45b4006ccb01fe3",
+        "username": "FordVFX",
+        "display_name": "FordVFX",
+        "profile_url": "https://sketchfab.com/FordVFX"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-e46deaab889548948a31e4264de61e5a",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_e46deaab889548948a31e4264de61e5a",
+        "source_uid": "e46deaab889548948a31e4264de61e5a",
+        "name": "Kitchen Counter",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_e46deaab889548948a31e4264de61e5a/model.glb",
+        "size_bytes": 10361724,
+        "sha256": "7b2b30fb13685ad181820f6dc9f70efca773e6c851cd7e39ffd0217482ac8429",
+        "classification": {
+          "semantic_category": "support_kitchen_counter",
+          "library_role": "background_support",
+          "scene_use": "kitchen_countertop",
+          "technical_tier": "v0_ready_medium",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "4586e0f533674b83b45b4006ccb01fe3",
+          "username": "FordVFX",
+          "display_name": "FordVFX",
+          "profile_url": "https://sketchfab.com/FordVFX"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-e46deaab889548948a31e4264de61e5a",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_e46deaab889548948a31e4264de61e5a/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_e46deaab889548948a31e4264de61e5a/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.365754+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_e46deaab889548948a31e4264de61e5a/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_89b2524c56d347fb90c4f0306c169446",
+      "name": "Store | Kitchen counter with trays",
+      "semantic_category": "support_kitchen_counter",
+      "library_role": "background_support",
+      "scene_use": "kitchen_countertop",
+      "admission_status": "exclude_v0",
+      "selection_rank": 99,
+      "notes": "Shelf/counter shape lacks a useful top support surface.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_89b2524c56d347fb90c4f0306c169446/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 97792,
+      "sha256": "fb2f55d5f1d15edd97422e666ae77f85ecb9fdf93e53ab1372ba7a89096eafa9",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "21ad9d6e21964c7f8e8871949ba96e22",
+        "username": "itzjustsamu",
+        "display_name": "SAMU",
+        "profile_url": "https://sketchfab.com/itzjustsamu"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-89b2524c56d347fb90c4f0306c169446",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_89b2524c56d347fb90c4f0306c169446",
+        "source_uid": "89b2524c56d347fb90c4f0306c169446",
+        "name": "Store | Kitchen counter with trays",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_89b2524c56d347fb90c4f0306c169446/model.glb",
+        "size_bytes": 97792,
+        "sha256": "fb2f55d5f1d15edd97422e666ae77f85ecb9fdf93e53ab1372ba7a89096eafa9",
+        "classification": {
+          "semantic_category": "support_kitchen_counter",
+          "library_role": "background_support",
+          "scene_use": "kitchen_countertop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "21ad9d6e21964c7f8e8871949ba96e22",
+          "username": "itzjustsamu",
+          "display_name": "SAMU",
+          "profile_url": "https://sketchfab.com/itzjustsamu"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-89b2524c56d347fb90c4f0306c169446",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_89b2524c56d347fb90c4f0306c169446/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_89b2524c56d347fb90c4f0306c169446/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.357186+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_89b2524c56d347fb90c4f0306c169446/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_d2918a9d978144f38012973b28eea9f6",
+      "name": "Basic Kitchen Cabinets and Counter",
+      "semantic_category": "support_kitchen_counter",
+      "library_role": "background_support",
+      "scene_use": "kitchen_countertop",
+      "admission_status": "exclude_v0",
+      "selection_rank": 99,
+      "notes": "Fragmented/rail-like kitchen geometry in preview; not suitable for v0 support.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_d2918a9d978144f38012973b28eea9f6/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 2132004,
+      "sha256": "097ca01964ea51ba007c6fd9bf9a68806d7d1d50e75a556795c843e83e530e05",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "b5d1067b1d2e4676a78b28b4e75a1fd8",
+        "username": "jimbogies",
+        "display_name": "jimbogies",
+        "profile_url": "https://sketchfab.com/jimbogies"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-d2918a9d978144f38012973b28eea9f6",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_d2918a9d978144f38012973b28eea9f6",
+        "source_uid": "d2918a9d978144f38012973b28eea9f6",
+        "name": "Basic Kitchen Cabinets and Counter",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_d2918a9d978144f38012973b28eea9f6/model.glb",
+        "size_bytes": 2132004,
+        "sha256": "097ca01964ea51ba007c6fd9bf9a68806d7d1d50e75a556795c843e83e530e05",
+        "classification": {
+          "semantic_category": "support_kitchen_counter",
+          "library_role": "background_support",
+          "scene_use": "kitchen_countertop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "b5d1067b1d2e4676a78b28b4e75a1fd8",
+          "username": "jimbogies",
+          "display_name": "jimbogies",
+          "profile_url": "https://sketchfab.com/jimbogies"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-d2918a9d978144f38012973b28eea9f6",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_d2918a9d978144f38012973b28eea9f6/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_d2918a9d978144f38012973b28eea9f6/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.357031+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_d2918a9d978144f38012973b28eea9f6/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_1ac2a62c52a848bbaf746146dc7253f8",
+      "name": "lab bench",
+      "semantic_category": "support_lab_bench",
+      "library_role": "background_support",
+      "scene_use": "lab_bench",
+      "admission_status": "v0_preferred",
+      "selection_rank": 1,
+      "notes": "Rich lab bench background; use target-height support placement.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_1ac2a62c52a848bbaf746146dc7253f8/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 1422508,
+      "sha256": "b9cfd22d25af004f05104ada49eade5878b6949a49507d44a01efc7f4a2a6661",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "cb6edf5833b7431b87a68bb05f306207",
+        "username": "Konstantin_Keller",
+        "display_name": "Konstantin_Keller",
+        "profile_url": "https://sketchfab.com/Konstantin_Keller"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-1ac2a62c52a848bbaf746146dc7253f8",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_1ac2a62c52a848bbaf746146dc7253f8",
+        "source_uid": "1ac2a62c52a848bbaf746146dc7253f8",
+        "name": "lab bench",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_1ac2a62c52a848bbaf746146dc7253f8/model.glb",
+        "size_bytes": 1422508,
+        "sha256": "b9cfd22d25af004f05104ada49eade5878b6949a49507d44a01efc7f4a2a6661",
+        "classification": {
+          "semantic_category": "support_lab_bench",
+          "library_role": "background_support",
+          "scene_use": "lab_bench",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "cb6edf5833b7431b87a68bb05f306207",
+          "username": "Konstantin_Keller",
+          "display_name": "Konstantin_Keller",
+          "profile_url": "https://sketchfab.com/Konstantin_Keller"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-1ac2a62c52a848bbaf746146dc7253f8",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_1ac2a62c52a848bbaf746146dc7253f8/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_1ac2a62c52a848bbaf746146dc7253f8/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.367362+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_1ac2a62c52a848bbaf746146dc7253f8/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_bb73599044cf49e186b75842d63a280e",
+      "name": "Bench Table Kit",
+      "semantic_category": "support_lab_bench",
+      "library_role": "background_support",
+      "scene_use": "lab_bench",
+      "admission_status": "v0_preferred",
+      "selection_rank": 2,
+      "notes": "Clean bench/table kit, useful as simple lab support.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_bb73599044cf49e186b75842d63a280e/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 311368,
+      "sha256": "a998e903ccd573395efadcffc299250157e41659a7123b6545cc715618aa070a",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "07136926da804f2f81f823cad90f63cb",
+        "username": "its_amdk",
+        "display_name": "AMDK",
+        "profile_url": "https://sketchfab.com/its_amdk"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-bb73599044cf49e186b75842d63a280e",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_bb73599044cf49e186b75842d63a280e",
+        "source_uid": "bb73599044cf49e186b75842d63a280e",
+        "name": "Bench Table Kit",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_bb73599044cf49e186b75842d63a280e/model.glb",
+        "size_bytes": 311368,
+        "sha256": "a998e903ccd573395efadcffc299250157e41659a7123b6545cc715618aa070a",
+        "classification": {
+          "semantic_category": "support_lab_bench",
+          "library_role": "background_support",
+          "scene_use": "lab_bench",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "07136926da804f2f81f823cad90f63cb",
+          "username": "its_amdk",
+          "display_name": "AMDK",
+          "profile_url": "https://sketchfab.com/its_amdk"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-bb73599044cf49e186b75842d63a280e",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_bb73599044cf49e186b75842d63a280e/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_bb73599044cf49e186b75842d63a280e/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.367736+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_bb73599044cf49e186b75842d63a280e/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_c4bcfe2f81ca48198c2459e13e45de43",
+      "name": "Optical Bench- three uprights",
+      "semantic_category": "support_lab_bench",
+      "library_role": "background_support",
+      "scene_use": "lab_bench",
+      "admission_status": "v0_usable",
+      "selection_rank": 3,
+      "notes": "Optical bench, useful for specialized lab scenarios.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_c4bcfe2f81ca48198c2459e13e45de43/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 629416,
+      "sha256": "d63912bc6281b0a59d3744be6c187090b74bef97e7da2dc1ae8f0afdb897fa44",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "1dcdf07c96f84dff906818e59c1d2280",
+        "username": "veerubyinc",
+        "display_name": "VeeRuby Technologies Pvt Ltd",
+        "profile_url": "https://sketchfab.com/veerubyinc"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-c4bcfe2f81ca48198c2459e13e45de43",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_c4bcfe2f81ca48198c2459e13e45de43",
+        "source_uid": "c4bcfe2f81ca48198c2459e13e45de43",
+        "name": "Optical Bench- three uprights",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_c4bcfe2f81ca48198c2459e13e45de43/model.glb",
+        "size_bytes": 629416,
+        "sha256": "d63912bc6281b0a59d3744be6c187090b74bef97e7da2dc1ae8f0afdb897fa44",
+        "classification": {
+          "semantic_category": "support_lab_bench",
+          "library_role": "background_support",
+          "scene_use": "lab_bench",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "1dcdf07c96f84dff906818e59c1d2280",
+          "username": "veerubyinc",
+          "display_name": "VeeRuby Technologies Pvt Ltd",
+          "profile_url": "https://sketchfab.com/veerubyinc"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-c4bcfe2f81ca48198c2459e13e45de43",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_c4bcfe2f81ca48198c2459e13e45de43/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_c4bcfe2f81ca48198c2459e13e45de43/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.368383+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_c4bcfe2f81ca48198c2459e13e45de43/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_2039a113435b47d585b2c51e4f3a096d",
+      "name": "Office Desk - 18MB",
+      "semantic_category": "support_office_desk",
+      "library_role": "background_support",
+      "scene_use": "office_tabletop",
+      "admission_status": "v0_preferred",
+      "selection_rank": 1,
+      "notes": "Good textured office desk with clear support area.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_2039a113435b47d585b2c51e4f3a096d/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 2894860,
+      "sha256": "badabfe6e22b86247751a4e4f48c33d3e5fe77137181cfdf1b03f04437148fb9",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "73d81967384b423cb9b298dc4612e70c",
+        "username": "ahmagh2e",
+        "display_name": "Mehdi Shahsavan",
+        "profile_url": "https://sketchfab.com/ahmagh2e"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-2039a113435b47d585b2c51e4f3a096d",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_2039a113435b47d585b2c51e4f3a096d",
+        "source_uid": "2039a113435b47d585b2c51e4f3a096d",
+        "name": "Office Desk - 18MB",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_2039a113435b47d585b2c51e4f3a096d/model.glb",
+        "size_bytes": 2894860,
+        "sha256": "badabfe6e22b86247751a4e4f48c33d3e5fe77137181cfdf1b03f04437148fb9",
+        "classification": {
+          "semantic_category": "support_office_desk",
+          "library_role": "background_support",
+          "scene_use": "office_tabletop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "73d81967384b423cb9b298dc4612e70c",
+          "username": "ahmagh2e",
+          "display_name": "Mehdi Shahsavan",
+          "profile_url": "https://sketchfab.com/ahmagh2e"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-2039a113435b47d585b2c51e4f3a096d",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_2039a113435b47d585b2c51e4f3a096d/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_2039a113435b47d585b2c51e4f3a096d/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.339692+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_2039a113435b47d585b2c51e4f3a096d/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_459ebb7c75a14feb8ad690d00a085b9f",
+      "name": "Office Desk _ 6MB",
+      "semantic_category": "support_office_desk",
+      "library_role": "background_support",
+      "scene_use": "office_tabletop",
+      "admission_status": "v0_preferred",
+      "selection_rank": 2,
+      "notes": "Simple clean wooden office desk.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_459ebb7c75a14feb8ad690d00a085b9f/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 1921588,
+      "sha256": "c57bbf4305e7e0e273e069cc00bc2fbd5664f273a1cf185b3cbfb15b96cf3367",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "73d81967384b423cb9b298dc4612e70c",
+        "username": "ahmagh2e",
+        "display_name": "Mehdi Shahsavan",
+        "profile_url": "https://sketchfab.com/ahmagh2e"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-459ebb7c75a14feb8ad690d00a085b9f",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_459ebb7c75a14feb8ad690d00a085b9f",
+        "source_uid": "459ebb7c75a14feb8ad690d00a085b9f",
+        "name": "Office Desk _ 6MB",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_459ebb7c75a14feb8ad690d00a085b9f/model.glb",
+        "size_bytes": 1921588,
+        "sha256": "c57bbf4305e7e0e273e069cc00bc2fbd5664f273a1cf185b3cbfb15b96cf3367",
+        "classification": {
+          "semantic_category": "support_office_desk",
+          "library_role": "background_support",
+          "scene_use": "office_tabletop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "73d81967384b423cb9b298dc4612e70c",
+          "username": "ahmagh2e",
+          "display_name": "Mehdi Shahsavan",
+          "profile_url": "https://sketchfab.com/ahmagh2e"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-459ebb7c75a14feb8ad690d00a085b9f",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_459ebb7c75a14feb8ad690d00a085b9f/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_459ebb7c75a14feb8ad690d00a085b9f/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.341951+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_459ebb7c75a14feb8ad690d00a085b9f/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_e0f8dc2f81d440a09e9519fdc9e74cb2",
+      "name": "Office Desk",
+      "semantic_category": "support_office_desk",
+      "library_role": "background_support",
+      "scene_use": "office_tabletop",
+      "admission_status": "manual_review",
+      "selection_rank": 50,
+      "notes": "Cubicle style asset; may be useful as office context but not as a clean support surface.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_e0f8dc2f81d440a09e9519fdc9e74cb2/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 9929856,
+      "sha256": "acff828b8af7a25652c6eccca30ebe20ff557c806d62ed20533301d388ae5282",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "9281cfb3aa6f449d9b62cc5ebc257850",
+        "username": "snaptoongames",
+        "display_name": "snaptoongames",
+        "profile_url": "https://sketchfab.com/snaptoongames"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-e0f8dc2f81d440a09e9519fdc9e74cb2",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_e0f8dc2f81d440a09e9519fdc9e74cb2",
+        "source_uid": "e0f8dc2f81d440a09e9519fdc9e74cb2",
+        "name": "Office Desk",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_e0f8dc2f81d440a09e9519fdc9e74cb2/model.glb",
+        "size_bytes": 9929856,
+        "sha256": "acff828b8af7a25652c6eccca30ebe20ff557c806d62ed20533301d388ae5282",
+        "classification": {
+          "semantic_category": "support_office_desk",
+          "library_role": "background_support",
+          "scene_use": "office_tabletop",
+          "technical_tier": "v0_ready_medium",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "9281cfb3aa6f449d9b62cc5ebc257850",
+          "username": "snaptoongames",
+          "display_name": "snaptoongames",
+          "profile_url": "https://sketchfab.com/snaptoongames"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-e0f8dc2f81d440a09e9519fdc9e74cb2",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_e0f8dc2f81d440a09e9519fdc9e74cb2/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_e0f8dc2f81d440a09e9519fdc9e74cb2/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.354662+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_e0f8dc2f81d440a09e9519fdc9e74cb2/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_18abda12d33b4231aa13f92a291c717e",
+      "name": "Office Desk_7_MB",
+      "semantic_category": "support_office_desk",
+      "library_role": "background_support",
+      "scene_use": "office_tabletop",
+      "admission_status": "exclude_v0",
+      "selection_rank": 99,
+      "notes": "Model is dominated by walls/partition, not a desk support.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_18abda12d33b4231aa13f92a291c717e/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 3971228,
+      "sha256": "278c35e3082ce5bd2cd65689607ff2f9dac7e1f8e8cb9b713e13ccdc4463ea83",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "73d81967384b423cb9b298dc4612e70c",
+        "username": "ahmagh2e",
+        "display_name": "Mehdi Shahsavan",
+        "profile_url": "https://sketchfab.com/ahmagh2e"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-18abda12d33b4231aa13f92a291c717e",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_18abda12d33b4231aa13f92a291c717e",
+        "source_uid": "18abda12d33b4231aa13f92a291c717e",
+        "name": "Office Desk_7_MB",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_18abda12d33b4231aa13f92a291c717e/model.glb",
+        "size_bytes": 3971228,
+        "sha256": "278c35e3082ce5bd2cd65689607ff2f9dac7e1f8e8cb9b713e13ccdc4463ea83",
+        "classification": {
+          "semantic_category": "support_office_desk",
+          "library_role": "background_support",
+          "scene_use": "office_tabletop",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "73d81967384b423cb9b298dc4612e70c",
+          "username": "ahmagh2e",
+          "display_name": "Mehdi Shahsavan",
+          "profile_url": "https://sketchfab.com/ahmagh2e"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-18abda12d33b4231aa13f92a291c717e",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_18abda12d33b4231aa13f92a291c717e/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_18abda12d33b4231aa13f92a291c717e/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.345989+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_18abda12d33b4231aa13f92a291c717e/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf",
+      "name": "Wooden Table",
+      "semantic_category": "support_table_wood",
+      "library_role": "background_support",
+      "scene_use": "tabletop_support",
+      "admission_status": "v0_preferred",
+      "selection_rank": 1,
+      "notes": "Large textured wooden table, good flat support.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 3582608,
+      "sha256": "7ff85832318de6bbfeac39cd76ca760b7e278645f872dfe96b5712fb2e517f94",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "a287fef2848f4aea898bb085f495926f",
+        "username": "FlukierJupiter",
+        "display_name": "FlukierJupiter",
+        "profile_url": "https://sketchfab.com/FlukierJupiter"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-0dc1c7d6cbab4d74bef7c4f82abf2caf",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf",
+        "source_uid": "0dc1c7d6cbab4d74bef7c4f82abf2caf",
+        "name": "Wooden Table",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf/model.glb",
+        "size_bytes": 3582608,
+        "sha256": "7ff85832318de6bbfeac39cd76ca760b7e278645f872dfe96b5712fb2e517f94",
+        "classification": {
+          "semantic_category": "support_table_wood",
+          "library_role": "background_support",
+          "scene_use": "tabletop_support",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "a287fef2848f4aea898bb085f495926f",
+          "username": "FlukierJupiter",
+          "display_name": "FlukierJupiter",
+          "profile_url": "https://sketchfab.com/FlukierJupiter"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-0dc1c7d6cbab4d74bef7c4f82abf2caf",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.328832+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d",
+      "name": "Wooden Table",
+      "semantic_category": "support_table_wood",
+      "library_role": "background_support",
+      "scene_use": "tabletop_support",
+      "admission_status": "v0_usable",
+      "selection_rank": 2,
+      "notes": "Textured wood block/table, usable for rustic support scenes.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 3465164,
+      "sha256": "740b66b052e19108d8979afe450de5300efa049c5ef2f0b754024ac133b6116f",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "5c566653cdcd4119b2f61eb77b9b0c9d",
+        "username": "Prateek.Sharma",
+        "display_name": "Prateek.Sharma",
+        "profile_url": "https://sketchfab.com/Prateek.Sharma"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-8a5b41d6445c4f1fbefb2e4abfeebb0d",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d",
+        "source_uid": "8a5b41d6445c4f1fbefb2e4abfeebb0d",
+        "name": "Wooden Table",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d/model.glb",
+        "size_bytes": 3465164,
+        "sha256": "740b66b052e19108d8979afe450de5300efa049c5ef2f0b754024ac133b6116f",
+        "classification": {
+          "semantic_category": "support_table_wood",
+          "library_role": "background_support",
+          "scene_use": "tabletop_support",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "5c566653cdcd4119b2f61eb77b9b0c9d",
+          "username": "Prateek.Sharma",
+          "display_name": "Prateek.Sharma",
+          "profile_url": "https://sketchfab.com/Prateek.Sharma"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-8a5b41d6445c4f1fbefb2e4abfeebb0d",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.332561+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa",
+      "name": "Wooden Table_8MB",
+      "semantic_category": "support_table_wood",
+      "library_role": "background_support",
+      "scene_use": "tabletop_support",
+      "admission_status": "exclude_v0",
+      "selection_rank": 99,
+      "notes": "Preview shows mostly legs; tabletop is not usable.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 3905464,
+      "sha256": "4bc9b2ce7225da914608f756f7d623f19b39902df5eb3d4558fda7c46200cbf2",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "73d81967384b423cb9b298dc4612e70c",
+        "username": "ahmagh2e",
+        "display_name": "Mehdi Shahsavan",
+        "profile_url": "https://sketchfab.com/ahmagh2e"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-a776babee9144e71ba90b473a4a5cfaa",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa",
+        "source_uid": "a776babee9144e71ba90b473a4a5cfaa",
+        "name": "Wooden Table_8MB",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa/model.glb",
+        "size_bytes": 3905464,
+        "sha256": "4bc9b2ce7225da914608f756f7d623f19b39902df5eb3d4558fda7c46200cbf2",
+        "classification": {
+          "semantic_category": "support_table_wood",
+          "library_role": "background_support",
+          "scene_use": "tabletop_support",
+          "technical_tier": "v0_ready_light",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "73d81967384b423cb9b298dc4612e70c",
+          "username": "ahmagh2e",
+          "display_name": "Mehdi Shahsavan",
+          "profile_url": "https://sketchfab.com/ahmagh2e"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-a776babee9144e71ba90b473a4a5cfaa",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.336584+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_9634d6a81a494925a909512c8048f446",
+      "name": "Workbench",
+      "semantic_category": "support_workbench",
+      "library_role": "background_support",
+      "scene_use": "workshop_support",
+      "admission_status": "v0_preferred",
+      "selection_rank": 1,
+      "notes": "Good workbench with tools and clear tabletop.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_9634d6a81a494925a909512c8048f446/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 3838024,
+      "sha256": "f37cbc257e0ff3243f005405cb5f8d622ce87daac5d8c44ccf9d61b40c439ed0",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "5570d45a81004baf9db18d1dd71c6068",
+        "username": "jjchalupnik",
+        "display_name": "JJ Chalupnik",
+        "profile_url": "https://sketchfab.com/jjchalupnik"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-9634d6a81a494925a909512c8048f446",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_9634d6a81a494925a909512c8048f446",
+        "source_uid": "9634d6a81a494925a909512c8048f446",
+        "name": "Workbench",
+        "status": "exists",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_9634d6a81a494925a909512c8048f446/model.glb",
+        "size_bytes": 3838024,
+        "sha256": "f37cbc257e0ff3243f005405cb5f8d622ce87daac5d8c44ccf9d61b40c439ed0",
+        "classification": {
+          "semantic_category": "support_workbench",
+          "library_role": "background_support",
+          "scene_use": "workshop_support",
+          "technical_tier": "v0_ready_medium",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "5570d45a81004baf9db18d1dd71c6068",
+          "username": "jjchalupnik",
+          "display_name": "JJ Chalupnik",
+          "profile_url": "https://sketchfab.com/jjchalupnik"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-9634d6a81a494925a909512c8048f446",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_9634d6a81a494925a909512c8048f446/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_9634d6a81a494925a909512c8048f446/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:11:54.380166+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_9634d6a81a494925a909512c8048f446/attribution.json"
+    },
+    {
+      "candidate_id": "sketchfab_bg_93bf119e2bb443b49006c6b12efe06ae",
+      "name": "Workbench",
+      "semantic_category": "support_workbench",
+      "library_role": "background_support",
+      "scene_use": "workshop_support",
+      "admission_status": "v0_preferred",
+      "selection_rank": 2,
+      "notes": "Detailed workbench/desk area, useful for workshop scenes.",
+      "archive_path": "assets/library/sketchfab/background/sketchfab_bg_93bf119e2bb443b49006c6b12efe06ae/model.glb",
+      "archive_kind": "glb",
+      "size_bytes": 10586284,
+      "sha256": "a27c41399bafbca7519586129d6c37ed3acfe828c7109653f5bcc7e20d867466",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      },
+      "author": {
+        "uid": "c6a811518c7446a1bc89c5f1100dbaf6",
+        "username": "Happypareek",
+        "display_name": "Happypareek",
+        "profile_url": "https://sketchfab.com/Happypareek"
+      },
+      "viewer_url": "https://sketchfab.com/3d-models/none-93bf119e2bb443b49006c6b12efe06ae",
+      "preview_image": null,
+      "import_ok": null,
+      "mesh_count": null,
+      "texture_count": null,
+      "has_image_texture": false,
+      "source_record": {
+        "candidate_id": "sketchfab_bg_93bf119e2bb443b49006c6b12efe06ae",
+        "source_uid": "93bf119e2bb443b49006c6b12efe06ae",
+        "name": "Workbench",
+        "status": "downloaded",
+        "archive_kind": "glb",
+        "archive_path": "assets/library/sketchfab/background/sketchfab_bg_93bf119e2bb443b49006c6b12efe06ae/model.glb",
+        "size_bytes": 10586284,
+        "sha256": "a27c41399bafbca7519586129d6c37ed3acfe828c7109653f5bcc7e20d867466",
+        "classification": {
+          "semantic_category": "support_workbench",
+          "library_role": "background_support",
+          "scene_use": "workshop_support",
+          "technical_tier": "v0_ready_medium",
+          "technical_reasons": []
+        },
+        "license": {
+          "requested_slug": "by",
+          "label": "CC Attribution",
+          "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+          "requires_attribution": true
+        },
+        "author": {
+          "uid": "c6a811518c7446a1bc89c5f1100dbaf6",
+          "username": "Happypareek",
+          "display_name": "Happypareek",
+          "profile_url": "https://sketchfab.com/Happypareek"
+        },
+        "viewer_url": "https://sketchfab.com/3d-models/none-93bf119e2bb443b49006c6b12efe06ae",
+        "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_93bf119e2bb443b49006c6b12efe06ae/attribution.json",
+        "download_api_response_path": "assets/library/sketchfab/background/sketchfab_bg_93bf119e2bb443b49006c6b12efe06ae/source_api_response.json",
+        "downloaded_at": "2026-07-04T07:12:05.448157+00:00"
+      },
+      "attribution_path": "assets/library/sketchfab/background/sketchfab_bg_93bf119e2bb443b49006c6b12efe06ae/attribution.json"
+    }
+  ],
+  "source_provenance": "Migrated from the curated source library with per-asset attribution retained."
+}

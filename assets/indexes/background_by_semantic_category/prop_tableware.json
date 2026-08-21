@@ -1,0 +1,29 @@
+{
+  "semantic_category": "prop_tableware",
+  "assets": [
+    {
+      "asset_id": "sketchfab_bg_ec2aafa153214d2aa59d5860caeb8942",
+      "name": "Ceramic Plate",
+      "admission_status": "v0_preferred",
+      "asset_path": "assets/library/sketchfab/background/sketchfab_bg_ec2aafa153214d2aa59d5860caeb8942/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_6d059ad35b194bc589223d7c172666ed",
+      "name": "Ceramic Plate Set",
+      "admission_status": "v0_usable",
+      "asset_path": "assets/library/sketchfab/background/sketchfab_bg_6d059ad35b194bc589223d7c172666ed/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      }
+    }
+  ]
+}

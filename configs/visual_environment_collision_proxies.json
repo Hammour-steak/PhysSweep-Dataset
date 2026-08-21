@@ -1,0 +1,1299 @@
+{
+  "version": "physweep_visual_environment_collision_proxy_v1",
+  "policy": {
+    "every_admitted_mesh_environment_has_a_static_proxy": true,
+    "proxy_is_always_loaded_during_simulation": true,
+    "visual_and_collision_world_pose_is_identical": true,
+    "raw_visual_glb_is_never_loaded_directly_by_pybullet": true,
+    "maximum_face_count_per_environment": 80000
+  },
+  "source_profiles": "configs/scene_mesh_profiles.json",
+  "output_root": "assets/proxies/environment",
+  "counts": {
+    "profiles": 20,
+    "built": 20,
+    "failed": 0
+  },
+  "records": [
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_living_white",
+      "asset_id": "env_living_white_afb8cb0c",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environments_v1/env_living_white_afb8cb0c/model.glb",
+        "visual_sha256": "79baa5a031ba3b922650512183501ccc8eb43002bba438dbf6db828f58a76916",
+        "source_bbox_size": [
+          11.809664726257324,
+          5.715719223022461,
+          6.725870132446289
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_living_white_afb8cb0c/collision.obj",
+        "sha256": "d1de33d64371ca49f48dd2c31d9c95754649ab3cff35570c57dcc6e6a8504413",
+        "vertex_count": 80345,
+        "face_count": 78202,
+        "source_face_count": 80154,
+        "authoritative_floor_face_count_removed": 1762,
+        "decimation_ratio": 0.998078699,
+        "bounds_min_m": [
+          -1.457497239,
+          -1.117910504,
+          0.994075477
+        ],
+        "bounds_max_m": [
+          1.454545379,
+          1.548756719,
+          2.650868893
+        ],
+        "extents_m": [
+          2.912042618,
+          2.666667223,
+          1.656793416
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.541929017322,
+        "source_bottom_center": [
+          0.0,
+          -0.397511839867,
+          -2.039947748184
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": 0.9940862726,
+        "authoritative_floor_exclusion_half_band_m": 0.0768,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_dining_modern",
+      "asset_id": "env_dining_modern_df3f3c9f",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environments_v1/env_dining_modern_df3f3c9f/model.glb",
+        "visual_sha256": "344dc5e53d20a833cdabd2b715e6033b7b6c6bac2213d0d17d4a572b07e416d1",
+        "source_bbox_size": [
+          6.981715202331543,
+          8.052674293518066,
+          4.68402099609375
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_dining_modern_df3f3c9f/collision.obj",
+        "sha256": "cf616cd20016ecf9665bee6683b86ce0a734657b6586b27538f406f5f38e157a",
+        "vertex_count": 82779,
+        "face_count": 79739,
+        "source_face_count": 97140,
+        "authoritative_floor_face_count_removed": 255,
+        "decimation_ratio": 0.823553634,
+        "bounds_min_m": [
+          -2.400000095,
+          -2.768147469,
+          2.9e-08
+        ],
+        "bounds_max_m": [
+          2.400000095,
+          2.76814723,
+          3.220311642
+        ],
+        "extents_m": [
+          4.800000191,
+          5.536294699,
+          3.220311613
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.687510140545,
+        "source_bottom_center": [
+          0.0,
+          0.692640900612,
+          -2.342008590698
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": 0.599033491649,
+        "authoritative_floor_exclusion_half_band_m": 0.0576,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_kitchen_modern",
+      "asset_id": "env_kitchen_modern_9843a830",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environments_v1/env_kitchen_modern_9843a830/model.glb",
+        "visual_sha256": "832b0b48aa85a749eaf2fe516f67601d25d90be1535c24585e6e7e0d191d91e2",
+        "source_bbox_size": [
+          22.588010787963867,
+          12.893327713012695,
+          7.674246788024902
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_kitchen_modern_9843a830/collision.obj",
+        "sha256": "47196656372d76ae4e2ae6aa1a9c696bd873cbd52ad43b0a5808eb81e125ac3d",
+        "vertex_count": 69437,
+        "face_count": 72542,
+        "source_face_count": 72554,
+        "authoritative_floor_face_count_removed": 0,
+        "decimation_ratio": 1.0,
+        "bounds_min_m": [
+          -4.204595089,
+          -2.399999619,
+          1.72e-06
+        ],
+        "bounds_max_m": [
+          4.204595566,
+          2.399999619,
+          2.85701108
+        ],
+        "extents_m": [
+          8.409190655,
+          4.799999237,
+          2.85700936
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.372285581104,
+        "source_bottom_center": [
+          4.809594154358,
+          -1.496016263962,
+          -0.358677923679
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": -2.8413e-08,
+        "authoritative_floor_exclusion_half_band_m": 0.0576,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_kitchen_living",
+      "asset_id": "env_kitchen_living_2684e307",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environments_v1/env_kitchen_living_2684e307/model.glb",
+        "visual_sha256": "a1f36cce95fb2ea663b8ab116196ae4c445175345e9092a917da9fa4908ec579",
+        "source_bbox_size": [
+          10.831844329833984,
+          7.511268138885498,
+          3.449178695678711
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_kitchen_living_2684e307/collision.obj",
+        "sha256": "84076818bed12a416ac536c89bfaf9a2ed2fb371e5595fe77d0e0e16a95f8c91",
+        "vertex_count": 48620,
+        "face_count": 35945,
+        "source_face_count": 36391,
+        "authoritative_floor_face_count_removed": 446,
+        "decimation_ratio": 1.0,
+        "bounds_min_m": [
+          -1.964079618,
+          -2.368755579,
+          0.0
+        ],
+        "bounds_max_m": [
+          3.460990429,
+          2.399999857,
+          2.204162836
+        ],
+        "extents_m": [
+          5.425070047,
+          4.768755436,
+          2.204162836
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.639039894629,
+        "source_bottom_center": [
+          -0.6406686306,
+          -1.223163843155,
+          -0.092995643616
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": 0.059427926297,
+        "authoritative_floor_exclusion_half_band_m": 0.0576,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_office_small",
+      "asset_id": "env_office_small_393a8fec",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environments_v1/env_office_small_393a8fec/model.glb",
+        "visual_sha256": "34c9832496dc5d2ce0d6f61f45ec47ec38f9b936d2567470f324b1681f66dbeb",
+        "source_bbox_size": [
+          2.5051558017730713,
+          4.9693193435668945,
+          2.502849578857422
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_office_small_393a8fec/collision.obj",
+        "sha256": "773c0d5c62fe7e6a314004f25373d6ea52086d302c19a3caa16cf11d692a2f8f",
+        "vertex_count": 71842,
+        "face_count": 79877,
+        "source_face_count": 101488,
+        "authoritative_floor_face_count_removed": 111,
+        "decimation_ratio": 0.788270534,
+        "bounds_min_m": [
+          -2.200004339,
+          -4.36400032,
+          5.27e-07
+        ],
+        "bounds_max_m": [
+          2.199999809,
+          4.364000797,
+          4.395950794
+        ],
+        "extents_m": [
+          4.400004148,
+          8.728001118,
+          4.395950267
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 1.756377785719,
+        "source_bottom_center": [
+          0.001934528351,
+          -0.740682959557,
+          -1.252206087112
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": 1.53002e-07,
+        "authoritative_floor_exclusion_half_band_m": 0.0528,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_office_modern",
+      "asset_id": "env_office_modern_1c894023",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environments_v1/env_office_modern_1c894023/model.glb",
+        "visual_sha256": "fa85bb846b3f033bfa486253a15b3f5d402969254dc9844cc93620a08b2eae14",
+        "source_bbox_size": [
+          5.975373268127441,
+          4.440743923187256,
+          3.079171657562256
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_office_modern_1c894023/collision.obj",
+        "sha256": "c4d2e77cbce64cc163b12da6308f353b38a1b2d31105f05dd17c061f5eed94bf",
+        "vertex_count": 102402,
+        "face_count": 79990,
+        "source_face_count": 87278,
+        "authoritative_floor_face_count_removed": 2,
+        "decimation_ratio": 0.916611288,
+        "bounds_min_m": [
+          -3.09483242,
+          -2.30002737,
+          1.44e-07
+        ],
+        "bounds_max_m": [
+          3.09483242,
+          2.299999714,
+          3.189598083
+        ],
+        "extents_m": [
+          6.189664841,
+          4.600027084,
+          3.189597939
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 1.035862477001,
+        "source_bottom_center": [
+          0.43361389637,
+          -0.020963907242,
+          -1.539585828781
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": 0.192034223802,
+        "authoritative_floor_exclusion_half_band_m": 0.0552,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_cafe_cozy",
+      "asset_id": "env_cafe_cozy_fb7c75da",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environments_v1/env_cafe_cozy_fb7c75da/model.glb",
+        "visual_sha256": "3df65bcc515caf05752c13964bec07cc59c54ec32d1a0e5ebc3181dbb15e470a",
+        "source_bbox_size": [
+          4.8537163734436035,
+          4.816324710845947,
+          3.609031915664673
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_cafe_cozy_fb7c75da/collision.obj",
+        "sha256": "8f2737b18de51d6d7efa17cf7ae279e5fd2990a9532509ba9aaa73f35c4f1d00",
+        "vertex_count": 80057,
+        "face_count": 77901,
+        "source_face_count": 493250,
+        "authoritative_floor_face_count_removed": 2095,
+        "decimation_ratio": 0.162189559,
+        "bounds_min_m": [
+          -2.217080355,
+          -2.200247049,
+          9.03e-07
+        ],
+        "bounds_max_m": [
+          2.217032671,
+          2.199766636,
+          3.295984983
+        ],
+        "extents_m": [
+          4.434113026,
+          4.400013685,
+          3.295984081
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.913559667207,
+        "source_bottom_center": [
+          0.0,
+          -0.001373767853,
+          -1.828643679619
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": 0.197734215922,
+        "authoritative_floor_exclusion_half_band_m": 0.0528,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_garage_workshop",
+      "asset_id": "env_garage_desert_ef8bb817",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environments_v1/env_garage_desert_ef8bb817/model.glb",
+        "visual_sha256": "c7b4ff2e22365a9b22160289f6c437e1497d19571eabf6526ecffbe741566912",
+        "source_bbox_size": [
+          17.147207260131836,
+          21.826793670654297,
+          12.096288681030273
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_garage_desert_ef8bb817/collision.obj",
+        "sha256": "d43e5e799fa1bfb0a0526aa6bb2930e56ff9bbb071dcb91b85e53a0f3ea7641e",
+        "vertex_count": 9702,
+        "face_count": 9621,
+        "source_face_count": 10315,
+        "authoritative_floor_face_count_removed": 694,
+        "decimation_ratio": 1.0,
+        "bounds_min_m": [
+          -2.700000048,
+          -3.436847925,
+          -0.0
+        ],
+        "bounds_max_m": [
+          2.700000048,
+          3.436847925,
+          3.809364319
+        ],
+        "extents_m": [
+          5.400000095,
+          6.87369585,
+          3.809364319
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.314920086874,
+        "source_bottom_center": [
+          0.0,
+          -2.339790821075,
+          -0.029275668785
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": -1.04306e-07,
+        "authoritative_floor_exclusion_half_band_m": 0.0648,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_parking_structure",
+      "asset_id": "env_parking_garage_f36802d7",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environments_v1/env_parking_garage_f36802d7/model.glb",
+        "visual_sha256": "e71200dd1e989f7ad136007a6c342e448e7bbe11a5e79a7924f2be6cfb575873",
+        "source_bbox_size": [
+          19.141937255859375,
+          5.283154487609863,
+          2.6291470527648926
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_parking_garage_f36802d7/collision.obj",
+        "sha256": "7c5be6d53365b198970aee10e3460a344b22741deb422053d77856d4acebb9fd",
+        "vertex_count": 57439,
+        "face_count": 49638,
+        "source_face_count": 541218,
+        "authoritative_floor_face_count_removed": 30358,
+        "decimation_ratio": 0.147814744,
+        "bounds_min_m": [
+          -3.19846487,
+          -0.882445753,
+          -0.00568633
+        ],
+        "bounds_max_m": [
+          3.200266123,
+          0.883264303,
+          0.879256308
+        ],
+        "extents_m": [
+          6.398730993,
+          1.765710056,
+          0.884942638
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.334344424729,
+        "source_bottom_center": [
+          -0.015869617462,
+          0.305966258049,
+          0.003578340169
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": -1.13734e-07,
+        "authoritative_floor_exclusion_half_band_m": 0.0768,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_gallery_exterior",
+      "asset_id": "env_gallery_studio_789cdada",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environments_v1/env_gallery_studio_789cdada/model.glb",
+        "visual_sha256": "30731f9cd9e336d5b925284027a34323b7145d32a1777191cff155e6fe01d737",
+        "source_bbox_size": [
+          8.553121566772461,
+          15.985980033874512,
+          3.3182435035705566
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_gallery_studio_789cdada/collision.obj",
+        "sha256": "3e5075d4d40d05753f5f6523c3507246eac7fe484871c52ac7d6e3e405acc49a",
+        "vertex_count": 83158,
+        "face_count": 79711,
+        "source_face_count": 262175,
+        "authoritative_floor_face_count_removed": 265,
+        "decimation_ratio": 0.305139697,
+        "bounds_min_m": [
+          -1.498108983,
+          -2.799999952,
+          0.000850602
+        ],
+        "bounds_max_m": [
+          1.498108983,
+          2.799999952,
+          1.162403464
+        ],
+        "extents_m": [
+          2.996217966,
+          5.599999905,
+          1.161552862
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.350306955728,
+        "source_bottom_center": [
+          0.0,
+          0.0,
+          -1.659121751785
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": -8.6951e-08,
+        "authoritative_floor_exclusion_half_band_m": 0.0672,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_graffiti_courtyard",
+      "asset_id": "env_graffiti_lab_7e764b49",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environments_v1/env_graffiti_lab_7e764b49/model.glb",
+        "visual_sha256": "b5488b4ad70dd5d48ce5e1eaa956ae302f9c52296b2dadf6e63493ffeefdc667",
+        "source_bbox_size": [
+          11.719661712646484,
+          6.42231559753418,
+          4.399040699005127
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_graffiti_lab_7e764b49/collision.obj",
+        "sha256": "524dc8fbc1ad2b4b13728b72bfb712354cadef2eca48dd2cc0615a52012914d1",
+        "vertex_count": 5036,
+        "face_count": 4182,
+        "source_face_count": 4215,
+        "authoritative_floor_face_count_removed": 32,
+        "decimation_ratio": 1.0,
+        "bounds_min_m": [
+          -2.699999809,
+          -1.479586482,
+          -4e-09
+        ],
+        "bounds_max_m": [
+          2.699999809,
+          1.479586482,
+          2.026920319
+        ],
+        "extents_m": [
+          5.399999619,
+          2.959172964,
+          2.026920322
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.460764152789,
+        "source_bottom_center": [
+          -0.858372449875,
+          -3.203328132629,
+          -0.096311554313
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": -2.05357e-07,
+        "authoritative_floor_exclusion_half_band_m": 0.0648,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_house_exterior",
+      "asset_id": "env_house_interior_c57c2019",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environments_v1/env_house_interior_c57c2019/model.glb",
+        "visual_sha256": "15905b7a6dcaaa0967bbddd0a6b5a23d2a6dd9027bf2469c8f651017778d090f",
+        "source_bbox_size": [
+          8.266942977905273,
+          8.70938777923584,
+          7.339620590209961
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_house_interior_c57c2019/collision.obj",
+        "sha256": "221027f796ca990ef1efd55245aa1396609d6d8ca01928431d7a48b95b26cfeb",
+        "vertex_count": 84546,
+        "face_count": 77290,
+        "source_face_count": 77500,
+        "authoritative_floor_face_count_removed": 204,
+        "decimation_ratio": 1.0,
+        "bounds_min_m": [
+          -2.599999666,
+          -2.739151478,
+          0.0
+        ],
+        "bounds_max_m": [
+          2.599999905,
+          2.739151239,
+          4.616703033
+        ],
+        "extents_m": [
+          5.199999571,
+          5.478302717,
+          4.616703033
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.629011233523,
+        "source_bottom_center": [
+          -0.027995824814,
+          -0.211227893829,
+          -0.000562429428
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": 2.70115e-07,
+        "authoritative_floor_exclusion_half_band_m": 0.0624,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_art_studio",
+      "asset_id": "env_art_studio_fdd57e78",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environments_v1/env_art_studio_fdd57e78/model.glb",
+        "visual_sha256": "066fe4416c17f5d50416c965005fe9b0ed568a7905daabf03b5ebfb3107cba06",
+        "source_bbox_size": [
+          3.159667491912842,
+          3.180661201477051,
+          2.7489116191864014
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_art_studio_fdd57e78/collision.obj",
+        "sha256": "14aa1bec8829380856bbe8e2dde03a5332feadcb2f607e64ada2ca4f82a40323",
+        "vertex_count": 182343,
+        "face_count": 79064,
+        "source_face_count": 412109,
+        "authoritative_floor_face_count_removed": 996,
+        "decimation_ratio": 0.194123399,
+        "bounds_min_m": [
+          -2.235149384,
+          -2.249999762,
+          -0.0
+        ],
+        "bounds_max_m": [
+          2.235149145,
+          2.250000238,
+          3.889160872
+        ],
+        "extents_m": [
+          4.470298529,
+          4.5,
+          3.889160872
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 1.414800167308,
+        "source_bottom_center": [
+          -0.059446036816,
+          0.236634016037,
+          -2.45469e-07
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": 0.33969386746,
+        "authoritative_floor_exclusion_half_band_m": 0.054,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_kitchen_small",
+      "asset_id": "env_kitchen_small_2cc658a9",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environment_additions_v2/env_kitchen_small_2cc658a9/model.glb",
+        "visual_sha256": "163aacb4c2d842e45531f9f8aa5e5dc6f695b4786dc608058bab2ac0ac00d16e",
+        "source_bbox_size": [
+          5.579949378967285,
+          9.627436637878418,
+          3.5012264251708984
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_kitchen_small_2cc658a9/collision.obj",
+        "sha256": "cf187eb2c5c3d9aaf7c1f59b6eac696cb369474f6f15aa3925f0bcd3f06a426e",
+        "vertex_count": 118116,
+        "face_count": 79586,
+        "source_face_count": 129722,
+        "authoritative_floor_face_count_removed": 404,
+        "decimation_ratio": 0.616703412,
+        "bounds_min_m": [
+          -2.599999905,
+          -4.485942841,
+          9.1e-08
+        ],
+        "bounds_max_m": [
+          2.600000143,
+          4.486385822,
+          3.262821198
+        ],
+        "extents_m": [
+          5.200000048,
+          8.972328663,
+          3.262821107
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.931908095726,
+        "source_bottom_center": [
+          -0.11774122715,
+          -0.888147473335,
+          -1.752967119217
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": 1.11099e-07,
+        "authoritative_floor_exclusion_half_band_m": 0.0624,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_cafe_small",
+      "asset_id": "env_cafe_small_0c4d6d98",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environment_additions_v2/env_cafe_small_0c4d6d98/model.glb",
+        "visual_sha256": "bb0ecb8b6002da425e4dee7adb50ffdab8df653513ab9aebfe7f0afda5527402",
+        "source_bbox_size": [
+          19.096757888793945,
+          6.769618034362793,
+          3.45259952545166
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_cafe_small_0c4d6d98/collision.obj",
+        "sha256": "1883de42c9a2c99b70689a7fb9c7f0a0ef39bfbf2ad9a8961d25019be20422f6",
+        "vertex_count": 73572,
+        "face_count": 60455,
+        "source_face_count": 62200,
+        "authoritative_floor_face_count_removed": 1745,
+        "decimation_ratio": 1.0,
+        "bounds_min_m": [
+          -3.500000238,
+          -1.240716577,
+          1.53e-07
+        ],
+        "bounds_max_m": [
+          3.5,
+          1.240716457,
+          1.265565395
+        ],
+        "extents_m": [
+          7.000000238,
+          2.481433034,
+          1.265565242
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.366554367017,
+        "source_bottom_center": [
+          -4.222458839417,
+          0.433038949966,
+          -1.886166095734
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": 3.5092e-08,
+        "authoritative_floor_exclusion_half_band_m": 0.08,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_industrial_brick",
+      "asset_id": "env_garage_scan_6fbb2f49",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environment_additions_v2/env_garage_scan_6fbb2f49/model.glb",
+        "visual_sha256": "90471e83600b19259e9e63d27d404e1dcaae87e4b703c32f638a64730a66f755",
+        "source_bbox_size": [
+          31.31554412841797,
+          28.66975212097168,
+          12.300454139709473
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_garage_scan_6fbb2f49/collision.obj",
+        "sha256": "dc38b328b6c86e516bdc109157b1b16a8de0a5fdab956d159bb827e06dd38b00",
+        "vertex_count": 106617,
+        "face_count": 78856,
+        "source_face_count": 281762,
+        "authoritative_floor_face_count_removed": 1138,
+        "decimation_ratio": 0.28392757,
+        "bounds_min_m": [
+          -3.41003561,
+          -0.902026951,
+          6.3e-08
+        ],
+        "bounds_max_m": [
+          3.310990572,
+          0.838154733,
+          2.753782988
+        ],
+        "extents_m": [
+          6.721026182,
+          1.740181684,
+          2.753782925
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.223531163032,
+        "source_bottom_center": [
+          -5.435596942902,
+          2.080641746521,
+          0.013588943519
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": 1.2625e-08,
+        "authoritative_floor_exclusion_half_band_m": 0.08,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_duplex_modern",
+      "asset_id": "env_duplex_modern_70ab4f41",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environment_additions_v2/env_duplex_modern_70ab4f41/model.glb",
+        "visual_sha256": "fa01983a0c4a7b89370c0b77f5adfb4de957dbdb211ce0e395e2c8a93644c8de",
+        "source_bbox_size": [
+          8.770000457763672,
+          6.919979095458984,
+          5.529351711273193
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_duplex_modern_70ab4f41/collision.obj",
+        "sha256": "a0bf3328b284a36614bf0fb3a8e959e7b533ce927d11d36fc1ccfe4a287d01b1",
+        "vertex_count": 13516,
+        "face_count": 7666,
+        "source_face_count": 7937,
+        "authoritative_floor_face_count_removed": 271,
+        "decimation_ratio": 1.0,
+        "bounds_min_m": [
+          -2.899998665,
+          -2.288248539,
+          3.278e-06
+        ],
+        "bounds_max_m": [
+          2.900001049,
+          2.288249016,
+          3.656811953
+        ],
+        "extents_m": [
+          5.799999714,
+          4.576497555,
+          3.656808674
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.661345461489,
+        "source_bottom_center": [
+          31.436891555786,
+          15.701864242554,
+          -0.017753243446
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": 1.61002e-07,
+        "authoritative_floor_exclusion_half_band_m": 0.0696,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_bathroom_modern",
+      "asset_id": "env_bathroom_modern_9ba7e0a0",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environment_additions_v2/env_bathroom_modern_9ba7e0a0/model.glb",
+        "visual_sha256": "17998b3de1b3b5fa4067fc6408d8ea60f87f70028b8acf8fc34de9fc057a4811",
+        "source_bbox_size": [
+          4.350654125213623,
+          7.659173965454102,
+          3.002345085144043
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_bathroom_modern_9ba7e0a0/collision.obj",
+        "sha256": "1065a4f865779f8cf937ae8a3d9134d7af99c4940ddf7f630c37ff30c5b0782b",
+        "vertex_count": 161137,
+        "face_count": 79842,
+        "source_face_count": 99087,
+        "authoritative_floor_face_count_removed": 153,
+        "decimation_ratio": 0.8073713,
+        "bounds_min_m": [
+          -2.399999857,
+          -4.225115776,
+          1.14e-07
+        ],
+        "bounds_max_m": [
+          2.399999857,
+          4.225116253,
+          3.312434435
+        ],
+        "extents_m": [
+          4.799999714,
+          8.450232029,
+          3.312434321
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 1.103282371306,
+        "source_bottom_center": [
+          0.0,
+          0.194249033928,
+          -1.501173973083
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": 0.2238272781,
+        "authoritative_floor_exclusion_half_band_m": 0.0576,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_classroom_bright",
+      "asset_id": "env_classroom_bright_f61f4b6a",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environment_replacements_v3/env_classroom_bright_f61f4b6a/model.glb",
+        "visual_sha256": "93f361f70aaa32626e5c00b21aec329afbd6f35925745a9d3ff96970b750fcb4",
+        "source_bbox_size": [
+          7.20778751373291,
+          10.707613945007324,
+          3.169498920440674
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_classroom_bright_f61f4b6a/collision.obj",
+        "sha256": "efce69bb9f84eca89d765b95e98f0b85df1cb0f7160b8654119fdf31c4816309",
+        "vertex_count": 53014,
+        "face_count": 75467,
+        "source_face_count": 472030,
+        "authoritative_floor_face_count_removed": 4484,
+        "decimation_ratio": 0.169480753,
+        "bounds_min_m": [
+          -2.872757912,
+          -4.237356663,
+          -4.4279e-05
+        ],
+        "bounds_max_m": [
+          2.899991751,
+          4.241117001,
+          2.550448895
+        ],
+        "extents_m": [
+          5.772749662,
+          8.478473663,
+          2.550493173
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.804685208734,
+        "source_bottom_center": [
+          0.002998948097,
+          0.370775222778,
+          -0.002116531366
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": -3.77102e-07,
+        "authoritative_floor_exclusion_half_band_m": 0.0696,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    },
+    {
+      "schema_version": "physweep_visual_environment_collision_proxy_v1",
+      "profile_id": "mesh_env_warehouse_services",
+      "asset_id": "env_office_studio_8fc52866",
+      "source": {
+        "visual_path": "assets/library/sketchfab/visual_environment_replacements_v3/env_office_studio_8fc52866/model.glb",
+        "visual_sha256": "98e553167e2f0f1fd28820147c3f5f457c5108e364579ffa51f656d2a913084a",
+        "source_bbox_size": [
+          20.259702682495117,
+          20.259708404541016,
+          4.381991386413574
+        ]
+      },
+      "proxy": {
+        "representation": "static_concave_mesh",
+        "method": "reviewed_shell_blender_evaluated_triangle_mesh",
+        "path": "assets/proxies/environment/env_office_studio_8fc52866/collision.obj",
+        "sha256": "e6f86f3fd31fea3ee0cb068be2cfca8c4ea559cb89c3e94275b1ad3dc8429482",
+        "vertex_count": 89242,
+        "face_count": 79930,
+        "source_face_count": 226036,
+        "authoritative_floor_face_count_removed": 18,
+        "decimation_ratio": 0.353925923,
+        "bounds_min_m": [
+          -3.399999619,
+          -3.184740067,
+          0.000473093
+        ],
+        "bounds_max_m": [
+          3.399999619,
+          3.400000811,
+          1.470778823
+        ],
+        "extents_m": [
+          6.799999237,
+          6.584740877,
+          1.47030573
+        ],
+        "flags": [
+          "GEOM_FORCE_CONCAVE_TRIMESH"
+        ]
+      },
+      "transform_contract": {
+        "frame": "normalized_visual_asset_local_bottom_center_z_up",
+        "scale": 0.335641648181,
+        "source_bottom_center": [
+          -0.467432022095,
+          -1.07978105545,
+          -0.124045886099
+        ],
+        "world_pose_is_frozen_in_scene_metadata": true,
+        "authoritative_floor_z_m": -3.823e-08,
+        "authoritative_floor_exclusion_half_band_m": 0.08,
+        "authoritative_floor_minimum_abs_normal_z": 0.94
+      },
+      "qa": {
+        "reviewed_shell_edits_applied": true,
+        "visual_and_proxy_use_same_source_transform": true,
+        "finite_geometry": true,
+        "remaining_authoritative_floor_band_face_count": 0,
+        "maximum_face_count": 80000,
+        "global_environment_floor_remains_collision_authority": true
+      }
+    }
+  ]
+}

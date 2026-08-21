@@ -1,0 +1,1042 @@
+{
+  "policy": {
+    "generic_sampling_requires_status": "ready_generic",
+    "inventory_is_observation_not_semantics": true,
+    "review_date": "2026-08-04",
+    "specialized_sampling_requires_explicit_scene_family": true,
+    "unlisted_components_are_render_errors_for_split_assets": true
+  },
+  "records": [
+    {
+      "asset_id": "sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Wooden Table",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "generic_tabletop_motion",
+          "drop_to_surface",
+          "slide_push",
+          "edge_exit"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_0f2ae181a2dd4b00a6ec25073692037f",
+      "component_policy": {
+        "hidden_prefixes": [
+          "Ball",
+          "Cue stick"
+        ],
+        "material_template_objects": {
+          "cue_ball": "Ball Clube_10 - Default_0",
+          "object_ball_1": "Ball1_01 - Default_0",
+          "object_ball_2": "Ball3_Material #157_0"
+        },
+        "mode": "prefix_partition",
+        "support_prefixes": [
+          "Pool Table"
+        ]
+      },
+      "handling": "split_hide_baked_game_pieces",
+      "name": "Pool Table (Animation)",
+      "sampling_status": "ready_specialized",
+      "scene_fit": {
+        "allowed": [
+          "billiards_single_ball",
+          "billiards_collision"
+        ],
+        "forbidden": [
+          "generic_tabletop_motion",
+          "generic_one_object_push"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_18abda12d33b4231aa13f92a291c717e",
+      "component_policy": {
+        "mode": "reject",
+        "reason": "two near-whole overlapping meshes encode a multi-desk office cluster without separable semantic components"
+      },
+      "handling": "reject_overlapping_whole_scene_meshes",
+      "name": "Office Desk_7_MB",
+      "sampling_status": "rejected_v1",
+      "scene_fit": {
+        "allowed": [],
+        "forbidden": [
+          "generic_tabletop_motion",
+          "office_desktop_clutter"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_1ac2a62c52a848bbaf746146dc7253f8",
+      "component_policy": {
+        "interaction_disabled": true,
+        "mode": "keep_whole",
+        "reason": "the complete occupied assembly carries the laboratory semantics; clearing it would discard the useful asset content",
+        "roles": [
+          "cabinet",
+          "occupied_worktop",
+          "shelves",
+          "laboratory_props"
+        ]
+      },
+      "handling": "keep_whole_occupied_lab_background",
+      "name": "lab bench",
+      "sampling_status": "ready_context",
+      "scene_fit": {
+        "allowed": [
+          "laboratory_background",
+          "chemistry_background"
+        ],
+        "forbidden": [
+          "generic_tabletop_motion",
+          "support_surface"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_2039a113435b47d585b2c51e4f3a096d",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_desk_top",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Office Desk - 18MB",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "office_tabletop_motion",
+          "drop_to_surface",
+          "slide_push",
+          "edge_exit"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_28c97506d4fd475ab017c102b670ba12",
+      "component_policy": {
+        "mode": "keep_whole",
+        "proxy_roles": [
+          "bottom",
+          "four_rails"
+        ]
+      },
+      "handling": "keep_whole_container",
+      "name": "Wooden tray",
+      "sampling_status": "ready_static",
+      "scene_fit": {
+        "allowed": [
+          "table_decor",
+          "tray_contained_motion"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_29a550112e7e41528d7d01697231c11b",
+      "component_policy": {
+        "interaction_disabled": true,
+        "mode": "keep_whole",
+        "roles": [
+          "room_shell"
+        ]
+      },
+      "handling": "keep_whole_background",
+      "name": "Wall Floor Model Corner Room",
+      "sampling_status": "ready_context",
+      "scene_fit": {
+        "allowed": [
+          "generic_indoor_background"
+        ],
+        "forbidden": [
+          "authoritative_floor_collision"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_459ebb7c75a14feb8ad690d00a085b9f",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_desk_top",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Office Desk _ 6MB",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "office_tabletop_motion",
+          "drop_to_surface",
+          "slide_push",
+          "edge_exit"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_4bc3743598f7498587468962b3c05e0e",
+      "component_policy": {
+        "interaction_disabled": true,
+        "mode": "keep_whole",
+        "roles": [
+          "wall",
+          "window_panes",
+          "glass",
+          "sills",
+          "handles"
+        ]
+      },
+      "handling": "keep_whole_background",
+      "name": "Wall with Window",
+      "sampling_status": "ready_context",
+      "scene_fit": {
+        "allowed": [
+          "generic_indoor_background",
+          "office_background"
+        ],
+        "forbidden": [
+          "collision_wall",
+          "window_interaction"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_4fa72fdbaa98467bb60d3233d5b36c57",
+      "component_policy": {
+        "interaction_disabled": true,
+        "mode": "keep_whole",
+        "roles": [
+          "window_wall"
+        ]
+      },
+      "handling": "keep_whole_background",
+      "name": "Wall With Window",
+      "sampling_status": "ready_context",
+      "scene_fit": {
+        "allowed": [
+          "generic_indoor_background",
+          "living_room_background"
+        ],
+        "forbidden": [
+          "collision_wall"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_561787127c7f4f31a553171a48be87d9",
+      "component_policy": {
+        "mode": "keep_whole",
+        "proxy_roles": [
+          "bottom",
+          "eight_rails"
+        ]
+      },
+      "handling": "keep_whole_container",
+      "name": "wooden tray",
+      "sampling_status": "ready_static",
+      "scene_fit": {
+        "allowed": [
+          "table_decor",
+          "tray_contained_motion"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_5f00c9981f6a4de99f91b0a34bf88fcb",
+      "component_policy": {
+        "mode": "keep_whole",
+        "proxy_roles": [
+          "bottom",
+          "eight_rails"
+        ]
+      },
+      "handling": "keep_whole_container",
+      "name": "Wooden_Tray",
+      "sampling_status": "ready_static",
+      "scene_fit": {
+        "allowed": [
+          "table_decor",
+          "tray_contained_motion"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_693529b6817a4632bc812394a48f06b0",
+      "component_policy": {
+        "mode": "keep_whole",
+        "roles": [
+          "vintage_desk_lamp"
+        ]
+      },
+      "handling": "keep_whole_static_prop",
+      "name": "Old Desk Lamp",
+      "sampling_status": "ready_static",
+      "scene_fit": {
+        "allowed": [
+          "office_decor",
+          "study_decor"
+        ],
+        "forbidden": [
+          "dynamic_obstacle"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_6d059ad35b194bc589223d7c172666ed",
+      "component_policy": {
+        "mode": "exact_partition",
+        "plate_objects": [
+          "Object_4",
+          "Object_6",
+          "Object_8",
+          "Object_10"
+        ],
+        "proxy_per_component": true
+      },
+      "handling": "keep_four_plate_set",
+      "name": "Ceramic Plate Set",
+      "sampling_status": "ready_static",
+      "scene_fit": {
+        "allowed": [
+          "table_setting_decor"
+        ],
+        "forbidden": [
+          "single_plate_static_prop"
+        ],
+        "pending": [
+          "individual_plate_motion"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_71af93b1d15f4f48ad836d36110626f7",
+      "component_policy": {
+        "interaction_disabled": true,
+        "mode": "keep_whole",
+        "roles": [
+          "shelf",
+          "baked_books"
+        ]
+      },
+      "handling": "keep_whole_background",
+      "name": "Bookshelf [CC0]",
+      "sampling_status": "ready_context",
+      "scene_fit": {
+        "allowed": [
+          "office_background",
+          "study_background",
+          "living_room_background"
+        ],
+        "forbidden": [
+          "support_surface",
+          "dynamic_books"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_7377ec591df04445a1aae370017aaa13",
+      "component_policy": {
+        "articulation_disabled": true,
+        "mode": "keep_whole",
+        "roles": [
+          "base",
+          "arms",
+          "shade"
+        ]
+      },
+      "handling": "keep_whole_articulated_prop",
+      "name": "Desk lamp",
+      "sampling_status": "ready_static",
+      "scene_fit": {
+        "allowed": [
+          "office_decor",
+          "lab_decor"
+        ],
+        "forbidden": [
+          "dynamic_obstacle",
+          "articulated_motion"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_7dc703b7aebb446fb271d71dc8ec3e04",
+      "component_policy": {
+        "interaction_disabled": true,
+        "mode": "keep_whole",
+        "roles": [
+          "window_wall"
+        ]
+      },
+      "handling": "keep_whole_background",
+      "name": "Wall with window",
+      "sampling_status": "ready_context",
+      "scene_fit": {
+        "allowed": [
+          "generic_indoor_background",
+          "office_background"
+        ],
+        "forbidden": [
+          "collision_wall"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_89b2524c56d347fb90c4f0306c169446",
+      "component_policy": {
+        "interaction_disabled": true,
+        "mode": "manual_partition",
+        "primary_structure_object": "Object_4",
+        "reason": "display shelves can occlude moving objects and the tray meshes need independent roles",
+        "separate_tray_objects": [
+          "Object_6",
+          "Object_8",
+          "Object_10",
+          "Object_12",
+          "Object_14"
+        ]
+      },
+      "handling": "keep_whole_context_split_before_interaction",
+      "name": "Store | Kitchen counter with trays",
+      "sampling_status": "ready_context_only",
+      "scene_fit": {
+        "allowed": [
+          "retail_counter_background"
+        ],
+        "forbidden": [
+          "generic_tabletop_motion"
+        ],
+        "pending": [
+          "retail_tray_interaction"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Wooden Table",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "generic_tabletop_motion",
+          "drop_to_surface",
+          "slide_push",
+          "edge_exit"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_8df6adc634bd4004894a5e70565dc52a",
+      "component_policy": {
+        "interaction_disabled": true,
+        "mode": "keep_whole",
+        "roles": [
+          "shelf",
+          "baked_books"
+        ]
+      },
+      "handling": "keep_whole_background",
+      "name": "Bookshelf",
+      "sampling_status": "ready_context",
+      "scene_fit": {
+        "allowed": [
+          "office_background",
+          "study_background",
+          "living_room_background"
+        ],
+        "forbidden": [
+          "support_surface",
+          "dynamic_books"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_93bf119e2bb443b49006c6b12efe06ae",
+      "component_policy": {
+        "excluded_objects": [
+          "Chair_Chair1_0",
+          "Tool_Tools_0"
+        ],
+        "mode": "exact_partition",
+        "reason": "the measured worktop is continuous; chair and unproxied tools are omitted from generic physical scenes",
+        "rendered_objects": [
+          "Table_Table1_0"
+        ],
+        "separate_context_objects": [
+          "Chair_Chair1_0",
+          "Tool_Tools_0"
+        ],
+        "support_objects": [
+          "Table_Table1_0"
+        ]
+      },
+      "handling": "split_to_concave_specialized_support",
+      "name": "Workbench",
+      "sampling_status": "ready_specialized",
+      "scene_fit": {
+        "allowed": [
+          "workbench_clear_zone_drop",
+          "workbench_long_axis_push"
+        ],
+        "forbidden": [
+          "generic_tabletop_motion",
+          "edge_exit",
+          "diagonal_push",
+          "dynamic_tool_collision_without_tool_proxies"
+        ],
+        "pending": [
+          "workbench_tool_interaction"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_9634d6a81a494925a909512c8048f446",
+      "component_policy": {
+        "mode": "reject",
+        "reason": "four large overlapping material meshes each span most of the assembly and do not expose semantic parts"
+      },
+      "handling": "reject_overlapping_material_meshes",
+      "name": "Workbench",
+      "sampling_status": "rejected_v1",
+      "scene_fit": {
+        "allowed": [],
+        "forbidden": [
+          "generic_tabletop_motion",
+          "workbench_tool_interaction"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_96a804790eff41b3b2376f3608fde7df",
+      "component_policy": {
+        "interaction_disabled": true,
+        "mode": "keep_whole",
+        "roles": [
+          "wooden_wall_shelf"
+        ]
+      },
+      "handling": "keep_whole_background",
+      "name": "Wooden Wall Bookshelf",
+      "sampling_status": "ready_context",
+      "scene_fit": {
+        "allowed": [
+          "study_background",
+          "living_room_background"
+        ],
+        "forbidden": [
+          "support_surface",
+          "dynamic_books"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_975887dad9a2474bacb9fec3850c48c5",
+      "component_policy": {
+        "extractable_components": false,
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_static_group",
+      "name": "Stack of Books 3D scan",
+      "sampling_status": "ready_static",
+      "scene_fit": {
+        "allowed": [
+          "office_decor",
+          "study_decor"
+        ],
+        "forbidden": [
+          "individual_book_motion"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_9f203d88994d4ce4a0a32e4fd66a0115",
+      "component_policy": {
+        "extractable_components": true,
+        "mode": "keep_whole",
+        "reason": "fifteen disconnected meshes require a future book-specific layout instead of generic prop placement"
+      },
+      "handling": "exclude_from_generic_static_props",
+      "name": "Books",
+      "sampling_status": "rejected_visual_composition",
+      "scene_fit": {
+        "allowed": [],
+        "forbidden": [
+          "generic_dynamic_object",
+          "generic_static_prop"
+        ],
+        "pending": [
+          "book_domino_interaction"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Wooden Table_8MB",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "generic_tabletop_motion",
+          "drop_to_surface",
+          "slide_push",
+          "edge_exit"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_b9458e04d30e4b6284d46d35880a9b95",
+      "component_policy": {
+        "mode": "keep_whole",
+        "roles": [
+          "banker_lamp"
+        ]
+      },
+      "handling": "keep_whole_static_prop",
+      "name": "Desk lamp",
+      "sampling_status": "ready_static",
+      "scene_fit": {
+        "allowed": [
+          "office_decor",
+          "study_decor"
+        ],
+        "forbidden": [
+          "dynamic_obstacle"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_bb73599044cf49e186b75842d63a280e",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_bench_top",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Bench Table Kit",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "lab_tabletop_motion",
+          "drop_to_surface",
+          "slide_push",
+          "edge_exit"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_c4bcfe2f81ca48198c2459e13e45de43",
+      "component_policy": {
+        "interaction_disabled": true,
+        "mode": "keep_whole",
+        "reason": "the assembly has no continuous 2D support surface and is valuable as laboratory context",
+        "roles": [
+          "rail",
+          "end_supports",
+          "instrument_carriages"
+        ]
+      },
+      "handling": "keep_whole_optical_apparatus_background",
+      "name": "Optical Bench- three uprights",
+      "sampling_status": "ready_context",
+      "scene_fit": {
+        "allowed": [
+          "laboratory_background",
+          "optics_background"
+        ],
+        "forbidden": [
+          "generic_tabletop_motion",
+          "support_surface",
+          "dynamic_obstacle_without_full_multibody_proxy"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_c6ca6667fd7d4381bd184874dcf44075",
+      "component_policy": {
+        "extractable_components": true,
+        "mode": "keep_whole",
+        "reason": "six meshes are visually separate books but remain one decor group in v1"
+      },
+      "handling": "keep_whole_static_group",
+      "name": "Stack Of Old Books",
+      "sampling_status": "ready_static",
+      "scene_fit": {
+        "allowed": [
+          "office_decor",
+          "study_decor"
+        ],
+        "forbidden": [],
+        "pending": [
+          "individual_book_motion"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_d2918a9d978144f38012973b28eea9f6",
+      "component_policy": {
+        "mode": "reject",
+        "reason": "thirteen material-layer meshes overlap the full cabinet assembly and cannot isolate a trustworthy countertop; visual quality is also too low for context admission"
+      },
+      "handling": "reject_overlapping_material_layer_assembly",
+      "name": "Basic Kitchen Cabinets and Counter",
+      "sampling_status": "rejected_v1",
+      "scene_fit": {
+        "allowed": [],
+        "forbidden": [
+          "generic_tabletop_motion",
+          "kitchen_background"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_e0f8dc2f81d440a09e9519fdc9e74cb2",
+      "component_policy": {
+        "interaction_disabled": true,
+        "mode": "keep_whole",
+        "reason": "the complete cubicle composition is useful context, while the desk surface is occluded and not suitable for generic interaction",
+        "roles": [
+          "desk",
+          "chair",
+          "monitor",
+          "drawers",
+          "partitions",
+          "stationery"
+        ]
+      },
+      "handling": "keep_whole_office_cubicle_background",
+      "name": "Office Desk",
+      "sampling_status": "ready_context",
+      "scene_fit": {
+        "allowed": [
+          "office_background",
+          "cubicle_background"
+        ],
+        "forbidden": [
+          "generic_tabletop_motion",
+          "support_surface"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_e46deaab889548948a31e4264de61e5a",
+      "component_policy": {
+        "candidate_surface_objects": [
+          "Kitchen_Top_0"
+        ],
+        "interaction_disabled": true,
+        "mode": "exact_partition",
+        "obstacle_objects": [
+          "Kitchen_Basin_0",
+          "Kitchen_Faucet_0"
+        ],
+        "structure_objects": [
+          "Kitchen_Main_0",
+          "Kitchen_Doors_0",
+          "Kitchen_Handles_0"
+        ]
+      },
+      "handling": "keep_whole_context_split_before_interaction",
+      "name": "Kitchen Counter",
+      "sampling_status": "ready_context_only",
+      "scene_fit": {
+        "allowed": [
+          "kitchen_background"
+        ],
+        "forbidden": [
+          "generic_tabletop_motion"
+        ],
+        "pending": [
+          "kitchen_counter_clear_zone"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_ea1b9673f09b4d809c90ab48b1eceb50",
+      "component_policy": {
+        "mode": "split_required_high_cost",
+        "reason": "eighty-five meshes combine a room-sized ground plane, table, balls, cues, and overhead lights; a cleaner calibrated pool asset already exists",
+        "separate_roles": [
+          "room_ground",
+          "pool_table",
+          "balls",
+          "cue_sticks",
+          "overhead_lamps"
+        ]
+      },
+      "handling": "reject_high_cost_scene_bundle",
+      "name": "Pool Table",
+      "sampling_status": "rejected_v1",
+      "scene_fit": {
+        "allowed": [],
+        "forbidden": [
+          "generic_tabletop_motion",
+          "billiards_collision"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_ec2aafa153214d2aa59d5860caeb8942",
+      "component_policy": {
+        "mode": "variant_select_one",
+        "reason": "the source contains five same-geometry plates with different patterns; metadata selects exactly one",
+        "rendered_object_count": 1,
+        "variant_objects": [
+          "Plate_aiStandardSurface1_0",
+          "Plate1_aiStandardSurface1_0",
+          "Plate2_aiStandardSurface1_0",
+          "Plate3_aiStandardSurface1_0",
+          "Plate4_aiStandardSurface1_0"
+        ]
+      },
+      "handling": "select_one_of_five_plate_variants",
+      "name": "Ceramic Plate",
+      "sampling_status": "ready_static",
+      "scene_fit": {
+        "allowed": [
+          "table_setting_decor",
+          "kitchen_decor",
+          "generic_static_prop"
+        ],
+        "forbidden": [
+          "render_all_five_as_one_small_prop"
+        ],
+        "pending": [
+          "individual_plate_motion"
+        ]
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_fb3d849c6de346079d338251533a84e6",
+      "component_policy": {
+        "interaction_disabled": true,
+        "mode": "keep_whole",
+        "roles": [
+          "decorative_wall"
+        ]
+      },
+      "handling": "keep_whole_background",
+      "name": "Graffiti on a wall - Low Poly",
+      "sampling_status": "ready_context",
+      "scene_fit": {
+        "allowed": [
+          "urban_indoor_background",
+          "workshop_background"
+        ],
+        "forbidden": [
+          "support_surface"
+        ]
+      }
+    },
+    {
+      "asset_id": "support_concrete_desk_ce2eb8c2",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Industrial Concrete and Metal Desk",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "drop_to_surface"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "support_dining_table_ed94c79a",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Large Dining Table",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "drop_to_surface"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "support_old_table_e53a5ef2",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Old Wooden Table",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "drop_to_surface"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "support_pub_table_9e540ae2",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Tall Pub Table",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "drop_to_surface"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "support_rattan_coffee_c434f22e",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Coffee Tables Three Legs with Rattan I Low-Poly",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "drop_to_surface"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "support_school_desk_4044a253",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "School desk",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "drop_to_surface"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "support_school_picnic_8e2a51a4",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "School Picnic Table | Game Ready | 4K",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "drop_to_surface"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "support_weathered_round_6cd4d250",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Weathered Round Table  Metal Top & Wooden Legs",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "drop_to_surface"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "support_wood_table_4618e562",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Wooden Table (game ready asset)",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "drop_to_surface"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "support_work_table_239b18eb",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Work Table",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "drop_to_surface"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "support_workbench_01c0b599",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Workbench Low-poly",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "drop_to_surface"
+        ],
+        "forbidden": []
+      }
+    },
+    {
+      "asset_id": "support_writing_desk_f411b33b",
+      "component_policy": {
+        "interaction_surface": "registered_continuous_tabletop",
+        "mode": "keep_whole"
+      },
+      "handling": "keep_whole_support",
+      "name": "Writing Desk",
+      "sampling_status": "ready_generic",
+      "scene_fit": {
+        "allowed": [
+          "drop_to_surface"
+        ],
+        "forbidden": []
+      }
+    }
+  ],
+  "version": "physweep_asset_scene_composition_v2"
+}

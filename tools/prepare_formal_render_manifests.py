@@ -1,0 +1,344 @@
+#!/usr/bin/env python3
+"""Prepare immutable branch manifests for a staged PhysSweep render."""
+
+from __future__ import annotations
+
+import argparse
+import copy
+import hashlib
+import json
+import random
+import shutil
+from collections import Counter
+from pathlib import Path
+from typing import Any
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def load_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def write_json(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(value, indent=2, ensure_ascii=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def root_relative(root: Path, path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return str(resolved.relative_to(root))
+    except ValueError:
+        return str(resolved)
+
+
+def choose_one(
+    records: list[dict[str, Any]],
+    key: str,
+    value: str,
+    seed: str,
+) -> dict[str, Any]:
+    candidates = sorted(
+        (record for record in records if str(record[key]) == value),
+        key=lambda record: str(record["scene_id"]),
+    )
+    if not candidates:
+        raise ValueError(f"no candidate for {key}={value}")
+    return candidates[random.Random(seed).randrange(len(candidates))]
+
+
+def choose_unselected(
+    records: list[dict[str, Any]],
+    key: str,
+    value: str,
+    seed: str,
+    selected_ids: set[str],
+) -> dict[str, Any]:
+    candidates = [
+        record
+        for record in records
+        if str(record[key]) == value
+        and str(record["scene_id"]) not in selected_ids
+    ]
+    if not candidates:
+        raise ValueError(f"no unselected candidate for {key}={value}")
+    candidates.sort(key=lambda record: str(record["scene_id"]))
+    return candidates[random.Random(seed).randrange(len(candidates))]
+
+
+def pilot_selection(manifest: dict[str, Any]) -> list[dict[str, Any]]:
+    records = list(manifest["records"])
+    generic = [record for record in records if record["pipeline"] == "generic_pybullet"]
+    assets = [record for record in records if record["pipeline"] == "asset_proxy"]
+    billiards = [record for record in records if record["pipeline"] == "billiards"]
+    dataset_id = str(manifest["dataset_id"])
+
+    chosen: list[dict[str, Any]] = []
+    for motion in sorted({str(record["motion_intent"]) for record in generic}):
+        chosen.append(
+            choose_one(generic, "motion_intent", motion, f"{dataset_id}:generic:{motion}")
+        )
+    for profile in sorted({str(record["profile"]) for record in assets}):
+        chosen.append(
+            choose_one(assets, "profile", profile, f"{dataset_id}:asset:{profile}")
+        )
+    for profile in sorted({str(record["profile"]) for record in billiards}):
+        chosen.append(
+            choose_one(
+                billiards,
+                "profile",
+                profile,
+                f"{dataset_id}:billiards:{profile}",
+            )
+        )
+
+    chosen_ids = {str(record["scene_id"]) for record in chosen}
+    remaining_generic = [
+        record for record in generic if str(record["scene_id"]) not in chosen_ids
+    ]
+    extra = random.Random(f"{dataset_id}:generic:extra").choice(remaining_generic)
+    chosen.append(extra)
+    chosen.sort(key=lambda record: int(record["index"]))
+    if len(chosen) != 20:
+        raise ValueError(f"pilot selection must contain 20 records, got {len(chosen)}")
+    return chosen
+
+
+def pilot40_selection(manifest: dict[str, Any]) -> list[dict[str, Any]]:
+    records = list(manifest["records"])
+    chosen = pilot_selection(manifest)
+    selected_ids = {str(record["scene_id"]) for record in chosen}
+    dataset_id = str(manifest["dataset_id"])
+
+    groups = (
+        (
+            [record for record in records if record["pipeline"] == "generic_pybullet"],
+            "motion_intent",
+            "generic",
+        ),
+        (
+            [record for record in records if record["pipeline"] == "asset_proxy"],
+            "profile",
+            "asset",
+        ),
+        (
+            [record for record in records if record["pipeline"] == "billiards"],
+            "profile",
+            "billiards",
+        ),
+    )
+    # pilot_selection already keeps one example for each billiards profile.
+    # Do not add a second coverage layer for billiards; use generic scenes to
+    # fill the fixed-size visual review set instead.
+    for pool, key, label in groups[:2]:
+        for value in sorted({str(record[key]) for record in pool}):
+            extra = choose_unselected(
+                pool,
+                key,
+                value,
+                f"{dataset_id}:{label}:extra:{value}",
+                selected_ids,
+            )
+            chosen.append(extra)
+            selected_ids.add(str(extra["scene_id"]))
+
+    while len(chosen) < 40:
+        remaining_generic = [
+            record
+            for record in records
+            if record["pipeline"] == "generic_pybullet"
+            and str(record["scene_id"]) not in selected_ids
+        ]
+        if not remaining_generic:
+            raise ValueError("not enough generic records to fill pilot40 selection")
+        remaining_generic.sort(key=lambda record: str(record["scene_id"]))
+        extra = random.Random(
+            f"{dataset_id}:generic:extra40:{len(chosen)}"
+        ).choice(remaining_generic)
+        chosen.append(extra)
+        selected_ids.add(str(extra["scene_id"]))
+    if len(chosen) != 40:
+        raise ValueError(f"pilot40 selection must contain 40 records, got {len(chosen)}")
+    chosen.sort(key=lambda record: int(record["index"]))
+    return chosen
+
+
+def update_counts(manifest: dict[str, Any], records: list[dict[str, Any]]) -> None:
+    manifest["sample_count"] = len(records)
+    manifest["motion_counts"] = dict(
+        sorted(Counter(str(record["motion_intent"]) for record in records).items())
+    )
+    manifest["environment_counts"] = dict(
+        sorted(Counter(str(record["environment_id"]) for record in records).items())
+    )
+    manifest["profile_counts"] = dict(
+        sorted(Counter(str(record["profile"]) for record in records).items())
+    )
+    manifest["records"] = records
+
+
+def stage_render_record(
+    root: Path,
+    source_record: dict[str, Any],
+    output_root: Path,
+) -> dict[str, Any]:
+    record = copy.deepcopy(source_record)
+    source_path = root / str(record["metadata_path"])
+    source_hash = sha256(source_path)
+    declared_hash = record.get("metadata_sha256")
+    if declared_hash is not None and str(declared_hash) != source_hash:
+        raise ValueError(f"source metadata hash mismatch: {source_path}")
+    scene_id = str(record["scene_id"])
+    record["metadata_path"] = root_relative(root, source_path)
+    record["metadata_sha256"] = source_hash
+    record["render_output"] = {
+        "video_path": root_relative(root, output_root / "videos" / f"{scene_id}.mp4"),
+        "inspection_frame_dir": root_relative(root, output_root / "frames" / scene_id),
+    }
+    return record
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
+    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument(
+        "--selection", choices=("pilot20", "pilot40", "all"), default="pilot20"
+    )
+    parser.add_argument("--overwrite", action="store_true")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    root = args.root.resolve()
+    source_manifest_path = args.manifest.resolve()
+    source_manifest = load_json(source_manifest_path)
+    output_root = args.output_root.resolve()
+    if output_root.exists():
+        if not args.overwrite:
+            raise SystemExit(f"output exists; pass --overwrite: {output_root}")
+        shutil.rmtree(output_root)
+    output_root.mkdir(parents=True)
+
+    records = (
+        pilot_selection(source_manifest)
+        if args.selection == "pilot20"
+        else pilot40_selection(source_manifest)
+        if args.selection == "pilot40"
+        else list(source_manifest["records"])
+    )
+    selected_by_pipeline = {
+        pipeline: [record for record in records if record["pipeline"] == pipeline]
+        for pipeline in ("generic_pybullet", "asset_proxy", "billiards")
+    }
+
+    source_generic_path = root / str(source_manifest["generic_manifest_path"])
+    source_generic = load_json(source_generic_path)
+    selected_generic_paths = {
+        str(record["metadata_path"])
+        for record in selected_by_pipeline["generic_pybullet"]
+    }
+    generic_samples = [
+        sample
+        for sample in source_generic["samples"]
+        if str(sample["metadata_path"]) in selected_generic_paths
+    ]
+    if len(generic_samples) != len(selected_generic_paths):
+        raise ValueError("generic render selection does not match source manifest")
+    generic_source = copy.deepcopy(source_generic)
+    generic_source["sample_count"] = len(generic_samples)
+    generic_source["samples"] = generic_samples
+    generic_source_path = output_root / "manifests" / "generic_source_manifest.json"
+    write_json(generic_source_path, generic_source)
+
+    source_asset_path = root / str(source_manifest["asset_proxy_manifest_path"])
+    source_asset = load_json(source_asset_path)
+    selected_child_ids = {
+        str(record["child_scene_id"])
+        for record in selected_by_pipeline["asset_proxy"]
+    }
+    source_asset_records = {
+        str(record["scene_id"]): record for record in source_asset["records"]
+    }
+    asset_root = output_root / "asset"
+    staged_asset_records = []
+    for scene_id in sorted(selected_child_ids):
+        staged_asset_records.append(
+            stage_render_record(root, source_asset_records[scene_id], asset_root)
+        )
+    asset_manifest = copy.deepcopy(source_asset)
+    asset_manifest["dataset_id"] = f"{source_manifest['dataset_id']}__{args.selection}"
+    asset_manifest["output_root"] = str(asset_root)
+    asset_manifest["sample_count"] = len(staged_asset_records)
+    asset_manifest["passed_count"] = len(staged_asset_records)
+    asset_manifest["records"] = staged_asset_records
+    asset_manifest_path = asset_root / "asset_render_manifest.json"
+    write_json(asset_manifest_path, asset_manifest)
+
+    billiards_root = output_root / "billiards"
+    billiards_metadata_paths = []
+    billiards_records = []
+    for outer_record in selected_by_pipeline["billiards"]:
+        staged_record = stage_render_record(root, outer_record, billiards_root)
+        billiards_records.append(staged_record)
+        billiards_metadata_paths.append(str(staged_record["metadata_path"]))
+    billiards_manifest = {
+        "schema_version": "physweep_billiards_staged_manifest_v1",
+        "dataset_id": f"{source_manifest['dataset_id']}__{args.selection}",
+        "source_manifest": str(source_manifest_path),
+        "billiards_metadata_paths": billiards_metadata_paths,
+        "records": billiards_records,
+    }
+    billiards_manifest_path = billiards_root / "billiards_manifest.json"
+    write_json(billiards_manifest_path, billiards_manifest)
+
+    staged_outer = copy.deepcopy(source_manifest)
+    staged_outer["dataset_id"] = f"{source_manifest['dataset_id']}__{args.selection}"
+    staged_outer["source_manifest"] = str(source_manifest_path)
+    staged_outer["selection"] = args.selection
+    update_counts(staged_outer, records)
+    staged_outer["generic_manifest_path"] = root_relative(root, generic_source_path)
+    staged_outer["asset_proxy_manifest_path"] = root_relative(root, asset_manifest_path)
+    staged_outer["billiards_metadata_paths"] = billiards_metadata_paths
+    outer_manifest_path = output_root / "staged_manifest.json"
+    write_json(outer_manifest_path, staged_outer)
+
+    plan = {
+        "schema_version": "physweep_staged_render_plan_v1",
+        "selection": args.selection,
+        "sample_count": len(records),
+        "pipeline_counts": {
+            pipeline: len(values) for pipeline, values in selected_by_pipeline.items()
+        },
+        "source_manifest": str(source_manifest_path),
+        "staged_manifest": str(outer_manifest_path),
+        "generic_source_manifest": str(generic_source_path),
+        "generic_bound_manifest": str(output_root / "generic" / "bound_manifest.json"),
+        "generic_render_manifest": str(output_root / "generic" / "render_manifest.json"),
+        "asset_render_input_manifest": str(asset_manifest_path),
+        "asset_render_manifest": str(asset_root / "render_manifest.json"),
+        "billiards_render_input_manifest": str(billiards_manifest_path),
+        "billiards_render_manifest": str(billiards_root / "billiards_render_manifest.json"),
+        "collected_output": str(output_root / "collected"),
+    }
+    write_json(output_root / "render_plan.json", plan)
+    print(json.dumps(plan, indent=2, ensure_ascii=True))
+
+
+if __name__ == "__main__":
+    main()

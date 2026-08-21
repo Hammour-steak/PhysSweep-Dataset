@@ -1,0 +1,1708 @@
+{
+  "version": "physweep_polyhaven_curated_v2_1_self_contained",
+  "preview_pages_dir": "assets/material_curation/previews_polyhaven_v2_1",
+  "count": 95,
+  "quality_counts": {
+    "core": 43,
+    "exclude_v0": 16,
+    "usable_watch": 36
+  },
+  "role_counts": {
+    "foreground_object": 16,
+    "natural_ground": 43,
+    "support_surface": 29,
+    "wall_background": 23
+  },
+  "domain_counts": {
+    "natural_cracked_mud": 1,
+    "natural_gravel": 2,
+    "natural_gravel_mottled": 1,
+    "natural_gravel_rock": 2,
+    "natural_mud": 2,
+    "natural_pebble": 3,
+    "natural_red_soil": 4,
+    "natural_rock": 2,
+    "natural_rock_moss": 1,
+    "natural_sand": 5,
+    "natural_sand_gravel": 1,
+    "natural_shell_pebble": 1,
+    "natural_soil": 4,
+    "natural_soil_rock": 2,
+    "natural_trail": 1,
+    "object_leather": 1,
+    "organic_debris": 1,
+    "organic_grass_path": 1,
+    "organic_grass_rock": 1,
+    "organic_grass_soil": 1,
+    "organic_leaf_floor": 4,
+    "organic_mud_leaves": 1,
+    "snow": 2,
+    "support_brick_floor": 1,
+    "support_concrete": 4,
+    "support_concrete_gravel": 2,
+    "support_rubber": 1,
+    "support_stone": 2,
+    "support_tile": 1,
+    "support_tile_pavement": 3,
+    "support_wood_clean": 6,
+    "support_wood_dark": 2,
+    "support_wood_laminate": 2,
+    "support_wood_parquet": 3,
+    "support_wood_worn": 1,
+    "wall_brick_light": 3,
+    "wall_brick_mixed": 1,
+    "wall_brick_plaster": 1,
+    "wall_brick_red": 7,
+    "wall_plaster": 2,
+    "wall_plaster_plain": 3,
+    "wall_plaster_rough": 1,
+    "wall_stone_block": 4,
+    "wall_stone_plain": 1
+  },
+  "classification_rules": {
+    "core": "Stable for current v0 sampler in its allowed roles.",
+    "usable_watch": "Context-limited; can be used in later/outdoor/background scenes but should be sampled at lower rate and visually gated.",
+    "exclude_v0": "Kept in the library but excluded from current v0 automatic sampling.",
+    "allowed_roles": "A texture may be good as a wall or natural ground but invalid as a tabletop/support."
+  },
+  "assets": [
+    {
+      "asset_id": "aerial_beach_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/aerial_beach_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/aerial_beach_01_4k/textures/aerial_beach_01_diff_4k.jpg",
+      "domain_family": "natural_sand",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "large-scale beach sand; outdoor/sand only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "aerial_grass_rock_4k",
+      "asset_dir": "assets/library/polyhaven/materials/aerial_grass_rock_4k",
+      "color_texture": "assets/library/polyhaven/materials/aerial_grass_rock_4k/textures/aerial_grass_rock_diff_4k.jpg",
+      "domain_family": "organic_grass_rock",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "moss/grass patches read as aerial terrain; avoid simple tabletop",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "aerial_ground_rock_4k",
+      "asset_dir": "assets/library/polyhaven/materials/aerial_ground_rock_4k",
+      "color_texture": "assets/library/polyhaven/materials/aerial_ground_rock_4k/textures/aerial_ground_rock_diff_4k.jpg",
+      "domain_family": "natural_soil_rock",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "rough outdoor dirt/rock; not clean support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "aerial_rocks_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/aerial_rocks_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/aerial_rocks_01_4k/textures/aerial_rocks_01_diff_4k.jpg",
+      "domain_family": "natural_gravel_rock",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "large stones and grass; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "aerial_wood_snips_4k",
+      "asset_dir": "assets/library/polyhaven/materials/aerial_wood_snips_4k",
+      "color_texture": "assets/library/polyhaven/materials/aerial_wood_snips_4k/textures/aerial_wood_snips_diff_4k.jpg",
+      "domain_family": "organic_debris",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "wood-chip/debris semantics too strong for v0",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "beige_wall_001_4k",
+      "asset_dir": "assets/library/polyhaven/materials/beige_wall_001_4k",
+      "color_texture": "assets/library/polyhaven/materials/beige_wall_001_4k/textures/beige_wall_001_diff_4k.jpg",
+      "domain_family": "wall_plaster_plain",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "very flat beige wall; usable with stronger shadow only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "blue_floor_tiles_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/blue_floor_tiles_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/blue_floor_tiles_01_4k/textures/blue_floor_tiles_01_diff_4k.jpg",
+      "domain_family": "support_tile",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.8,
+        3.4
+      ],
+      "curation_notes": "regular tile/paver surface; good controlled support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "brick_4_4k",
+      "asset_dir": "assets/library/polyhaven/materials/brick_4_4k",
+      "color_texture": "assets/library/polyhaven/materials/brick_4_4k/textures/brick_4_diff_4k.jpg",
+      "domain_family": "wall_brick_red",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "clean red brick wall background",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "brick_floor_003_4k",
+      "asset_dir": "assets/library/polyhaven/materials/brick_floor_003_4k",
+      "color_texture": "assets/library/polyhaven/materials/brick_floor_003_4k/textures/brick_floor_003_diffuse_4k.jpg",
+      "domain_family": "support_brick_floor",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "support_surface"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        1.8,
+        3.4
+      ],
+      "curation_notes": "brick floor, a bit dark/patterned",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "brick_wall_001_4k",
+      "asset_dir": "assets/library/polyhaven/materials/brick_wall_001_4k",
+      "color_texture": "assets/library/polyhaven/materials/brick_wall_001_4k/textures/brick_wall_001_diffuse_4k.jpg",
+      "domain_family": "wall_brick_red",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "varied brick wall; good background",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "brick_wall_003_4k",
+      "asset_dir": "assets/library/polyhaven/materials/brick_wall_003_4k",
+      "color_texture": "assets/library/polyhaven/materials/brick_wall_003_4k/textures/brick_wall_003_diffuse_4k.jpg",
+      "domain_family": "wall_brick_light",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "light brick wall; controlled wall background",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "brick_wall_005_4k",
+      "asset_dir": "assets/library/polyhaven/materials/brick_wall_005_4k",
+      "color_texture": "assets/library/polyhaven/materials/brick_wall_005_4k/textures/brick_wall_005_diff_4k.jpg",
+      "domain_family": "wall_brick_red",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "rough brick wall; good background",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "brick_wall_006_4k",
+      "asset_dir": "assets/library/polyhaven/materials/brick_wall_006_4k",
+      "color_texture": "assets/library/polyhaven/materials/brick_wall_006_4k/textures/brick_wall_006_diff_4k.jpg",
+      "domain_family": "wall_brick_red",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "fine brick wall; good background",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "brown_mud_03_4k",
+      "asset_dir": "assets/library/polyhaven/materials/brown_mud_03_4k",
+      "color_texture": "assets/library/polyhaven/materials/brown_mud_03_4k/textures/brown_mud_03_diff_4k.jpg",
+      "domain_family": "natural_mud",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "lumpy mud reads wet/uneven; avoid current rigid support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "brown_mud_leaves_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/brown_mud_leaves_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/brown_mud_leaves_01_4k/textures/brown_mud_leaves_01_diff_4k.jpg",
+      "domain_family": "organic_mud_leaves",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "leaf/mud clutter too semantic",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "castle_brick_02_red_4k",
+      "asset_dir": "assets/library/polyhaven/materials/castle_brick_02_red_4k",
+      "color_texture": "assets/library/polyhaven/materials/castle_brick_02_red_4k/textures/castle_brick_02_red_diff_4k.jpg",
+      "domain_family": "wall_brick_red",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "aged brick wall background",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "clean_pebbles_4k",
+      "asset_dir": "assets/library/polyhaven/materials/clean_pebbles_4k",
+      "color_texture": "assets/library/polyhaven/materials/clean_pebbles_4k/textures/clean_pebbles_diff_4k.jpg",
+      "domain_family": "natural_pebble",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "pebbles are high frequency; use only outdoor/ground",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "coast_land_rocks_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/coast_land_rocks_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/coast_land_rocks_01_4k/textures/coast_land_rocks_01_diff_4k.jpg",
+      "domain_family": "natural_rock_moss",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "mottled moss/rock looks noisy and dirty",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "coast_sand_02_4k",
+      "asset_dir": "assets/library/polyhaven/materials/coast_sand_02_4k",
+      "color_texture": "assets/library/polyhaven/materials/coast_sand_02_4k/textures/coast_sand_02_diff_4k.jpg",
+      "domain_family": "natural_sand",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "sand/soil outdoor surface",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "coast_sand_03_4k",
+      "asset_dir": "assets/library/polyhaven/materials/coast_sand_03_4k",
+      "color_texture": "assets/library/polyhaven/materials/coast_sand_03_4k/textures/coast_sand_03_diff_4k.jpg",
+      "domain_family": "natural_sand",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "sand outdoor surface",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "coast_sand_04_4k",
+      "asset_dir": "assets/library/polyhaven/materials/coast_sand_04_4k",
+      "color_texture": "assets/library/polyhaven/materials/coast_sand_04_4k/textures/coast_sand_04_diff_4k.jpg",
+      "domain_family": "natural_sand",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "damp sand/soil outdoor surface",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "concrete_floor_worn_001_4k",
+      "asset_dir": "assets/library/polyhaven/materials/concrete_floor_worn_001_4k",
+      "color_texture": "assets/library/polyhaven/materials/concrete_floor_worn_001_4k/textures/concrete_floor_worn_001_diff_4k.jpg",
+      "domain_family": "support_concrete",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        1.2,
+        2.4
+      ],
+      "curation_notes": "clean industrial concrete; good support/object",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "coral_gravel_4k",
+      "asset_dir": "assets/library/polyhaven/materials/coral_gravel_4k",
+      "color_texture": "assets/library/polyhaven/materials/coral_gravel_4k/textures/coral_gravel_diff_4k.jpg",
+      "domain_family": "natural_gravel",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "coarse gravel; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "coral_ground_02_4k",
+      "asset_dir": "assets/library/polyhaven/materials/coral_ground_02_4k",
+      "color_texture": "assets/library/polyhaven/materials/coral_ground_02_4k/textures/coral_ground_02_diff_4k.jpg",
+      "domain_family": "natural_gravel_mottled",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "mottled coral ground looks noisy",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "damaged_concrete_floor_02_4k",
+      "asset_dir": "assets/library/polyhaven/materials/damaged_concrete_floor_02_4k",
+      "color_texture": "assets/library/polyhaven/materials/damaged_concrete_floor_02_4k/textures/damaged_concrete_floor_02_diff_4k.jpg",
+      "domain_family": "support_concrete",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.2,
+        2.4
+      ],
+      "curation_notes": "worn concrete but still controlled",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "dark_wood_4k",
+      "asset_dir": "assets/library/polyhaven/materials/dark_wood_4k",
+      "color_texture": "assets/library/polyhaven/materials/dark_wood_4k/textures/dark_wood_diff_4k.jpg",
+      "domain_family": "support_wood_dark",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        1.6,
+        3.0
+      ],
+      "curation_notes": "good dark table/floor wood",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "diagonal_parquet_4k",
+      "asset_dir": "assets/library/polyhaven/materials/diagonal_parquet_4k",
+      "color_texture": "assets/library/polyhaven/materials/diagonal_parquet_4k/textures/diagonal_parquet_diff_4k.jpg",
+      "domain_family": "support_wood_parquet",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.6,
+        3.0
+      ],
+      "curation_notes": "parquet floor; controlled patterned support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "dirt_aerial_03_4k",
+      "asset_dir": "assets/library/polyhaven/materials/dirt_aerial_03_4k",
+      "color_texture": "assets/library/polyhaven/materials/dirt_aerial_03_4k/textures/dirt_aerial_03_diff_4k.jpg",
+      "domain_family": "natural_soil",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "outdoor soil texture; not tabletop",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "dirt_floor_4k",
+      "asset_dir": "assets/library/polyhaven/materials/dirt_floor_4k",
+      "color_texture": "assets/library/polyhaven/materials/dirt_floor_4k/textures/dirt_floor_diff_4k.jpg",
+      "domain_family": "natural_soil",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground",
+        "support_surface"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "plain dirt floor; only rustic/outdoor support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "dry_ground_rocks_4k",
+      "asset_dir": "assets/library/polyhaven/materials/dry_ground_rocks_4k",
+      "color_texture": "assets/library/polyhaven/materials/dry_ground_rocks_4k/textures/dry_ground_rocks_diff_4k.jpg",
+      "domain_family": "natural_soil_rock",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "dry ground with stones; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "dry_mud_field_001_4k",
+      "asset_dir": "assets/library/polyhaven/materials/dry_mud_field_001_4k",
+      "color_texture": "assets/library/polyhaven/materials/dry_mud_field_001_4k/textures/dry_mud_field_001_diff_4k.jpg",
+      "domain_family": "natural_mud",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "mud field looks too uneven/noisy",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "fabric_leather_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/fabric_leather_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/fabric_leather_01_4k/textures/fabric_leather_01_diff_4k.jpg",
+      "domain_family": "object_leather",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "foreground_object"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        0.7,
+        1.5
+      ],
+      "curation_notes": "good for object/furniture material, not main support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "fine_grained_wood_4k",
+      "asset_dir": "assets/library/polyhaven/materials/fine_grained_wood_4k",
+      "color_texture": "assets/library/polyhaven/materials/fine_grained_wood_4k/textures/fine_grained_wood_col_4k.jpg",
+      "domain_family": "support_wood_clean",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        1.6,
+        3.0
+      ],
+      "curation_notes": "fine wood grain; good object/table",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "floor_pavement_4k",
+      "asset_dir": "assets/library/polyhaven/materials/floor_pavement_4k",
+      "color_texture": "assets/library/polyhaven/materials/floor_pavement_4k/textures/floor_pavement_diff_4k.jpg",
+      "domain_family": "support_tile_pavement",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.8,
+        3.4
+      ],
+      "curation_notes": "regular pale pavement; stable floor support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "floor_pebbles_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/floor_pebbles_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/floor_pebbles_01_4k/textures/floor_pebbles_01_diff_4k.jpg",
+      "domain_family": "natural_pebble",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "pebble floor high frequency; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "forest_floor_4k",
+      "asset_dir": "assets/library/polyhaven/materials/forest_floor_4k",
+      "color_texture": "assets/library/polyhaven/materials/forest_floor_4k/textures/forest_floor_diff_4k.jpg",
+      "domain_family": "organic_leaf_floor",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "fallen leaves too semantic/noisy",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "forest_leaves_02_4k",
+      "asset_dir": "assets/library/polyhaven/materials/forest_leaves_02_4k",
+      "color_texture": "assets/library/polyhaven/materials/forest_leaves_02_4k/textures/forest_leaves_02_diffuse_4k.jpg",
+      "domain_family": "organic_leaf_floor",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "leaf/grass patches too semantic",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "forest_leaves_04_4k",
+      "asset_dir": "assets/library/polyhaven/materials/forest_leaves_04_4k",
+      "color_texture": "assets/library/polyhaven/materials/forest_leaves_04_4k/textures/forest_leaves_04_diff_4k.jpg",
+      "domain_family": "organic_leaf_floor",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "leaf litter too semantic",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "forrest_ground_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/forrest_ground_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/forrest_ground_01_4k/textures/forrest_ground_01_diff_4k.jpg",
+      "domain_family": "organic_grass_soil",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "grass-dominant surface; avoid v0",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "forrest_ground_03_4k",
+      "asset_dir": "assets/library/polyhaven/materials/forrest_ground_03_4k",
+      "color_texture": "assets/library/polyhaven/materials/forrest_ground_03_4k/textures/forrest_ground_03_diff_4k.jpg",
+      "domain_family": "natural_soil",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "plain forest soil; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "garage_floor_4k",
+      "asset_dir": "assets/library/polyhaven/materials/garage_floor_4k",
+      "color_texture": "assets/library/polyhaven/materials/garage_floor_4k/textures/garage_floor_diff_4k.jpg",
+      "domain_family": "support_concrete",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.2,
+        2.4
+      ],
+      "curation_notes": "garage concrete; good controlled support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "grass_path_3_4k",
+      "asset_dir": "assets/library/polyhaven/materials/grass_path_3_4k",
+      "color_texture": "assets/library/polyhaven/materials/grass_path_3_4k/textures/grass_path_3_diff_4k.jpg",
+      "domain_family": "organic_grass_path",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "grass/moss path too organic for v0",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "gravel_concrete_4k",
+      "asset_dir": "assets/library/polyhaven/materials/gravel_concrete_4k",
+      "color_texture": "assets/library/polyhaven/materials/gravel_concrete_4k/textures/gravel_concrete_diff_4k.jpg",
+      "domain_family": "support_concrete_gravel",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.2,
+        2.4
+      ],
+      "curation_notes": "fine gravel concrete; controlled support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "gravel_embedded_concrete_4k",
+      "asset_dir": "assets/library/polyhaven/materials/gravel_embedded_concrete_4k",
+      "color_texture": "assets/library/polyhaven/materials/gravel_embedded_concrete_4k/textures/gravel_embedded_concrete_diff_4k.jpg",
+      "domain_family": "support_concrete_gravel",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.2,
+        2.4
+      ],
+      "curation_notes": "embedded gravel concrete; controlled support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "gravel_ground_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/gravel_ground_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/gravel_ground_01_4k/textures/gravel_ground_01_diff_4k.jpg",
+      "domain_family": "natural_gravel",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "rough gravel ground; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "ground_grey_4k",
+      "asset_dir": "assets/library/polyhaven/materials/ground_grey_4k",
+      "color_texture": "assets/library/polyhaven/materials/ground_grey_4k/textures/ground_grey_diff_4k.jpg",
+      "domain_family": "support_concrete",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.2,
+        2.4
+      ],
+      "curation_notes": "neutral grey ground; good support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "herringbone_parquet_4k",
+      "asset_dir": "assets/library/polyhaven/materials/herringbone_parquet_4k",
+      "color_texture": "assets/library/polyhaven/materials/herringbone_parquet_4k/textures/herringbone_parquet_diff_4k.jpg",
+      "domain_family": "support_wood_parquet",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.6,
+        3.0
+      ],
+      "curation_notes": "wood parquet floor; good support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "kitchen_wood_4k",
+      "asset_dir": "assets/library/polyhaven/materials/kitchen_wood_4k",
+      "color_texture": "assets/library/polyhaven/materials/kitchen_wood_4k/textures/kitchen_wood_diff_4k.jpg",
+      "domain_family": "support_wood_clean",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.6,
+        3.0
+      ],
+      "curation_notes": "wood plank/table-like surface",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "laminate_floor_03_4k",
+      "asset_dir": "assets/library/polyhaven/materials/laminate_floor_03_4k",
+      "color_texture": "assets/library/polyhaven/materials/laminate_floor_03_4k/textures/laminate_floor_03_diff_4k.jpg",
+      "domain_family": "support_wood_laminate",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.6,
+        3.0
+      ],
+      "curation_notes": "laminate floor; stable support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "laminate_floor_4k",
+      "asset_dir": "assets/library/polyhaven/materials/laminate_floor_4k",
+      "color_texture": "assets/library/polyhaven/materials/laminate_floor_4k/textures/laminate_floor_diff_4k.jpg",
+      "domain_family": "support_wood_laminate",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.6,
+        3.0
+      ],
+      "curation_notes": "laminate floor; stable support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "leaves_forest_ground_4k",
+      "asset_dir": "assets/library/polyhaven/materials/leaves_forest_ground_4k",
+      "color_texture": "assets/library/polyhaven/materials/leaves_forest_ground_4k/textures/leaves_forest_ground_diff_4k.jpg",
+      "domain_family": "organic_leaf_floor",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "leaf clutter too semantic",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "medieval_blocks_03_4k",
+      "asset_dir": "assets/library/polyhaven/materials/medieval_blocks_03_4k",
+      "color_texture": "assets/library/polyhaven/materials/medieval_blocks_03_4k/textures/medieval_blocks_03_diff_4k.jpg",
+      "domain_family": "wall_stone_block",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "stone block wall/background",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "mud_cracked_dry_riverbed_002_4k",
+      "asset_dir": "assets/library/polyhaven/materials/mud_cracked_dry_riverbed_002_4k",
+      "color_texture": "assets/library/polyhaven/materials/mud_cracked_dry_riverbed_002_4k/textures/mud_cracked_dry_riverbed_002_diff_4k.jpg",
+      "domain_family": "natural_cracked_mud",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "cracked mud has strong scale/semantic pattern",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "oak_veneer_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/oak_veneer_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/oak_veneer_01_4k/textures/oak_veneer_01_diff_4k.jpg",
+      "domain_family": "support_wood_clean",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.6,
+        3.0
+      ],
+      "curation_notes": "clean oak veneer; good table/object",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "painted_plaster_wall_4k",
+      "asset_dir": "assets/library/polyhaven/materials/painted_plaster_wall_4k",
+      "color_texture": "assets/library/polyhaven/materials/painted_plaster_wall_4k/textures/painted_plaster_wall_diff_4k.jpg",
+      "domain_family": "wall_plaster",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "painted plaster wall; good background",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "park_dirt_4k",
+      "asset_dir": "assets/library/polyhaven/materials/park_dirt_4k",
+      "color_texture": "assets/library/polyhaven/materials/park_dirt_4k/textures/park_dirt_diff_4k.jpg",
+      "domain_family": "natural_soil",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "park dirt; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "pavement_03_4k",
+      "asset_dir": "assets/library/polyhaven/materials/pavement_03_4k",
+      "color_texture": "assets/library/polyhaven/materials/pavement_03_4k/textures/pavement_03_diff_4k.jpg",
+      "domain_family": "support_tile_pavement",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.8,
+        3.4
+      ],
+      "curation_notes": "stone/pavement tiles; good floor support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "pavement_04_4k",
+      "asset_dir": "assets/library/polyhaven/materials/pavement_04_4k",
+      "color_texture": "assets/library/polyhaven/materials/pavement_04_4k/textures/pavement_04_diff_4k.jpg",
+      "domain_family": "support_tile_pavement",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "support_surface"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        1.8,
+        3.4
+      ],
+      "curation_notes": "dark small pavers; usable but may reduce object contrast",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "pebble_ground_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/pebble_ground_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/pebble_ground_01_4k/textures/pebble_ground_01_diff_4k.jpg",
+      "domain_family": "natural_pebble",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "fine pebbles; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "plaster_brick_pattern_4k",
+      "asset_dir": "assets/library/polyhaven/materials/plaster_brick_pattern_4k",
+      "color_texture": "assets/library/polyhaven/materials/plaster_brick_pattern_4k/textures/plaster_brick_pattern_diff_4k.jpg",
+      "domain_family": "wall_brick_light",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "regular pale brick/plaster wall",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "plastered_wall_03_4k",
+      "asset_dir": "assets/library/polyhaven/materials/plastered_wall_03_4k",
+      "color_texture": "assets/library/polyhaven/materials/plastered_wall_03_4k/textures/plastered_wall_03_diff_4k.jpg",
+      "domain_family": "wall_plaster",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "dirty plaster wall; good background",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "plastered_wall_04_4k",
+      "asset_dir": "assets/library/polyhaven/materials/plastered_wall_04_4k",
+      "color_texture": "assets/library/polyhaven/materials/plastered_wall_04_4k/textures/plastered_wall_04_diff_4k.jpg",
+      "domain_family": "wall_plaster_plain",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "smooth grey plaster; can look flat",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "plywood_4k",
+      "asset_dir": "assets/library/polyhaven/materials/plywood_4k",
+      "color_texture": "assets/library/polyhaven/materials/plywood_4k/textures/plywood_diff_4k.jpg",
+      "domain_family": "support_wood_clean",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.6,
+        3.0
+      ],
+      "curation_notes": "plywood surface; good table/object",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "random_bricks_thick_4k",
+      "asset_dir": "assets/library/polyhaven/materials/random_bricks_thick_4k",
+      "color_texture": "assets/library/polyhaven/materials/random_bricks_thick_4k/textures/random_bricks_thick_diff_4k.jpg",
+      "domain_family": "wall_brick_mixed",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "rough mixed brick wall",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "rectangular_parquet_4k",
+      "asset_dir": "assets/library/polyhaven/materials/rectangular_parquet_4k",
+      "color_texture": "assets/library/polyhaven/materials/rectangular_parquet_4k/textures/rectangular_parquet_diff_4k.jpg",
+      "domain_family": "support_wood_parquet",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.6,
+        3.0
+      ],
+      "curation_notes": "rectangular parquet floor; good support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "red_brick_03_4k",
+      "asset_dir": "assets/library/polyhaven/materials/red_brick_03_4k",
+      "color_texture": "assets/library/polyhaven/materials/red_brick_03_4k/textures/red_brick_03_diff_4k.jpg",
+      "domain_family": "wall_brick_red",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "red brick wall background",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "red_brick_4k",
+      "asset_dir": "assets/library/polyhaven/materials/red_brick_4k",
+      "color_texture": "assets/library/polyhaven/materials/red_brick_4k/textures/red_brick_diff_4k.jpg",
+      "domain_family": "wall_brick_red",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "red brick wall background",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "red_dirt_mud_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/red_dirt_mud_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/red_dirt_mud_01_4k/textures/red_dirt_mud_01_diff_4k.jpg",
+      "domain_family": "natural_red_soil",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "red soil; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "red_laterite_soil_stones_4k",
+      "asset_dir": "assets/library/polyhaven/materials/red_laterite_soil_stones_4k",
+      "color_texture": "assets/library/polyhaven/materials/red_laterite_soil_stones_4k/textures/red_laterite_soil_stones_diff_4k.jpg",
+      "domain_family": "natural_red_soil",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "red soil/stones; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "red_mud_stones_4k",
+      "asset_dir": "assets/library/polyhaven/materials/red_mud_stones_4k",
+      "color_texture": "assets/library/polyhaven/materials/red_mud_stones_4k/textures/red_mud_stones_diff_4k.jpg",
+      "domain_family": "natural_red_soil",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "red mud stones; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "rock_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/rock_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/rock_01_4k/textures/rock_01_diff_4k.jpg",
+      "domain_family": "support_stone",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.2,
+        2.4
+      ],
+      "curation_notes": "neutral rock/stone surface; usable but not tabletop core",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "rock_08_4k",
+      "asset_dir": "assets/library/polyhaven/materials/rock_08_4k",
+      "color_texture": "assets/library/polyhaven/materials/rock_08_4k/textures/rock_08_diff_4k.jpg",
+      "domain_family": "natural_rock",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "rock texture with visible pattern; outdoor/stone only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "rock_2_4k",
+      "asset_dir": "assets/library/polyhaven/materials/rock_2_4k",
+      "color_texture": "assets/library/polyhaven/materials/rock_2_4k/textures/rock_2_diff_4k.jpg",
+      "domain_family": "natural_rock",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "rocky surface; outdoor/stone only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "rocks_ground_03_4k",
+      "asset_dir": "assets/library/polyhaven/materials/rocks_ground_03_4k",
+      "color_texture": "assets/library/polyhaven/materials/rocks_ground_03_4k/textures/rocks_ground_03_diff_4k.jpg",
+      "domain_family": "natural_gravel_rock",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "ground rocks; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "rocky_trail_4k",
+      "asset_dir": "assets/library/polyhaven/materials/rocky_trail_4k",
+      "color_texture": "assets/library/polyhaven/materials/rocky_trail_4k/textures/rocky_trail_diff_4k.jpg",
+      "domain_family": "natural_trail",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "trail surface; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "rosewood_veneer1_4k",
+      "asset_dir": "assets/library/polyhaven/materials/rosewood_veneer1_4k",
+      "color_texture": "assets/library/polyhaven/materials/rosewood_veneer1_4k/textures/rosewood_veneer1_diff_4k.jpg",
+      "domain_family": "support_wood_dark",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        1.6,
+        3.0
+      ],
+      "curation_notes": "dark polished wood; good with lighting control",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "rubber_tiles_4k",
+      "asset_dir": "assets/library/polyhaven/materials/rubber_tiles_4k",
+      "color_texture": "assets/library/polyhaven/materials/rubber_tiles_4k/textures/rubber_tiles_diff_4k.jpg",
+      "domain_family": "support_rubber",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        1.2,
+        2.4
+      ],
+      "curation_notes": "rubber tile support; useful but keep contrast checks",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "sand_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/sand_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/sand_01_4k/textures/sand_01_diff_4k.jpg",
+      "domain_family": "natural_sand",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "sand/soil; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "sandstone_blocks_05_4k",
+      "asset_dir": "assets/library/polyhaven/materials/sandstone_blocks_05_4k",
+      "color_texture": "assets/library/polyhaven/materials/sandstone_blocks_05_4k/textures/sandstone_blocks_05_diff_4k.jpg",
+      "domain_family": "wall_stone_block",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "sandstone block wall",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "sandstone_cracks_4k",
+      "asset_dir": "assets/library/polyhaven/materials/sandstone_cracks_4k",
+      "color_texture": "assets/library/polyhaven/materials/sandstone_cracks_4k/textures/sandstone_cracks_diff_4k.jpg",
+      "domain_family": "support_stone",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "support_surface"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.2,
+        2.4
+      ],
+      "curation_notes": "cracked sandstone; can be support in stone scenes",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "sandy_gravel_02_4k",
+      "asset_dir": "assets/library/polyhaven/materials/sandy_gravel_02_4k",
+      "color_texture": "assets/library/polyhaven/materials/sandy_gravel_02_4k/textures/sandy_gravel_02_diff_4k.jpg",
+      "domain_family": "natural_sand_gravel",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "sandy gravel outdoor surface",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "shell_floor_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/shell_floor_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/shell_floor_01_4k/textures/shell_floor_01_diff_4k.jpg",
+      "domain_family": "natural_shell_pebble",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "shell/pebble floor high frequency",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "snow_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/snow_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/snow_01_4k/textures/snow_01_diff_4k.jpg",
+      "domain_family": "snow",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.5,
+        3.0
+      ],
+      "curation_notes": "snow surface too semantic/bright for v0",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "snow_02_4k",
+      "asset_dir": "assets/library/polyhaven/materials/snow_02_4k",
+      "color_texture": "assets/library/polyhaven/materials/snow_02_4k/textures/snow_02_diff_4k.jpg",
+      "domain_family": "snow",
+      "quality_tier": "exclude_v0",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.5,
+        3.0
+      ],
+      "curation_notes": "snow surface too semantic/bright for v0",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "stone_wall_03_4k",
+      "asset_dir": "assets/library/polyhaven/materials/stone_wall_03_4k",
+      "color_texture": "assets/library/polyhaven/materials/stone_wall_03_4k/textures/stone_wall_03_diff_4k.jpg",
+      "domain_family": "wall_stone_plain",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "plain granular stone surface; wall-only but not structured enough for core wall sampling",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "terrain_red_01_4k",
+      "asset_dir": "assets/library/polyhaven/materials/terrain_red_01_4k",
+      "color_texture": "assets/library/polyhaven/materials/terrain_red_01_4k/textures/terrain_red_01_diff_4k.jpg",
+      "domain_family": "natural_red_soil",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "natural_ground"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        2.5,
+        5.0
+      ],
+      "curation_notes": "dark red terrain; outdoor only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "wall_bricks_plaster_4k",
+      "asset_dir": "assets/library/polyhaven/materials/wall_bricks_plaster_4k",
+      "color_texture": "assets/library/polyhaven/materials/wall_bricks_plaster_4k/textures/wall_bricks_plaster_diff_4k.jpg",
+      "domain_family": "wall_brick_plaster",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "brick/plaster wall background",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "white_plaster_02_4k",
+      "asset_dir": "assets/library/polyhaven/materials/white_plaster_02_4k",
+      "color_texture": "assets/library/polyhaven/materials/white_plaster_02_4k/textures/white_plaster_02_diff_4k.jpg",
+      "domain_family": "wall_plaster_plain",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "pale plaster can wash out; wall only",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "white_plaster_rough_02_4k",
+      "asset_dir": "assets/library/polyhaven/materials/white_plaster_rough_02_4k",
+      "color_texture": "assets/library/polyhaven/materials/white_plaster_rough_02_4k/textures/white_plaster_rough_02_diff_4k.jpg",
+      "domain_family": "wall_plaster_rough",
+      "quality_tier": "usable_watch",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "greenish rough plaster; wall only with care",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "white_sandstone_blocks_02_4k",
+      "asset_dir": "assets/library/polyhaven/materials/white_sandstone_blocks_02_4k",
+      "color_texture": "assets/library/polyhaven/materials/white_sandstone_blocks_02_4k/textures/white_sandstone_blocks_02_diff_4k.jpg",
+      "domain_family": "wall_stone_block",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "pale stone block wall",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "white_sandstone_bricks_03_4k",
+      "asset_dir": "assets/library/polyhaven/materials/white_sandstone_bricks_03_4k",
+      "color_texture": "assets/library/polyhaven/materials/white_sandstone_bricks_03_4k/textures/white_sandstone_bricks_03_diff_4k.jpg",
+      "domain_family": "wall_stone_block",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "pale sandstone brick wall",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "wood_floor_4k",
+      "asset_dir": "assets/library/polyhaven/materials/wood_floor_4k",
+      "color_texture": "assets/library/polyhaven/materials/wood_floor_4k/textures/wood_floor_diff_4k.jpg",
+      "domain_family": "support_wood_clean",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "medium",
+      "texture_scale_range": [
+        1.6,
+        3.0
+      ],
+      "curation_notes": "wood floor/plank support",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "wood_table_001_4k",
+      "asset_dir": "assets/library/polyhaven/materials/wood_table_001_4k",
+      "color_texture": "assets/library/polyhaven/materials/wood_table_001_4k/textures/wood_table_001_diff_4k.jpg",
+      "domain_family": "support_wood_clean",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        1.6,
+        3.0
+      ],
+      "curation_notes": "table wood; good support/object",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "wood_table_worn_4k",
+      "asset_dir": "assets/library/polyhaven/materials/wood_table_worn_4k",
+      "color_texture": "assets/library/polyhaven/materials/wood_table_worn_4k/textures/wood_table_worn_diff_4k.jpg",
+      "domain_family": "support_wood_worn",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "support_surface",
+        "foreground_object"
+      ],
+      "value_family": "dark",
+      "texture_scale_range": [
+        1.6,
+        3.0
+      ],
+      "curation_notes": "worn wood table; good but contrast check",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    },
+    {
+      "asset_id": "yellow_bricks_4k",
+      "asset_dir": "assets/library/polyhaven/materials/yellow_bricks_4k",
+      "color_texture": "assets/library/polyhaven/materials/yellow_bricks_4k/textures/yellow_bricks_diff_4k.jpg",
+      "domain_family": "wall_brick_light",
+      "quality_tier": "core",
+      "allowed_roles": [
+        "wall_background"
+      ],
+      "value_family": "light",
+      "texture_scale_range": [
+        1.8,
+        3.2
+      ],
+      "curation_notes": "yellow brick wall background",
+      "source_review": "visual_contact_sheet_polyhaven_v2_1_pages_01_05"
+    }
+  ],
+  "visual_review_round2_updates": [
+    {
+      "asset_id": "stone_wall_03_4k",
+      "change": "core wall_stone -> usable_watch wall_stone_plain",
+      "reason": "large visual review showed weak wall structure; looks like a granular stone surface rather than a reliable wall asset"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_29a550112e7e41528d7d01697231c11b",
+  "name": "Wall Floor Model Corner Room",
+  "asset_role": "render_only_context",
+  "semantic_category": "context_room_corner",
+  "admission": {
+    "reason": "room shell is decorative context; generated floor and walls remain authoritative",
+    "sampling_enabled": false,
+    "status": "visual_only",
+    "visual_sampling_enabled": true
+  },
+  "proxy_kind": "none",
+  "normalization_mode": "review_scale_only_not_metric",
+  "mesh_component_count": 1,
+  "overall_bounds_low_m": [
+    -1.0200157,
+    -1.1999999,
+    -2e-07
+  ],
+  "overall_bounds_high_m": [
+    1.0200156,
+    1.2000003,
+    1.6064861
+  ],
+  "overall_extent_m": [
+    2.0400313,
+    2.4000002,
+    1.6064863
+  ],
+  "total_vertex_count": 625,
+  "total_triangle_count": 455,
+  "components": [
+    {
+      "object_name": "Wall_FloorModel_CornerRoom_01 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.0200157,
+        -1.1999999,
+        -2e-07
+      ],
+      "bounds_high_m": [
+        1.0200156,
+        1.2000003,
+        1.6064861
+      ],
+      "center_m": [
+        -1e-07,
+        2e-07,
+        0.8032429
+      ],
+      "extent_m": [
+        2.0400313,
+        2.4000002,
+        1.6064863
+      ],
+      "vertex_count": 625,
+      "triangle_count": 455,
+      "materials": [
+        "01_-_Default"
+      ],
+      "keyword_hints": [
+        "room_shell"
+      ],
+      "bbox_volume_fraction": 1.0
+    }
+  ]
+}

@@ -1,0 +1,909 @@
+{
+  "version": "physweep_visual_environment_asset_annotations_v5",
+  "policy": {
+    "target_accepted_count": 20,
+    "candidate_pool_count": 43,
+    "review_sources": [
+      "sketchfab_web_thumbnail",
+      "blender_structure_inspection",
+      "blender_four_direction_multiview",
+      "blender_reviewed_open_shell_multiview",
+      "bound_real_object_first_frame"
+    ],
+    "accepted_assets_must_have_open_or_readable_context": true,
+    "closed_shells_are_not_admitted_by_the_current_backdrop_backend": false,
+    "panorama_spheres_are_not_admitted": true,
+    "support_compatibility_is_reviewed_per_asset": true,
+    "render_category_by_semantic_group": {
+      "home_interior": "home_office",
+      "work_education": "lab_studio",
+      "hospitality": "home_office",
+      "industrial": "garage_workshop",
+      "outdoor_architecture": "outdoor_courtyard"
+    },
+    "collision_enabled": false,
+    "closed_shells_require_reviewed_mesh_opening_selectors": true,
+    "camera_context_is_reviewed_per_asset": true,
+    "source_floor_alignment_is_reviewed_per_asset": true,
+    "source_floor_alignment_rule": "anchor=-(reviewed_floor_z-source_bbox_min_z)*scale-surface_overlap",
+    "camera_elevation_limits_are_reviewed_per_asset": true,
+    "accepted_shell_edits_require_named_objects_or_source_space_thresholds": true
+  },
+  "reviews": [
+    {
+      "candidate_id": "env_living_white_afb8cb0c",
+      "decision": "accepted",
+      "profile_id": "mesh_env_living_white",
+      "semantic_environment": "living_room_modern_bright",
+      "environment_category": "home_interior",
+      "quality_tier": "B",
+      "review_yaw_degrees": 0,
+      "target_extent_m": 6.4,
+      "front_clearance_m": 0.65,
+      "support_ids": [
+        "wood_floor",
+        "wood_tabletop"
+      ],
+      "reason": "Open living room with a reviewed finished-floor plane; source-space shell cuts remove the ceiling, front display plane, and camera-facing frame while retaining the floor, side walls, furniture, and decor.",
+      "camera_context": {
+        "depth_offset_m": 1.0,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.24,
+        "focal_length_cap_mm": 36.0,
+        "maximum_elevation_degrees": 28.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [
+        "Windows_Windows_0"
+      ],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "reviewed_horizontal_surface",
+        "source_floor_z": -0.2056,
+        "surface_overlap_m": 0.0,
+        "evidence": "Structure_Structure_0 finished room floor shared by furniture lower bounds"
+      },
+      "source_space_face_exclusions": [
+        {
+          "axis": "z",
+          "comparison": "at_or_above",
+          "value": 2.8
+        },
+        {
+          "axis": "y",
+          "comparison": "at_or_below",
+          "value": -2.45
+        }
+      ]
+    },
+    {
+      "candidate_id": "env_living_simple_e88651f5",
+      "decision": "rejected",
+      "reason": "Rejected after bound-composite review: wall, roof, and horizontal trim are fused across several meshes, so opening the shell leaves structural bars through the action."
+    },
+    {
+      "candidate_id": "env_dining_modern_df3f3c9f",
+      "decision": "accepted",
+      "profile_id": "mesh_env_dining_modern",
+      "semantic_environment": "dining_room_modern",
+      "environment_category": "home_interior",
+      "quality_tier": "A",
+      "review_yaw_degrees": 0,
+      "target_extent_m": 4.8,
+      "front_clearance_m": 0.7,
+      "support_ids": [
+        "wood_tabletop",
+        "kitchen_counter",
+        "wood_floor",
+        "wood_tray"
+      ],
+      "reason": "Open dining room with a reviewed finished-floor plane; the separately named roof is removed so motion-aware cameras retain the table, rug, and wall context.",
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.3,
+        "focal_length_cap_mm": 40.0,
+        "maximum_elevation_degrees": 28.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [
+        "Roof_Roof_0"
+      ],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "reviewed_horizontal_surface",
+        "source_floor_z": -1.4707,
+        "surface_overlap_m": 0.0,
+        "evidence": "Modern Dining Room_Floor_0 finished wood floor top"
+      }
+    },
+    {
+      "candidate_id": "env_kitchen_modern_9843a830",
+      "decision": "accepted",
+      "profile_id": "mesh_env_kitchen_modern",
+      "semantic_environment": "kitchen_modern_bright",
+      "environment_category": "home_interior",
+      "quality_tier": "A",
+      "review_yaw_degrees": 90,
+      "target_extent_m": 4.8,
+      "front_clearance_m": 0.7,
+      "support_ids": [
+        "kitchen_counter",
+        "wood_tabletop",
+        "wood_floor",
+        "wood_tray"
+      ],
+      "reason": "Open modern kitchen; the separately named ceiling mesh is removed after four-direction review so lower motion-aware views retain the cabinetry.",
+      "camera_context": {
+        "depth_offset_m": 1.35,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.22,
+        "focal_length_cap_mm": 36.0,
+        "maximum_elevation_degrees": 30.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [
+        "Ceiling_Ceiling_0"
+      ],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "source_bbox_min",
+        "source_floor_z": null,
+        "surface_overlap_m": 0.0,
+        "evidence": "Bound composite showed the source lower bound at the visible floor."
+      }
+    },
+    {
+      "candidate_id": "env_kitchen_living_2684e307",
+      "decision": "accepted",
+      "profile_id": "mesh_env_kitchen_living",
+      "semantic_environment": "kitchen_living_dark",
+      "environment_category": "home_interior",
+      "quality_tier": "A",
+      "review_yaw_degrees": 270,
+      "target_extent_m": 4.8,
+      "front_clearance_m": 0.7,
+      "support_ids": [
+        "kitchen_counter",
+        "wood_tabletop",
+        "wood_floor"
+      ],
+      "reason": "Open kitchen-living room; the two reviewed ceiling planes are removed so motion-aware cameras cannot expose an opaque overhead slab.",
+      "camera_context": {
+        "depth_offset_m": 0.9,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.2,
+        "focal_length_cap_mm": 36.0,
+        "maximum_elevation_degrees": 30.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [
+        "Plane.007_Material.013_0",
+        "Plane.010_Material.017_0"
+      ],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "reviewed_horizontal_surface",
+        "source_floor_z": 0.0,
+        "surface_overlap_m": 0.0,
+        "evidence": "Plane_Material.002_0 and Plane.001_Material.001_0 floor surfaces"
+      }
+    },
+    {
+      "candidate_id": "env_office_small_393a8fec",
+      "decision": "accepted",
+      "profile_id": "mesh_env_office_small",
+      "semantic_environment": "office_small_warm",
+      "environment_category": "work_education",
+      "quality_tier": "B",
+      "review_yaw_degrees": 0,
+      "target_extent_m": 4.4,
+      "front_clearance_m": 0.65,
+      "support_ids": [
+        "lab_bench",
+        "wood_tabletop",
+        "concrete_floor_mat"
+      ],
+      "reason": "The open office view is compact and readable, but is limited to flat work surfaces to avoid hiding the desk and window.",
+      "camera_context": {
+        "depth_offset_m": 1.35,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.2,
+        "focal_length_cap_mm": 40.0,
+        "maximum_elevation_degrees": 26.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "source_bbox_min",
+        "source_floor_z": null,
+        "surface_overlap_m": 0.0,
+        "evidence": "Bound composite showed the source lower bound at the visible floor."
+      }
+    },
+    {
+      "candidate_id": "env_office_modern_1c894023",
+      "decision": "accepted",
+      "profile_id": "mesh_env_office_modern",
+      "semantic_environment": "office_modern_bright",
+      "environment_category": "work_education",
+      "quality_tier": "A",
+      "review_yaw_degrees": 90,
+      "target_extent_m": 4.6,
+      "front_clearance_m": 0.7,
+      "support_ids": [
+        "lab_bench",
+        "wood_tabletop",
+        "concrete_floor_mat",
+        "wood_floor"
+      ],
+      "reason": "Yaw 90 gives a balanced desk-and-wall composition and tolerates flat work surfaces without occlusion.",
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.2,
+        "focal_length_cap_mm": 40.0,
+        "maximum_elevation_degrees": 28.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "reviewed_horizontal_surface",
+        "source_floor_z": -1.3542,
+        "surface_overlap_m": 0.0,
+        "evidence": "Window_Structure_0 visible floor top above the structural underside"
+      }
+    },
+    {
+      "candidate_id": "env_library_vintage_5b1e8185",
+      "decision": "rejected",
+      "reason": "Closed wooden shell; the current backdrop backend cannot expose the interior without editing source geometry."
+    },
+    {
+      "candidate_id": "env_classroom_warm_7f981d3e",
+      "decision": "rejected",
+      "reason": "Rejected by bound-scene review: the externally visible geometry remains dark and unreadable even after environment-aware camera targeting."
+    },
+    {
+      "candidate_id": "env_restaurant_ce81c3ee",
+      "decision": "rejected",
+      "reason": "A large curved wall dominates normalization and shrinks the useful restaurant geometry."
+    },
+    {
+      "candidate_id": "env_cafe_cozy_fb7c75da",
+      "decision": "accepted",
+      "profile_id": "mesh_env_cafe_cozy",
+      "semantic_environment": "cafe_cozy_warm",
+      "environment_category": "hospitality",
+      "quality_tier": "B",
+      "review_yaw_degrees": 90,
+      "target_extent_m": 4.4,
+      "front_clearance_m": 0.65,
+      "support_ids": [
+        "wood_tabletop",
+        "kitchen_counter",
+        "wood_floor",
+        "wood_tray"
+      ],
+      "reason": "Compact open cafe has clear counter, stools, plants, and wall decor; only flat hospitality-compatible supports are used.",
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.3,
+        "focal_length_cap_mm": 40.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "reviewed_horizontal_surface",
+        "source_floor_z": -1.6122,
+        "surface_overlap_m": 0.0,
+        "evidence": "Repeated cafe room floor top shared by Object_4 through Object_8"
+      }
+    },
+    {
+      "candidate_id": "env_laboratory_vintage_f1be8429",
+      "decision": "rejected",
+      "reason": "The environment is a panorama sphere rather than usable room geometry."
+    },
+    {
+      "candidate_id": "env_garage_desert_ef8bb817",
+      "decision": "accepted",
+      "profile_id": "mesh_env_garage_workshop",
+      "semantic_environment": "garage_workshop_small",
+      "environment_category": "industrial",
+      "quality_tier": "B",
+      "review_yaw_degrees": 0,
+      "target_extent_m": 5.4,
+      "front_clearance_m": 0.8,
+      "support_ids": [
+        "concrete_floor_mat",
+        "rubber_floor",
+        "lab_bench",
+        "raised_ramp_long_shallow",
+        "raised_ramp_standard",
+        "raised_ramp_short_steep",
+        "raised_channel_ramp",
+        "ground_ramp_long_shallow",
+        "ground_ramp_standard",
+        "ground_ramp_short_steep",
+        "ground_channel_ramp"
+      ],
+      "reason": "Garage facade and open bay provide industrial context that remains coherent behind floor and ramp structures.",
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.3,
+        "focal_length_cap_mm": 40.0,
+        "maximum_elevation_degrees": 24.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "source_bbox_min",
+        "source_floor_z": null,
+        "surface_overlap_m": 0.0,
+        "evidence": "Bound composite showed the source lower bound at the visible floor."
+      }
+    },
+    {
+      "candidate_id": "env_parking_garage_f36802d7",
+      "decision": "accepted",
+      "profile_id": "mesh_env_parking_structure",
+      "semantic_environment": "industrial_parking_structure",
+      "environment_category": "industrial",
+      "quality_tier": "C",
+      "review_yaw_degrees": 0,
+      "target_extent_m": 6.4,
+      "front_clearance_m": 2.0,
+      "support_ids": [
+        "concrete_floor_mat",
+        "rubber_floor",
+        "raised_ramp_long_shallow",
+        "raised_ramp_standard",
+        "raised_ramp_short_steep",
+        "raised_channel_ramp",
+        "ground_ramp_long_shallow",
+        "ground_ramp_standard",
+        "ground_ramp_short_steep",
+        "ground_channel_ramp"
+      ],
+      "reason": "Shallow parking facade retained as a low-frequency industrial context; reviewed clearance keeps the scan behind the physical action.",
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.2,
+        "focal_length_cap_mm": 40.0,
+        "maximum_elevation_degrees": 26.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "source_bbox_min",
+        "source_floor_z": null,
+        "surface_overlap_m": 0.0,
+        "evidence": "Bound composite showed the source lower bound at the visible floor."
+      }
+    },
+    {
+      "candidate_id": "env_warehouse_daa7fd3f",
+      "decision": "rejected",
+      "reason": "Imported geometry is nearly uniform gray and lacks useful visual detail despite texture records."
+    },
+    {
+      "candidate_id": "env_gallery_studio_789cdada",
+      "decision": "accepted",
+      "profile_id": "mesh_env_gallery_exterior",
+      "semantic_environment": "modern_gallery_exterior",
+      "environment_category": "outdoor_architecture",
+      "quality_tier": "B",
+      "review_yaw_degrees": 90,
+      "target_extent_m": 5.6,
+      "front_clearance_m": 0.8,
+      "support_ids": [
+        "concrete_floor_mat",
+        "low_pedestal",
+        "raised_ramp_long_shallow",
+        "raised_ramp_standard",
+        "raised_ramp_short_steep",
+        "raised_channel_ramp",
+        "ground_ramp_long_shallow",
+        "ground_ramp_standard",
+        "ground_ramp_short_steep",
+        "ground_channel_ramp"
+      ],
+      "reason": "The asset is used honestly as a modern gallery exterior; facade rhythm works behind ground, pedestal, and ramp supports.",
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.3,
+        "focal_length_cap_mm": 40.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "source_bbox_min",
+        "source_floor_z": null,
+        "surface_overlap_m": 0.0,
+        "evidence": "Bound composite showed the source lower bound at the visible floor."
+      }
+    },
+    {
+      "candidate_id": "env_gallery_art_4f619683",
+      "decision": "rejected",
+      "reason": "Closed white shell; the exhibition is only visible from an internal camera."
+    },
+    {
+      "candidate_id": "env_hallway_building_9c1dad0c",
+      "decision": "rejected",
+      "reason": "Imported fragments are discontinuous and mostly unreadable from external views."
+    },
+    {
+      "candidate_id": "env_graffiti_lab_7e764b49",
+      "decision": "accepted",
+      "profile_id": "mesh_env_graffiti_courtyard",
+      "semantic_environment": "urban_graffiti_courtyard",
+      "environment_category": "outdoor_architecture",
+      "quality_tier": "A",
+      "review_yaw_degrees": 0,
+      "target_extent_m": 5.4,
+      "front_clearance_m": 0.75,
+      "support_ids": [
+        "concrete_floor_mat",
+        "rubber_floor",
+        "low_pedestal",
+        "raised_ramp_long_shallow",
+        "raised_ramp_standard",
+        "raised_ramp_short_steep",
+        "raised_channel_ramp",
+        "ground_ramp_long_shallow",
+        "ground_ramp_standard",
+        "ground_ramp_short_steep",
+        "ground_channel_ramp"
+      ],
+      "reason": "Open brick courtyard with detailed graffiti remains readable behind low floor, pedestal, and ramp structures.",
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.3,
+        "focal_length_cap_mm": 40.0,
+        "maximum_elevation_degrees": 20.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "source_bbox_min",
+        "source_floor_z": null,
+        "surface_overlap_m": 0.0,
+        "evidence": "Bound composite showed the source lower bound at the visible floor."
+      }
+    },
+    {
+      "candidate_id": "env_graffiti_street_da879c66",
+      "decision": "rejected",
+      "reason": "The isolated wall-and-ground patch produces a floating seam in bound compositions."
+    },
+    {
+      "candidate_id": "env_patio_house_a2917b4f",
+      "decision": "rejected",
+      "reason": "Low-detail house and oversized flat lawn read as visibly synthetic in bound compositions."
+    },
+    {
+      "candidate_id": "env_house_interior_c57c2019",
+      "decision": "accepted",
+      "profile_id": "mesh_env_house_exterior",
+      "semantic_environment": "residential_house_exterior",
+      "environment_category": "outdoor_architecture",
+      "quality_tier": "B",
+      "review_yaw_degrees": 0,
+      "target_extent_m": 5.2,
+      "front_clearance_m": 0.85,
+      "support_ids": [
+        "concrete_floor_mat",
+        "wood_floor",
+        "low_pedestal",
+        "raised_ramp_long_shallow",
+        "raised_ramp_standard",
+        "raised_ramp_short_steep",
+        "raised_channel_ramp",
+        "ground_ramp_long_shallow",
+        "ground_ramp_standard",
+        "ground_ramp_short_steep",
+        "ground_channel_ramp"
+      ],
+      "reason": "Complete residential facade adds outdoor architectural context without requiring internal collision geometry.",
+      "camera_context": {
+        "depth_offset_m": 0.45,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.3,
+        "focal_length_cap_mm": 40.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "source_bbox_min",
+        "source_floor_z": null,
+        "surface_overlap_m": 0.0,
+        "evidence": "Bound composite showed the source lower bound at the visible floor."
+      }
+    },
+    {
+      "candidate_id": "env_art_studio_fdd57e78",
+      "decision": "accepted",
+      "profile_id": "mesh_env_art_studio",
+      "semantic_environment": "art_workshop",
+      "environment_category": "work_education",
+      "quality_tier": "A",
+      "review_yaw_degrees": 270,
+      "target_extent_m": 4.5,
+      "front_clearance_m": 0.65,
+      "support_ids": [
+        "wood_tabletop",
+        "lab_bench",
+        "wood_floor",
+        "wood_tray"
+      ],
+      "reason": "Yaw 270 exposes shelves, tools, workbench, floor, and wall art; flat work surfaces preserve the opening.",
+      "camera_context": {
+        "depth_offset_m": 0.8,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.32,
+        "focal_length_cap_mm": 36.0,
+        "maximum_elevation_degrees": 32.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "reviewed_horizontal_surface",
+        "source_floor_z": 0.2401,
+        "surface_overlap_m": 0.0,
+        "evidence": "Object_34 and Object_133 finished wood floor top"
+      }
+    },
+    {
+      "candidate_id": "env_billiard_room_18125a57",
+      "decision": "rejected",
+      "reason": "The embedded pool table cannot be aligned with the current generic support proxy without a dedicated billiards physics branch."
+    },
+    {
+      "candidate_id": "env_bedroom_modern_507aeb74",
+      "decision": "rejected",
+      "reason": "Oversized sunset image plane dominates normalization and shrinks the usable room."
+    },
+    {
+      "candidate_id": "env_office_minimal_5540183d",
+      "decision": "rejected",
+      "reason": "Rejected by bound-scene review: the curved shell produces a small isolated stage with little recognizable office context."
+    },
+    {
+      "candidate_id": "env_gallery_compact_8d8938dd",
+      "decision": "rejected",
+      "reason": "Bound compositions show mostly blank floor and curved bays with little recognizable gallery context."
+    },
+    {
+      "candidate_id": "env_classroom_modular_3ecfa670",
+      "decision": "rejected",
+      "reason": "Exterior review shows a closed modular shell; internal placement would require source-geometry surgery."
+    },
+    {
+      "candidate_id": "env_gallery_moody_00096961",
+      "decision": "rejected",
+      "reason": "Closed circular gallery shell is incompatible with external backdrop placement."
+    },
+    {
+      "candidate_id": "env_kitchen_small_2cc658a9",
+      "decision": "accepted",
+      "profile_id": "mesh_env_kitchen_small",
+      "semantic_environment": "kitchen_small_white",
+      "environment_category": "home_interior",
+      "quality_tier": "A",
+      "review_yaw_degrees": 0,
+      "target_extent_m": 5.2,
+      "front_clearance_m": 0.65,
+      "support_ids": [
+        "kitchen_counter",
+        "wood_tabletop",
+        "wood_floor",
+        "wood_tray"
+      ],
+      "reason": "Open front clearly exposes cabinetry, island, stools, and floor; compatible flat supports reinforce the kitchen scale.",
+      "camera_context": {
+        "depth_offset_m": 1.25,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.28,
+        "focal_length_cap_mm": 32.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "source_bbox_min",
+        "source_floor_z": null,
+        "surface_overlap_m": 0.0,
+        "evidence": "Bound composite showed the source lower bound at the visible floor."
+      }
+    },
+    {
+      "candidate_id": "env_cafe_small_0c4d6d98",
+      "decision": "accepted",
+      "profile_id": "mesh_env_cafe_small",
+      "semantic_environment": "cafe_small_bright",
+      "environment_category": "hospitality",
+      "quality_tier": "A",
+      "review_yaw_degrees": 0,
+      "target_extent_m": 7.0,
+      "front_clearance_m": 0.75,
+      "support_ids": [
+        "kitchen_counter",
+        "wood_tabletop",
+        "wood_floor",
+        "wood_tray"
+      ],
+      "reason": "Long open facade includes seating and service-counter zones; wider normalization keeps both readable behind flat supports.",
+      "camera_context": {
+        "depth_offset_m": 0.8,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.32,
+        "focal_length_cap_mm": 36.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "source_bbox_min",
+        "source_floor_z": null,
+        "surface_overlap_m": 0.0,
+        "evidence": "Bound composite showed the source lower bound at the visible floor."
+      }
+    },
+    {
+      "candidate_id": "env_garage_scan_6fbb2f49",
+      "decision": "accepted",
+      "profile_id": "mesh_env_industrial_brick",
+      "semantic_environment": "industrial_brick_facade",
+      "environment_category": "industrial",
+      "quality_tier": "A",
+      "review_yaw_degrees": 180,
+      "target_extent_m": 7.0,
+      "front_clearance_m": 0.8,
+      "support_ids": [
+        "concrete_floor_mat",
+        "rubber_floor",
+        "lab_bench",
+        "raised_ramp_long_shallow",
+        "raised_ramp_standard",
+        "raised_ramp_short_steep",
+        "raised_channel_ramp",
+        "ground_ramp_long_shallow",
+        "ground_ramp_standard",
+        "ground_ramp_short_steep",
+        "ground_channel_ramp"
+      ],
+      "reason": "Detailed brick industrial facade is open, textured, and broad enough to contextualize floor and ramp motion.",
+      "camera_context": {
+        "depth_offset_m": 1.0,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.18,
+        "focal_length_cap_mm": 40.0,
+        "maximum_elevation_degrees": 20.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "source_bbox_min",
+        "source_floor_z": null,
+        "surface_overlap_m": 0.0,
+        "evidence": "Bound composite showed the source lower bound at the visible floor."
+      }
+    },
+    {
+      "candidate_id": "env_hallway_long_ac43a501",
+      "decision": "rejected",
+      "reason": "Closed corridor box and extreme source bounds make generic external placement unusable."
+    },
+    {
+      "candidate_id": "env_corridor_scifi_cea95926",
+      "decision": "rejected",
+      "reason": "Closed elongated shell and strongly stylized endpoint are unsuitable for the realistic generic backdrop pool."
+    },
+    {
+      "candidate_id": "env_studio_virtual_b8cb1e44",
+      "decision": "rejected",
+      "reason": "Neon virtual-studio styling is visually synthetic and the long enclosure dominates composition."
+    },
+    {
+      "candidate_id": "env_temple_interior_6b608e97",
+      "decision": "rejected",
+      "reason": "Low-poly exterior-like kit does not provide a coherent realistic interior context."
+    },
+    {
+      "candidate_id": "env_duplex_modern_70ab4f41",
+      "decision": "accepted",
+      "reason": "Open multi-room duplex gives readable residential depth in a real-object composite without intersecting the frozen physical support.",
+      "profile_id": "mesh_env_duplex_modern",
+      "semantic_environment": "duplex_modern_open",
+      "environment_category": "home_interior",
+      "quality_tier": "B",
+      "review_yaw_degrees": 0,
+      "target_extent_m": 5.8,
+      "front_clearance_m": 0.75,
+      "support_ids": [
+        "wood_floor",
+        "wood_tabletop",
+        "low_pedestal"
+      ],
+      "camera_context": {
+        "depth_offset_m": 0.8,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.32,
+        "focal_length_cap_mm": 36.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "source_bbox_min",
+        "source_floor_z": null,
+        "surface_overlap_m": 0.025,
+        "evidence": "Bound composite showed the source lower bound at the visible floor."
+      }
+    },
+    {
+      "candidate_id": "env_bathroom_modern_9ba7e0a0",
+      "decision": "accepted",
+      "profile_id": "mesh_env_bathroom_modern",
+      "semantic_environment": "bathroom_modern_bright",
+      "environment_category": "home_interior",
+      "quality_tier": "A",
+      "review_yaw_degrees": 0,
+      "target_extent_m": 4.8,
+      "front_clearance_m": 0.65,
+      "support_ids": [
+        "concrete_floor_mat",
+        "rubber_floor",
+        "low_pedestal"
+      ],
+      "reason": "Open bathroom has clear tile, bath, plants, and cabinets; floor and low-pedestal supports avoid blocking fixtures.",
+      "camera_context": {
+        "depth_offset_m": 1.25,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.42,
+        "focal_length_cap_mm": 36.0
+      },
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [],
+      "floor_alignment": {
+        "method": "reviewed_horizontal_surface",
+        "source_floor_z": -1.2983,
+        "surface_overlap_m": 0.01,
+        "evidence": "Modern Bathroom_Structure_0 finished tile floor top"
+      }
+    },
+    {
+      "candidate_id": "env_medieval_interior_bde29c80",
+      "decision": "rejected",
+      "reason": "Imported pieces are a scattered modular kit rather than one coherent reviewed environment."
+    },
+    {
+      "candidate_id": "env_shuttle_interior_f200b794",
+      "decision": "rejected",
+      "reason": "Closed spacecraft shell requires an internal camera and dedicated collision handling."
+    },
+    {
+      "candidate_id": "env_living_dining_color_15f56cb2",
+      "decision": "rejected",
+      "reason": "Open geometry is usable, but the visibly low-poly style falls below the realistic visual-quality target."
+    },
+    {
+      "candidate_id": "env_classroom_bright_f61f4b6a",
+      "decision": "accepted",
+      "profile_id": "mesh_env_classroom_bright",
+      "semantic_environment": "classroom_bright",
+      "environment_category": "work_education",
+      "quality_tier": "A",
+      "review_yaw_degrees": 0,
+      "target_extent_m": 5.8,
+      "front_clearance_m": 0.7,
+      "support_ids": [
+        "lab_bench",
+        "concrete_floor_mat",
+        "rubber_floor"
+      ],
+      "camera_context": {
+        "depth_offset_m": 1.05,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.32,
+        "focal_length_cap_mm": 34.0
+      },
+      "exclude_object_names": [],
+      "exclude_object_name_prefixes": [
+        "Ceiling.",
+        "Wall03."
+      ],
+      "reason": "Four-direction shell review identified a stable front opening: remove the named ceiling and camera-facing wall while retaining desks, chairs, doors, and the teaching wall.",
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "floor_alignment": {
+        "method": "source_bbox_min",
+        "source_floor_z": null,
+        "surface_overlap_m": 0.025,
+        "evidence": "Bound composite showed the source lower bound at the visible floor."
+      }
+    },
+    {
+      "candidate_id": "env_office_studio_8fc52866",
+      "decision": "accepted",
+      "profile_id": "mesh_env_warehouse_services",
+      "semantic_environment": "warehouse_services_hall",
+      "environment_category": "industrial",
+      "quality_tier": "B",
+      "review_yaw_degrees": 0,
+      "target_extent_m": 6.8,
+      "front_clearance_m": 0.8,
+      "support_ids": [
+        "concrete_floor_mat",
+        "rubber_floor",
+        "lab_bench",
+        "raised_ramp_long_shallow",
+        "raised_ramp_standard",
+        "raised_ramp_short_steep",
+        "raised_channel_ramp",
+        "ground_ramp_long_shallow",
+        "ground_ramp_standard",
+        "ground_ramp_short_steep",
+        "ground_channel_ramp"
+      ],
+      "camera_context": {
+        "depth_offset_m": 1.4,
+        "lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.18,
+        "focal_length_cap_mm": 36.0,
+        "minimum_elevation_degrees": 24.0,
+        "maximum_elevation_degrees": 32.0
+      },
+      "exclude_object_names": [
+        "defaultMaterial.028",
+        "defaultMaterial.090"
+      ],
+      "exclude_object_name_prefixes": [],
+      "reason": "The source title is misleading; open-shell and bound-scene review identify a warehouse services hall. The reviewed roof and front wall are removed explicitly.",
+      "lateral_offset_m": 0.0,
+      "outward_offset_m": 0.0,
+      "floor_alignment": {
+        "method": "source_bbox_min",
+        "source_floor_z": null,
+        "surface_overlap_m": 0.025,
+        "evidence": "Bound composite showed the source lower bound at the visible floor."
+      }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "version": "physweep_asset_ingestion_contract_v1",
+  "active_release": {
+    "sampling_bundle": "configs/one_object_sampling_bundle.json",
+    "sampling_matrix": "configs/one_object_sampling_matrix.json",
+    "object_profiles": "configs/physassets_core_object_profiles.json",
+    "object_visual_preflight": "configs/object_visual_preflight.json",
+    "object_visual_preflight_report": "assets/manifests/object_visual_preflight_report.json",
+    "object_visual_curation": "configs/object_visual_curation.json",
+    "object_visual_repairs": "configs/object_visual_repairs.json",
+    "asset_proxy_registry": "configs/asset_proxy_registry.json",
+    "physical_proxy_catalog": "assets/proxies/catalog.json",
+    "scene_mesh_profiles": "configs/scene_mesh_profiles.json",
+    "support_mesh_profiles": "configs/support_mesh_profiles.json",
+    "environment_collision_proxies": "configs/visual_environment_collision_proxies.json",
+    "environment_composition": "configs/visual_environment_composition.json"
+  },
+  "implementations": {
+    "source_inspection": "tools/inspect_sketchfab_glb_assets.py",
+    "dynamic_proxy_generation": "tools/generate_physassets_proxy.py",
+    "catalog_publish": "tools/publish_asset_catalog.py",
+    "proxy_probe": "tools/probe_physical_proxy_catalog.py",
+    "visual_preflight": "tools/audit_object_visual_candidates.py",
+    "visual_repair": "tools/repair_physassets_visuals.py",
+    "visual_curation": "tools/build_object_visual_curation.py",
+    "environment_proxy_build": "tools/build_visual_environment_collision_proxies.py",
+    "environment_proxy_validation": "tools/validate_visual_environment_collision_proxies.py",
+    "contract_audit": "tools/audit_asset_ingestion.py"
+  },
+  "immutable_provenance": {
+    "static_support_extractor": {
+      "path": "tools/extract_static_support_proxies.py",
+      "sha256": "20aada6a9cbe2afb48babde5c6ae4643b9dc709c6d1127b1a32c5cafb31f4670"
+    }
+  },
+  "stages": [
+    "source_and_license_review",
+    "visual_import_and_component_review",
+    "physical_proxy_build_and_probe",
+    "visual_preflight_and_repair",
+    "role_specific_scene_validation",
+    "validated_registry_and_catalog_release",
+    "matrix_reachability_validation"
+  ],
+  "policy": {
+    "raw_sources_are_immutable": true,
+    "visual_and_physical_assets_are_separate": true,
+    "every_local_sketchfab_glb_has_one_catalog_disposition": true,
+    "sampling_requires_runtime_validated_proxy": true,
+    "manual_visual_review_is_required_before_admission": true,
+    "catalog_is_validated_before_atomic_promotion": true,
+    "sampling_consumes_only_the_active_bundle_and_matrix": true
+  }
+}

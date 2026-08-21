@@ -1,0 +1,166 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_9634d6a81a494925a909512c8048f446",
+  "name": "Workbench",
+  "asset_role": "interactive_support",
+  "semantic_category": "support_workbench",
+  "admission": {
+    "reason": "workbench assembly is cluttered and has several incompatible support heights",
+    "sampling_enabled": false,
+    "status": "rejected"
+  },
+  "proxy_kind": "none",
+  "normalization_mode": "review_scale_only_not_metric",
+  "mesh_component_count": 4,
+  "overall_bounds_low_m": [
+    -1.1999999,
+    -0.234742,
+    -2e-07
+  ],
+  "overall_bounds_high_m": [
+    1.1999999,
+    0.2347425,
+    1.1290365
+  ],
+  "overall_extent_m": [
+    2.3999999,
+    0.4694845,
+    1.1290367
+  ],
+  "total_vertex_count": 12663,
+  "total_triangle_count": 14878,
+  "components": [
+    {
+      "object_name": "Object_3",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1999999,
+        -0.2346274,
+        -2e-07
+      ],
+      "bounds_high_m": [
+        1.1864086,
+        0.2347425,
+        1.1290365
+      ],
+      "center_m": [
+        -0.0067956,
+        5.75e-05,
+        0.5645182
+      ],
+      "extent_m": [
+        2.3864086,
+        0.4693699,
+        1.1290367
+      ],
+      "vertex_count": 4327,
+      "triangle_count": 4475,
+      "materials": [
+        "WorkBench_PBR_SG"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.99409424
+    },
+    {
+      "object_name": "Object_4",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1987712,
+        -0.234742,
+        0.0135169
+      ],
+      "bounds_high_m": [
+        1.1999999,
+        0.2279083,
+        1.1272657
+      ],
+      "center_m": [
+        0.0006143,
+        -0.0034169,
+        0.5703913
+      ],
+      "extent_m": [
+        2.3987712,
+        0.4626503,
+        1.1137488
+      ],
+      "vertex_count": 4571,
+      "triangle_count": 4662,
+      "materials": [
+        "WorkBench_PBR_SG"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.97160196
+    },
+    {
+      "object_name": "Object_5",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.9650528,
+        -0.2346274,
+        0.042285
+      ],
+      "bounds_high_m": [
+        0.3756586,
+        0.2347424,
+        1.1051025
+      ],
+      "center_m": [
+        -0.2946971,
+        5.75e-05,
+        0.5736938
+      ],
+      "extent_m": [
+        1.3407115,
+        0.4693699,
+        1.0628176
+      ],
+      "vertex_count": 3037,
+      "triangle_count": 4784,
+      "materials": [
+        "WorkBench_PBR_SG"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.52573727
+    },
+    {
+      "object_name": "Object_6",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1880332,
+        -0.2234842,
+        -2e-07
+      ],
+      "bounds_high_m": [
+        1.1743718,
+        0.2245649,
+        0.8274782
+      ],
+      "center_m": [
+        -0.0068307,
+        0.0005404,
+        0.413739
+      ],
+      "extent_m": [
+        2.3624051,
+        0.4480491,
+        0.8274784
+      ],
+      "vertex_count": 728,
+      "triangle_count": 957,
+      "materials": [
+        "WorkBench_PBR_SG"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.68848757
+    }
+  ]
+}

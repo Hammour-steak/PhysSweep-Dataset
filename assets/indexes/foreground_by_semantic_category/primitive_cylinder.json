@@ -1,0 +1,18 @@
+{
+  "semantic_category": "primitive_cylinder",
+  "assets": [
+    {
+      "asset_id": "sketchfab_3be00aa2664f4bc0b5be8b8630c2d540",
+      "name": "Gas Cylinder",
+      "admission_status": "physweep_v0_approved",
+      "asset_path": "assets/library/sketchfab/foreground/sketchfab_3be00aa2664f4bc0b5be8b8630c2d540/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": true
+      }
+    }
+  ]
+}

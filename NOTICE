@@ -1,0 +1,8 @@
+PhysSweep
+Copyright 2026 PhysSweep contributors
+
+Third-party datasets, models, textures, HDRIs, and visual assets are not covered
+by the PhysSweep MIT license. Their source, author, and license metadata are
+recorded in assets/THIRD_PARTY_ASSETS.json and related asset manifests.
+Downloaded source assets and model checkpoints are excluded from this repository.
+Derived collision proxies must retain the attribution required by their sources.

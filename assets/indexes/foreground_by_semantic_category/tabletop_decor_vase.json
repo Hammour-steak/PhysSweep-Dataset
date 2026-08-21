@@ -1,0 +1,18 @@
+{
+  "semantic_category": "tabletop_decor_vase",
+  "assets": [
+    {
+      "asset_id": "sketchfab_76a3f7bf75d049458dfaa48aa342e0b8",
+      "name": "Baluster vase, from a five-piece garniture",
+      "admission_status": "physweep_v0_approved",
+      "asset_path": "assets/library/sketchfab/foreground/sketchfab_76a3f7bf75d049458dfaa48aa342e0b8/model.glb",
+      "license": {
+        "requested_slug": "cc0",
+        "label": "CC0 Public Domain",
+        "uid": "7c23a1ba438d4306920229c12afcb5f9",
+        "allowed_for_candidate_pool": true,
+        "requires_attribution": false
+      }
+    }
+  ]
+}

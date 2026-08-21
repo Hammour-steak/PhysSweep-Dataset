@@ -1,0 +1,9 @@
+{
+  "version": "physweep_production_video_v1",
+  "duration_s": 4.0,
+  "output_fps": 24,
+  "frame_count": 97,
+  "resolution": [1280, 720],
+  "samples": 32,
+  "render_engine": "BLENDER_EEVEE"
+}

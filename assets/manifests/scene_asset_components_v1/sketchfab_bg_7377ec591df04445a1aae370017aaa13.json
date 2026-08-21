@@ -1,0 +1,964 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_7377ec591df04445a1aae370017aaa13",
+  "name": "Desk lamp",
+  "asset_role": "static_prop",
+  "semantic_category": "prop_lamp",
+  "admission": {
+    "reason": "articulated lamp uses conservative base, arm, and shade colliders",
+    "sampling_enabled": true,
+    "status": "approved"
+  },
+  "proxy_kind": "static_compound",
+  "normalization_mode": "metric_registry_binding",
+  "mesh_component_count": 30,
+  "overall_bounds_low_m": [
+    -0.2180343,
+    -0.0934853,
+    -0.0
+  ],
+  "overall_bounds_high_m": [
+    0.2180343,
+    0.0934853,
+    0.52
+  ],
+  "overall_extent_m": [
+    0.4360685,
+    0.1869705,
+    0.52
+  ],
+  "total_vertex_count": 25165,
+  "total_triangle_count": 31282,
+  "components": [
+    {
+      "object_name": "Box009_01 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.2180343,
+        -0.005933,
+        0.0488917
+      ],
+      "bounds_high_m": [
+        0.2178171,
+        0.005933,
+        0.4775025
+      ],
+      "center_m": [
+        -0.0001086,
+        -0.0,
+        0.2631971
+      ],
+      "extent_m": [
+        0.4358513,
+        0.011866,
+        0.4286108
+      ],
+      "vertex_count": 192,
+      "triangle_count": 112,
+      "materials": [
+        "01_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.05228469
+    },
+    {
+      "object_name": "Box010_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0591822,
+        -0.0060922,
+        0.428452
+      ],
+      "bounds_high_m": [
+        0.0813252,
+        0.0061172,
+        0.4489992
+      ],
+      "center_m": [
+        0.0702537,
+        1.25e-05,
+        0.4387256
+      ],
+      "extent_m": [
+        0.022143,
+        0.0122094,
+        0.0205472
+      ],
+      "vertex_count": 73,
+      "triangle_count": 54,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00013102
+    },
+    {
+      "object_name": "Box011_03 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1476738,
+        -0.0122858,
+        0.0668795
+      ],
+      "bounds_high_m": [
+        0.0750032,
+        -0.0080461,
+        0.4601191
+      ],
+      "center_m": [
+        -0.0363353,
+        -0.010166,
+        0.2634993
+      ],
+      "extent_m": [
+        0.222677,
+        0.0042397,
+        0.3932395
+      ],
+      "vertex_count": 2117,
+      "triangle_count": 1174,
+      "materials": [
+        "03_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00875662
+    },
+    {
+      "object_name": "Cylinder001_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0935487,
+        -0.0934853,
+        -0.0
+      ],
+      "bounds_high_m": [
+        0.0963061,
+        0.0934853,
+        0.011866
+      ],
+      "center_m": [
+        0.0013787,
+        0.0,
+        0.005933
+      ],
+      "extent_m": [
+        0.1898548,
+        0.1869705,
+        0.011866
+      ],
+      "vertex_count": 202,
+      "triangle_count": 140,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.009935
+    },
+    {
+      "object_name": "Cylinder003_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0630224,
+        -0.0099328,
+        0.0353614
+      ],
+      "bounds_high_m": [
+        -0.0428503,
+        0.0099328,
+        0.07614
+      ],
+      "center_m": [
+        -0.0529363,
+        0.0,
+        0.0557507
+      ],
+      "extent_m": [
+        0.0201721,
+        0.0198656,
+        0.0407786
+      ],
+      "vertex_count": 294,
+      "triangle_count": 212,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00038544
+    },
+    {
+      "object_name": "Cylinder004_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0802385,
+        -0.0076182,
+        0.4295068
+      ],
+      "bounds_high_m": [
+        0.1140343,
+        0.0076182,
+        0.4449782
+      ],
+      "center_m": [
+        0.0971364,
+        0.0,
+        0.4372425
+      ],
+      "extent_m": [
+        0.0337957,
+        0.0152364,
+        0.0154715
+      ],
+      "vertex_count": 74,
+      "triangle_count": 68,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00018791
+    },
+    {
+      "object_name": "Cylinder005_01 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0717258,
+        -0.0720428,
+        0.3483291
+      ],
+      "bounds_high_m": [
+        0.2180343,
+        0.072043,
+        0.52
+      ],
+      "center_m": [
+        0.14488,
+        1e-07,
+        0.4341645
+      ],
+      "extent_m": [
+        0.1463085,
+        0.1440858,
+        0.1716709
+      ],
+      "vertex_count": 1100,
+      "triangle_count": 922,
+      "materials": [
+        "01_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.08536034
+    },
+    {
+      "object_name": "Cylinder005_Material #13_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0730787,
+        -0.0707104,
+        0.3510986
+      ],
+      "bounds_high_m": [
+        0.2166814,
+        0.0707107,
+        0.5178689
+      ],
+      "center_m": [
+        0.14488,
+        1e-07,
+        0.4344837
+      ],
+      "extent_m": [
+        0.1436027,
+        0.1414212,
+        0.1667703
+      ],
+      "vertex_count": 513,
+      "triangle_count": 496,
+      "materials": [
+        "Material_13"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.07988487
+    },
+    {
+      "object_name": "Cylinder006_01 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0911755,
+        -0.0911481,
+        0.0011866
+      ],
+      "bounds_high_m": [
+        0.0939329,
+        0.0911481,
+        0.0355978
+      ],
+      "center_m": [
+        0.0013787,
+        0.0,
+        0.0183922
+      ],
+      "extent_m": [
+        0.1851084,
+        0.1822963,
+        0.0344112
+      ],
+      "vertex_count": 201,
+      "triangle_count": 248,
+      "materials": [
+        "01_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.02738877
+    },
+    {
+      "object_name": "Cylinder008_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0545887,
+        0.0171326,
+        0.4321083
+      ],
+      "bounds_high_m": [
+        0.0817728,
+        0.0236652,
+        0.4605531
+      ],
+      "center_m": [
+        0.0681807,
+        0.0203989,
+        0.4463307
+      ],
+      "extent_m": [
+        0.0271842,
+        0.0065325,
+        0.0284448
+      ],
+      "vertex_count": 314,
+      "triangle_count": 288,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00011914
+    },
+    {
+      "object_name": "Line002_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1543446,
+        -0.0056238,
+        0.3043638
+      ],
+      "bounds_high_m": [
+        0.1104818,
+        0.0059557,
+        0.4984826
+      ],
+      "center_m": [
+        -0.0219314,
+        0.000166,
+        0.4014232
+      ],
+      "extent_m": [
+        0.2648264,
+        0.0115795,
+        0.1941188
+      ],
+      "vertex_count": 1008,
+      "triangle_count": 1912,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.01404066
+    },
+    {
+      "object_name": "Object003_01 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1132453,
+        -0.0255189,
+        0.0944107
+      ],
+      "bounds_high_m": [
+        -0.0101759,
+        0.0254152,
+        0.3433163
+      ],
+      "center_m": [
+        -0.0617106,
+        -5.19e-05,
+        0.2188635
+      ],
+      "extent_m": [
+        0.1030694,
+        0.0509342,
+        0.2489056
+      ],
+      "vertex_count": 1676,
+      "triangle_count": 1720,
+      "materials": [
+        "01_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.03082071
+    },
+    {
+      "object_name": "Object004_01 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0372789,
+        -0.0191706,
+        0.3567085
+      ],
+      "bounds_high_m": [
+        -0.0235927,
+        0.0191019,
+        0.3703841
+      ],
+      "center_m": [
+        -0.0304358,
+        -3.43e-05,
+        0.3635463
+      ],
+      "extent_m": [
+        0.0136863,
+        0.0382725,
+        0.0136755
+      ],
+      "vertex_count": 476,
+      "triangle_count": 424,
+      "materials": [
+        "01_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00016896
+    },
+    {
+      "object_name": "Object006_01 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0780346,
+        -0.0191706,
+        0.1802492
+      ],
+      "bounds_high_m": [
+        -0.0643484,
+        0.0191019,
+        0.1939247
+      ],
+      "center_m": [
+        -0.0711915,
+        -3.43e-05,
+        0.1870869
+      ],
+      "extent_m": [
+        0.0136862,
+        0.0382725,
+        0.0136755
+      ],
+      "vertex_count": 476,
+      "triangle_count": 424,
+      "materials": [
+        "01_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00016896
+    },
+    {
+      "object_name": "Object008_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1760873,
+        -0.0118672,
+        0.0470159
+      ],
+      "bounds_high_m": [
+        0.1675733,
+        0.0118671,
+        0.4731622
+      ],
+      "center_m": [
+        -0.004257,
+        -1e-07,
+        0.260089
+      ],
+      "extent_m": [
+        0.3436606,
+        0.0237343,
+        0.4261463
+      ],
+      "vertex_count": 2838,
+      "triangle_count": 2460,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.08198485
+    },
+    {
+      "object_name": "Object012_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0727272,
+        -0.0094629,
+        0.0425821
+      ],
+      "bounds_high_m": [
+        -0.0682557,
+        0.0094629,
+        0.0612204
+      ],
+      "center_m": [
+        -0.0704914,
+        0.0,
+        0.0519012
+      ],
+      "extent_m": [
+        0.0044715,
+        0.0189258,
+        0.0186383
+      ],
+      "vertex_count": 324,
+      "triangle_count": 248,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 3.72e-05
+    },
+    {
+      "object_name": "Object013_03 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0686401,
+        -0.0024073,
+        0.0492582
+      ],
+      "bounds_high_m": [
+        -0.0576186,
+        0.0024073,
+        0.0541471
+      ],
+      "center_m": [
+        -0.0631294,
+        0.0,
+        0.0517026
+      ],
+      "extent_m": [
+        0.0110215,
+        0.0048146,
+        0.0048889
+      ],
+      "vertex_count": 102,
+      "triangle_count": 68,
+      "materials": [
+        "03_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 6.12e-06
+    },
+    {
+      "object_name": "Object014_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.1083045,
+        -0.0222531,
+        0.4265959
+      ],
+      "bounds_high_m": [
+        0.1347006,
+        0.0222534,
+        0.4482309
+      ],
+      "center_m": [
+        0.1215025,
+        1e-07,
+        0.4374134
+      ],
+      "extent_m": [
+        0.0263961,
+        0.0445065,
+        0.021635
+      ],
+      "vertex_count": 84,
+      "triangle_count": 108,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.0005995
+    },
+    {
+      "object_name": "Object015_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0657521,
+        0.0070764,
+        0.4410354
+      ],
+      "bounds_high_m": [
+        0.0745739,
+        0.0186057,
+        0.4497936
+      ],
+      "center_m": [
+        0.070163,
+        0.012841,
+        0.4454145
+      ],
+      "extent_m": [
+        0.0088218,
+        0.0115293,
+        0.0087582
+      ],
+      "vertex_count": 134,
+      "triangle_count": 68,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 2.101e-05
+    },
+    {
+      "object_name": "Object016_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.0813013,
+        -0.001837,
+        0.4283758
+      ],
+      "bounds_high_m": [
+        0.0899266,
+        0.0018232,
+        0.445117
+      ],
+      "center_m": [
+        0.085614,
+        -6.9e-06,
+        0.4367464
+      ],
+      "extent_m": [
+        0.0086253,
+        0.0036602,
+        0.0167412
+      ],
+      "vertex_count": 58,
+      "triangle_count": 32,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 1.247e-05
+    },
+    {
+      "object_name": "Object017_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1168015,
+        -0.0058143,
+        0.3264877
+      ],
+      "bounds_high_m": [
+        0.0519766,
+        0.0058143,
+        0.4660601
+      ],
+      "center_m": [
+        -0.0324124,
+        -0.0,
+        0.3962739
+      ],
+      "extent_m": [
+        0.1687782,
+        0.0116286,
+        0.1395724
+      ],
+      "vertex_count": 120,
+      "triangle_count": 72,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00646118
+    },
+    {
+      "object_name": "Object018_01 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1589129,
+        -0.0058143,
+        0.2951089
+      ],
+      "bounds_high_m": [
+        -0.1330242,
+        0.0058143,
+        0.3231726
+      ],
+      "center_m": [
+        -0.1459686,
+        0.0,
+        0.3091408
+      ],
+      "extent_m": [
+        0.0258887,
+        0.0116286,
+        0.0280637
+      ],
+      "vertex_count": 60,
+      "triangle_count": 36,
+      "materials": [
+        "01_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00019927
+    },
+    {
+      "object_name": "Object019_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0796231,
+        -0.0058143,
+        0.0724464
+      ],
+      "bounds_high_m": [
+        -0.0538543,
+        0.0058143,
+        0.1005815
+      ],
+      "center_m": [
+        -0.0667387,
+        0.0,
+        0.086514
+      ],
+      "extent_m": [
+        0.0257688,
+        0.0116286,
+        0.0281352
+      ],
+      "vertex_count": 60,
+      "triangle_count": 36,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00019886
+    },
+    {
+      "object_name": "Object020_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.1087144,
+        -0.0038377,
+        0.4752635
+      ],
+      "bounds_high_m": [
+        0.1130557,
+        0.0038377,
+        0.4829876
+      ],
+      "center_m": [
+        0.110885,
+        0.0,
+        0.4791255
+      ],
+      "extent_m": [
+        0.0043413,
+        0.0076755,
+        0.0077241
+      ],
+      "vertex_count": 104,
+      "triangle_count": 104,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 6.07e-06
+    },
+    {
+      "object_name": "Object021_04 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0679216,
+        -0.0073438,
+        0.0603229
+      ],
+      "bounds_high_m": [
+        -0.0513255,
+        0.0066137,
+        0.0750017
+      ],
+      "center_m": [
+        -0.0596236,
+        -0.000365,
+        0.0676623
+      ],
+      "extent_m": [
+        0.0165961,
+        0.0139576,
+        0.0146788
+      ],
+      "vertex_count": 48,
+      "triangle_count": 24,
+      "materials": [
+        "04_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 8.02e-05
+    },
+    {
+      "object_name": "Sphere001_03 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1476445,
+        0.0081009,
+        0.0668795
+      ],
+      "bounds_high_m": [
+        0.0748055,
+        0.0232842,
+        0.4601817
+      ],
+      "center_m": [
+        -0.0364195,
+        0.0156925,
+        0.2635306
+      ],
+      "extent_m": [
+        0.22245,
+        0.0151833,
+        0.3933021
+      ],
+      "vertex_count": 1331,
+      "triangle_count": 1402,
+      "materials": [
+        "03_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.03133239
+    },
+    {
+      "object_name": "Sphere017_03 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.109292,
+        -0.018608,
+        0.4334446
+      ],
+      "bounds_high_m": [
+        0.1153129,
+        0.0186076,
+        0.4681789
+      ],
+      "center_m": [
+        0.1123024,
+        -2e-07,
+        0.4508117
+      ],
+      "extent_m": [
+        0.0060209,
+        0.0372156,
+        0.0347343
+      ],
+      "vertex_count": 450,
+      "triangle_count": 540,
+      "materials": [
+        "03_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00018358
+    },
+    {
+      "object_name": "Sphere020_05 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.1146611,
+        -0.0296116,
+        0.3569003
+      ],
+      "bounds_high_m": [
+        0.1738843,
+        0.0296117,
+        0.4713244
+      ],
+      "center_m": [
+        0.1442727,
+        0.0,
+        0.4141123
+      ],
+      "extent_m": [
+        0.0592232,
+        0.0592233,
+        0.114424
+      ],
+      "vertex_count": 665,
+      "triangle_count": 730,
+      "materials": [
+        "05_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00946608
+    },
+    {
+      "object_name": "Sphere020_Ceramic_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.1146079,
+        -0.0296648,
+        0.3191901
+      ],
+      "bounds_high_m": [
+        0.1739375,
+        0.0296648,
+        0.3569004
+      ],
+      "center_m": [
+        0.1442727,
+        0.0,
+        0.3380453
+      ],
+      "extent_m": [
+        0.0593296,
+        0.0593297,
+        0.0377102
+      ],
+      "vertex_count": 329,
+      "triangle_count": 544,
+      "materials": [
+        "Ceramic"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00313091
+    },
+    {
+      "object_name": "Spring013_02 - Default_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1202582,
+        -0.0247368,
+        0.0935252
+      ],
+      "bounds_high_m": [
+        0.0454288,
+        0.0250254,
+        0.3696869
+      ],
+      "center_m": [
+        -0.0374147,
+        0.0001443,
+        0.231606
+      ],
+      "extent_m": [
+        0.165687,
+        0.0497622,
+        0.2761617
+      ],
+      "vertex_count": 9742,
+      "triangle_count": 16616,
+      "materials": [
+        "02_-_Default"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.05370567
+    }
+  ]
+}

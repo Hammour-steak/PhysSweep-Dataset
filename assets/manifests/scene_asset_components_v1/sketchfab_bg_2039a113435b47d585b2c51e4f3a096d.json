@@ -1,0 +1,65 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_2039a113435b47d585b2c51e4f3a096d",
+  "name": "Office Desk - 18MB",
+  "asset_role": "interactive_support",
+  "semantic_category": "support_office_desk",
+  "admission": {
+    "reason": "single continuous desk plane with negligible clutter",
+    "sampling_enabled": true,
+    "status": "approved"
+  },
+  "proxy_kind": "support_compound",
+  "normalization_mode": "metric_registry_binding",
+  "mesh_component_count": 1,
+  "overall_bounds_low_m": [
+    -1.1318849,
+    -0.5399833,
+    0.0
+  ],
+  "overall_bounds_high_m": [
+    1.1318849,
+    0.5413699,
+    0.78
+  ],
+  "overall_extent_m": [
+    2.2637699,
+    1.0813531,
+    0.78
+  ],
+  "total_vertex_count": 2886,
+  "total_triangle_count": 2998,
+  "components": [
+    {
+      "object_name": "Disc_4__0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1318849,
+        -0.5399833,
+        0.0
+      ],
+      "bounds_high_m": [
+        1.1318849,
+        0.5413699,
+        0.78
+      ],
+      "center_m": [
+        0.0,
+        0.0006933,
+        0.39
+      ],
+      "extent_m": [
+        2.2637699,
+        1.0813531,
+        0.78
+      ],
+      "vertex_count": 2886,
+      "triangle_count": 2998,
+      "materials": [
+        "Scene_-_Root"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 1.00000003
+    }
+  ]
+}

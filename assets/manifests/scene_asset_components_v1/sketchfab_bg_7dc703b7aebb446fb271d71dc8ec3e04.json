@@ -1,0 +1,128 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_7dc703b7aebb446fb271d71dc8ec3e04",
+  "name": "Wall with window",
+  "asset_role": "render_only_context",
+  "semantic_category": "context_wall_window",
+  "admission": {
+    "reason": "window wall is background-only",
+    "sampling_enabled": false,
+    "status": "visual_only",
+    "visual_sampling_enabled": true
+  },
+  "proxy_kind": "none",
+  "normalization_mode": "review_scale_only_not_metric",
+  "mesh_component_count": 3,
+  "overall_bounds_low_m": [
+    -1.1999997,
+    -0.1200004,
+    -0.0
+  ],
+  "overall_bounds_high_m": [
+    1.1999997,
+    0.1200003,
+    2.3999999
+  ],
+  "overall_extent_m": [
+    2.3999994,
+    0.2400007,
+    2.3999999
+  ],
+  "total_vertex_count": 860,
+  "total_triangle_count": 436,
+  "components": [
+    {
+      "object_name": "Cube.001_Material.002_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.7695159,
+        -0.0205714,
+        0.3451119
+      ],
+      "bounds_high_m": [
+        0.6946844,
+        0.0061193,
+        2.272233
+      ],
+      "center_m": [
+        -0.0374157,
+        -0.0072261,
+        1.3086725
+      ],
+      "extent_m": [
+        1.4642004,
+        0.0266907,
+        1.9271211
+      ],
+      "vertex_count": 168,
+      "triangle_count": 84,
+      "materials": [
+        "Material.002"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.05447969
+    },
+    {
+      "object_name": "Cube.016__0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.5837429,
+        -0.0103609,
+        0.3078076
+      ],
+      "bounds_high_m": [
+        0.5878118,
+        -0.0040915,
+        2.174716
+      ],
+      "center_m": [
+        0.0020345,
+        -0.0072262,
+        1.2412618
+      ],
+      "extent_m": [
+        1.1715547,
+        0.0062695,
+        1.8669084
+      ],
+      "vertex_count": 480,
+      "triangle_count": 240,
+      "materials": [
+        "Cube.016__0"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00991936
+    },
+    {
+      "object_name": "Cube_Material.001_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1999997,
+        -0.1200004,
+        -0.0
+      ],
+      "bounds_high_m": [
+        1.1999997,
+        0.1200003,
+        2.3999999
+      ],
+      "center_m": [
+        0.0,
+        -0.0,
+        1.1999999
+      ],
+      "extent_m": [
+        2.3999994,
+        0.2400007,
+        2.3999999
+      ],
+      "vertex_count": 212,
+      "triangle_count": 112,
+      "materials": [
+        "Material.001"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 1.00000002
+    }
+  ]
+}

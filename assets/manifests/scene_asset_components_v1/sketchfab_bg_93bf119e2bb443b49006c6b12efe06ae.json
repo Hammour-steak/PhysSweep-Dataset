@@ -1,0 +1,133 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_93bf119e2bb443b49006c6b12efe06ae",
+  "name": "Workbench",
+  "asset_role": "interactive_support",
+  "semantic_category": "support_workbench",
+  "admission": {
+    "reason": "chair, tools, and raised fixtures fragment the available work surface",
+    "sampling_enabled": false,
+    "status": "rejected"
+  },
+  "proxy_kind": "none",
+  "normalization_mode": "review_scale_only_not_metric",
+  "mesh_component_count": 3,
+  "overall_bounds_low_m": [
+    -1.1999999,
+    -1.1911963,
+    0.0
+  ],
+  "overall_bounds_high_m": [
+    1.2,
+    1.1911963,
+    1.9190227
+  ],
+  "overall_extent_m": [
+    2.4,
+    2.3823926,
+    1.9190227
+  ],
+  "total_vertex_count": 18130,
+  "total_triangle_count": 18524,
+  "components": [
+    {
+      "object_name": "Chair_Chair1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0030954,
+        -0.1220832,
+        0.0307311
+      ],
+      "bounds_high_m": [
+        1.2,
+        1.0103348,
+        1.8988361
+      ],
+      "center_m": [
+        0.5984523,
+        0.4441258,
+        0.9647836
+      ],
+      "extent_m": [
+        1.2030955,
+        1.132418,
+        1.868105
+      ],
+      "vertex_count": 10007,
+      "triangle_count": 11122,
+      "materials": [
+        "Chair1"
+      ],
+      "keyword_hints": [
+        "movable_prop"
+      ],
+      "bbox_volume_fraction": 0.23195485
+    },
+    {
+      "object_name": "Table_Table1_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1999999,
+        -1.1911963,
+        0.0
+      ],
+      "bounds_high_m": [
+        0.2475554,
+        1.187479,
+        1.7782992
+      ],
+      "center_m": [
+        -0.4762222,
+        -0.0018587,
+        0.8891496
+      ],
+      "extent_m": [
+        1.4475554,
+        2.3786753,
+        1.7782992
+      ],
+      "vertex_count": 5726,
+      "triangle_count": 5508,
+      "materials": [
+        "Table1"
+      ],
+      "keyword_hints": [
+        "support_surface"
+      ],
+      "bbox_volume_fraction": 0.55804665
+    },
+    {
+      "object_name": "Tool_Tools_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1416121,
+        -1.1741278,
+        1.1977096
+      ],
+      "bounds_high_m": [
+        0.030195,
+        1.1911963,
+        1.9190227
+      ],
+      "center_m": [
+        -0.5557085,
+        0.0085343,
+        1.5583661
+      ],
+      "extent_m": [
+        1.1718071,
+        2.3653241,
+        0.7213131
+      ],
+      "vertex_count": 2397,
+      "triangle_count": 1894,
+      "materials": [
+        "Tools"
+      ],
+      "keyword_hints": [
+        "movable_prop"
+      ],
+      "bbox_volume_fraction": 0.18220736
+    }
+  ]
+}

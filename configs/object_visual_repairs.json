@@ -1,0 +1,56 @@
+{
+  "version": "physweep_object_visual_repairs_v1",
+  "policy": {
+    "source_assets_are_immutable": true,
+    "repairs_produce_new_versioned_assets": true,
+    "source_sha256_mismatch_is_a_hard_error": true,
+    "repair_must_preserve_world_bounds": true,
+    "repair_must_pass_reimport_validation": true
+  },
+  "records": [
+    {
+      "profile_id": "physassets_11905_book",
+      "visual_asset_id": "physassets_11905",
+      "source_path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-087/4d8dd06b107841f685a1f345dc385170.glb",
+      "source_sha256": "e90c44a09280e8cac47422a6e1c4dec77a122019fb22e9a0b66c2626c9103be0",
+      "output_path": "assets/library/physassets/curated_visuals/11905/visual.glb",
+      "operations": [
+        "force_opaque_materials"
+      ],
+      "reason": "opaque book stack was incorrectly encoded as alpha-blended material"
+    },
+    {
+      "profile_id": "physassets_13740_book",
+      "visual_asset_id": "physassets_13740",
+      "source_path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-101/4705d3b006694c2da3a6662f34060bfe.glb",
+      "source_sha256": "42390b880807868fe65f73ffdf6983634733f16d1623fc2fb51a10ee27fc4499",
+      "output_path": "assets/library/physassets/curated_visuals/13740/visual.glb",
+      "operations": [
+        "force_opaque_materials"
+      ],
+      "reason": "opaque book stack was incorrectly encoded as alpha-blended material"
+    },
+    {
+      "profile_id": "physassets_13383_book",
+      "visual_asset_id": "physassets_13383",
+      "source_path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-098/5b46a4763f88446b98b43f63549f8e8d.glb",
+      "source_sha256": "43a08519bee2372040cf83b336cc0c9f99da06a569d7704c2364e7e1ed655e8a",
+      "output_path": "assets/library/physassets/curated_visuals/13383/visual.glb",
+      "operations": [
+        "force_opaque_materials"
+      ],
+      "reason": "opaque book stack was incorrectly encoded as alpha-blended material"
+    },
+    {
+      "profile_id": "physassets_5822_basketball",
+      "visual_asset_id": "physassets_5822",
+      "source_path": "external/physassets/objaverse_meshes/hf-objaverse-v1/glbs/000-041/f408ef68c38444ddb9dd2d3ba45e5227.glb",
+      "source_sha256": "375e36043b331139bf8596294091b6e08ac2d62c318236580efef3fd28e1ac27",
+      "output_path": "assets/library/physassets/curated_visuals/5822/visual.glb",
+      "operations": [
+        "force_opaque_materials"
+      ],
+      "reason": "opaque basketball was incorrectly encoded as alpha-blended material"
+    }
+  ]
+}

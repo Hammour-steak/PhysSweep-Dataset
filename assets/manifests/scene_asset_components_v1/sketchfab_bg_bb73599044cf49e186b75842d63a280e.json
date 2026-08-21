@@ -1,0 +1,747 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_bb73599044cf49e186b75842d63a280e",
+  "name": "Bench Table Kit",
+  "asset_role": "interactive_support",
+  "semantic_category": "support_lab_bench",
+  "admission": {
+    "reason": "continuous lab bench plane",
+    "sampling_enabled": true,
+    "status": "approved"
+  },
+  "proxy_kind": "support_compound",
+  "normalization_mode": "metric_registry_binding",
+  "mesh_component_count": 23,
+  "overall_bounds_low_m": [
+    -1.1000004,
+    -0.4975001,
+    -2e-07
+  ],
+  "overall_bounds_high_m": [
+    1.0999999,
+    0.4975003,
+    0.8431548
+  ],
+  "overall_extent_m": [
+    2.2000003,
+    0.9950003,
+    0.8431551
+  ],
+  "total_vertex_count": 6487,
+  "total_triangle_count": 6624,
+  "components": [
+    {
+      "object_name": "Cube.003_Material_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.0748658,
+        -0.4690611,
+        0.0576573
+      ],
+      "bounds_high_m": [
+        1.0748656,
+        0.4690612,
+        0.8197458
+      ],
+      "center_m": [
+        -1e-07,
+        0.0,
+        0.4387016
+      ],
+      "extent_m": [
+        2.1497314,
+        0.9381223,
+        0.7620884
+      ],
+      "vertex_count": 136,
+      "triangle_count": 100,
+      "materials": [
+        "Material"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.83271345
+    },
+    {
+      "object_name": "Cube.004_Material_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.0745188,
+        -0.4067724,
+        0.2053367
+      ],
+      "bounds_high_m": [
+        1.0745188,
+        0.4065193,
+        0.2354623
+      ],
+      "center_m": [
+        0.0,
+        -0.0001266,
+        0.2203995
+      ],
+      "extent_m": [
+        2.1490376,
+        0.8132917,
+        0.0301256
+      ],
+      "vertex_count": 48,
+      "triangle_count": 24,
+      "materials": [
+        "Material"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.02852809
+    },
+    {
+      "object_name": "Cube.005_Material_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.0027244,
+        0.4067142,
+        0.4225414
+      ],
+      "bounds_high_m": [
+        -0.9094633,
+        0.4688667,
+        0.7677153
+      ],
+      "center_m": [
+        -0.9560939,
+        0.4377905,
+        0.5951283
+      ],
+      "extent_m": [
+        0.0932611,
+        0.0621524,
+        0.345174
+      ],
+      "vertex_count": 24,
+      "triangle_count": 12,
+      "materials": [
+        "Material"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00108403
+    },
+    {
+      "object_name": "Cube.006_Material.001_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.9933634,
+        0.4664189,
+        0.4460196
+      ],
+      "bounds_high_m": [
+        -0.9205294,
+        0.4767052,
+        0.7310748
+      ],
+      "center_m": [
+        -0.9569464,
+        0.471562,
+        0.5885472
+      ],
+      "extent_m": [
+        0.072834,
+        0.0102864,
+        0.2850552
+      ],
+      "vertex_count": 344,
+      "triangle_count": 224,
+      "materials": [
+        "Material.001"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00011571
+    },
+    {
+      "object_name": "Cube.007_Material_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1333536,
+        -0.1862951,
+        0.0623904
+      ],
+      "bounds_high_m": [
+        0.8484202,
+        0.3646774,
+        0.5214917
+      ],
+      "center_m": [
+        0.3575333,
+        0.0891911,
+        0.2919411
+      ],
+      "extent_m": [
+        0.9817738,
+        0.5509725,
+        0.4591013
+      ],
+      "vertex_count": 104,
+      "triangle_count": 60,
+      "materials": [
+        "Material"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.13455395
+    },
+    {
+      "object_name": "Cube.008_Material_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.8732332,
+        -0.1863099,
+        0.7248529
+      ],
+      "bounds_high_m": [
+        -0.2178905,
+        0.3646926,
+        0.753092
+      ],
+      "center_m": [
+        -0.5455619,
+        0.0891913,
+        0.7389725
+      ],
+      "extent_m": [
+        0.6553427,
+        0.5510025,
+        0.0282391
+      ],
+      "vertex_count": 52,
+      "triangle_count": 28,
+      "materials": [
+        "Material"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00552484
+    },
+    {
+      "object_name": "Cube.009_Material_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.8728485,
+        -0.186295,
+        0.5221561
+      ],
+      "bounds_high_m": [
+        -0.2182752,
+        0.3646773,
+        0.7281033
+      ],
+      "center_m": [
+        -0.5455619,
+        0.0891912,
+        0.6251297
+      ],
+      "extent_m": [
+        0.6545733,
+        0.5509723,
+        0.2059472
+      ],
+      "vertex_count": 48,
+      "triangle_count": 28,
+      "materials": [
+        "Material"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.04024302
+    },
+    {
+      "object_name": "Cube.010_Material_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.8728486,
+        -0.186295,
+        0.0611531
+      ],
+      "bounds_high_m": [
+        -0.2182751,
+        0.3646773,
+        0.5218816
+      ],
+      "center_m": [
+        -0.5455619,
+        0.0891912,
+        0.2915173
+      ],
+      "extent_m": [
+        0.6545734,
+        0.5509724,
+        0.4607285
+      ],
+      "vertex_count": 52,
+      "triangle_count": 28,
+      "materials": [
+        "Material"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.09002846
+    },
+    {
+      "object_name": "Cube.013_Material_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1338612,
+        -0.1863099,
+        0.7248529
+      ],
+      "bounds_high_m": [
+        0.8491529,
+        0.3646926,
+        0.7530921
+      ],
+      "center_m": [
+        0.3576458,
+        0.0891913,
+        0.7389725
+      ],
+      "extent_m": [
+        0.983014,
+        0.5510026,
+        0.0282392
+      ],
+      "vertex_count": 52,
+      "triangle_count": 28,
+      "materials": [
+        "Material"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00828729
+    },
+    {
+      "object_name": "Cube.014_Material_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1332842,
+        -0.186295,
+        0.5175284
+      ],
+      "bounds_high_m": [
+        0.8485758,
+        0.3646774,
+        0.7281033
+      ],
+      "center_m": [
+        0.3576458,
+        0.0891912,
+        0.6228158
+      ],
+      "extent_m": [
+        0.98186,
+        0.5509723,
+        0.210575
+      ],
+      "vertex_count": 52,
+      "triangle_count": 28,
+      "materials": [
+        "Material"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.06172097
+    },
+    {
+      "object_name": "Cube_Material_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.1000004,
+        -0.4975001,
+        0.8199996
+      ],
+      "bounds_high_m": [
+        1.0999999,
+        0.4975003,
+        0.8431548
+      ],
+      "center_m": [
+        -2e-07,
+        1e-07,
+        0.8315772
+      ],
+      "extent_m": [
+        2.2000003,
+        0.9950003,
+        0.0231553
+      ],
+      "vertex_count": 37,
+      "triangle_count": 28,
+      "materials": [
+        "Material"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.02746268
+    },
+    {
+      "object_name": "Cylinder.006_Material.001_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.0782739,
+        -0.476877,
+        -2e-07
+      ],
+      "bounds_high_m": [
+        1.0782233,
+        0.4767697,
+        0.0522445
+      ],
+      "center_m": [
+        -2.53e-05,
+        -5.37e-05,
+        0.0261221
+      ],
+      "extent_m": [
+        2.1564972,
+        0.9536467,
+        0.0522448
+      ],
+      "vertex_count": 936,
+      "triangle_count": 856,
+      "materials": [
+        "Material.001"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.05821381
+    },
+    {
+      "object_name": "Cylinder.007__0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.0624278,
+        -0.4702981,
+        0.0007933
+      ],
+      "bounds_high_m": [
+        1.0624604,
+        0.4707099,
+        0.0511362
+      ],
+      "center_m": [
+        1.63e-05,
+        0.0002059,
+        0.0259647
+      ],
+      "extent_m": [
+        2.1248882,
+        0.941008,
+        0.0503429
+      ],
+      "vertex_count": 242,
+      "triangle_count": 210,
+      "materials": [
+        "Cylinder.007__0"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.05453988
+    },
+    {
+      "object_name": "Cylinder.008_Material.001_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -1.0464375,
+        -0.4311187,
+        0.0413746
+      ],
+      "bounds_high_m": [
+        1.0464375,
+        0.4311187,
+        0.0592321
+      ],
+      "center_m": [
+        0.0,
+        0.0,
+        0.0503033
+      ],
+      "extent_m": [
+        2.092875,
+        0.8622375,
+        0.0178575
+      ],
+      "vertex_count": 234,
+      "triangle_count": 210,
+      "materials": [
+        "Material.001"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.01745973
+    },
+    {
+      "object_name": "Cylinder.009_Material.001_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1212815,
+        -0.1953349,
+        0.0043677
+      ],
+      "bounds_high_m": [
+        0.8365614,
+        0.3768649,
+        0.0635995
+      ],
+      "center_m": [
+        0.35764,
+        0.090765,
+        0.0339836
+      ],
+      "extent_m": [
+        0.9578428,
+        0.5721999,
+        0.0592318
+      ],
+      "vertex_count": 1428,
+      "triangle_count": 1278,
+      "materials": [
+        "Material.001"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.0175891
+    },
+    {
+      "object_name": "Cylinder.010_Material.001_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.856877,
+        -0.19556,
+        0.0044001
+      ],
+      "bounds_high_m": [
+        -0.234245,
+        0.3768649,
+        0.0635995
+      ],
+      "center_m": [
+        -0.545561,
+        0.0906524,
+        0.0339998
+      ],
+      "extent_m": [
+        0.622632,
+        0.5724249,
+        0.0591994
+      ],
+      "vertex_count": 1430,
+      "triangle_count": 1278,
+      "materials": [
+        "Material.001"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.01143178
+    },
+    {
+      "object_name": "Plane.001_Material.001_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.7373428,
+        0.3527145,
+        0.4150265
+      ],
+      "bounds_high_m": [
+        -0.3961716,
+        0.4289173,
+        0.4285027
+      ],
+      "center_m": [
+        -0.5667572,
+        0.3908159,
+        0.4217646
+      ],
+      "extent_m": [
+        0.3411712,
+        0.0762029,
+        0.0134762
+      ],
+      "vertex_count": 252,
+      "triangle_count": 440,
+      "materials": [
+        "Material.001"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00018983
+    },
+    {
+      "object_name": "Plane.002_White_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.6904958,
+        0.364868,
+        0.6850759
+      ],
+      "bounds_high_m": [
+        -0.4430184,
+        0.364868,
+        0.712666
+      ],
+      "center_m": [
+        -0.5667571,
+        0.364868,
+        0.698871
+      ],
+      "extent_m": [
+        0.2474774,
+        0.0,
+        0.0275902
+      ],
+      "vertex_count": 4,
+      "triangle_count": 2,
+      "materials": [
+        "White"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.0
+    },
+    {
+      "object_name": "Plane.003_Material.001_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.1870601,
+        0.3460164,
+        0.6535356
+      ],
+      "bounds_high_m": [
+        0.5282314,
+        0.4222193,
+        0.6670119
+      ],
+      "center_m": [
+        0.3576458,
+        0.3841178,
+        0.6602737
+      ],
+      "extent_m": [
+        0.3411712,
+        0.0762029,
+        0.0134763
+      ],
+      "vertex_count": 252,
+      "triangle_count": 440,
+      "materials": [
+        "Material.001"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00018983
+    },
+    {
+      "object_name": "Plane.004_Material.001_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.0434124,
+        0.3568494,
+        0.418164
+      ],
+      "bounds_high_m": [
+        0.2040527,
+        0.4121224,
+        0.4279388
+      ],
+      "center_m": [
+        0.0803202,
+        0.3844859,
+        0.4230514
+      ],
+      "extent_m": [
+        0.2474652,
+        0.055273,
+        0.0097749
+      ],
+      "vertex_count": 252,
+      "triangle_count": 440,
+      "materials": [
+        "Material.001"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 7.244e-05
+    },
+    {
+      "object_name": "Plane.005_Material.001_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.4883402,
+        0.3568495,
+        0.418164
+      ],
+      "bounds_high_m": [
+        0.7358054,
+        0.4121224,
+        0.4279388
+      ],
+      "center_m": [
+        0.6120728,
+        0.3844859,
+        0.4230514
+      ],
+      "extent_m": [
+        0.2474652,
+        0.055273,
+        0.0097749
+      ],
+      "vertex_count": 252,
+      "triangle_count": 440,
+      "materials": [
+        "Material.001"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 7.244e-05
+    },
+    {
+      "object_name": "Plane.006_White_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        0.2301706,
+        0.3648681,
+        0.6850759
+      ],
+      "bounds_high_m": [
+        0.4776481,
+        0.3648681,
+        0.712666
+      ],
+      "center_m": [
+        0.3539094,
+        0.3648681,
+        0.698871
+      ],
+      "extent_m": [
+        0.2474775,
+        0.0,
+        0.0275902
+      ],
+      "vertex_count": 4,
+      "triangle_count": 2,
+      "materials": [
+        "White"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.0
+    },
+    {
+      "object_name": "Plane_Material.001_0",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.7373428,
+        0.3527145,
+        0.6540849
+      ],
+      "bounds_high_m": [
+        -0.3961716,
+        0.4289173,
+        0.6675611
+      ],
+      "center_m": [
+        -0.5667572,
+        0.3908159,
+        0.660823
+      ],
+      "extent_m": [
+        0.3411712,
+        0.0762029,
+        0.0134763
+      ],
+      "vertex_count": 252,
+      "triangle_count": 440,
+      "materials": [
+        "Material.001"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 0.00018983
+    }
+  ]
+}

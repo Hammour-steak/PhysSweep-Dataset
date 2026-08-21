@@ -1,0 +1,29 @@
+{
+  "semantic_category": "support_game_table",
+  "assets": [
+    {
+      "asset_id": "sketchfab_bg_0f2ae181a2dd4b00a6ec25073692037f",
+      "name": "Pool Table (Animation)",
+      "admission_status": "v0_preferred",
+      "asset_path": "assets/library/sketchfab/background/sketchfab_bg_0f2ae181a2dd4b00a6ec25073692037f/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      }
+    },
+    {
+      "asset_id": "sketchfab_bg_ea1b9673f09b4d809c90ab48b1eceb50",
+      "name": "Pool Table",
+      "admission_status": "manual_review",
+      "asset_path": "assets/library/sketchfab/background/sketchfab_bg_ea1b9673f09b4d809c90ab48b1eceb50/model.glb",
+      "license": {
+        "requested_slug": "by",
+        "label": "CC Attribution",
+        "uid": "322a749bcfa841b29dff1e8a1bb74b0b",
+        "requires_attribution": true
+      }
+    }
+  ]
+}

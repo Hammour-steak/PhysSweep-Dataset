@@ -1,0 +1,65 @@
+{
+  "schema_version": "physweep_scene_asset_component_inventory_v1",
+  "asset_id": "sketchfab_bg_b9458e04d30e4b6284d46d35880a9b95",
+  "name": "Desk lamp",
+  "asset_role": "static_prop",
+  "semantic_category": "prop_lamp",
+  "admission": {
+    "reason": "banker lamp uses a fitted round base, vertical stem, and rectangular shade",
+    "sampling_enabled": true,
+    "status": "approved"
+  },
+  "proxy_kind": "static_compound",
+  "normalization_mode": "metric_registry_binding",
+  "mesh_component_count": 1,
+  "overall_bounds_low_m": [
+    -0.1808631,
+    -0.240599,
+    0.0
+  ],
+  "overall_bounds_high_m": [
+    0.1808631,
+    0.240599,
+    0.5200001
+  ],
+  "overall_extent_m": [
+    0.3617262,
+    0.481198,
+    0.5200001
+  ],
+  "total_vertex_count": 4995,
+  "total_triangle_count": 7570,
+  "components": [
+    {
+      "object_name": "defaultMaterial",
+      "parent_chain": [],
+      "bounds_low_m": [
+        -0.1808631,
+        -0.240599,
+        0.0
+      ],
+      "bounds_high_m": [
+        0.1808631,
+        0.240599,
+        0.5200001
+      ],
+      "center_m": [
+        0.0,
+        -0.0,
+        0.2600001
+      ],
+      "extent_m": [
+        0.3617262,
+        0.481198,
+        0.5200001
+      ],
+      "vertex_count": 4995,
+      "triangle_count": 7570,
+      "materials": [
+        "DefaultMaterial"
+      ],
+      "keyword_hints": [],
+      "bbox_volume_fraction": 1.00000004
+    }
+  ]
+}

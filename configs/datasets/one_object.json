@@ -1,0 +1,62 @@
+{
+  "schema_version": "physweep_dataset_build_v1",
+  "dataset_id": "physweep_one_object_formal",
+  "release_root": "datasets/physweep_training",
+  "scope": {
+    "source_base_count": 1000,
+    "published_pipeline": "generic_pybullet",
+    "sweep_axes": ["mass_kg", "contact_friction", "contact_restitution"],
+    "values_per_axis": 5,
+    "canonical_base_axis": "mass_kg"
+  },
+  "stages": [
+    {
+      "name": "sample_base",
+      "command": ["{python}", "tools/sample_one_object_scene_matrix.py", "--root", "{root}", "--output-dataset", "physweep_one_object_formal_base", "--count", "1000", "--seed", "20260820", "--resolution", "1280", "720", "--samples", "16", "--physics-workers", "24"]
+    },
+    {
+      "name": "stage_base_render",
+      "command": ["{python}", "tools/prepare_formal_render_manifests.py", "--root", "{root}", "--manifest", "datasets/physweep_one_object_formal_base/manifest.json", "--output-root", "outputs/physweep_one_object_formal_base_render", "--selection", "all"]
+    },
+    {
+      "name": "bind_base_visuals",
+      "command": ["{python}", "tools/bind_pybullet_visuals.py", "--root", "{root}", "--manifest", "outputs/physweep_one_object_formal_base_render/manifests/generic_source_manifest.json", "--output-root", "outputs/physweep_one_object_formal_base_render/generic", "--resolution", "1280x720", "--samples", "16", "--workers", "8"]
+    },
+    {
+      "name": "render_base",
+      "command": ["{python}", "tools/render_pybullet_manifest.py", "--root", "{root}", "--manifest", "outputs/physweep_one_object_formal_base_render/generic/bound_manifest.json", "--workers", "8", "--gpus", "0,1,2,3,4,5,6,7"]
+    },
+    {
+      "name": "build_scene_conditions",
+      "command": ["{python}", "tools/dataset_generation/build_gt_training_scenes.py", "--project-root", "{root}", "--source-bound-manifest", "outputs/physweep_one_object_formal_base_render/generic/bound_manifest.json", "--output-root", "outputs/gt_training_scene_build/formal", "--workers", "8"]
+    },
+    {
+      "name": "derive_sweep",
+      "command": ["{python}", "tools/derive_physics_sweep.py", "--root", "{root}", "--config", "configs/physics_sweep.json", "--base-dir", "datasets/physweep_one_object_formal_base/generic_matrix/candidates/initial", "--output-dir", "datasets/physweep_one_object_formal_sweep/metadata"]
+    },
+    {
+      "name": "simulate_sweep",
+      "command": ["{python}", "tools/run_pybullet_batch.py", "--root", "{root}", "--manifest", "datasets/physweep_one_object_formal_sweep/metadata/manifest.json", "--workers", "24"]
+    },
+    {
+      "name": "bind_sweep_visuals",
+      "command": ["{python}", "tools/bind_physics_sweep_visuals.py", "--root", "{root}", "--sweep-manifest", "datasets/physweep_one_object_formal_sweep/metadata/simulation_manifest.json", "--base-bound-manifest", "outputs/physweep_one_object_formal_base_render/generic/bound_manifest.json", "--output-root", "outputs/physweep_one_object_formal_sweep_render/bound"]
+    },
+    {
+      "name": "render_sweep",
+      "command": ["{python}", "tools/render_pybullet_manifest.py", "--root", "{root}", "--manifest", "outputs/physweep_one_object_formal_sweep_render/bound/bound_manifest.json", "--workers", "8", "--gpus", "0,1,2,3,4,5,6,7"]
+    },
+    {
+      "name": "publish_release",
+      "command": ["{python}", "tools/dataset_generation/compile_manifest.py", "--project-root", "{root}", "--sweep-manifest", "datasets/physweep_one_object_formal_sweep/metadata/manifest.json", "--base-render-root", "outputs/physweep_one_object_formal_base_render", "--sweep-render-root", "outputs/physweep_one_object_formal_sweep_render", "--output-root", "datasets/physweep_training", "--scene-source-root", "outputs/gt_training_scene_build/formal/source", "--canonical-base-axis", "mass_kg", "--object-points", "2048", "--environment-points", "8192", "--force-scenes"]
+    },
+    {
+      "name": "export_point_trajectories",
+      "command": ["{python}", "tools/dataset_generation/export_point_trajectories.py", "--project-root", "{root}", "--manifest", "datasets/physweep_training/manifest.jsonl", "--output-root", "datasets/physweep_training/point_trajectories"]
+    },
+    {
+      "name": "audit_release",
+      "command": ["{python}", "tools/dataset_generation/audit_training_dataset.py", "--project-root", "{root}", "--forbid-approximations", "datasets/physweep_training"]
+    }
+  ]
+}

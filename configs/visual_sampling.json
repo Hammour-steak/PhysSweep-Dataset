@@ -1,0 +1,572 @@
+{
+  "version": "physweep_visual_sampling_v1",
+  "role": "semantic_material_hdri_and_texture_scale_rules",
+  "environment_categories": [
+    "minimal",
+    "home_office",
+    "garage_workshop",
+    "lab_studio",
+    "outdoor_courtyard"
+  ],
+  "room_floor_pools_by_environment": {
+    "minimal": [
+      "concrete_floor_worn_001_4k",
+      "wood_floor_4k",
+      "laminate_floor_03_4k"
+    ],
+    "home_office": [
+      "wood_floor_4k",
+      "rectangular_parquet_4k",
+      "herringbone_parquet_4k",
+      "laminate_floor_03_4k",
+      "laminate_floor_4k"
+    ],
+    "garage_workshop": [
+      "garage_floor_4k",
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "rubber_tiles_4k"
+    ],
+    "lab_studio": [
+      "rubber_tiles_4k",
+      "garage_floor_4k"
+    ],
+    "outdoor_courtyard": [
+      "pavement_03_4k",
+      "pavement_04_4k",
+      "floor_pavement_4k",
+      "gravel_embedded_concrete_4k",
+      "concrete_floor_worn_001_4k"
+    ]
+  },
+  "wall_pools_by_environment": {
+    "minimal": [
+      "white_plaster_02_4k",
+      "white_plaster_rough_02_4k",
+      "plastered_wall_03_4k"
+    ],
+    "home_office": [
+      "beige_wall_001_4k",
+      "white_plaster_02_4k",
+      "plastered_wall_03_4k",
+      "plastered_wall_04_4k"
+    ],
+    "garage_workshop": [
+      "brick_wall_006_4k",
+      "wall_bricks_plaster_4k",
+      "painted_plaster_wall_4k",
+      "plastered_wall_04_4k"
+    ],
+    "lab_studio": [
+      "white_plaster_02_4k",
+      "painted_plaster_wall_4k"
+    ],
+    "outdoor_courtyard": [
+      "brick_wall_005_4k",
+      "red_brick_03_4k",
+      "sandstone_blocks_05_4k",
+      "white_sandstone_bricks_03_4k"
+    ]
+  },
+  "structure_material_pools_by_support": {
+    "wood_tray": [
+      "fine_grained_wood_4k",
+      "dark_wood_4k",
+      "wood_table_worn_4k"
+    ]
+  },
+  "structure_material_pools_by_environment": {
+    "minimal": [
+      "white_plaster_rough_02_4k",
+      "fine_grained_wood_4k",
+      "dark_wood_4k"
+    ],
+    "home_office": [
+      "fine_grained_wood_4k",
+      "wood_table_worn_4k",
+      "dark_wood_4k"
+    ],
+    "garage_workshop": [
+      "garage_floor_4k",
+      "dark_wood_4k",
+      "painted_plaster_wall_4k"
+    ],
+    "lab_studio": [
+      "white_plaster_02_4k",
+      "painted_plaster_wall_4k",
+      "garage_floor_4k"
+    ],
+    "outdoor_courtyard": [
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "sandstone_blocks_05_4k"
+    ]
+  },
+  "hdri_roles_by_environment": {
+    "minimal": ["studio_soft", "indoor_neutral"],
+    "home_office": ["indoor_neutral", "studio_soft"],
+    "garage_workshop": ["industrial_workshop", "indoor_neutral"],
+    "lab_studio": ["studio_soft", "indoor_neutral"],
+    "outdoor_courtyard": ["urban_daylight", "outdoor_daylight"]
+  },
+  "hdri_strength_ranges_by_environment": {
+    "minimal": [0.24, 0.36],
+    "home_office": [0.24, 0.38],
+    "garage_workshop": [0.22, 0.34],
+    "lab_studio": [0.24, 0.36],
+    "outdoor_courtyard": [0.34, 0.52]
+  },
+  "asset_proxy_render": {
+    "color_management": {
+      "view_transform": "Filmic",
+      "look": "Medium High Contrast",
+      "exposure": -0.35,
+      "gamma": 1.0
+    },
+    "world_strength": [0.20, 0.30],
+    "light_scale": {
+      "reference_span_m": 1.20,
+      "exponent": 0.5,
+      "minimum": 0.85,
+      "maximum": 1.25
+    },
+    "area_lights": [
+      {
+        "name": "key",
+        "offset_m": [-1.8, -2.0, 3.4],
+        "energy_w": 460.0,
+        "size_m": 1.6
+      },
+      {
+        "name": "fill",
+        "offset_m": [2.2, -0.4, 2.2],
+        "energy_w": 80.0,
+        "size_m": 2.8
+      },
+      {
+        "name": "rim",
+        "offset_m": [0.4, 2.0, 2.8],
+        "energy_w": 55.0,
+        "size_m": 2.2
+      }
+    ],
+    "inspection_limits": {
+      "maximum_mean_luminance": 0.74,
+      "maximum_highlight_fraction_above_0_90": 0.30
+    }
+  },
+  "support_material_pools_by_theme": {
+    "wood_table": [
+      "wood_table_001_4k",
+      "wood_table_worn_4k",
+      "fine_grained_wood_4k",
+      "oak_veneer_01_4k",
+      "plywood_4k",
+      "dark_wood_4k"
+    ],
+    "lab": [
+      "garage_floor_4k",
+      "rubber_tiles_4k",
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "floor_pavement_4k"
+    ],
+    "kitchen": [
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "floor_pavement_4k",
+      "laminate_floor_03_4k",
+      "laminate_floor_4k"
+    ],
+    "studio": [
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "pavement_03_4k",
+      "white_plaster_rough_02_4k"
+    ],
+    "game_table": [
+      "fabric_pattern_07_4k",
+      "green_fabric_4k",
+      "felt_4k"
+    ]
+  },
+  "support_material_pools": {
+    "wood_tabletop": [
+      "wood_table_001_4k",
+      "wood_table_worn_4k",
+      "fine_grained_wood_4k",
+      "oak_veneer_01_4k",
+      "plywood_4k",
+      "dark_wood_4k"
+    ],
+    "lab_bench": [
+      "garage_floor_4k",
+      "rubber_tiles_4k",
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "floor_pavement_4k"
+    ],
+    "kitchen_counter": [
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "floor_pavement_4k",
+      "laminate_floor_03_4k",
+      "laminate_floor_4k"
+    ],
+    "concrete_floor_mat": [
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "garage_floor_4k",
+      "floor_pavement_4k",
+      "pavement_03_4k",
+      "pavement_04_4k"
+    ],
+    "wood_floor": [
+      "wood_floor_4k",
+      "diagonal_parquet_4k",
+      "herringbone_parquet_4k",
+      "rectangular_parquet_4k",
+      "laminate_floor_03_4k",
+      "laminate_floor_4k"
+    ],
+    "rubber_floor": [
+      "rubber_tiles_4k",
+      "garage_floor_4k",
+      "blue_floor_tiles_01_4k",
+      "concrete_floor_worn_001_4k"
+    ],
+    "wood_tray": [
+      "wood_table_001_4k",
+      "wood_table_worn_4k",
+      "fine_grained_wood_4k",
+      "oak_veneer_01_4k",
+      "plywood_4k"
+    ],
+    "low_pedestal": [
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "pavement_03_4k",
+      "white_plaster_rough_02_4k"
+    ],
+    "simple_ramp": [
+      "plywood_4k",
+      "wood_table_worn_4k",
+      "fine_grained_wood_4k",
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "pavement_03_4k",
+      "garage_floor_4k",
+      "rubber_tiles_4k"
+    ],
+    "ground_ramp_long_shallow": [
+      "plywood_4k",
+      "wood_table_worn_4k",
+      "fine_grained_wood_4k",
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "pavement_03_4k",
+      "garage_floor_4k",
+      "rubber_tiles_4k"
+    ],
+    "ground_ramp_standard": [
+      "plywood_4k",
+      "wood_table_worn_4k",
+      "fine_grained_wood_4k",
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "pavement_03_4k",
+      "garage_floor_4k",
+      "rubber_tiles_4k"
+    ],
+    "ground_ramp_short_steep": [
+      "plywood_4k",
+      "wood_table_worn_4k",
+      "fine_grained_wood_4k",
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "pavement_03_4k",
+      "garage_floor_4k",
+      "rubber_tiles_4k"
+    ],
+    "wood_ramp": [
+      "wood_table_001_4k",
+      "wood_table_worn_4k",
+      "fine_grained_wood_4k",
+      "oak_veneer_01_4k",
+      "plywood_4k",
+      "dark_wood_4k"
+    ],
+    "lab_ramp": [
+      "garage_floor_4k",
+      "rubber_tiles_4k",
+      "concrete_floor_worn_001_4k",
+      "floor_pavement_4k"
+    ],
+    "ground_wood_ramp": [
+      "wood_table_001_4k",
+      "wood_table_worn_4k",
+      "fine_grained_wood_4k",
+      "oak_veneer_01_4k",
+      "plywood_4k",
+      "dark_wood_4k"
+    ],
+    "ground_lab_ramp": [
+      "garage_floor_4k",
+      "rubber_tiles_4k",
+      "concrete_floor_worn_001_4k",
+      "floor_pavement_4k"
+    ]
+  },
+  "object_material_pools": {
+    "cardboard": [
+      "plywood_4k",
+      "fine_grained_wood_4k",
+      "oak_veneer_01_4k"
+    ],
+    "stone": [
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "floor_pavement_4k",
+      "pavement_03_4k",
+      "pavement_04_4k"
+    ],
+    "painted_wood": [
+      "fine_grained_wood_4k",
+      "oak_veneer_01_4k",
+      "dark_wood_4k",
+      "wood_table_worn_4k"
+    ],
+    "rubber": [
+      "rubber_tiles_4k",
+      "garage_floor_4k",
+      "dark_wood_4k"
+    ],
+    "painted_metal": [
+      "garage_floor_4k",
+      "painted_plaster_wall_4k",
+      "damaged_concrete_floor_02_4k"
+    ],
+    "plastic": [
+      "white_plaster_02_4k",
+      "white_plaster_rough_02_4k",
+      "rubber_tiles_4k",
+      "garage_floor_4k"
+    ]
+  },
+  "structure_material_pools_by_theme": {
+    "wood_table": [
+      "fine_grained_wood_4k",
+      "dark_wood_4k",
+      "wood_table_worn_4k"
+    ],
+    "lab": [
+      "garage_floor_4k",
+      "dark_wood_4k",
+      "painted_plaster_wall_4k"
+    ],
+    "kitchen": [
+      "fine_grained_wood_4k",
+      "dark_wood_4k",
+      "painted_plaster_wall_4k"
+    ],
+    "studio": [
+      "white_plaster_02_4k",
+      "white_plaster_rough_02_4k",
+      "concrete_floor_worn_001_4k"
+    ]
+  },
+  "wall_primary_pools_by_theme": {
+    "wood_table": [
+      "plastered_wall_03_4k",
+      "plastered_wall_04_4k",
+      "white_plaster_rough_02_4k",
+      "beige_wall_001_4k"
+    ],
+    "lab": [
+      "white_plaster_rough_02_4k",
+      "plastered_wall_04_4k",
+      "painted_plaster_wall_4k"
+    ],
+    "kitchen": [
+      "beige_wall_001_4k",
+      "white_plaster_02_4k",
+      "plastered_wall_03_4k"
+    ],
+    "studio": [
+      "white_plaster_02_4k",
+      "white_plaster_rough_02_4k",
+      "painted_plaster_wall_4k"
+    ]
+  },
+  "wall_accent_pools_by_theme": {
+    "wood_table": [
+      "brick_wall_005_4k",
+      "red_brick_03_4k"
+    ],
+    "lab": [
+      "brick_wall_006_4k",
+      "wall_bricks_plaster_4k"
+    ],
+    "kitchen": [
+      "white_sandstone_bricks_03_4k",
+      "beige_wall_001_4k"
+    ],
+    "studio": [
+      "sandstone_blocks_05_4k",
+      "white_sandstone_bricks_03_4k"
+    ]
+  },
+  "wall_accent_probability": 0.28,
+  "room_floor_pool": [
+    "concrete_floor_worn_001_4k",
+    "damaged_concrete_floor_02_4k",
+    "garage_floor_4k",
+    "pavement_03_4k",
+    "pavement_04_4k",
+    "wood_floor_4k"
+  ],
+  "hdri_roles_by_theme": {
+    "wood_table": [
+      "indoor_neutral",
+      "studio_soft"
+    ],
+    "lab": [
+      "industrial_workshop",
+      "studio_soft",
+      "indoor_neutral"
+    ],
+    "kitchen": [
+      "indoor_neutral",
+      "studio_soft"
+    ],
+    "studio": [
+      "studio_soft",
+      "indoor_neutral"
+    ]
+  },
+  "texture_scale_ranges": {
+    "dynamic_object": [
+      1.0,
+      2.6
+    ],
+    "support_surface": [
+      1.4,
+      3.6
+    ],
+    "support_structure": [
+      1.4,
+      3.2
+    ],
+    "room_floor": [
+      2.0,
+      4.8
+    ],
+    "back_wall": [
+      2.2,
+      5.2
+    ]
+  },
+  "surface_material_pools_by_family": {
+    "wood": [
+      "wood_table_001_4k",
+      "wood_table_worn_4k",
+      "wood_floor_4k",
+      "dark_wood_4k",
+      "oak_veneer_01_4k",
+      "rectangular_parquet_4k",
+      "herringbone_parquet_4k",
+      "rosewood_veneer1_4k"
+    ],
+    "concrete": [
+      "concrete_floor_worn_001_4k",
+      "damaged_concrete_floor_02_4k",
+      "garage_floor_4k",
+      "floor_pavement_4k"
+    ],
+    "tile": [
+      "blue_floor_tiles_01_4k",
+      "laminate_floor_03_4k",
+      "laminate_floor_4k",
+      "floor_pavement_4k"
+    ],
+    "rubber_dark": [
+      "rubber_tiles_4k",
+      "garage_floor_4k",
+      "dark_wood_4k",
+      "floor_pavement_4k"
+    ],
+    "light_stone": [
+      "white_plaster_02_4k",
+      "white_plaster_rough_02_4k",
+      "sandstone_blocks_05_4k",
+      "white_sandstone_blocks_02_4k",
+      "white_sandstone_bricks_03_4k"
+    ],
+    "mixed": [
+      "wood_table_worn_4k",
+      "floor_pavement_4k",
+      "garage_floor_4k",
+      "blue_floor_tiles_01_4k",
+      "concrete_floor_worn_001_4k"
+    ]
+  },
+  "fallback_object_material_pools_by_value": {
+    "dark": [
+      "rubber_tiles_4k",
+      "garage_floor_4k",
+      "dark_wood_4k",
+      "floor_pavement_4k",
+      "pavement_04_4k"
+    ],
+    "medium": [
+      "wood_table_001_4k",
+      "wood_table_worn_4k",
+      "oak_veneer_01_4k",
+      "concrete_floor_worn_001_4k"
+    ],
+    "light": [
+      "white_plaster_02_4k",
+      "white_plaster_rough_02_4k",
+      "floor_pavement_4k",
+      "plywood_4k"
+    ]
+  },
+  "material_role_admission": {
+    "dynamic_object": {
+      "allowed_object_grades": [
+        "A_near_object",
+        "B_mid_far_object"
+      ]
+    }
+  },
+  "wall_fallback_pool": [
+    "white_plaster_02_4k",
+    "white_plaster_rough_02_4k",
+    "plastered_wall_03_4k",
+    "plastered_wall_04_4k",
+    "painted_plaster_wall_4k",
+    "beige_wall_001_4k",
+    "brick_4_4k",
+    "brick_wall_005_4k",
+    "brick_wall_006_4k",
+    "castle_brick_02_red_4k",
+    "medieval_blocks_03_4k",
+    "plaster_brick_pattern_4k",
+    "random_bricks_thick_4k",
+    "red_brick_03_4k",
+    "red_brick_4k",
+    "sandstone_blocks_05_4k",
+    "stone_wall_03_4k",
+    "wall_bricks_plaster_4k",
+    "white_sandstone_blocks_02_4k",
+    "white_sandstone_bricks_03_4k",
+    "yellow_bricks_4k"
+  ],
+  "invariants": {
+    "object_support_and_wall_material_ids_are_distinct": true,
+    "contact_surface_uses_support_semantic_pool": true,
+    "wall_material_never_uses_contact_surface_pool": true,
+    "dynamic_object_material_uses_an_object_grade": true,
+    "visual_rules_do_not_change_physics": true
+  }
+}

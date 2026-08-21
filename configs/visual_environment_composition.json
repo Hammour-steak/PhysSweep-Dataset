@@ -1,0 +1,306 @@
+{
+  "schema_version": "physweep_visual_environment_composition_v1",
+  "policy": {
+    "admitted_review_status": "approved",
+    "supported_modes": [
+      "integrated_ground"
+    ],
+    "integrated_environment_scene_classes": ["ground_flat"],
+    "action_surface_frame": "normalized_visual_asset_local_bottom_center_z_up",
+    "visual_action_surface_owner": "source_environment",
+    "collision_action_surface_owner": "analytic_scene_kit",
+    "environment_proxy_must_exclude_action_surface": true,
+    "ground_flat_action_anchor_rule": "initial_object_xy",
+    "minimum_clearance_safety_margin_m": 0.12,
+    "procedural_floor_visual_policy": "hide_when_source_environment_owns_floor",
+    "portable_ground_feature_visual_policy": "forbid_in_integrated_environment_v1",
+    "raised_support_policy": "not_supported_in_v1",
+    "fallback_when_no_compatible_environment": "procedural_room",
+    "human_visual_review_required": true
+  },
+  "review_evidence": {
+    "status": "frozen_in_profile_and_collision_contract"
+  },
+  "records": [
+    {
+      "profile_id": "mesh_env_living_white",
+      "asset_id": "env_living_white_afb8cb0c",
+      "review_status": "paused",
+      "reason": "Production framing exposes the open cutaway shell against the HDRI, creating a nested miniature-room appearance."
+    },
+    {
+      "profile_id": "mesh_env_dining_modern",
+      "asset_id": "env_dining_modern_df3f3c9f",
+      "review_status": "paused",
+      "reason": "The reviewed action patch lies beside an open shell edge that remains visible in production framing."
+    },
+    {
+      "profile_id": "mesh_env_kitchen_modern",
+      "asset_id": "env_kitchen_modern_9843a830",
+      "review_status": "paused",
+      "reason": "Configured floor level does not match the dominant source floor; rebuild alignment and proxy before admission."
+    },
+    {
+      "profile_id": "mesh_env_kitchen_living",
+      "asset_id": "env_kitchen_living_2684e307",
+      "review_status": "paused",
+      "reason": "Directional probes expose floor material and boundary artifacts inside the action region."
+    },
+    {
+      "profile_id": "mesh_env_office_small",
+      "asset_id": "env_office_small_393a8fec",
+      "review_status": "approved",
+      "composition_mode": "integrated_ground",
+      "action_surface": {
+        "anchor_local_m": [-0.239999, -2.324, 0.0],
+        "audited_clear_radius_m": 1.88,
+        "admitted_action_radius_m": 1.72
+      },
+      "camera": {
+        "preferred_local_azimuth_degrees": -90.0,
+        "maximum_local_azimuth_deviation_degrees": 12.0,
+        "preferred_elevation_degrees": 24.0,
+        "minimum_elevation_degrees": 18.0,
+        "maximum_elevation_degrees": 26.0,
+        "minimum_distance_m": 2.0,
+        "maximum_distance_m": 5.0,
+        "target_depth_offset_m": 1.35,
+        "target_lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.2,
+        "focal_length_cap_mm": 40.0,
+        "reviewed_view": "south"
+      },
+      "bindings": [
+        {
+          "support_ids": ["wood_floor"],
+          "motion_families": ["drop_fall_1obj"]
+        },
+        {
+          "support_ids": ["wood_floor"],
+          "motion_families": ["slide_push_1obj", "roll_or_slide_1obj"],
+          "trajectory_extents": ["short"]
+        }
+      ]
+    },
+    {
+      "profile_id": "mesh_env_office_modern",
+      "asset_id": "env_office_modern_1c894023",
+      "review_status": "paused",
+      "reason": "Reviewed floor was bound to a narrow raised strip instead of the main room floor."
+    },
+    {
+      "profile_id": "mesh_env_cafe_cozy",
+      "asset_id": "env_cafe_cozy_fb7c75da",
+      "review_status": "approved",
+      "composition_mode": "integrated_ground",
+      "action_surface": {
+        "anchor_local_m": [0.10771, 0.680078, 0.197734],
+        "audited_clear_radius_m": 0.68,
+        "admitted_action_radius_m": 0.56
+      },
+      "camera": {
+        "preferred_local_azimuth_degrees": 0.0,
+        "maximum_local_azimuth_deviation_degrees": 8.0,
+        "preferred_elevation_degrees": 22.0,
+        "minimum_elevation_degrees": 20.0,
+        "maximum_elevation_degrees": 24.0,
+        "minimum_distance_m": 3.8,
+        "maximum_distance_m": 4.2,
+        "target_depth_offset_m": 0.0,
+        "target_lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.05,
+        "focal_length_cap_mm": 40.0,
+        "reviewed_view": "east"
+      },
+      "bindings": [
+        {
+          "support_ids": ["wood_floor"],
+          "motion_families": ["drop_fall_1obj"]
+        }
+      ]
+    },
+    {
+      "profile_id": "mesh_env_garage_workshop",
+      "asset_id": "env_garage_desert_ef8bb817",
+      "review_status": "paused",
+      "reason": "All four directional probes are blocked by walls, beams, or the workbench."
+    },
+    {
+      "profile_id": "mesh_env_parking_structure",
+      "asset_id": "env_parking_garage_f36802d7",
+      "review_status": "paused",
+      "reason": "Multi-level structure has no sufficiently clear reviewed ground action region."
+    },
+    {
+      "profile_id": "mesh_env_gallery_exterior",
+      "asset_id": "env_gallery_studio_789cdada",
+      "review_status": "paused",
+      "reason": "Reviewed ground clearance is insufficient for a dynamic object."
+    },
+    {
+      "profile_id": "mesh_env_graffiti_courtyard",
+      "asset_id": "env_graffiti_lab_7e764b49",
+      "review_status": "approved",
+      "composition_mode": "integrated_ground",
+      "action_surface": {
+        "anchor_local_m": [-0.667483, -0.216277, 0.0],
+        "audited_clear_radius_m": 1.04,
+        "admitted_action_radius_m": 0.88
+      },
+      "camera": {
+        "preferred_local_azimuth_degrees": -90.0,
+        "maximum_local_azimuth_deviation_degrees": 12.0,
+        "preferred_elevation_degrees": 20.0,
+        "minimum_elevation_degrees": 16.0,
+        "maximum_elevation_degrees": 20.0,
+        "minimum_distance_m": 2.0,
+        "maximum_distance_m": 5.0,
+        "target_depth_offset_m": 0.45,
+        "target_lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.3,
+        "focal_length_cap_mm": 40.0,
+        "reviewed_view": "south"
+      },
+      "bindings": [
+        {
+          "support_ids": ["concrete_floor_mat"],
+          "motion_families": ["drop_fall_1obj"]
+        }
+      ]
+    },
+    {
+      "profile_id": "mesh_env_house_exterior",
+      "asset_id": "env_house_interior_c57c2019",
+      "review_status": "paused",
+      "reason": "The configured level is the lower shell; the visible primary floor is on a different elevation."
+    },
+    {
+      "profile_id": "mesh_env_art_studio",
+      "asset_id": "env_art_studio_fdd57e78",
+      "review_status": "paused",
+      "reason": "Production framing exposes the open floor boundary and background behind the cutaway room."
+    },
+    {
+      "profile_id": "mesh_env_kitchen_small",
+      "asset_id": "env_kitchen_small_2cc658a9",
+      "review_status": "approved",
+      "composition_mode": "integrated_ground",
+      "action_surface": {
+        "anchor_local_m": [0.579448, -2.525942, 0.0],
+        "audited_clear_radius_m": 1.975854,
+        "admitted_action_radius_m": 1.8
+      },
+      "camera": {
+        "preferred_local_azimuth_degrees": -90.0,
+        "maximum_local_azimuth_deviation_degrees": 12.0,
+        "preferred_elevation_degrees": 24.0,
+        "minimum_elevation_degrees": 18.0,
+        "maximum_elevation_degrees": 30.0,
+        "minimum_distance_m": 2.0,
+        "maximum_distance_m": 5.0,
+        "target_depth_offset_m": 1.25,
+        "target_lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.28,
+        "focal_length_cap_mm": 32.0,
+        "reviewed_view": "south"
+      },
+      "bindings": [
+        {
+          "support_ids": ["concrete_floor_mat"],
+          "motion_families": ["drop_fall_1obj"]
+        },
+        {
+          "support_ids": ["concrete_floor_mat"],
+          "motion_families": ["slide_push_1obj", "roll_or_slide_1obj"],
+          "trajectory_extents": ["short"]
+        }
+      ]
+    },
+    {
+      "profile_id": "mesh_env_cafe_small",
+      "asset_id": "env_cafe_small_0c4d6d98",
+      "review_status": "paused",
+      "reason": "Furniture and counter footprints leave no clear ground action region."
+    },
+    {
+      "profile_id": "mesh_env_industrial_brick",
+      "asset_id": "env_garage_scan_6fbb2f49",
+      "review_status": "paused",
+      "reason": "Trimesh and Blender evaluate different source bounds; Blender-native surface review is required."
+    },
+    {
+      "profile_id": "mesh_env_duplex_modern",
+      "asset_id": "env_duplex_modern_70ab4f41",
+      "review_status": "paused",
+      "reason": "Stairs, railings, and upper-level slabs occlude every reviewed camera direction."
+    },
+    {
+      "profile_id": "mesh_env_bathroom_modern",
+      "asset_id": "env_bathroom_modern_9ba7e0a0",
+      "review_status": "approved",
+      "composition_mode": "integrated_ground",
+      "action_surface": {
+        "anchor_local_m": [0.148112, -0.185115, 0.223827],
+        "audited_clear_radius_m": 1.531013,
+        "admitted_action_radius_m": 1.36
+      },
+      "camera": {
+        "preferred_local_azimuth_degrees": -90.0,
+        "maximum_local_azimuth_deviation_degrees": 12.0,
+        "preferred_elevation_degrees": 22.0,
+        "minimum_elevation_degrees": 16.0,
+        "maximum_elevation_degrees": 30.0,
+        "minimum_distance_m": 2.0,
+        "maximum_distance_m": 5.0,
+        "target_depth_offset_m": 0.45,
+        "target_lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.35,
+        "focal_length_cap_mm": 36.0,
+        "reviewed_view": "south"
+      },
+      "bindings": [
+        {
+          "support_ids": ["concrete_floor_mat"],
+          "motion_families": ["drop_fall_1obj"]
+        }
+      ]
+    },
+    {
+      "profile_id": "mesh_env_classroom_bright",
+      "asset_id": "env_classroom_bright_f61f4b6a",
+      "review_status": "approved",
+      "composition_mode": "integrated_ground",
+      "action_surface": {
+        "anchor_local_m": [1.22, -2.708129, 0.0],
+        "audited_clear_radius_m": 1.48,
+        "admitted_action_radius_m": 1.3
+      },
+      "camera": {
+        "preferred_local_azimuth_degrees": -90.0,
+        "maximum_local_azimuth_deviation_degrees": 8.0,
+        "preferred_elevation_degrees": 28.0,
+        "minimum_elevation_degrees": 20.0,
+        "maximum_elevation_degrees": 32.0,
+        "minimum_distance_m": 2.0,
+        "maximum_distance_m": 5.0,
+        "target_depth_offset_m": 1.05,
+        "target_lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.32,
+        "focal_length_cap_mm": 34.0,
+        "reviewed_view": "south"
+      },
+      "bindings": [
+        {
+          "support_ids": ["concrete_floor_mat"],
+          "motion_families": ["drop_fall_1obj"]
+        }
+      ]
+    },
+    {
+      "profile_id": "mesh_env_warehouse_services",
+      "asset_id": "env_office_studio_8fc52866",
+      "review_status": "paused",
+      "reason": "Configured floor level does not match the main warehouse floor."
+    }
+  ]
+}
