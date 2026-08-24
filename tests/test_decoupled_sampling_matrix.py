@@ -72,6 +72,7 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
                 Path(command[command.index("--output-root") + 1]),
                 dataset_root / "physics",
             )
+            self.assertIn("--allow-audit-rejections", command)
             physics_manifest_path.parent.mkdir(parents=True, exist_ok=True)
             simulation_record_path.parent.mkdir(parents=True, exist_ok=True)
             trajectory_path.touch()

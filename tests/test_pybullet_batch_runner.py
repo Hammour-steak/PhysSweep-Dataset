@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from run_pybullet_batch import (  # noqa: E402
+    batch_failed,
     group_samples_by_schema,
     manifest_samples,
     prepare_output_root,
@@ -16,6 +17,29 @@ from run_pybullet_batch import (  # noqa: E402
 
 
 class PyBulletBatchRunnerTests(unittest.TestCase):
+    def test_audit_rejections_can_be_returned_to_a_resampling_caller(self) -> None:
+        self.assertFalse(
+            batch_failed(
+                rejected_count=1,
+                error_count=0,
+                allow_audit_rejections=True,
+            )
+        )
+        self.assertTrue(
+            batch_failed(
+                rejected_count=1,
+                error_count=0,
+                allow_audit_rejections=False,
+            )
+        )
+        self.assertTrue(
+            batch_failed(
+                rejected_count=0,
+                error_count=1,
+                allow_audit_rejections=True,
+            )
+        )
+
     def test_workers_use_fresh_spawned_processes(self) -> None:
         self.assertEqual(worker_context().get_start_method(), "spawn")
 

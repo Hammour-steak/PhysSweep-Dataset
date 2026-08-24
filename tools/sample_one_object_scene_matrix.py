@@ -905,6 +905,7 @@ def sample_generic_candidate_batch(
             str(simulation_output_root),
             "--workers",
             str(physics_workers),
+            "--allow-audit-rejections",
         ],
         root,
     )

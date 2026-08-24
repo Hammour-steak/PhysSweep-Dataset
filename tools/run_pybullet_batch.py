@@ -96,6 +96,13 @@ def prepare_output_root(output_root: Path, allow_existing: bool) -> None:
     output_root.mkdir(parents=True, exist_ok=True)
 
 
+def batch_failed(
+    *, rejected_count: int, error_count: int, allow_audit_rejections: bool
+) -> bool:
+    """Return whether the batch result must fail the command."""
+    return error_count > 0 or (rejected_count > 0 and not allow_audit_rejections)
+
+
 def worker(
     root: str, output_root: str, sample: dict[str, Any]
 ) -> dict[str, Any]:
@@ -132,6 +139,11 @@ def parse_args() -> argparse.Namespace:
         "--allow-existing-output",
         action="store_true",
         help="Explicitly permit replacing per-scene files in a non-empty output tree.",
+    )
+    parser.add_argument(
+        "--allow-audit-rejections",
+        action="store_true",
+        help="Return success for audited rejections so a caller can resample them.",
     )
     return parser.parse_args()
 
@@ -207,7 +219,11 @@ def main() -> None:
         print(json.dumps(dict(failed_checks), indent=2, ensure_ascii=True))
     if errors:
         print(json.dumps(errors[:5], indent=2, ensure_ascii=True))
-    if rejected or errors:
+    if batch_failed(
+        rejected_count=len(rejected),
+        error_count=len(errors),
+        allow_audit_rejections=args.allow_audit_rejections,
+    ):
         raise SystemExit(1)
 
 
