@@ -17,7 +17,10 @@ from rigid_geometry import (  # noqa: E402
     support_surface_height_m,
     validate_support_geometry,
 )
-from sample_pybullet_base import load_active_rules  # noqa: E402
+from sample_pybullet_base import (  # noqa: E402
+    load_active_rules,
+    resolve_support_geometry_variant,
+)
 
 
 class RigidGeometryTests(unittest.TestCase):
@@ -91,6 +94,46 @@ class RigidGeometryTests(unittest.TestCase):
         high = support_surface_height_m(geometry, 0.0, 0.4)
         self.assertGreater(high, low)
 
+    def test_every_long_shallow_geometry_variant_is_grounded_and_semantic(self) -> None:
+        support = next(
+            item
+            for item in self.axes["support_axis"]
+            if item["label"] == "ground_ramp_long_shallow"
+        )
+        subtype = self.axes["motion_subtype_axis"]["ramp_to_flat_1obj"][0]
+        for variant in support["geometry_variants"]:
+            resolved = resolve_support_geometry_variant(support, variant)
+            geometry = build_support_geometry(
+                resolved, "ramp_to_flat_1obj", subtype, [0.0, -1.0, 0.0]
+            )
+            with self.subTest(variant=variant["id"]):
+                self.assertEqual(
+                    geometry["visual_geometry"]["primitive"], "solid_wedge"
+                )
+                self.assertEqual(geometry["structure_anchor"], "floor_flush_low_edge")
+                self.assertGreaterEqual(
+                    geometry["surface_frame"]["slope_angle_degrees"], 8.0
+                )
+                self.assertLessEqual(
+                    geometry["surface_frame"]["slope_angle_degrees"], 12.0
+                )
+                destination = next(
+                    collider
+                    for collider in geometry["colliders"]
+                    if collider["id"] == "environment_floor"
+                )
+                self.assertEqual(destination["position_m"][2], -0.05)
+                destination_top = destination["position_m"][2] + 0.5 * destination[
+                    "size_m"
+                ][2]
+                self.assertLessEqual(
+                    abs(
+                        geometry["visual_geometry"]["base_z_m"]
+                        - destination_top
+                    ),
+                    0.002,
+                )
+
     def test_ramps_declare_one_metadata_driven_solid_wedge(self) -> None:
         subtype = self.axes["motion_subtype_axis"]["slope_slide_down_1obj"][0]
         for support in self.axes["support_axis"]:
@@ -112,6 +155,32 @@ class RigidGeometryTests(unittest.TestCase):
                 ]
                 self.assertTrue(replaced)
                 self.assertEqual(replaced[0]["role"], "primary_support")
+                self.assertEqual(
+                    geometry["landing_length_m"],
+                    placement["landing_length_m"],
+                )
+
+    def test_ramp_family_angles_are_semantically_distinct(self) -> None:
+        expected_ranges = {
+            "straight_long_shallow": (8.0, 12.0),
+            "straight_standard": (12.0, 18.0),
+            "channel_medium": (12.0, 18.0),
+            "straight_short_steep": (20.0, 30.0),
+        }
+        subtype = self.axes["motion_subtype_axis"]["slope_slide_down_1obj"][0]
+        for support in self.axes["support_axis"]:
+            placement = support.get("overrides", {}).get("placement", {})
+            family = placement.get("structure_family")
+            if family not in expected_ranges:
+                continue
+            geometry = build_support_geometry(
+                support, "slope_slide_down_1obj", subtype
+            )
+            angle = float(geometry["surface_frame"]["slope_angle_degrees"])
+            minimum, maximum = expected_ranges[family]
+            with self.subTest(support=support["label"], family=family):
+                self.assertGreaterEqual(angle, minimum)
+                self.assertLessEqual(angle, maximum)
 
     def test_ground_flat_is_one_flush_full_floor(self) -> None:
         subtype = self.axes["motion_subtype_axis"]["slide_push_1obj"][0]
@@ -137,6 +206,101 @@ class RigidGeometryTests(unittest.TestCase):
         }
         self.assertTrue({"floor_track", "lab_track"}.isdisjoint(labels))
         self.assertNotIn("narrow_track", shapes)
+
+    def test_long_corridor_has_two_physical_side_walls(self) -> None:
+        support = next(
+            item
+            for item in self.axes["support_axis"]
+            if item["label"] == "long_corridor"
+        )
+        subtype = self.axes["motion_subtype_axis"]["slide_push_1obj"][-1]
+        geometry = build_support_geometry(
+            support, "slide_push_1obj", subtype, [1.0, 0.0, 0.0]
+        )
+        walls = [
+            item
+            for item in geometry["colliders"]
+            if item["id"].startswith("corridor_wall_")
+        ]
+        self.assertEqual(len(walls), 2)
+        self.assertEqual(geometry["maximum_planar_trajectory_distance_m"], 2.8)
+        self.assertTrue(all(item["collision_enabled"] for item in walls))
+        self.assertTrue(all(item["occludes_camera"] for item in walls))
+        self.assertTrue(all(item["material_role"] == "back_wall" for item in walls))
+        self.assertEqual(
+            geometry["camera_envelope"],
+            {
+                "type": "paired_parallel_walls",
+                "motion_axis": "x",
+                "collider_ids": ["corridor_wall_-1", "corridor_wall_+1"],
+                "clearance_m": 0.35,
+            },
+        )
+        self.assertEqual(walls[0]["size_m"][0], walls[1]["size_m"][0])
+        self.assertLess(
+            walls[0]["position_m"][1] * walls[1]["position_m"][1], 0.0
+        )
+
+    def test_long_tables_are_raised_structures_with_ground_below(self) -> None:
+        subtype = self.axes["motion_subtype_axis"]["slide_push_1obj"][-1]
+        expected = {
+            "long_wood_table": (4.8, 2.25),
+            "long_lab_bench": (4.6, 2.2),
+            "long_kitchen_counter": (4.4, 2.1),
+        }
+        for support_id, (length, maximum_distance) in expected.items():
+            support = next(
+                item
+                for item in self.axes["support_axis"]
+                if item["label"] == support_id
+            )
+            geometry = build_support_geometry(
+                support, "slide_push_1obj", subtype, [1.0, 0.0, 0.0]
+            )
+            collider_ids = {item["id"] for item in geometry["colliders"]}
+            with self.subTest(support=support_id):
+                self.assertGreaterEqual(geometry["size_m"][0], length)
+                self.assertGreater(geometry["size_m"][0] / geometry["size_m"][1], 3.0)
+                self.assertEqual(
+                    geometry["maximum_planar_trajectory_distance_m"],
+                    maximum_distance,
+                )
+                self.assertIn("environment_floor", collider_ids)
+                self.assertGreater(geometry["surface_center_z_m"], 0.7)
+                self.assertEqual(geometry["motion_axis"], "x")
+
+    def test_low_pedestal_edge_fall_has_a_separate_floor_target(self) -> None:
+        support = next(
+            item
+            for item in self.axes["support_axis"]
+            if item["label"] == "low_pedestal"
+        )
+        subtype = self.axes["motion_subtype_axis"]["edge_fall_1obj"][0]
+        geometry = build_support_geometry(
+            support, "edge_fall_1obj", subtype, [1.0, 0.0, 0.0]
+        )
+        colliders = {item["id"]: item for item in geometry["colliders"]}
+        self.assertIn("support", colliders)
+        self.assertIn("environment_floor", colliders)
+        self.assertGreater(
+            geometry["surface_center_z_m"],
+            colliders["environment_floor"]["position_m"][2]
+            + colliders["environment_floor"]["size_m"][2] / 2.0,
+        )
+        contract = geometry["transition_contract"]
+        self.assertEqual(contract["type"], "raised_edge_to_floor")
+        self.assertEqual(contract["source_collider_id"], "support")
+        self.assertEqual(contract["destination_collider_id"], "environment_floor")
+        self.assertEqual(contract["intermediate_phase"], "airborne")
+        self.assertGreater(contract["height_drop_m"], 0.0)
+        self.assertAlmostEqual(
+            contract["boundary_point_m"][2],
+            geometry["surface_center_z_m"],
+            places=6,
+        )
+        self.assertAlmostEqual(
+            math.hypot(*contract["outward_direction_xy"]), 1.0, places=6
+        )
 
     def test_side_on_cylinders_rest_on_their_radius(self) -> None:
         support_record = next(
@@ -204,6 +368,15 @@ class RigidGeometryTests(unittest.TestCase):
         landing_top_z = landing["position_m"][2] + landing["size_m"][2] / 2.0
         self.assertAlmostEqual(landing_top_z, ramp_low_edge_z, places=5)
         self.assertEqual(landing["role"], "landing_surface")
+        contract = geometry["transition_contract"]
+        self.assertEqual(contract["type"], "incline_to_horizontal")
+        self.assertEqual(contract["source_collider_id"], "support")
+        self.assertEqual(contract["destination_collider_id"], "landing_surface")
+        self.assertEqual(contract["intermediate_phase"], "continuous_contact")
+        self.assertAlmostEqual(contract["height_drop_m"], 0.0, places=6)
+        self.assertAlmostEqual(
+            contract["boundary_point_m"][2], landing_top_z, places=5
+        )
 
     def test_ground_ramp_transition_uses_the_flush_environment_floor(self) -> None:
         support = next(
@@ -218,6 +391,22 @@ class RigidGeometryTests(unittest.TestCase):
         ids = {item["id"] for item in geometry["colliders"]}
         self.assertIn("environment_floor", ids)
         self.assertNotIn("landing_surface", ids)
+        self.assertEqual(
+            geometry["transition_contract"]["destination_collider_id"],
+            "environment_floor",
+        )
+
+    def test_non_transition_support_has_no_transition_contract(self) -> None:
+        support = next(
+            item
+            for item in self.axes["support_axis"]
+            if item["label"] == "wood_tabletop"
+        )
+        subtype = self.axes["motion_subtype_axis"]["slide_push_1obj"][0]
+        geometry = build_support_geometry(
+            support, "slide_push_1obj", subtype, [1.0, 0.0, 0.0]
+        )
+        self.assertNotIn("transition_contract", geometry)
 
     def test_ramp_geometry_is_owned_by_the_scene_kit(self) -> None:
         support = next(

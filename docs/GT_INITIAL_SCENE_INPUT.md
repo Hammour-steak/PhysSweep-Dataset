@@ -57,16 +57,18 @@ The normalization radius is stored in meters and does not discard metric scale.
 
 ## Build And Review
 
-Use the configured one-object release pipeline. It passes the exact bound
-manifest, scene-source directory, render roots, and release root to both stages:
+The default one-object build configuration currently stops after frozen base and
+sweep metadata. Inspect its resolved stages with:
 
 ```bash
 .venv/bin/python tools/dataset_generation/build_one_object_dataset.py \
   --config configs/datasets/one_object.json --dry-run
 ```
 
-Remove `--dry-run` only after reviewing the printed stage inputs. Direct calls
-to `compile_manifest.py` require every source and output path explicitly.
+Scene-condition construction starts only after mixed-schema trajectory
+simulation and rendering have produced validated manifests. Do not treat the
+metadata-only build as a training release. Direct calls to `compile_manifest.py`
+require every source and output path explicitly.
 
 The formal builder is resumable and produces only the 10,240-point scene
 contract. Dense source surfaces, fixed model inputs, logs, and provenance

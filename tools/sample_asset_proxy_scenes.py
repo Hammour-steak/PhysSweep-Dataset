@@ -108,6 +108,13 @@ def asset_camera_observation(
         ) from error
     if observation["focus_event"]["type"] == "required_motion_collider":
         raise ValueError("asset camera observation cannot use an unresolved collider")
+    if observation["focus_event"]["type"] == "transition_destination_contact":
+        if profile != "edge_exit":
+            raise ValueError(
+                "asset transition destination is undefined for this motion profile"
+            )
+        observation["focus_event"]["type"] = "collider_contact"
+        observation["focus_event"]["collider_id"] = "environment_floor"
     observation["minimum_anchor_visible_fraction"] = float(
         context["minimum_anchor_visible_fraction"]
     )
@@ -851,6 +858,8 @@ def audit_asset_trajectory(
     displacement = np.linalg.norm(positions - positions[0], axis=1)
     linear_speed = np.linalg.norm(linear, axis=1)
     angular_speed = np.linalg.norm(angular, axis=1)
+    contact_radius_m = 0.5 * min(float(value) for value in proxy_extent_m)
+    rotational_surface_speed = angular_speed * contact_radius_m
     expected_motion = expected_motion or asset_motion_usefulness(
         {"asset_proxy_rules": asset_rules, "quality": quality}, profile
     )
@@ -891,6 +900,10 @@ def audit_asset_trajectory(
         <= float(profile_quality["maximum_linear_speed_m_s"]),
         "angular_speed_within_limit": float(angular_speed.max())
         <= float(profile_quality["maximum_angular_speed_rad_s"]),
+        "rotational_surface_speed_within_limit": float(
+            rotational_surface_speed.max()
+        )
+        <= float(quality["maximum_rotational_surface_speed_m_s"]),
         "world_bounds_valid": float(np.min(positions[:, 2]))
         >= float(profile_quality["minimum_world_z_m"]),
         "useful_active_duration": active_duration_s + 1.0e-9
@@ -1085,6 +1098,9 @@ def audit_asset_trajectory(
         "maximum_displacement_m": round(float(displacement.max()), 6),
         "maximum_linear_speed_m_s": round(float(linear_speed.max()), 6),
         "maximum_angular_speed_rad_s": round(float(angular_speed.max()), 6),
+        "maximum_rotational_surface_speed_m_s": round(
+            float(rotational_surface_speed.max()), 6
+        ),
         "active_motion_duration_s": round(active_duration_s, 6),
         "minimum_active_motion_duration_s": float(
             expected_motion["minimum_active_duration_s"]
@@ -1333,6 +1349,7 @@ def simulate_scene(
         "maximum_coulomb_friction_utilization": np.asarray(
             friction_utilization, dtype=np.float64
         ),
+        "runtime_dynamics": runtime_dynamics,
         "runtime_inertia_diagonal_kg_m2": runtime_inertia,
         "runtime_proxy_shape_codes": runtime_proxy["shape_codes"],
         "runtime_proxy_dimensions_m": runtime_proxy["dimensions_m"],

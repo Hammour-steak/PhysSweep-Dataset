@@ -43,10 +43,12 @@
     "edge_fall_1obj": {
       "group": "flat",
       "scene_classes": [
-        "raised_flat"
+        "raised_flat",
+        "raised_feature"
       ],
       "topologies": [
-        "flat_surface"
+        "flat_surface",
+        "pedestal"
       ]
     },
     "drop_fall_1obj": {
@@ -102,6 +104,7 @@
     },
     "ramp_to_flat_1obj": {
       "group": "slope",
+      "minimum_object_characteristic_extent_m": 0.12,
       "scene_classes": [
         "ground_feature"
       ],

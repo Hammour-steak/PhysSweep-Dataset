@@ -100,6 +100,20 @@ def repeated_shuffled(values: list[Any], count: int, rng: random.Random) -> list
     return result
 
 
+def resolve_support_geometry_variant(
+    support: dict[str, Any], variant: dict[str, Any]
+) -> dict[str, Any]:
+    """Freeze one compiled geometry variant before physics and camera derivation."""
+
+    resolved = copy.deepcopy(support)
+    resolved.pop("geometry_variants", None)
+    resolved["size"] = copy.deepcopy(variant["size"])
+    resolved["top_z"] = float(variant["top_z"])
+    resolved["overrides"] = copy.deepcopy(variant["overrides"])
+    resolved["geometry_variant_id"] = str(variant["id"])
+    return resolved
+
+
 def coverage_cycle_by_group(
     groups: list[str], values: list[Any], rng: random.Random
 ) -> list[Any]:
@@ -116,14 +130,36 @@ def coverage_cycle_by_group(
     return result
 
 
-def object_supports_motion(obj: dict[str, Any], motion: str) -> bool:
-    return motion not in set(obj.get("excluded_motion_families", []))
+def object_characteristic_extent_m(obj: dict[str, Any]) -> float:
+    size = sorted((float(value) for value in obj["size"]), reverse=True)
+    shape = str(obj["shape"])
+    if shape == "cuboid":
+        return size[1]
+    if shape in {"sphere", "cylinder"}:
+        return min(float(obj["size"][0]), float(obj["size"][1]))
+    raise ValueError(f"unsupported object shape: {shape}")
+
+
+def object_supports_motion(
+    obj: dict[str, Any], motion: str, rules: dict[str, Any] | None = None
+) -> bool:
+    if motion in set(obj.get("excluded_motion_families", [])):
+        return False
+    if rules is None:
+        return True
+    minimum_extent = compatibility_rule(rules, motion).get(
+        "minimum_object_characteristic_extent_m"
+    )
+    return minimum_extent is None or object_characteristic_extent_m(obj) >= float(
+        minimum_extent
+    )
 
 
 def balanced_objects_for_motions(
     motions: list[str],
     objects: list[dict[str, Any]],
     rng: random.Random,
+    rules: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     object_order = copy.deepcopy(objects)
     rng.shuffle(object_order)
@@ -133,7 +169,9 @@ def balanced_objects_for_motions(
     selected = []
     for motion in motions:
         compatible = [
-            obj for obj in object_order if object_supports_motion(obj, motion)
+            obj
+            for obj in object_order
+            if object_supports_motion(obj, motion, rules)
         ]
         if not compatible:
             raise ValueError(f"motion has no compatible object profile: {motion}")
@@ -164,6 +202,7 @@ def balanced_motion_object_pairs(
     objects: list[dict[str, Any]],
     count: int,
     rng: random.Random,
+    rules: dict[str, Any] | None = None,
 ) -> list[tuple[str, dict[str, Any]]]:
     motion_order = list(motions)
     object_order = copy.deepcopy(objects)
@@ -180,11 +219,11 @@ def balanced_motion_object_pairs(
         object_index = (motion_index + round_index * step) % len(object_order)
         motion = motion_order[motion_index]
         obj = object_order[object_index]
-        if not object_supports_motion(obj, motion):
+        if not object_supports_motion(obj, motion, rules):
             compatible = [
                 candidate
                 for candidate in object_order
-                if object_supports_motion(candidate, motion)
+                if object_supports_motion(candidate, motion, rules)
             ]
             minimum_usage = min(
                 pair_usage[(motion, str(candidate["label"]))]
@@ -261,6 +300,11 @@ def balanced_scene_visual_types(
 def scene_visual_profile_admits_support(
     profile: dict[str, Any], support: dict[str, Any]
 ) -> bool:
+    environment_categories = support.get("environment_categories")
+    if environment_categories is not None and str(
+        profile["environment_category"]
+    ) not in {str(value) for value in environment_categories}:
+        return False
     composition = profile.get("composition")
     if isinstance(composition, dict):
         if str(composition.get("review_status")) != "approved":
@@ -337,8 +381,6 @@ def scene_visual_profile_admits_camera(
                 ),
             ):
                 return False
-    if str(profile["visual_type"]) != "mesh_backdrop":
-        return True
     motion_range = camera_rules["motion_intents"][motion][
         "elevation_range_degrees"
     ]
@@ -403,7 +445,28 @@ def support_allowed(
     return (
         support_scene_class in set(rule["scene_classes"])
         and str(support["topology"]) in set(rule["topologies"])
+        and motion in set(support.get("allowed_motions", [motion]))
     )
+
+
+def direction_for_support(
+    direction_record: dict[str, Any], support: dict[str, Any]
+) -> dict[str, Any]:
+    placement = support.get("overrides", {}).get("placement", {})
+    motion_axis = placement.get("motion_axis")
+    if motion_axis is None:
+        return copy.deepcopy(direction_record)
+    if motion_axis not in {"x", "y"}:
+        raise ValueError(f"unsupported support motion axis: {motion_axis}")
+    angle = math.radians(float(direction_record["angle_degrees"]))
+    component = math.cos(angle) if motion_axis == "x" else math.sin(angle)
+    positive_angle = 0.0 if motion_axis == "x" else 90.0
+    angle_degrees = positive_angle if component >= 0.0 else positive_angle + 180.0
+    sign = "positive" if component >= 0.0 else "negative"
+    return {
+        "label": f"support_axis_{motion_axis}_{sign}",
+        "angle_degrees": angle_degrees,
+    }
 
 
 def weighted_scene_class_cycle(
@@ -453,10 +516,6 @@ def weighted_scene_class_cycle(
     ]
     rng.shuffle(cycle)
     return cycle
-
-
-def support_compatibility_group(motion: str, rules: dict[str, Any]) -> str:
-    return str(compatibility_rule(rules, motion)["group"])
 
 
 def support_mesh_scale_ratio(
@@ -802,11 +861,22 @@ def choose_appearance(
             if rng.random() < float(visual_rules["wall_accent_probability"])
             else visual_rules["wall_primary_pools_by_theme"][support_theme]
         )
+    wall_exclusions = set(visual_rules.get("wall_material_exclusions", []))
+    wall_source = [
+        asset_id for asset_id in wall_source if asset_id not in wall_exclusions
+    ]
+    wall_fallback = [
+        asset_id
+        for asset_id in visual_rules["wall_fallback_pool"]
+        if asset_id not in wall_exclusions
+    ]
+    if not wall_source:
+        wall_source = wall_fallback
     wall_material = choose_material(
         rng,
         materials,
         wall_source,
-        visual_rules["wall_fallback_pool"],
+        wall_fallback,
         excluded,
     )
     excluded.add(wall_material["asset_id"])
@@ -935,7 +1005,16 @@ def derive_initial_condition(
     zone_x, zone_y = zone_offsets(zone, half_x, half_y, direction)
     limit = ray_limit(half_x, half_y, direction)
     trajectory_fraction = extent_fraction(str(trajectory_extent["label"]))
-    desired_distance = clamp(2.0 * limit * trajectory_fraction, 0.32, 1.65)
+    maximum_distance = 1.65
+    if motion in {"slide_push_1obj", "roll_or_slide_1obj"}:
+        maximum_distance = float(
+            support.get("maximum_planar_trajectory_distance_m", maximum_distance)
+        )
+    if maximum_distance < 0.32:
+        raise ValueError("support maximum trajectory distance is too small")
+    desired_distance = clamp(
+        2.0 * limit * trajectory_fraction, 0.32, maximum_distance
+    )
     start_offset = min(limit * 0.78, desired_distance * 0.48)
     start_x = center_x + clamp_to_safe(
         -direction[0] * start_offset + zone_x, half_x
@@ -1013,6 +1092,7 @@ def compile_camera_observation(
     camera_rules: dict[str, Any],
     motion: str,
     expected_motion: dict[str, Any],
+    support: dict[str, Any],
 ) -> dict[str, Any]:
     try:
         observation = copy.deepcopy(camera_rules["motion_intents"][motion])
@@ -1026,6 +1106,14 @@ def compile_camera_observation(
             f"camera observation uses unknown structure context: {structure_context}"
         ) from error
     focus_event = observation["focus_event"]
+    if focus_event["type"] == "transition_destination_contact":
+        transition = support.get("transition_contract")
+        if not isinstance(transition, dict):
+            raise ValueError(
+                f"camera observation for {motion} requires a transition contract"
+            )
+        focus_event["type"] = "collider_contact"
+        focus_event["collider_id"] = str(transition["destination_collider_id"])
     if focus_event["type"] == "required_motion_collider":
         collider_id = expected_motion.get("required_collider_contact_id")
         if not collider_id:
@@ -1037,6 +1125,20 @@ def compile_camera_observation(
     observation["minimum_anchor_visible_fraction"] = float(
         context_rules["minimum_anchor_visible_fraction"]
     )
+    observation["minimum_anchor_unoccluded_fraction"] = float(
+        context_rules["minimum_anchor_unoccluded_fraction"]
+    )
+    if str(support.get("scene_class")) == "ground_flat":
+        ground_range = camera_rules["ground_flat_elevation_range_degrees"]
+        motion_range = observation["elevation_range_degrees"]
+        lower = max(float(motion_range[0]), float(ground_range[0]))
+        upper = min(float(motion_range[1]), float(ground_range[1]))
+        if lower > upper:
+            raise ValueError(
+                f"ground-flat camera elevation does not overlap {motion}: "
+                f"motion={motion_range}, ground={ground_range}"
+            )
+        observation["elevation_range_degrees"] = [lower, upper]
     return {
         "version": str(camera_rules["version"]),
         **observation,
@@ -1071,12 +1173,15 @@ def build_scene(
         rng,
         backend["base_parameter_rules"]["object_scale_readability"],
     )
-    effective_direction = copy.deepcopy(selection["direction"])
+    effective_direction = direction_for_support(selection["direction"], support)
     if motion == "ramp_to_flat_1obj":
         effective_direction = {"label": "downhill", "angle_degrees": -90.0}
     motion_direction = direction_unit(float(effective_direction["angle_degrees"]))
     support_geometry = build_support_geometry(
         support, motion, subtype, motion_direction
+    )
+    support_geometry["geometry_variant_id"] = str(
+        support.get("geometry_variant_id", "default")
     )
     validate_support_geometry(support_geometry)
     analytic_support_geometry = copy.deepcopy(support_geometry)
@@ -1163,7 +1268,7 @@ def build_scene(
         restitution,
     )
     camera_observation = compile_camera_observation(
-        camera_rules, motion, initial["expected_motion"]
+        camera_rules, motion, initial["expected_motion"], support_geometry
     )
     appearance = choose_appearance(
         rng,
@@ -1262,6 +1367,9 @@ def build_scene(
                     "support_type": str(support["label"]),
                     "support_layout": str(support_geometry["layout"]),
                     "support_shape": str(support_geometry["support_shape"]),
+                    "geometry_variant_id": str(
+                        support.get("geometry_variant_id", "default")
+                    ),
                     "scene_theme": str(support["theme"]),
                     "scene_visual_profile": str(
                         selection["scene_visual_profile"]["id"]
@@ -1385,7 +1493,10 @@ def build_scene(
                 maximum_initial_object_span_ndc, 6
             ),
             "minimum_support_context_visible_fraction": float(
-                backend["quality"]["minimum_support_context_visible_fraction"]
+                camera_observation.get(
+                    "minimum_support_context_visible_fraction",
+                    backend["quality"]["minimum_support_context_visible_fraction"],
+                )
             ),
             "minimum_primary_trajectory_unoccluded_fraction": float(
                 backend["quality"]["minimum_primary_trajectory_unoccluded_fraction"]
@@ -1414,16 +1525,25 @@ def build_scene(
             "minimum_camera_elevation_degrees": float(elevation_range[0]),
             "maximum_camera_elevation_degrees": float(elevation_range[1]),
             "soft_maximum_focus_span_ndc": float(
-                backend["quality"]["soft_maximum_focus_span_ndc"]
+                camera_observation.get(
+                    "soft_maximum_focus_span_ndc",
+                    backend["quality"]["soft_maximum_focus_span_ndc"],
+                )
             ),
             "maximum_focus_span_ndc": float(
-                backend["quality"]["maximum_focus_span_ndc"]
+                camera_observation.get(
+                    "maximum_focus_span_ndc",
+                    backend["quality"]["maximum_focus_span_ndc"],
+                )
             ),
             "focus_span_penalty_weight": float(
                 backend["quality"]["focus_span_penalty_weight"]
             ),
             "maximum_camera_distance_m": float(
-                backend["quality"]["maximum_camera_distance_m"]
+                camera_observation.get(
+                    "maximum_camera_distance_m",
+                    backend["quality"]["maximum_camera_distance_m"],
+                )
             ),
             "allow_partial_exit": True,
         },
@@ -1495,7 +1615,7 @@ def build_batch(
     axes = rules["axes"]
     if motion_sequence is None:
         motion_object_pairs = balanced_motion_object_pairs(
-            axes["motion_axis"], axes["object_axis"], count, rng
+            axes["motion_axis"], axes["object_axis"], count, rng, rules
         )
         motions = [motion for motion, _ in motion_object_pairs]
         objects = [obj for _, obj in motion_object_pairs]
@@ -1506,7 +1626,9 @@ def build_batch(
         unknown = set(motions) - set(axes["motion_axis"])
         if unknown:
             raise ValueError(f"motion sequence contains unknown motions: {sorted(unknown)}")
-        objects = balanced_objects_for_motions(motions, axes["object_axis"], rng)
+        objects = balanced_objects_for_motions(
+            motions, axes["object_axis"], rng, rules
+        )
     if object_sequence is not None:
         object_labels = [str(label) for label in object_sequence]
         if len(object_labels) != count:
@@ -1521,7 +1643,7 @@ def build_batch(
             )
         objects = [copy.deepcopy(object_by_label[label]) for label in object_labels]
         for motion, obj in zip(motions, objects):
-            if not object_supports_motion(obj, motion):
+            if not object_supports_motion(obj, motion, rules):
                 raise ValueError(
                     f"object {obj['label']} is incompatible with motion {motion}"
                 )
@@ -1578,7 +1700,9 @@ def build_batch(
     support_cycles: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for motion in axes["motion_axis"]:
         for scene_class in scene_class_cycles[str(motion)]:
-            key = (support_compatibility_group(str(motion), rules), scene_class)
+            key = (str(motion), scene_class)
+            if key in support_cycles:
+                continue
             candidates = [
                 copy.deepcopy(record)
                 for record in axes["support_axis"]
@@ -1586,12 +1710,6 @@ def build_batch(
             ]
             if not candidates:
                 raise ValueError(f"no support is admitted for {motion} in {scene_class}")
-            if key in support_cycles:
-                existing = {str(record["label"]) for record in support_cycles[key]}
-                current = {str(record["label"]) for record in candidates}
-                if existing != current:
-                    raise ValueError(f"inconsistent support compatibility group: {key}")
-                continue
             rng.shuffle(candidates)
             support_cycles[key] = candidates
     scene_class_seen: Counter[str] = Counter()
@@ -1661,6 +1779,13 @@ def build_batch(
         support_visual_cycles[support_id] = cycle
     support_visual_seen: Counter[str] = Counter()
     support_mesh_seen: Counter[str] = Counter()
+    geometry_variant_seen: Counter[str] = Counter()
+    geometry_variant_cycles: dict[str, list[dict[str, Any]]] = {}
+    for support in axes["support_axis"]:
+        variants = copy.deepcopy(support.get("geometry_variants", []))
+        if variants:
+            rng.shuffle(variants)
+            geometry_variant_cycles[str(support["label"])] = variants
     scenes = []
     for offset, motion in enumerate(motions):
         subtypes = axes["motion_subtype_axis"][motion]
@@ -1669,7 +1794,7 @@ def build_batch(
         if explicit_supports is None:
             scene_class = scene_class_cycles[motion][scene_class_seen[motion]]
             scene_class_seen[motion] += 1
-            support_key = (support_compatibility_group(motion, rules), scene_class)
+            support_key = (motion, scene_class)
             candidates = support_cycles[support_key]
             support = copy.deepcopy(
                 candidates[support_seen[support_key] % len(candidates)]
@@ -1677,6 +1802,14 @@ def build_batch(
             support_seen[support_key] += 1
         else:
             support = copy.deepcopy(explicit_supports[offset])
+        support_id = str(support["label"])
+        if support_id in geometry_variant_cycles:
+            variants = geometry_variant_cycles[support_id]
+            support = resolve_support_geometry_variant(
+                support,
+                variants[geometry_variant_seen[support_id] % len(variants)],
+            )
+            geometry_variant_seen[support_id] += 1
         scene_visual_type = scene_visual_types[offset]
         support_id = str(support["label"])
         visual_key = (support_id, scene_visual_type)
@@ -1832,6 +1965,12 @@ def manifest_counts(scenes: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
         "visual_type": dict(Counter(item["foreground_object"]["visual_type"] for item in dimensions)),
         "scene_class": dict(Counter(item["support_interaction"]["scene_class"] for item in dimensions)),
         "support": dict(Counter(item["support_interaction"]["support_type"] for item in dimensions)),
+        "support_geometry_variant": dict(
+            Counter(
+                item["support_interaction"]["geometry_variant_id"]
+                for item in dimensions
+            )
+        ),
         "scene_visual": dict(
             Counter(
                 item["support_interaction"]["scene_visual_profile"]

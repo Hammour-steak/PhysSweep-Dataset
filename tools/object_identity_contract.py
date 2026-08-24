@@ -270,7 +270,7 @@ def build_object_identity(
             "objects": trajectory_objects,
         },
         "instance_masks": {
-            "encoding": "rgba_alpha_binary_mask",
+            "encoding": "rgba_alpha_antialiased_silhouette_mask",
             "path": mask_path,
             "path_policy": "bound_render_manifest" if mask_path is None else "metadata_relative",
             "path_layout": "object_id_subdirectories",

@@ -31,20 +31,78 @@
     {
       "profile_id": "mesh_env_dining_modern",
       "asset_id": "env_dining_modern_df3f3c9f",
-      "review_status": "paused",
-      "reason": "The reviewed action patch lies beside an open shell edge that remains visible in production framing."
+      "review_status": "approved",
+      "composition_mode": "integrated_ground",
+      "action_surface": {
+        "anchor_local_m": [
+          -0.001026,
+          -2.088147,
+          0.599033
+        ],
+        "audited_clear_radius_m": 0.68,
+        "admitted_action_radius_m": 0.52
+      },
+      "camera": {
+        "preferred_local_azimuth_degrees": -90.0,
+        "maximum_local_azimuth_deviation_degrees": 8.0,
+        "preferred_elevation_degrees": 24.0,
+        "minimum_elevation_degrees": 20.0,
+        "maximum_elevation_degrees": 28.0,
+        "minimum_distance_m": 2.1,
+        "maximum_distance_m": 5.5,
+        "target_depth_offset_m": 0.65,
+        "target_lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.2,
+        "focal_length_cap_mm": 40.0,
+        "reviewed_view": "south"
+      },
+      "bindings": [
+        {
+          "support_ids": [
+            "wood_floor"
+          ],
+          "motion_families": [
+            "drop_fall_1obj"
+          ]
+        }
+      ]
     },
     {
       "profile_id": "mesh_env_kitchen_modern",
       "asset_id": "env_kitchen_modern_9843a830",
-      "review_status": "paused",
-      "reason": "Configured floor level does not match the dominant source floor; rebuild alignment and proxy before admission."
+      "review_status": "approved",
+      "composition_mode": "integrated_ground",
+      "action_surface": {
+        "anchor_local_m": [-0.804596, -1.335845, 0.064868],
+        "audited_clear_radius_m": 0.84,
+        "admitted_action_radius_m": 0.68
+      },
+      "camera": {
+        "preferred_local_azimuth_degrees": -90.0,
+        "maximum_local_azimuth_deviation_degrees": 8.0,
+        "preferred_elevation_degrees": 23.0,
+        "minimum_elevation_degrees": 20.0,
+        "maximum_elevation_degrees": 26.0,
+        "minimum_distance_m": 2.1,
+        "maximum_distance_m": 5.5,
+        "target_depth_offset_m": 0.7,
+        "target_lateral_offset_m": 0.0,
+        "target_z_offset_m": 0.2,
+        "focal_length_cap_mm": 40.0,
+        "reviewed_view": "south"
+      },
+      "bindings": [
+        {
+          "support_ids": ["concrete_floor_mat"],
+          "motion_families": ["drop_fall_1obj"]
+        }
+      ]
     },
     {
       "profile_id": "mesh_env_kitchen_living",
       "asset_id": "env_kitchen_living_2684e307",
       "review_status": "paused",
-      "reason": "Directional probes expose floor material and boundary artifacts inside the action region."
+      "reason": "No stable 16:9 camera corridor: south views expose unfinished ceiling fixtures, while west views expose the open shell and create cabinet-depth ambiguity for falling objects."
     },
     {
       "profile_id": "mesh_env_office_small",

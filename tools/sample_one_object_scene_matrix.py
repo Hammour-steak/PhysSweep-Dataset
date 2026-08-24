@@ -892,6 +892,7 @@ def sample_generic_candidate_batch(
     manifest = load_json(manifest_path)
     if len(manifest["samples"]) != len(motions):
         raise RuntimeError("generic candidate batch returned an unexpected sample count")
+    simulation_output_root = manifest_path.parent / "physics"
     run(
         [
             sys.executable,
@@ -900,12 +901,14 @@ def sample_generic_candidate_batch(
             str(root),
             "--manifest",
             str(manifest_path),
+            "--output-root",
+            str(simulation_output_root),
             "--workers",
             str(physics_workers),
         ],
         root,
     )
-    simulation_manifest_path = manifest_path.with_name("simulation_manifest.json")
+    simulation_manifest_path = simulation_output_root / "manifest.json"
     simulation_manifest = load_json(simulation_manifest_path)
     if int(simulation_manifest["sample_count"]) != len(motions):
         raise RuntimeError("generic simulation batch returned an unexpected sample count")
@@ -1079,6 +1082,19 @@ def main() -> None:
                 )
                 child = retry_manifest["samples"][0]
                 simulation_record = retry_simulation["records"][0]
+            child = copy.deepcopy(child)
+            trajectory_path = Path(str(simulation_record["trajectory_path"])).resolve()
+            simulation_record_path = trajectory_path.with_name(
+                "simulation_record.json"
+            )
+            if not simulation_record_path.exists():
+                raise RuntimeError(
+                    f"accepted simulation record is missing: {simulation_record_path}"
+                )
+            child["simulation_record_path"] = str(
+                simulation_record_path.relative_to(root)
+            )
+            child["trajectory_path"] = str(trajectory_path.relative_to(root))
             accepted_samples.append(child)
             accepted_simulations.append(simulation_record)
 

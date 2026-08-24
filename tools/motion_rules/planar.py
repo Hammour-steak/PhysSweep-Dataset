@@ -80,15 +80,15 @@ def derive(context: MotionDerivationContext, plan: MotionPlan) -> MotionPlan:
         )
         plan.expected_motion["contact_mode"] = "rolling"
     else:
+        speed = clamp(
+            2.0 * context.desired_distance / target_time, 0.55, 2.45
+        )
         plan.effective_contact_friction = min(
             context.sampled_friction,
             max(
                 0.035,
-                2.0 * context.desired_distance / (9.81 * target_time**2),
+                speed**2 / (2.0 * 9.81 * context.desired_distance),
             ),
-        )
-        speed = clamp(
-            2.0 * context.desired_distance / target_time, 0.55, 2.45
         )
         plan.linear_velocity_m_s = [
             context.direction[0] * speed,

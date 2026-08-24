@@ -59,6 +59,10 @@ class AssetProxyProfileRuleTests(unittest.TestCase):
     def test_edge_exit_camera_keeps_landing_and_resting_pose_visible(self) -> None:
         observation = asset_camera_observation(self.camera, "edge_exit")
         self.assertEqual(observation["structure_context"], "edge_and_landing")
+        self.assertEqual(observation["focus_event"]["type"], "collider_contact")
+        self.assertEqual(
+            observation["focus_event"]["collider_id"], "environment_floor"
+        )
         self.assertEqual(observation["focus_event"]["post_event_frames"], 18)
         self.assertTrue(observation["include_final_settled_pose"])
         self.assertGreaterEqual(

@@ -8,7 +8,11 @@ import numpy as np
 
 from rigid_geometry import clamp, cross, pose_on_support, slope_tangent_velocity
 
-from .common import climb_speed_for_distance, projected_displacement
+from .common import (
+    climb_speed_for_distance,
+    distance_lower_bound,
+    projected_displacement,
+)
 from .contracts import MotionAuditContext, MotionDerivationContext, MotionPlan
 
 
@@ -26,6 +30,7 @@ def derive(context: MotionDerivationContext, plan: MotionPlan) -> MotionPlan:
         float(context.support["surface_frame"]["slope_angle_degrees"])
     )
     if context.motion == "ramp_to_flat_1obj":
+        transition = context.support["transition_contract"]
         plan.effective_contact_friction = min(
             context.sampled_friction, max(0.03, 0.62 * math.tan(angle))
         )
@@ -44,23 +49,41 @@ def derive(context: MotionDerivationContext, plan: MotionPlan) -> MotionPlan:
             context.pose_profile,
             context.direction,
         )
-        initial_speed = context.rng.uniform(0.82, 1.08) * float(
+        sampled_initial_speed = context.rng.uniform(0.82, 1.08) * float(
             context.subtype["speed"]
         )
+        minimum_post_transition_travel = clamp(
+            0.40 * float(context.support["landing_length_m"]),
+            0.35,
+            0.60,
+        )
+        required_exit_speed = math.sqrt(
+            2.0
+            * plan.effective_contact_friction
+            * 9.81
+            * minimum_post_transition_travel
+        )
+        initial_speed = sampled_initial_speed
+        if context.shape != "sphere":
+            initial_speed = max(
+                initial_speed,
+                1.38 * required_exit_speed / math.cos(angle),
+            )
         plan.linear_velocity_m_s = slope_tangent_velocity(
             context.support, initial_speed, uphill=False
         )
         plan.expected_motion.update(
             {
                 "contact_mode": "inclined_motion_then_flat_contact",
-                "required_collider_contact_id": (
-                    "environment_floor"
-                    if context.support.get("structure_anchor")
-                    == "floor_flush_low_edge"
-                    else "landing_surface"
+                "required_collider_contact_id": str(
+                    transition["destination_collider_id"]
                 ),
+                "transition_contract_version": str(transition["version"]),
                 "minimum_downhill_displacement_m": round(
                     context.half_y * 0.85, 6
+                ),
+                "minimum_post_transition_travel_m": round(
+                    minimum_post_transition_travel, 6
                 ),
                 "must_contact_primary_support": True,
             }
@@ -170,6 +193,59 @@ def audit(context: MotionAuditContext) -> None:
             downhill_extent >= threshold,
             round(downhill_extent, 6),
             threshold,
+        )
+        required_contacts = context.required_contacts
+        if required_contacts is None:
+            raise ValueError("ramp transition requires landing contact samples")
+        landing_only = np.flatnonzero(
+            (required_contacts > 0) & (context.primary_contacts == 0)
+        )
+        transition_index = int(landing_only[0]) if len(landing_only) else None
+        environment_hits = {}
+        for collider in context.metadata.get("environment_binding", {}).get(
+            "colliders", []
+        ):
+            collider_id = str(collider["id"])
+            contact_key = (
+                f"{context.object_id}__collider_contact_count__{collider_id}"
+            )
+            if contact_key not in context.trajectory:
+                raise ValueError(
+                    f"trajectory is missing environment contact samples: {contact_key}"
+                )
+            contact_count = int(np.max(context.trajectory[contact_key]))
+            if contact_count > 0:
+                environment_hits[collider_id] = contact_count
+        context.check(
+            "no_unplanned_environment_contact",
+            not environment_hits,
+            environment_hits,
+            {},
+        )
+        post_transition_travel = 0.0
+        if transition_index is not None:
+            downhill_xy = -uphill[:2]
+            downhill_xy /= np.linalg.norm(downhill_xy)
+            relative_xy = (
+                context.positions[transition_index:, :2]
+                - context.positions[transition_index, :2]
+            )
+            post_transition_travel = max(
+                0.0, float(np.max(relative_xy @ downhill_xy))
+            )
+        post_transition_threshold = float(
+            context.expected["minimum_post_transition_travel_m"]
+        )
+        accepted_post_transition_distance = distance_lower_bound(
+            post_transition_threshold,
+            context.absolute_distance_tolerance,
+            context.relative_distance_tolerance,
+        )
+        context.check(
+            "minimum_post_transition_travel",
+            post_transition_travel >= accepted_post_transition_distance,
+            round(post_transition_travel, 6),
+            round(accepted_post_transition_distance, 6),
         )
         return
 

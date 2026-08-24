@@ -9,6 +9,7 @@ import sys
 import unittest
 from collections import Counter
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +21,7 @@ from sample_one_object_scene_matrix import (  # noqa: E402
     assign_environment_ids,
     build_schedule,
     generic_retry_seed,
+    sample_generic_candidate_batch,
     validate_matrix,
 )
 
@@ -46,6 +48,63 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
         self.assertNotEqual(seed, generic_retry_seed(20260804, 17, 3))
         with self.assertRaises(ValueError):
             generic_retry_seed(20260804, 17, 1)
+
+    def test_generic_candidate_batch_uses_explicit_nested_physics_output(self) -> None:
+        dataset = "unit/generic_matrix/candidates/initial"
+        dataset_root = ROOT / "datasets" / dataset
+        manifest_path = dataset_root / "manifest.json"
+        physics_manifest_path = dataset_root / "physics" / "manifest.json"
+        source_manifest = {"samples": [{"scene_id": "sample_000"}]}
+        trajectory_path = dataset_root / "physics" / "sample_000" / "trajectory.npz"
+        simulation_record_path = trajectory_path.with_name("simulation_record.json")
+        simulation_record = {
+            "scene_id": "sample_000",
+            "trajectory_path": str(trajectory_path),
+        }
+        physics_manifest = {"sample_count": 1, "records": [simulation_record]}
+
+        def fake_run(command: list[str], _cwd: Path) -> None:
+            if "sample_pybullet_base.py" in command[1]:
+                manifest_path.parent.mkdir(parents=True, exist_ok=True)
+                manifest_path.write_text(json.dumps(source_manifest), encoding="utf-8")
+                return
+            self.assertEqual(
+                Path(command[command.index("--output-root") + 1]),
+                dataset_root / "physics",
+            )
+            physics_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+            simulation_record_path.parent.mkdir(parents=True, exist_ok=True)
+            trajectory_path.touch()
+            simulation_record_path.write_text(
+                json.dumps(simulation_record), encoding="utf-8"
+            )
+            physics_manifest_path.write_text(
+                json.dumps(physics_manifest), encoding="utf-8"
+            )
+
+        try:
+            with mock.patch(
+                "sample_one_object_scene_matrix.run", side_effect=fake_run
+            ):
+                _, _, returned_path, returned = sample_generic_candidate_batch(
+                    root=ROOT,
+                    bundle_path=ROOT / "configs/one_object_sampling_bundle.json",
+                    output_dataset=dataset,
+                    motions=["drop_fall_1obj"],
+                    seed=1,
+                    duration_s=4.0,
+                    output_fps=24,
+                    resolution=[640, 360],
+                    render_samples=8,
+                    physics_workers=1,
+                )
+            self.assertEqual(returned_path, physics_manifest_path)
+            self.assertEqual(returned, physics_manifest)
+        finally:
+            if (ROOT / "datasets/unit").exists():
+                import shutil
+
+                shutil.rmtree(ROOT / "datasets/unit")
 
     def test_dependency_and_implementation_sets_are_exact(self) -> None:
         self.assertEqual(
@@ -91,17 +150,17 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
         self.assertEqual(
             allocate_axis_counts(self.matrix["motion_intents"], 40, "motion"),
             {
-                "slide_push_1obj": 5,
+                "slide_push_1obj": 4,
                 "roll_or_slide_1obj": 4,
                 "wall_impact_1obj": 4,
                 "edge_fall_1obj": 3,
                 "drop_fall_1obj": 4,
                 "projectile_1obj": 4,
-                "arc_projectile_1obj": 4,
-                "slope_slide_down_1obj": 3,
+                "arc_projectile_1obj": 3,
+                "slope_slide_down_1obj": 4,
                 "slope_slide_up_1obj": 3,
                 "ramp_to_flat_1obj": 3,
-                "bounce_1obj": 3,
+                "bounce_1obj": 4,
             },
         )
 
@@ -109,9 +168,9 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
         self.assertEqual(
             allocate_axis_counts(self.matrix["environments"], 40, "environment"),
             {
-                "generic_matrix": 29,
-                "curated_support_asset": 4,
-                "curated_support_with_prop": 4,
+                "generic_matrix": 27,
+                "curated_support_asset": 8,
+                "curated_support_with_prop": 2,
                 "billiards_single_ball": 1,
                 "workbench_single_object": 2,
             },
@@ -162,7 +221,20 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
             set(generic),
             {str(record["id"]) for record in self.matrix["motion_intents"]},
         )
-        self.assertGreaterEqual(min(generic.values()), 16)
+        generic_environment = next(
+            environment
+            for environment in self.matrix["environments"]
+            if environment["id"] == "generic_matrix"
+        )
+        expected_reserve = int(
+            500
+            * float(
+                generic_environment[
+                    "minimum_per_motion_fraction_of_batch"
+                ]
+            )
+        )
+        self.assertGreaterEqual(min(generic.values()), expected_reserve)
 
     def test_feasible_assignment_is_not_rejected_by_greedy_order(self) -> None:
         environments = [
@@ -251,10 +323,7 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
         }
         for record in schedule:
             environment = environments[record["environment_id"]]
-            entries = {
-                entry["support_asset_id"]: entry["dynamic_pool_id"]
-                for entry in environment.get("support_dynamic_entries", [])
-            }
+            entries = environment.get("support_dynamic_entries", [])
             pairs = {
                 (
                     pair["support_asset_id"],
@@ -263,15 +332,16 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
                 for pair in environment.get("support_prop_pairs", [])
             }
             if entries:
-                pool_id = entries[record["support_asset_id"]]
+                entry = next(
+                    item
+                    for item in entries
+                    if item["support_asset_id"] == record["support_asset_id"]
+                    and record["profile"] in item["profiles"]
+                )
+                pool_id = entry["dynamic_pool_id"]
                 self.assertIn(
                     record["dynamic_asset_id"],
                     environment["dynamic_pools"][pool_id],
-                )
-                entry = next(
-                    item
-                    for item in environment["support_dynamic_entries"]
-                    if item["support_asset_id"] == record["support_asset_id"]
                 )
                 self.assertIn(record["profile"], entry["profiles"])
             if pairs:
@@ -301,7 +371,7 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
         )
 
     def test_edge_exit_respects_dynamic_eligibility(self) -> None:
-        eligible = {"sketchfab_4ae035ea89ea40bbaa82403b9c36afab"}
+        eligible = {"sketchfab_1551616939cc4da7a9d731dfddd4090f"}
         schedule = build_schedule(
             self.matrix,
             500,
@@ -316,6 +386,30 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
         self.assertTrue(edge_records)
         self.assertEqual(
             {record["dynamic_asset_id"] for record in edge_records}, eligible
+        )
+
+    def test_lab_bench_edge_exit_uses_validated_dynamic_pool(self) -> None:
+        environment = next(
+            item
+            for item in self.matrix["environments"]
+            if item["id"] == "curated_support_asset"
+        )
+        support_id = "sketchfab_bg_bb73599044cf49e186b75842d63a280e"
+        edge_entry = next(
+            item
+            for item in environment["support_dynamic_entries"]
+            if item["support_asset_id"] == support_id
+            and "edge_exit" in item["profiles"]
+        )
+        self.assertEqual(edge_entry["dynamic_pool_id"], "lab_bench_edge_exit")
+        edge_pool = set(environment["dynamic_pools"]["lab_bench_edge_exit"])
+        self.assertNotIn(
+            "sketchfab_4ae035ea89ea40bbaa82403b9c36afab",
+            edge_pool,
+        )
+        self.assertNotIn(
+            "sketchfab_81578532781542c590668ab67d1121e9",
+            edge_pool,
         )
 
     def test_schedule_is_seeded_and_reproducible(self) -> None:

@@ -1,6 +1,44 @@
 {
-  "version": "physweep_visual_sampling_v1",
+  "version": "physweep_visual_sampling_v2",
   "role": "semantic_material_hdri_and_texture_scale_rules",
+  "specialized_camera_views": {
+    "resting_push": {
+      "azimuth_degrees": [-70, -52, -34, -18, 18, 34, 52, 70],
+      "elevation_degrees": [22, 30, 38]
+    },
+    "diagonal_push": {
+      "azimuth_degrees": [-76, -58, -38, -20, 20, 38, 58, 76],
+      "elevation_degrees": [22, 30, 38]
+    },
+    "vertical_drop": {
+      "azimuth_degrees": [-68, -48, -28, 28, 48, 68],
+      "elevation_degrees": [20, 29, 38]
+    },
+    "edge_exit": {
+      "relative_azimuth_degrees": [-78, -64, -50, 50, 64, 78],
+      "elevation_degrees": [22, 30, 38]
+    },
+    "workbench_clear_zone_drop": {
+      "azimuth_degrees": [-72, -54, -36, -18, 18, 36, 54, 72],
+      "elevation_degrees": [22, 30, 38]
+    },
+    "workbench_long_axis_push": {
+      "azimuth_degrees": [-74, -56, -38, -20, 20, 38, 56, 74],
+      "elevation_degrees": [22, 30, 38]
+    },
+    "single_ball_free_roll": {
+      "yaw_offset_degrees": [-30, -15, 0, 15, 30],
+      "elevation_degrees": [18, 24, 30]
+    },
+    "single_ball_rail_rebound": {
+      "yaw_offset_degrees": [-30, -15, 0, 15, 30],
+      "elevation_degrees": [20, 26, 32]
+    },
+    "three_ball_collision": {
+      "yaw_offset_degrees": [-30, -15, 0, 15, 30],
+      "elevation_degrees": [24, 30, 36]
+    }
+  },
   "environment_categories": [
     "minimal",
     "home_office",
@@ -42,7 +80,6 @@
   "wall_pools_by_environment": {
     "minimal": [
       "white_plaster_02_4k",
-      "white_plaster_rough_02_4k",
       "plastered_wall_03_4k"
     ],
     "home_office": [
@@ -379,11 +416,9 @@
     "wood_table": [
       "plastered_wall_03_4k",
       "plastered_wall_04_4k",
-      "white_plaster_rough_02_4k",
       "beige_wall_001_4k"
     ],
     "lab": [
-      "white_plaster_rough_02_4k",
       "plastered_wall_04_4k",
       "painted_plaster_wall_4k"
     ],
@@ -394,7 +429,6 @@
     ],
     "studio": [
       "white_plaster_02_4k",
-      "white_plaster_rough_02_4k",
       "painted_plaster_wall_4k"
     ]
   },
@@ -541,7 +575,6 @@
   },
   "wall_fallback_pool": [
     "white_plaster_02_4k",
-    "white_plaster_rough_02_4k",
     "plastered_wall_03_4k",
     "plastered_wall_04_4k",
     "painted_plaster_wall_4k",
@@ -561,6 +594,9 @@
     "white_sandstone_blocks_02_4k",
     "white_sandstone_bricks_03_4k",
     "yellow_bricks_4k"
+  ],
+  "wall_material_exclusions": [
+    "white_plaster_rough_02_4k"
   ],
   "invariants": {
     "object_support_and_wall_material_ids_are_distinct": true,

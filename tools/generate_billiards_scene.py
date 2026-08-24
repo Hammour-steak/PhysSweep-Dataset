@@ -47,31 +47,45 @@ PROFILE_DESCRIPTIONS = {
 }
 
 
-def billiards_camera(seed: int, profile: str) -> dict[str, Any]:
-    """Choose a small, table-safe camera variation reproducibly from the scene seed."""
+def billiards_camera(
+    seed: int,
+    profile: str,
+    specialized_views: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Choose a profile-specific, table-safe view reproducibly from the scene seed."""
+    if specialized_views is None:
+        specialized_views = load_json(
+            PROJECT_ROOT / "configs/visual_sampling.json"
+        )["specialized_camera_views"]
+    view_rule = specialized_views[profile]
     rng = random.Random(f"billiards-camera:{profile}:{int(seed)}")
     base_x, base_y = 2.72, -3.18
     radius = math.hypot(base_x, base_y)
     base_angle = math.atan2(base_y, base_x)
-    yaw_degrees = rng.choice((-18, -9, 0, 9, 18))
+    yaw_degrees = rng.choice(view_rule["yaw_offset_degrees"])
     distance_scale = rng.choice((0.98, 1.0, 1.02))
-    height_m = rng.choice((2.10, 2.18, 2.26))
     angle = base_angle + math.radians(yaw_degrees)
     target_x = rng.uniform(-0.08, 0.08)
     target_y = rng.uniform(-0.06, 0.06)
     target_z = rng.choice((0.68, 0.70, 0.72))
+    elevation_degrees = float(rng.choice(view_rule["elevation_degrees"]))
+    horizontal_radius = radius * distance_scale
+    height_m = target_z + horizontal_radius * math.tan(
+        math.radians(elevation_degrees)
+    )
     focal_length_mm = rng.choice((50.0, 52.0, 54.0))
     return {
         "seed": int(seed),
         "mode": f"bounded_orbit_{yaw_degrees:+d}deg",
         "position_m": [
-            round(radius * distance_scale * math.cos(angle), 6),
-            round(radius * distance_scale * math.sin(angle), 6),
-            height_m,
+            round(horizontal_radius * math.cos(angle), 6),
+            round(horizontal_radius * math.sin(angle), 6),
+            round(height_m, 6),
         ],
         "target_m": [round(target_x, 6), round(target_y, 6), target_z],
         "focal_length_mm": focal_length_mm,
         "sensor_width_mm": 36.0,
+        "elevation_degrees": elevation_degrees,
     }
 
 
@@ -130,12 +144,12 @@ def simulate(
     profile: str,
     backend: dict[str, Any],
     initial: list[dict[str, Any]] | None = None,
+    object_materials: list[dict[str, float]] | None = None,
 ) -> tuple[dict[str, np.ndarray], dict[str, Any], list[dict[str, Any]]]:
     rules = backend["billiards_rules"]
     engine_rules = rules["engine"]
     quality = rules["quality"]
     ball_radius_m = float(rules["ball_radius_m"])
-    ball_mass_kg = float(rules["ball_mass_kg"])
     simulation_hz = simulation_hz_for_geometry(
         backend["engine"], [2.0 * ball_radius_m] * 3
     )
@@ -145,6 +159,8 @@ def simulate(
         static_support_binding["target_support_frame"]["safe_surface"]["z_m"]
     )
     initial = initial or initial_states(profile, bed_z, rules)
+    if object_materials is not None and len(object_materials) != len(initial):
+        raise ValueError("billiards object material count differs from object count")
     client = pb.connect(pb.DIRECT)
     if client < 0:
         raise RuntimeError("PyBullet DIRECT connection failed")
@@ -175,18 +191,29 @@ def simulate(
         )
         sphere = pb.createCollisionShape(pb.GEOM_SPHERE, radius=ball_radius_m)
         bodies = []
-        for record in initial:
+        runtime_materials = []
+        runtime_inertias = []
+        for index, record in enumerate(initial):
+            ball_dynamics = rules["ball_dynamics"]
+            material = (
+                object_materials[index]
+                if object_materials is not None
+                else {
+                    "mass_kg": float(rules["ball_mass_kg"]),
+                    "contact_friction": float(ball_dynamics["lateral_friction"]),
+                    "contact_restitution": float(ball_dynamics["restitution"]),
+                }
+            )
             body = pb.createMultiBody(
-                baseMass=ball_mass_kg,
+                baseMass=float(material["mass_kg"]),
                 baseCollisionShapeIndex=sphere,
                 basePosition=record["position_m"],
             )
-            ball_dynamics = rules["ball_dynamics"]
             pb.changeDynamics(
                 body,
                 -1,
-                lateralFriction=float(ball_dynamics["lateral_friction"]),
-                restitution=float(ball_dynamics["restitution"]),
+                lateralFriction=float(material["contact_friction"]),
+                restitution=float(material["contact_restitution"]),
                 linearDamping=float(ball_dynamics["linear_damping"]),
                 angularDamping=float(ball_dynamics["angular_damping"]),
                 rollingFriction=float(ball_dynamics["rolling_friction"]),
@@ -197,10 +224,15 @@ def simulate(
             )
             pb.resetBaseVelocity(body, linearVelocity=record["velocity_m_s"])
             bodies.append(body)
+            info = pb.getDynamicsInfo(body, -1)
+            runtime_materials.append([float(info[0]), float(info[1]), float(info[5])])
+            runtime_inertias.append([float(value) for value in info[2]])
 
         positions = np.zeros((frame_count, len(bodies), 3), dtype=np.float64)
         quaternions = np.zeros((frame_count, len(bodies), 4), dtype=np.float64)
         velocities = np.zeros((frame_count, len(bodies), 3), dtype=np.float64)
+        angular_velocities = np.zeros((frame_count, len(bodies), 3), dtype=np.float64)
+        contact_counts = np.zeros((frame_count, len(bodies)), dtype=np.int32)
         ball_contact_frames = 0
         rail_contact_frames = 0
         ball_contact_indices: list[int] = []
@@ -209,10 +241,12 @@ def simulate(
         for frame in range(frame_count):
             for index, body in enumerate(bodies):
                 position, orientation = pb.getBasePositionAndOrientation(body)
-                linear, _ = pb.getBaseVelocity(body)
+                linear, angular = pb.getBaseVelocity(body)
                 positions[frame, index] = position
                 quaternions[frame, index] = orientation
                 velocities[frame, index] = linear
+                angular_velocities[frame, index] = angular
+                contact_counts[frame, index] = len(pb.getContactPoints(bodyA=body))
                 min_z = min(min_z, float(position[2]))
             if frame == frame_count - 1:
                 break
@@ -249,6 +283,12 @@ def simulate(
         "position_m": positions,
         "quaternion_xyzw": quaternions,
         "linear_velocity_m_s": velocities,
+        "angular_velocity_rad_s": angular_velocities,
+        "contact_count": contact_counts,
+        "runtime_material": np.asarray(runtime_materials, dtype=np.float64),
+        "runtime_inertia_diagonal_kg_m2": np.asarray(
+            runtime_inertias, dtype=np.float64
+        ),
     }
     displacement = np.linalg.norm(positions - positions[0:1], axis=2)
     planar_speed = np.linalg.norm(velocities[:, :, :2], axis=2)
@@ -507,7 +547,11 @@ def main() -> None:
             ),
         },
         "camera": {
-            **billiards_camera(args.seed, args.profile),
+            **billiards_camera(
+                args.seed,
+                args.profile,
+                visual_rules["specialized_camera_views"],
+            ),
         },
         "render": {
             "engine": "BLENDER_EEVEE",

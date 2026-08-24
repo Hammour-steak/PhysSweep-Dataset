@@ -62,8 +62,130 @@ def _box(
         "rotation_euler_degrees": [0.0, 0.0, float(yaw_degrees)],
         "visible": True,
         "collision_enabled": True,
-        "occludes_camera": role == "room_wall",
+        "occludes_camera": True,
     }
+
+
+def dynamic_back_wall_clearance_m(
+    metadata: dict[str, Any], outward: list[float]
+) -> float:
+    """Conservative no-contact distance for motion directed toward a room wall."""
+
+    simulation = metadata["simulation"]
+    objects = simulation.get("objects", [])
+    duration = simulation.get("time", {}).get("duration_s")
+    if len(objects) != 1 or duration is None:
+        return 0.0
+    obj = objects[0]
+    velocity = obj.get("initial_state", {}).get("linear_velocity_m_s")
+    size = obj.get("geometry", {}).get("size_m")
+    if not isinstance(velocity, list) or not isinstance(size, list):
+        return 0.0
+    toward_wall_speed = max(
+        0.0,
+        -float(velocity[0]) * float(outward[0])
+        - float(velocity[1]) * float(outward[1]),
+    )
+    if toward_wall_speed <= 1.0e-8:
+        return 0.0
+    planar_radius = math.hypot(float(size[0]), float(size[1])) / 2.0
+    expected = obj.get("expected_motion", {})
+    downhill_allowance = float(
+        expected.get("minimum_downhill_displacement_m", 0.0)
+    )
+    slope_angle = math.radians(
+        float(
+            simulation.get("support", {})
+            .get("surface_frame", {})
+            .get("slope_angle_degrees", 0.0)
+        )
+    )
+    vertical_drop = max(0.0, downhill_allowance * math.tan(slope_angle))
+    post_slope_speed = math.sqrt(
+        toward_wall_speed * toward_wall_speed + 2.0 * 9.81 * vertical_drop
+    )
+    return post_slope_speed * float(duration) + planar_radius + 0.25
+
+
+def dynamic_motion_lane(
+    metadata: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Return a conservative planar capsule for set-piece clearance."""
+
+    simulation = metadata["simulation"]
+    objects = simulation.get("objects", [])
+    duration = simulation.get("time", {}).get("duration_s")
+    if len(objects) != 1 or duration is None:
+        return None
+    obj = objects[0]
+    state = obj.get("initial_state", {})
+    velocity = state.get("linear_velocity_m_s")
+    position = state.get("position_m")
+    size = obj.get("geometry", {}).get("size_m")
+    if not all(isinstance(value, list) for value in (velocity, position, size)):
+        return None
+    speed = math.hypot(float(velocity[0]), float(velocity[1]))
+    if speed <= 1.0e-8:
+        return None
+    expected = obj.get("expected_motion", {})
+    downhill = float(expected.get("minimum_downhill_displacement_m", 0.0))
+    slope_angle = math.radians(
+        float(
+            simulation.get("support", {})
+            .get("surface_frame", {})
+            .get("slope_angle_degrees", 0.0)
+        )
+    )
+    vertical_drop = max(0.0, downhill * math.tan(slope_angle))
+    post_slope_speed = math.sqrt(speed * speed + 2.0 * 9.81 * vertical_drop)
+    return {
+        "start_xy": [float(position[0]), float(position[1])],
+        "direction_xy": [
+            float(velocity[0]) / speed,
+            float(velocity[1]) / speed,
+        ],
+        "length_m": post_slope_speed * float(duration),
+        "radius_m": math.hypot(float(size[0]), float(size[1])) / 2.0 + 0.12,
+    }
+
+
+def clear_set_piece_from_motion_lane(
+    center_xy: list[float],
+    size_xy: list[float],
+    lane: dict[str, Any] | None,
+    preferred_side: float,
+) -> tuple[list[float], float]:
+    if lane is None:
+        return center_xy, 0.0
+    start = [float(value) for value in lane["start_xy"]]
+    direction = [float(value) for value in lane["direction_xy"]]
+    relative = [center_xy[0] - start[0], center_xy[1] - start[1]]
+    projection = max(
+        0.0,
+        min(
+            float(lane["length_m"]),
+            relative[0] * direction[0] + relative[1] * direction[1],
+        ),
+    )
+    nearest = [
+        start[0] + direction[0] * projection,
+        start[1] + direction[1] * projection,
+    ]
+    offset = [center_xy[0] - nearest[0], center_xy[1] - nearest[1]]
+    distance = math.hypot(offset[0], offset[1])
+    required = float(lane["radius_m"]) + math.hypot(*size_xy) / 2.0
+    if distance >= required:
+        return center_xy, 0.0
+    if distance > 1.0e-8:
+        normal = [offset[0] / distance, offset[1] / distance]
+    else:
+        side = -1.0 if preferred_side < 0.0 else 1.0
+        normal = [-direction[1] * side, direction[0] * side]
+    shift = required - distance + 0.05
+    return [
+        center_xy[0] + normal[0] * shift,
+        center_xy[1] + normal[1] * shift,
+    ], shift
 
 
 def compile_environment_binding(
@@ -116,6 +238,12 @@ def compile_environment_binding(
     )
     if not integrated_ground and scene_class.startswith("ground_"):
         wall_distance += 0.25
+    dynamic_clearance = (
+        0.0
+        if integrated_ground
+        else dynamic_back_wall_clearance_m(metadata, outward)
+    )
+    wall_distance = max(wall_distance, dynamic_clearance)
     wall_center = [
         scene_anchor[0] - outward[0] * wall_distance,
         scene_anchor[1] - outward[1] * wall_distance,
@@ -123,6 +251,7 @@ def compile_environment_binding(
     wall_yaw = azimuth_degrees - 90.0
     visual_objects: list[dict[str, Any]] = []
     colliders: list[dict[str, Any]] = []
+    motion_lane = dynamic_motion_lane(metadata)
 
     if not integrated_ground and bool(scene_visual.get("wall_enabled", True)):
         wall = _box(
@@ -203,6 +332,12 @@ def compile_environment_binding(
             + lateral[1] * lateral_offset
             + outward[1] * outward_offset,
         ]
+        center, lane_shift = clear_set_piece_from_motion_lane(
+            center,
+            [float(piece["size_m"][0]), float(piece["size_m"][1])],
+            motion_lane,
+            lateral_offset,
+        )
         record = _box(
             collider_id=f"environment_piece_{piece['id']}",
             role="room_detail",
@@ -211,6 +346,7 @@ def compile_environment_binding(
             position_m=[center[0], center[1], z],
             yaw_degrees=wall_yaw,
         )
+        record["dynamic_lane_shift_m"] = round(lane_shift, 12)
         visual_objects.append(record)
         colliders.append(copy.deepcopy(record))
 
@@ -337,6 +473,7 @@ def compile_environment_binding(
             "outward_direction_xy": [round(value, 12) for value in outward],
             "lateral_direction_xy": [round(value, 12) for value in lateral],
             "back_wall_distance_m": round(wall_distance, 12),
+            "dynamic_back_wall_clearance_m": round(dynamic_clearance, 12),
             "composition_mode": (
                 "integrated_ground" if integrated_ground else "procedural_room"
             ),

@@ -45,6 +45,9 @@ class BilliardsSceneTests(unittest.TestCase):
         cls.backend = json.loads(
             cls.dependencies["physics_backend"].read_text(encoding="utf-8")
         )
+        cls.camera_views = json.loads(
+            cls.dependencies["visual_sampling"].read_text(encoding="utf-8")
+        )["specialized_camera_views"]
 
     @classmethod
     def dependency_arguments(cls) -> list[str]:
@@ -70,15 +73,20 @@ class BilliardsSceneTests(unittest.TestCase):
         self.assertEqual(first, same)
         self.assertNotEqual(first, other)
         self.assertEqual(first["sensor_width_mm"], 36.0)
-        self.assertIn(first["mode"], {
-            "bounded_orbit_-18deg",
-            "bounded_orbit_-9deg",
-            "bounded_orbit_+0deg",
-            "bounded_orbit_+9deg",
-            "bounded_orbit_+18deg",
-        })
-        self.assertGreaterEqual(first["position_m"][2], 2.10)
-        self.assertLessEqual(first["position_m"][2], 2.26)
+        rule = self.camera_views["single_ball_free_roll"]
+        self.assertIn(
+            first["mode"],
+            {
+                f"bounded_orbit_{int(value):+d}deg"
+                for value in rule["yaw_offset_degrees"]
+            },
+        )
+        self.assertIn(
+            first["elevation_degrees"],
+            {float(value) for value in rule["elevation_degrees"]},
+        )
+        self.assertGreaterEqual(first["position_m"][2], 2.0)
+        self.assertLessEqual(first["position_m"][2], 3.2)
         self.assertLessEqual(abs(first["target_m"][0]), 0.08)
         self.assertLessEqual(abs(first["target_m"][1]), 0.06)
 

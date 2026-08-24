@@ -8,23 +8,26 @@ from typing import Any, Iterable
 
 
 POLICY_VERSION = "physweep_material_lightness_adaptation_v1"
-RENDERED_FRAME_POLICY_VERSION = "physweep_rendered_frame_exposure_adaptation_v1"
+RENDERED_FRAME_POLICY_VERSION = "physweep_rendered_frame_exposure_adaptation_v2"
 LIGHT_LUMINANCE = 0.42
 DARK_LUMINANCE = 0.12
 LIGHT_PIXEL_THRESHOLD = 0.50
-MIN_MEAN_LUMA = 12.0
+MIN_MEAN_LUMA = 45.0
 MAX_MEAN_LUMA = 245.0
-MIN_LUMA_STD = 8.0
+MIN_LUMA_STD = 18.0
+LOW_CONTRAST_MEAN_CEILING = 70.0
 MIN_MEAN_GRADIENT = 0.7
 MAX_CLIPPED_FRACTION = 0.35
-PROBE_MIN_MEAN_LUMA = 13.0
+# Keep the pre-encode probe above the final-video gate. H.264 color conversion
+# can lower decoded luma slightly even with the perceptually lossless profile.
+PROBE_MIN_MEAN_LUMA = MIN_MEAN_LUMA + 3.0
 PROBE_MAX_MEAN_LUMA = 242.0
-PROBE_MIN_LUMA_STD = 8.4
-TARGET_LOW_MEAN_LUMA = 16.0
+PROBE_MIN_LUMA_STD = MIN_LUMA_STD
+TARGET_LOW_MEAN_LUMA = 55.0
 TARGET_HIGH_MEAN_LUMA = 238.0
-TARGET_LUMA_STD = 8.8
+TARGET_LUMA_STD = 22.0
 MAX_EXPOSURE_STEP_EV = 0.35
-MAX_TOTAL_EXPOSURE_CORRECTION_EV = 0.70
+MAX_TOTAL_EXPOSURE_CORRECTION_EV = 1.00
 _IMAGE_STATS_CACHE: dict[tuple[int, int], tuple[float, float]] = {}
 
 
@@ -207,7 +210,10 @@ def choose_adaptation(
 def frame_statistics_within_fixed_limits(statistics: dict[str, Any]) -> bool:
     return (
         MIN_MEAN_LUMA <= float(statistics["mean_luma"]) <= MAX_MEAN_LUMA
-        and float(statistics["luma_std"]) >= MIN_LUMA_STD
+        and (
+            float(statistics["luma_std"]) >= MIN_LUMA_STD
+            or float(statistics["mean_luma"]) >= LOW_CONTRAST_MEAN_CEILING
+        )
         and float(statistics["mean_gradient"]) >= MIN_MEAN_GRADIENT
         and float(statistics["clipped_dark_fraction"]) <= MAX_CLIPPED_FRACTION
         and float(statistics["clipped_light_fraction"]) <= MAX_CLIPPED_FRACTION
@@ -232,7 +238,10 @@ def choose_rendered_frame_exposure_adjustment(
             desired_scale,
             TARGET_LOW_MEAN_LUMA / max(minimum_mean, 1.0e-6),
         )
-    if minimum_std < PROBE_MIN_LUMA_STD:
+    if (
+        minimum_std < PROBE_MIN_LUMA_STD
+        and minimum_mean < LOW_CONTRAST_MEAN_CEILING
+    ):
         reasons.append("low_luma_contrast")
         desired_scale = max(
             desired_scale,

@@ -8,7 +8,7 @@ PhysSweep separates three states:
 2. Its hashed static collision proxy passes contact validation.
 3. A specific action surface, camera corridor, support, and motion combination is composition-approved.
 
-The current catalog has 20 proxy-ready environment assets. Six are admitted for dataset sampling; the other 14 remain paused with explicit reasons in `configs/visual_environment_composition.json`.
+The current catalog has 20 proxy-ready environment assets. Eight are admitted for dataset sampling; the other 12 remain paused with explicit reasons in `configs/visual_environment_composition.json`.
 
 ## Admission Flow
 
@@ -31,6 +31,8 @@ The current catalog has 20 proxy-ready environment assets. Six are admitted for 
 | `mesh_env_kitchen_small` | `concrete_floor_mat` | drop; short slide; short roll/slide |
 | `mesh_env_bathroom_modern` | `concrete_floor_mat` | drop |
 | `mesh_env_classroom_bright` | `concrete_floor_mat` | drop |
+| `mesh_env_dining_modern` | `wood_floor` | drop |
+| `mesh_env_kitchen_modern` | `concrete_floor_mat` | drop |
 
 ## Composition Rules
 
@@ -40,7 +42,7 @@ The current catalog has 20 proxy-ready environment assets. Six are admitted for 
 - Slope scenes remain valid, but use dedicated procedural slope environments until a native environment-level ramp composition is reviewed.
 - Visual mesh, collision proxy, and action anchor share one transform. The transform explicitly includes the reviewed asset yaw before the world-facing yaw.
 - Camera placement stays inside the asset's reviewed azimuth, elevation, distance, target-offset, and focal-length corridor.
-- Inclined-surface sampling checks camera side readability before assigning an environment. The shared threshold is `0.65`.
+- Inclined-surface sampling checks camera side readability before assigning an environment. The shared threshold is `0.90`.
 - Partial exits are allowed, while at least 75% of primary motion and 50% of the full trajectory center samples must remain visible.
 - An incompatible mesh environment falls back to a procedural room before metadata is frozen. It cannot silently add or remove collision later.
 
@@ -60,9 +62,70 @@ The current catalog has 20 proxy-ready environment assets. Six are admitted for 
 
 ## Current Validation
 
-The historical release and regression datasets were removed before formal
-sampling. The active admission boundary is now the versioned scene profile,
-collision-proxy manifest, and physical proxy catalog. The catalog validates
-proxy hashes and the active runtime checks validate the immutable visual and
-collision binding at sampling time. New formal QA reports will be written
-under the empty `outputs/` directory and are not inputs to the sampler.
+The strict scene audit covers all 22 generic support types with three samples
+per support. All 66 trajectories pass physics and camera binding. The initial
+object, required structure anchors, and primary trajectory are fully visible
+and unoccluded in every sample. Maximum observed support penetration is
+`0.002531 m`, and no sample gains mechanical energy.
+
+All 20 environment collision proxies load and pass the proxy validator. This
+does not automatically admit an environment: action-surface and multiview
+review leave 8 profiles approved and 12 paused. A production render was made
+for every approved environment using its allowed support and motion. The
+reviewed drop samples and the two allowed planar-motion samples pass numerical and
+visual review. The planar checks cover a `0.688625 m` office slide and a
+`1.120905 m` kitchen roll/slide, with full trajectory-center visibility and
+maximum penetration below `0.0001 m`.
+
+The dining-room profile is admitted only for drop motion on its reviewed
+`0.52 m` wood-floor patch. Six low-, medium-, and high-drop trials pass physics,
+camera binding, first-frame review, and full-video review. Their maximum
+penetration is `0.000935 m`; initial, primary, and full-trajectory visibility
+and primary-trajectory unoccluded fraction are all `1.0`.
+
+The modern-kitchen source floor is determined by horizontal-face area rather
+than the source bounding-box minimum. Its dominant `22.6 m2` floor resolves to
+local `z=0.06486835 m`; those floor faces are removed from the static proxy so
+the analytic support remains the only floor collider. Six isolated drop trials
+pass physics, camera binding, first-frame review, and full-video review. Maximum
+penetration is `0.000728 m`, mechanical-energy gain is `0 J`, and all sampled
+trajectory centers are visible and unoccluded.
+
+The remaining profiles stay paused where the action patch touches an open
+shell boundary, resolves to the wrong floor, lacks clearance, or is blocked by
+furniture or structure. A valid collision proxy alone is never sufficient for
+sampling admission.
+
+A 1000-sample production stress run also passes after splitting the laboratory
+bench edge-exit objects into a support-specific validated pool. The run accepts
+all 1000 slots: 740 generic PyBullet scenes, 250 curated-asset scenes, and 10
+billiards scenes. One generic candidate required normal deterministic
+resampling for insufficient active duration; no specialized slot was exhausted.
+
+The long-ground extension admits three procedural structures:
+`indoor_long_floor`, `open_hardscape`, and `long_corridor`. Corridor cameras
+must remain between and below both physical side walls with a fixed inner-wall
+clearance. The walls use the wall-material role, and visually rejected wall
+materials are filtered from both primary and fallback pools by one shared
+exclusion list. A fixed 12-scene structure review and a four-scene corridor
+material review pass physics, camera, exposure, and full-motion inspection.
+Maximum observed penetration is `0.001229 m`; all initial objects, required
+anchors, and primary trajectories remain visible and unoccluded.
+
+A subsequent 200-scene outer-matrix regression covers all 11 motion families
+and all five environment branches. All 200 trajectories pass their frozen
+physics contracts. Its deterministic `pilot40` review contains 26 generic, 12
+curated-asset, and 2 billiards scenes. All 40 outputs pass integrity, production
+specification (`1280x720`, 24 fps, 97 frames), encoding, sampled-frame visual
+statistics, and visible-motion checks, followed by three-frame visual review.
+
+The support-transition contract was separately validated on 18 deterministic
+scenes: six ramp-to-flat samples across four ramp structures, six raised-table
+or counter edge exits, and six low-pedestal edge exits. All 18 pass source to
+destination contact order, destination-only contact, no source recontact,
+penetration, and motion acceptance. All 12 raised edge exits contain a sampled
+airborne interval. The six ramp videos pass dense seven-frame review without a
+contact jump or visible surface penetration. Across the complete batch, primary
+motion center visibility is `1.0`, full-trajectory center visibility is at
+least `0.6701`, support-context visibility is at least `0.8571`, and every ramp
+has side-readability above `0.93`.

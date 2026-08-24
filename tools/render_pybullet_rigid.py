@@ -31,6 +31,7 @@ from appearance_adaptation import (
 from blender_render_settings import configure_render_engine
 from static_support_proxy import blender_import_static_support_visual
 from video_encoding import configure_h264_output
+from trajectory_contract import object_trajectory_view
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -171,7 +172,9 @@ def create_box(
     return obj
 
 
-def create_solid_wedge(record: dict[str, Any], material: Any) -> Any:
+def create_solid_wedge(
+    record: dict[str, Any], surface_material: Any, structure_material: Any
+) -> Any:
     if str(record.get("slope_axis")) != "y":
         raise ValueError("solid wedge currently requires slope_axis=y")
     width, length = [float(value) for value in record["size_xy_m"]]
@@ -201,7 +204,10 @@ def create_solid_wedge(record: dict[str, Any], material: Any) -> Any:
     mesh.update()
     obj = bpy.data.objects.new(str(record["id"]), mesh)
     bpy.context.collection.objects.link(obj)
-    obj.data.materials.append(material)
+    obj.data.materials.append(structure_material)
+    obj.data.materials.append(surface_material)
+    for polygon in obj.data.polygons:
+        polygon.material_index = 1 if polygon.index == 1 else 0
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
     bpy.ops.object.mode_set(mode="EDIT")
@@ -733,19 +739,29 @@ def build_static_scene(
             support_objects.extend(created)
             continue
         if record["primitive"] == "solid_wedge":
-            role = str(record["material_role"])
-            if role not in material_bindings:
-                raise ValueError(f"missing material role: {role}")
-            material = material_from_binding(
-                f"physweep_{role}_{record['id']}",
-                material_bindings[role],
-                [
-                    float(record["size_xy_m"][0]),
-                    float(record["size_xy_m"][1]),
-                    float(record["high_top_z_m"]) - float(record["base_z_m"]),
-                ],
+            surface_role = str(record["material_role"])
+            structure_role = str(record["structure_material_role"])
+            for role in (surface_role, structure_role):
+                if role not in material_bindings:
+                    raise ValueError(f"missing material role: {role}")
+            dimensions = [
+                float(record["size_xy_m"][0]),
+                float(record["size_xy_m"][1]),
+                float(record["high_top_z_m"]) - float(record["base_z_m"]),
+            ]
+            surface_material = material_from_binding(
+                f"physweep_{surface_role}_{record['id']}",
+                material_bindings[surface_role],
+                dimensions,
             )
-            created = create_solid_wedge(record, material)
+            structure_material = material_from_binding(
+                f"physweep_{structure_role}_{record['id']}",
+                material_bindings[structure_role],
+                dimensions,
+            )
+            created = create_solid_wedge(
+                record, surface_material, structure_material
+            )
             tag_static_meshes([created], record)
             support_objects.append(created)
             continue
@@ -818,56 +834,63 @@ def add_dynamic_animation(
     return obj
 
 
-def configure_instance_mask_output(
-    render: dict[str, Any], metadata: dict[str, Any]
+def validate_instance_mask_output(
+    output: dict[str, Any] | None,
+    frames: list[int],
 ) -> dict[str, Any] | None:
-    """Write one binary instance mask sequence per ``object_id``."""
-    mask_dir_value = render.get("instance_mask_dir")
-    if not mask_dir_value:
+    """Reject malformed compositor output before it enters a dataset."""
+    if output is None:
         return None
-    scene = bpy.context.scene
-    mask_dir = resolve_project_path(str(mask_dir_value))
-    mask_dir.mkdir(parents=True, exist_ok=True)
-    scene.render.use_compositing = True
-    scene.use_nodes = True
-    nodes = scene.node_tree.nodes
-    links = scene.node_tree.links
-    nodes.clear()
-    layers = nodes.new("CompositorNodeRLayers")
-    composite = nodes.new("CompositorNodeComposite")
-    links.new(layers.outputs["Image"], composite.inputs["Image"])
-    mask_objects = (
-        metadata.get("object_identity", {}).get("instance_masks", {}).get("objects", {})
-    )
-    if not mask_objects:
-        mask_objects = {"object_a": {"instance_id": 1}}
-    output_records = {}
-    for object_id, mask_record in mask_objects.items():
-        object_dir = mask_dir / str(object_id)
-        object_dir.mkdir(parents=True, exist_ok=True)
-        id_mask = nodes.new("CompositorNodeIDMask")
-        id_mask.index = int(mask_record["instance_id"])
-        set_alpha = nodes.new("CompositorNodeSetAlpha")
-        links.new(layers.outputs["Image"], set_alpha.inputs[0])
-        links.new(id_mask.outputs[0], set_alpha.inputs[1])
-        output = nodes.new("CompositorNodeOutputFile")
-        output.base_path = str(object_dir)
-        output.format.file_format = "PNG"
-        output.format.color_mode = "RGBA"
-        output.format.color_depth = "8"
-        output.file_slots[0].path = "frame_####"
-        links.new(layers.outputs["IndexOB"], id_mask.inputs[0])
-        links.new(set_alpha.outputs[0], output.inputs["Image"])
-        output_records[str(object_id)] = {
-            "instance_id": int(mask_record["instance_id"]),
-            "directory": str(object_dir),
+    object_reports = {}
+    for object_id, record in output["objects"].items():
+        paths = [
+            Path(record["directory"]) / f"frame_{frame:04d}.png"
+            for frame in frames
+        ]
+        missing = [str(path) for path in paths if not path.is_file()]
+        if missing:
+            raise FileNotFoundError(f"missing instance masks: {missing[:3]}")
+        probe_indices = sorted(
+            {0, len(frames) // 4, len(frames) // 2, 3 * len(frames) // 4, len(frames) - 1}
+        )
+        occupancies = []
+        soft_edge_fractions = []
+        for index in probe_indices:
+            path = paths[index]
+            image = bpy.data.images.load(str(path), check_existing=False)
+            try:
+                width, height = [int(value) for value in image.size]
+                rgba = np.asarray(image.pixels[:], dtype=np.float32).reshape(
+                    height, width, 4
+                )
+                alpha = rgba[:, :, 3]
+                if (
+                    not np.isfinite(alpha).all()
+                    or float(alpha.min()) < 0.0
+                    or float(alpha.max()) > 1.0
+                ):
+                    raise ValueError(f"instance mask alpha is invalid: {path}")
+                occupancies.append(float(np.mean(alpha > 1.0e-6)))
+                soft_edge_fractions.append(
+                    float(np.mean((alpha > 1.0e-6) & (alpha < 1.0 - 1.0e-6)))
+                )
+            finally:
+                bpy.data.images.remove(image)
+        if not 0.0 < occupancies[0] < 1.0:
+            raise ValueError(
+                f"initial instance mask must be nonempty and non-full: {object_id}"
+            )
+        object_reports[str(object_id)] = {
+            "frame_count": len(frames),
+            "pixel_probe_frames": [frames[index] for index in probe_indices],
+            "nonempty_probe_count": sum(value > 0.0 for value in occupancies),
+            "minimum_occupancy_fraction": round(min(occupancies), 9),
+            "maximum_occupancy_fraction": round(max(occupancies), 9),
+            "maximum_soft_edge_fraction": round(max(soft_edge_fractions), 9),
         }
     return {
-        "encoding": "rgba_alpha_binary_mask",
-        "path_layout": "object_id_subdirectories",
-        "directory": str(mask_dir),
-        "filename_pattern": "frame_{frame:04d}.png",
-        "objects": output_records,
+        "policy_version": "physweep_antialiased_silhouette_validation_v1",
+        "objects": object_reports,
     }
 
 
@@ -879,6 +902,8 @@ def render_unoccluded_instance_masks(
     object_id = str(metadata["simulation"]["objects"][0]["object_id"])
     object_dir = mask_dir / object_id
     object_dir.mkdir(parents=True, exist_ok=True)
+    for stale_mask in object_dir.glob("frame_*.png"):
+        stale_mask.unlink()
     scene = bpy.context.scene
     scene.render.use_compositing = False
     scene.use_nodes = False
@@ -886,6 +911,8 @@ def render_unoccluded_instance_masks(
     scene.render.image_settings.file_format = "PNG"
     scene.render.image_settings.color_mode = "RGBA"
     scene.render.image_settings.color_depth = "8"
+    if scene.render.engine == "BLENDER_EEVEE":
+        scene.eevee.taa_render_samples = 1
     for obj in scene.objects:
         if obj.type in {"MESH", "CURVE", "SURFACE", "META", "FONT"}:
             obj.hide_render = obj != dynamic
@@ -905,7 +932,8 @@ def render_unoccluded_instance_masks(
     scene.frame_set(int(render["frame_start"]))
     bpy.ops.render.render(animation=True)
     return {
-        "encoding": "rgba_unoccluded_silhouette_mask",
+        "encoding": "rgba_alpha_antialiased_silhouette_mask",
+        "occlusion_policy": "unoccluded_dynamic_silhouette",
         "path_layout": "object_id_subdirectories",
         "directory": str(mask_dir),
         "filename_pattern": "frame_{frame:04d}.png",
@@ -975,7 +1003,7 @@ def rendered_png_statistics(path: Path) -> dict[str, float]:
 
 def adapt_rendered_frame_exposure(
     render: dict[str, Any],
-    maximum_adjustments: int = 2,
+    maximum_adjustments: int = 3,
 ) -> tuple[list[Path], dict[str, Any]]:
     scene = bpy.context.scene
     initial_exposure = float(scene.view_settings.exposure)
@@ -1048,6 +1076,7 @@ def render(
         raise ValueError("trajectory hash mismatch")
     with np.load(trajectory_path) as source:
         trajectory = {key: source[key] for key in source.files}
+    trajectory = object_trajectory_view(metadata, trajectory)
     visual = metadata["visualization"]
     render_config = dict(visual["render"])
     if instance_mask_dir is not None:
@@ -1075,6 +1104,15 @@ def render(
         scene = bpy.context.scene
         instance_mask_output = render_unoccluded_instance_masks(
             render_config, metadata, dynamic
+        )
+        instance_mask_output["validation"] = validate_instance_mask_output(
+            instance_mask_output,
+            list(
+                range(
+                    int(render_config["frame_start"]),
+                    int(render_config["frame_end"]) + 1,
+                )
+            ),
         )
         record = {
             "schema_version": "physweep_pybullet_render_record_v1",
@@ -1108,7 +1146,6 @@ def render(
         )
         write_json(record_path, record)
         return record
-    instance_mask_output = configure_instance_mask_output(render_config, metadata)
     lighting_adaptation = apply_material_lightness_adaptation(
         bpy.context.scene,
         [dynamic],
@@ -1123,10 +1160,26 @@ def render(
     video_path, video_encoding = configure_video_output(render_config)
     if first_frame_only:
         video_sha = None
+        instance_mask_output = None
+        mask_validation = None
     else:
         bpy.context.scene.frame_set(int(render_config["frame_start"]))
         bpy.ops.render.render(animation=True)
         video_sha = sha256(video_path)
+        instance_mask_output = render_unoccluded_instance_masks(
+            render_config, metadata, dynamic
+        )
+        mask_validation = validate_instance_mask_output(
+            instance_mask_output,
+            list(
+                range(
+                    int(render_config["frame_start"]),
+                    int(render_config["frame_end"]) + 1,
+                )
+            ),
+        )
+    if instance_mask_output is not None:
+        instance_mask_output["validation"] = mask_validation
     record = {
         "schema_version": "physweep_pybullet_render_record_v1",
         "implementation": {

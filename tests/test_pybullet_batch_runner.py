@@ -1,14 +1,66 @@
+import json
 import unittest
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from run_pybullet_batch import manifest_samples  # noqa: E402
+from run_pybullet_batch import (  # noqa: E402
+    group_samples_by_schema,
+    manifest_samples,
+    prepare_output_root,
+    worker_context,
+)
 
 
 class PyBulletBatchRunnerTests(unittest.TestCase):
+    def test_workers_use_fresh_spawned_processes(self) -> None:
+        self.assertEqual(worker_context().get_start_method(), "spawn")
+
+    def test_samples_are_isolated_by_source_schema(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            records = {
+                "generic.json": ("generic", "physweep_pybullet_rigid_metadata_v1"),
+                "billiards.json": ("billiards", "physweep_billiards_scene_v4"),
+            }
+            for name, (scene_id, schema) in records.items():
+                (root / name).write_text(
+                    json.dumps({"scene_id": scene_id, "schema_version": schema})
+                )
+            samples = [
+                {
+                    "scene_id": scene_id,
+                    "metadata_path": name,
+                    "source_schema_version": schema,
+                }
+                for name, (scene_id, schema) in records.items()
+            ]
+            groups = group_samples_by_schema(root, samples)
+        self.assertEqual(set(groups), {
+            "physweep_pybullet_rigid_metadata_v1",
+            "physweep_billiards_scene_v4",
+        })
+        self.assertEqual(groups["physweep_billiards_scene_v4"][0]["scene_id"], "billiards")
+
+    def test_declared_schema_must_match_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            (root / "scene.json").write_text(
+                json.dumps({"scene_id": "scene", "schema_version": "actual"})
+            )
+            with self.assertRaisesRegex(ValueError, "schema differs"):
+                group_samples_by_schema(
+                    root,
+                    [{
+                        "scene_id": "scene",
+                        "metadata_path": "scene.json",
+                        "source_schema_version": "declared",
+                    }],
+                )
+
     def test_base_manifest_is_normalized(self) -> None:
         sample = {"scene_id": "base", "metadata_path": "base/metadata.json"}
         dataset_id, samples = manifest_samples(
@@ -25,7 +77,7 @@ class PyBulletBatchRunnerTests(unittest.TestCase):
     def test_sweep_manifest_is_normalized(self) -> None:
         dataset_id, samples = manifest_samples(
             {
-                "schema_version": "physweep_physics_sweep_manifest_v1",
+                "schema_version": "physweep_physics_sweep_manifest_v2",
                 "dataset_id": "sweep_set",
                 "sample_count": 1,
                 "error_count": 0,
@@ -40,7 +92,13 @@ class PyBulletBatchRunnerTests(unittest.TestCase):
         self.assertEqual(dataset_id, "sweep_set")
         self.assertEqual(
             samples,
-            [{"scene_id": "sweep", "metadata_path": "sweep/metadata.json"}],
+            [
+                {
+                    "scene_id": "sweep",
+                    "metadata_path": "sweep/metadata.json",
+                    "source_schema_version": None,
+                }
+            ],
         )
 
     def test_derivation_errors_are_rejected(self) -> None:
@@ -53,6 +111,62 @@ class PyBulletBatchRunnerTests(unittest.TestCase):
                     "records": [],
                 }
             )
+
+    def test_duplicate_scene_ids_are_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "duplicate scene ids"):
+            manifest_samples(
+                {
+                    "schema_version": "physweep_pybullet_base_manifest_v1",
+                    "dataset_id": "duplicates",
+                    "sample_count": 2,
+                    "samples": [
+                        {"scene_id": "same", "metadata_path": "a.json"},
+                        {"scene_id": "same", "metadata_path": "b.json"},
+                    ],
+                }
+            )
+
+    def test_unsafe_scene_id_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "unsafe scene ids"):
+            manifest_samples(
+                {
+                    "schema_version": "physweep_pybullet_base_manifest_v1",
+                    "dataset_id": "unsafe",
+                    "sample_count": 1,
+                    "samples": [
+                        {"scene_id": "../escape", "metadata_path": "scene.json"}
+                    ],
+                }
+            )
+
+    def test_nonempty_output_requires_explicit_permission(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "physics"
+            output.mkdir()
+            (output / "stale.json").write_text("{}")
+            with self.assertRaisesRegex(ValueError, "not empty"):
+                prepare_output_root(output, allow_existing=False)
+            prepare_output_root(output, allow_existing=True)
+
+    def test_mixed_schema_sweep_is_forwarded_to_dispatcher(self) -> None:
+        _, samples = manifest_samples(
+            {
+                "schema_version": "physweep_physics_sweep_manifest_v1",
+                "dataset_id": "mixed",
+                "sample_count": 1,
+                "error_count": 0,
+                "records": [
+                    {
+                        "scene_id": "asset_sweep",
+                        "path": "sweep/metadata.json",
+                        "source_schema_version": "physweep_asset_proxy_scene_v3",
+                    }
+                ],
+            }
+        )
+        self.assertEqual(
+            samples[0]["source_schema_version"], "physweep_asset_proxy_scene_v3"
+        )
 
 
 if __name__ == "__main__":

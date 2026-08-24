@@ -176,6 +176,161 @@ def pilot40_selection(manifest: dict[str, Any]) -> list[dict[str, Any]]:
     return chosen
 
 
+def choose_balanced(
+    records: list[dict[str, Any]],
+    key: str,
+    count: int,
+    seed: str,
+    selected_ids: set[str],
+) -> list[dict[str, Any]]:
+    """Choose deterministically while keeping categorical coverage balanced."""
+    values = sorted({str(record[key]) for record in records})
+    if not values:
+        raise ValueError(f"cannot balance an empty record pool by {key}")
+    chosen: list[dict[str, Any]] = []
+    round_index = 0
+    while len(chosen) < count:
+        progressed = False
+        for value in values:
+            if len(chosen) == count:
+                break
+            candidates = sorted(
+                (
+                    record
+                    for record in records
+                    if str(record[key]) == value
+                    and str(record["scene_id"]) not in selected_ids
+                ),
+                key=lambda record: str(record["scene_id"]),
+            )
+            if not candidates:
+                continue
+            record = candidates[
+                random.Random(f"{seed}:{round_index}:{value}").randrange(
+                    len(candidates)
+                )
+            ]
+            chosen.append(record)
+            selected_ids.add(str(record["scene_id"]))
+            progressed = True
+        if not progressed:
+            raise ValueError(f"not enough records to select {count} balanced by {key}")
+        round_index += 1
+    return chosen
+
+
+def stress60_selection(manifest: dict[str, Any]) -> list[dict[str, Any]]:
+    """Select a deterministic 60-scene physics and visual stress review."""
+    records = list(manifest["records"])
+    generic = [record for record in records if record["pipeline"] == "generic_pybullet"]
+    assets = [record for record in records if record["pipeline"] == "asset_proxy"]
+    billiards = [record for record in records if record["pipeline"] == "billiards"]
+    transition_motions = {"edge_fall_1obj", "ramp_to_flat_1obj"}
+    ordinary = [
+        record
+        for record in generic
+        if str(record["motion_intent"]) not in transition_motions
+    ]
+    transitions = [
+        record
+        for record in generic
+        if str(record["motion_intent"]) in transition_motions
+    ]
+    dataset_id = str(manifest["dataset_id"])
+    selected_ids: set[str] = set()
+    chosen = choose_balanced(
+        ordinary,
+        "motion_intent",
+        30,
+        f"{dataset_id}:stress60:ordinary",
+        selected_ids,
+    )
+    chosen.extend(
+        choose_balanced(
+            transitions,
+            "motion_intent",
+            20,
+            f"{dataset_id}:stress60:transition",
+            selected_ids,
+        )
+    )
+    chosen.extend(
+        choose_balanced(
+            assets,
+            "profile",
+            8,
+            f"{dataset_id}:stress60:asset",
+            selected_ids,
+        )
+    )
+    chosen.extend(
+        choose_balanced(
+            billiards,
+            "profile",
+            2,
+            f"{dataset_id}:stress60:billiards",
+            selected_ids,
+        )
+    )
+    if len(chosen) != 60:
+        raise ValueError(f"stress60 selection must contain 60 records, got {len(chosen)}")
+    chosen.sort(key=lambda record: int(record["index"]))
+    return chosen
+
+
+def review100_selection(manifest: dict[str, Any]) -> list[dict[str, Any]]:
+    """Select a deterministic 100-scene formal distribution review."""
+    records = list(manifest["records"])
+    generic = [
+        record for record in records if record["pipeline"] == "generic_pybullet"
+    ]
+    assets = [record for record in records if record["pipeline"] == "asset_proxy"]
+    billiards = [record for record in records if record["pipeline"] == "billiards"]
+    dataset_id = str(manifest["dataset_id"])
+    selected_ids: set[str] = set()
+
+    chosen = choose_balanced(
+        generic,
+        "motion_intent",
+        70,
+        f"{dataset_id}:review100:generic",
+        selected_ids,
+    )
+    chosen.extend(
+        choose_balanced(
+            assets,
+            "environment_id",
+            14,
+            f"{dataset_id}:review100:asset-environment",
+            selected_ids,
+        )
+    )
+    chosen.extend(
+        choose_balanced(
+            assets,
+            "profile",
+            14,
+            f"{dataset_id}:review100:asset-profile",
+            selected_ids,
+        )
+    )
+    chosen.extend(
+        choose_balanced(
+            billiards,
+            "profile",
+            2,
+            f"{dataset_id}:review100:billiards",
+            selected_ids,
+        )
+    )
+    if len(chosen) != 100:
+        raise ValueError(
+            f"review100 selection must contain 100 records, got {len(chosen)}"
+        )
+    chosen.sort(key=lambda record: int(record["index"]))
+    return chosen
+
+
 def update_counts(manifest: dict[str, Any], records: list[dict[str, Any]]) -> None:
     manifest["sample_count"] = len(records)
     manifest["motion_counts"] = dict(
@@ -217,7 +372,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument(
-        "--selection", choices=("pilot20", "pilot40", "all"), default="pilot20"
+        "--selection",
+        choices=("pilot20", "pilot40", "stress60", "review100", "all"),
+        default="pilot20",
     )
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
@@ -240,6 +397,10 @@ def main() -> None:
         if args.selection == "pilot20"
         else pilot40_selection(source_manifest)
         if args.selection == "pilot40"
+        else stress60_selection(source_manifest)
+        if args.selection == "stress60"
+        else review100_selection(source_manifest)
+        if args.selection == "review100"
         else list(source_manifest["records"])
     )
     selected_by_pipeline = {

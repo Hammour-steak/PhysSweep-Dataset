@@ -1,22 +1,27 @@
 {
-  "version": "physweep_object_bound_sweep_v1",
-  "scope": "immutable_object_bound_one_factor_rigid_derivation",
-  "base_schema_version": "physweep_pybullet_rigid_metadata_v1",
-  "backend": "pybullet_rigid_v1",
+  "version": "physweep_object_bound_sweep_v2",
+  "scope": "immutable_object_bound_one_factor_multi_schema_derivation",
+  "base_schema_versions": [
+    "physweep_pybullet_rigid_metadata_v1",
+    "physweep_asset_proxy_scene_v3",
+    "physweep_billiards_scene_v4"
+  ],
+  "backend_contract": "physweep_resolved_simulation_scene_v1",
   "canonical_base_axis": "mass_kg",
   "max_dynamic_objects": 3,
-  "object_collection_path": "simulation.objects",
+  "object_binding_path": "object_identity.objects[role=dynamic]",
   "object_id_policy": "required_object_id",
   "prior_sources": {
     "physassets_profiles": "configs/physassets_core_object_profiles.json",
-    "asset_proxy_registry": "configs/asset_proxy_registry.json"
+    "asset_proxy_registry": "configs/asset_proxy_registry.json",
+    "billiards_backend": "configs/pybullet_backend.json"
   },
   "endpoint_policy": {
     "algorithm": "intersect_domains_then_interpolate",
     "domain_sources": [
-      "runtime_or_asset_domain",
+      "axis_runtime_or_asset_domain",
       "base_relative_span",
-      "motion_transition_bound"
+      "optional_axis_motion_bound"
     ],
     "normalized_positions": [0.0, 0.25, 0.5, 0.75, 1.0],
     "base_value_policy": "preserve_exactly_at_middle_position",
@@ -55,7 +60,10 @@
       "level_count": 5,
       "level_positions": [0.0, 0.25, 0.5, 0.75, 1.0],
       "domain": [0.0, 0.8],
-      "domain_policy": "global_stable_runtime_domain",
+      "schema_domains": {
+        "physweep_billiards_scene_v4": [0.3, 1.0]
+      },
+      "domain_policy": "schema_stable_runtime_domain",
       "semantic_control": "elasticity",
       "range_policy": {
         "mode": "global"
@@ -72,6 +80,7 @@
   ],
   "invariants": [
     "base metadata is never modified",
+    "the canonical base is stored once without a target object or sweep parameter",
     "one derived record changes exactly one runtime material field on exactly one target object",
     "target object is identified by stable object id and index",
     "all dynamic object physical states are serialized in the derived metadata",

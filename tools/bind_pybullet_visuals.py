@@ -39,6 +39,13 @@ except ModuleNotFoundError as exc:
         raise
     from tools.environment_collision import validate_environment_binding
 
+try:
+    from trajectory_contract import object_trajectory_view
+except ModuleNotFoundError as exc:
+    if exc.name != "trajectory_contract":
+        raise
+    from tools.trajectory_contract import object_trajectory_view
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 ACTIVE_RULES_PATH = PROJECT_ROOT / "configs/one_object_sampling_rules.json"
@@ -105,6 +112,55 @@ def image_center_visibility_mask(projected: np.ndarray) -> np.ndarray:
             projected[:, 1] <= 1.0,
             projected[:, 2] > 0.1,
         ]
+    )
+
+
+def camera_inside_structural_envelope(
+    metadata: dict[str, Any],
+    position: np.ndarray,
+) -> bool:
+    """Keep cameras inside structures whose walls define the usable space."""
+
+    support = metadata["simulation"]["support"]
+    envelope = support.get("camera_envelope")
+    if envelope is None:
+        return True
+    if str(envelope.get("type")) != "paired_parallel_walls":
+        raise ValueError("unsupported structural camera envelope")
+    motion_axis = str(envelope["motion_axis"])
+    if motion_axis not in {"x", "y"}:
+        raise ValueError("structural camera-envelope axis must be x or y")
+    cross_axis = 1 if motion_axis == "x" else 0
+    wall_ids = {str(value) for value in envelope["collider_ids"]}
+    walls = [
+        collider
+        for collider in support.get("colliders", [])
+        if str(collider.get("id")) in wall_ids
+    ]
+    if len(wall_ids) != 2 or len(walls) != 2:
+        raise ValueError("paired-wall camera envelope requires two colliders")
+    clearance_m = float(envelope["clearance_m"])
+    if clearance_m <= 0.0:
+        raise ValueError("structural camera-envelope clearance must be positive")
+    lower_inner = -math.inf
+    upper_inner = math.inf
+    ceiling = math.inf
+    for wall in walls:
+        center = np.asarray(wall["position_m"], dtype=np.float64)
+        size = np.asarray(wall["size_m"], dtype=np.float64)
+        if center[cross_axis] < 0.0:
+            lower_inner = max(
+                lower_inner, float(center[cross_axis] + 0.5 * size[cross_axis])
+            )
+        else:
+            upper_inner = min(
+                upper_inner, float(center[cross_axis] - 0.5 * size[cross_axis])
+            )
+        ceiling = min(ceiling, float(center[2] + 0.5 * size[2]))
+    position = np.asarray(position, dtype=np.float64)
+    return bool(
+        lower_inner + clearance_m <= position[cross_axis] <= upper_inner - clearance_m
+        and position[2] <= ceiling - clearance_m
     )
 
 
@@ -260,11 +316,63 @@ def support_context_points(
     required_indices = [0, 2, 3]
     context = str(observation["structure_context"])
 
+    if (
+        context == "horizontal_surface"
+        and str(support.get("scene_class")) == "raised_flat"
+        and support.get("motion_axis") in {"x", "y"}
+        and "maximum_planar_trajectory_distance_m" in support
+    ):
+        axis = 0 if support["motion_axis"] == "x" else 1
+        cross_axis = 1 - axis
+        support_center = np.clip(np.zeros(2, dtype=np.float64), lower, upper)
+        axis_half_span = min(
+            0.45 * float(upper[axis] - lower[axis]),
+            0.5 * float(support["maximum_planar_trajectory_distance_m"]),
+        )
+        cross_half_span = 0.30 * float(upper[cross_axis] - lower[cross_axis])
+        long_axis_anchors = []
+        for sign in (-1.0, 1.0):
+            value = support_center.copy()
+            value[axis] += sign * axis_half_span
+            long_axis_anchors.append(np.clip(value, lower, upper))
+        for sign in (-1.0, 1.0):
+            value = support_center.copy()
+            value[cross_axis] += sign * cross_half_span
+            long_axis_anchors.append(np.clip(value, lower, upper))
+        required_indices = list(
+            range(len(points), len(points) + 1 + len(long_axis_anchors))
+        )
+        points.extend(
+            surface_point(value)
+            for value in (support_center, *long_axis_anchors)
+        )
+
     if context in {"inclined_surface", "ramp_and_landing"}:
-        low = np.asarray([center[0], lower[1]], dtype=np.float64)
-        high = np.asarray([center[0], upper[1]], dtype=np.float64)
-        required_indices = [len(points), len(points) + 1]
-        points.extend([surface_point(low), surface_point(high)])
+        visual_geometry = support.get("visual_geometry")
+        if (
+            isinstance(visual_geometry, dict)
+            and str(visual_geometry.get("primitive")) == "solid_wedge"
+        ):
+            width, length = [
+                float(value) for value in visual_geometry["size_xy_m"]
+            ]
+            low_z = float(visual_geometry["base_z_m"]) + 0.01
+            high_z = float(visual_geometry["high_top_z_m"]) + 0.01
+            wedge_corners = [
+                [-width / 2.0, -length / 2.0, low_z],
+                [width / 2.0, -length / 2.0, low_z],
+                [-width / 2.0, length / 2.0, high_z],
+                [width / 2.0, length / 2.0, high_z],
+            ]
+            required_indices = list(
+                range(len(points), len(points) + len(wedge_corners))
+            )
+            points.extend(wedge_corners)
+        else:
+            low = np.asarray([center[0], lower[1]], dtype=np.float64)
+            high = np.asarray([center[0], upper[1]], dtype=np.float64)
+            required_indices = [len(points), len(points) + 1]
+            points.extend([surface_point(low), surface_point(high)])
 
     collider_id = observation["focus_event"].get("collider_id")
     if context == "impact_boundary":
@@ -429,7 +537,6 @@ def unoccluded_fraction(
         collider
         for collider in colliders
         if bool(collider.get("visible", True))
-        and bool(collider.get("occludes_camera", False))
         and collider.get("primitive") == "box"
     ]
     points = np.asarray(points, dtype=np.float64)
@@ -441,6 +548,28 @@ def unoccluded_fraction(
         if np.all(blocked):
             break
     return float((~blocked).mean())
+
+
+def camera_occlusion_colliders(metadata: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return every frozen box that can visibly block the selected camera."""
+
+    support_blockers = [
+        collider
+        for collider in metadata["simulation"]["support"]["colliders"]
+        if bool(collider.get("visible", True))
+        and bool(collider.get("occludes_camera", False))
+        and collider.get("primitive") == "box"
+    ]
+    environment_blockers = [
+        collider
+        for collider in metadata.get("environment_binding", {}).get(
+            "colliders", []
+        )
+        if bool(collider.get("visible", True))
+        and bool(collider.get("collision_enabled", True))
+        and collider.get("primitive") == "box"
+    ]
+    return [*support_blockers, *environment_blockers]
 
 
 def solve_camera(
@@ -482,14 +611,28 @@ def solve_camera(
     )
     support_top = float(metadata["simulation"]["support"]["surface_center_z_m"])
     primary_target, full_target = camera_target_centers(focus_points, positions)
+    structure_target = None
+    if str(observation["structure_context"]) in {
+        "ramp_and_landing",
+        "edge_and_landing",
+    }:
+        context_points, required_anchor_indices = support_context_points(
+            metadata,
+            camera_azimuth_degrees(rules, profile),
+            primary_target[:2],
+            observation,
+            positions[center_indices],
+        )
+        framing_points = np.vstack(
+            [positions[center_indices], context_points[required_anchor_indices]]
+        )
+        structure_target = (
+            framing_points.min(axis=0) + framing_points.max(axis=0)
+        ) / 2.0
     requested_target_blend = float(request["full_trajectory_camera_target_blend"])
     requested_lens = min(44.0, float(request["focal_length_mm"]))
     scene_visual = metadata["appearance"]["scene_visual"]
-    camera_context = (
-        scene_visual.get("camera_context", {})
-        if str(scene_visual.get("visual_type")) == "mesh_backdrop"
-        else {}
-    )
+    camera_context = scene_visual.get("camera_context", {})
     composition = scene_visual.get("composition")
     reviewed_camera = (
         composition.get("camera", {})
@@ -531,7 +674,7 @@ def solve_camera(
         requested_lens = min(requested_lens, float(context_focal_cap))
     focal_length_candidates = [requested_lens]
     focal_length_candidates.extend(
-        value for value in (40.0, 36.0, 32.0) if value < requested_lens
+        value for value in (40.0, 36.0, 32.0, 28.0) if value < requested_lens
     )
     sensor_width = 32.0
     aspect = 16.0 / 9.0
@@ -652,18 +795,17 @@ def solve_camera(
     minimum_anchor_fraction = float(
         observation["minimum_anchor_visible_fraction"]
     )
+    minimum_anchor_unoccluded = float(
+        observation["minimum_anchor_unoccluded_fraction"]
+    )
     minimum_primary_unoccluded = float(
         request.get("minimum_primary_trajectory_unoccluded_fraction", 0.90)
     )
     minimum_full_unoccluded = float(
         request.get("minimum_full_trajectory_unoccluded_fraction", 0.70)
     )
-    colliders = list(metadata["simulation"]["support"]["colliders"])
-    has_camera_blockers = any(
-        bool(collider.get("visible", True))
-        and bool(collider.get("occludes_camera", False))
-        for collider in colliders
-    )
+    colliders = camera_occlusion_colliders(metadata)
+    has_camera_blockers = bool(colliders)
     full_occlusion_indices = np.unique(
         np.linspace(0, len(positions) - 1, min(18, len(positions)), dtype=int)
     )
@@ -673,6 +815,7 @@ def solve_camera(
         focal_length_mm: float,
         wide_azimuth: bool = False,
         absolute_elevations: tuple[float, ...] | None = None,
+        target_mode: str = "motion",
     ) -> list[dict[str, Any]]:
         result = []
         azimuth_offsets = camera_azimuth_offsets(
@@ -717,10 +860,11 @@ def solve_camera(
             if is_ramp:
                 base_elevation = min(base_elevation, 42.0)
             context_elevations = (
-                (base_elevation, base_elevation + 6.0, base_elevation - 4.0,
-                 base_elevation - 8.0, base_elevation - 14.0)
+                (base_elevation, base_elevation + 10.0, base_elevation - 8.0,
+                 base_elevation + 18.0, base_elevation - 14.0)
                 if camera_context
-                else (base_elevation, base_elevation + 6.0, base_elevation - 4.0)
+                else (base_elevation, base_elevation + 10.0,
+                      base_elevation - 8.0, base_elevation + 18.0)
             )
             elevation_candidates = (
                 tuple(dict.fromkeys(float(value) for value in absolute_elevations))
@@ -755,6 +899,8 @@ def solve_camera(
                             float(distance) * math.sin(elevation),
                         ]
                     )
+                    if not camera_inside_structural_envelope(metadata, position):
+                        continue
                     projected_focus = project_points(
                         focus_points,
                         position,
@@ -877,6 +1023,14 @@ def solve_camera(
                     full_unoccluded = unoccluded_fraction(
                         position, positions[full_occlusion_indices], colliders
                     )
+                    target_unoccluded = unoccluded_fraction(
+                        position, target[None, :], colliders
+                    )
+                    required_anchors_unoccluded = unoccluded_fraction(
+                        position,
+                        context_points[required_anchor_indices],
+                        colliders,
+                    )
                     admissible = (
                         initial_inside
                         and initial_object_inside
@@ -890,6 +1044,8 @@ def solve_camera(
                         and median_object_span >= minimum_median_object_span
                         and primary_unoccluded >= minimum_primary_unoccluded
                         and full_unoccluded >= minimum_full_unoccluded
+                        and required_anchors_unoccluded
+                        >= minimum_anchor_unoccluded
                     )
                     score = (
                         abs(median_object_span - preferred_span) * 5.0
@@ -899,6 +1055,7 @@ def solve_camera(
                         + (1.0 - anchor_fraction) * 1.25
                         + (1.0 - primary_unoccluded) * 3.0
                         + (1.0 - full_unoccluded) * 0.8
+                        + (1.0 - required_anchors_unoccluded) * 1.25
                         + max(0.0, focus_span - soft_maximum_focus_span)
                         * focus_span_penalty_weight
                         + abs(float(distance) - preferred_camera_distance)
@@ -915,6 +1072,7 @@ def solve_camera(
                             "target": target,
                             "motion_target": motion_target,
                             "target_blend": target_blend,
+                            "target_mode": target_mode,
                             "distance": float(distance),
                             "focal_length_mm": float(focal_length_mm),
                             "azimuth_degrees": azimuth_base + azimuth_offset,
@@ -929,6 +1087,10 @@ def solve_camera(
                             "focus_span": focus_span,
                             "primary_unoccluded_fraction": primary_unoccluded,
                             "full_unoccluded_fraction": full_unoccluded,
+                            "target_unoccluded_fraction": target_unoccluded,
+                            "required_structure_anchors_unoccluded_fraction": (
+                                required_anchors_unoccluded
+                            ),
                             "ramp_side_readability": ramp_side_readability,
                             "constraints": {
                                 "initial_center_inside": initial_inside,
@@ -943,6 +1105,10 @@ def solve_camera(
                                 "median_object_span": median_object_span >= minimum_median_object_span,
                                 "primary_unoccluded_fraction": primary_unoccluded >= minimum_primary_unoccluded,
                                 "full_unoccluded_fraction": full_unoccluded >= minimum_full_unoccluded,
+                                "required_structure_anchors_unoccluded_fraction": (
+                                    required_anchors_unoccluded
+                                    >= minimum_anchor_unoccluded
+                                ),
                             },
                         }
                     )
@@ -972,6 +1138,20 @@ def solve_camera(
                 motion_target,
                 target_blend,
                 focal_length_mm,
+            )
+            candidates.extend(target_candidates)
+            accepted = [
+                record for record in target_candidates if record["admissible"]
+            ]
+            if accepted:
+                return accepted
+        if structure_target is not None:
+            target_candidates = evaluate_target(
+                structure_target,
+                requested_target_blend,
+                focal_length_mm,
+                wide_azimuth=True,
+                target_mode="motion_and_required_structure",
             )
             candidates.extend(target_candidates)
             accepted = [
@@ -1039,19 +1219,64 @@ def solve_camera(
             f"camera solver evaluated no poses for {metadata['scene_id']}"
         )
     best = min(admitted or candidates, key=lambda record: record["score"])
+    camera_variant_index = 0
+    if admitted:
+        # Geometry decides which poses are valid. The scene seed only chooses
+        # among near-equivalent valid poses, preserving reproducibility while
+        # avoiding a systematic collapse to the nominal camera angle.
+        quality_limit = float(best["score"]) + 0.65
+        quality_pool = [
+            record for record in admitted if float(record["score"]) <= quality_limit
+        ]
+        scene_digest = hashlib.sha256(
+            f"generic-camera:{metadata['scene_id']}".encode("utf-8")
+        ).digest()
+        azimuths = sorted(
+            {round(float(record["azimuth_degrees"]), 6) for record in quality_pool}
+        )
+        elevations = sorted(
+            {round(float(record["elevation_degrees"]), 6) for record in quality_pool}
+        )
+        preferred_azimuth = azimuths[int(scene_digest[0]) % len(azimuths)]
+        preferred_elevation = elevations[int(scene_digest[1]) % len(elevations)]
+        ranked_pool = sorted(
+            quality_pool,
+            key=lambda record: (
+                abs(float(record["azimuth_degrees"]) - preferred_azimuth) / 24.0
+                + abs(float(record["elevation_degrees"]) - preferred_elevation) / 8.0,
+                float(record["score"]),
+            ),
+        )
+        best = ranked_pool[0]
+        camera_variant_index = quality_pool.index(best)
     if not best["admissible"]:
         largest_object = max(candidates, key=lambda record: record["object_span"])
         closest_to_object_threshold = min(
             candidates,
             key=lambda record: abs(record["object_span"] - minimum_object_span),
         )
+        best_structure_target = min(
+            (
+                record
+                for record in candidates
+                if record["target_mode"] == "motion_and_required_structure"
+            ),
+            key=lambda record: record["score"],
+            default=None,
+        )
+        best_anchor_coverage = min(
+            candidates,
+            key=lambda record: (-record["anchor_fraction"], record["score"]),
+        )
         raise ValueError(
             f"camera solver found no admissible pose for {metadata['scene_id']}: "
             f"best={best}; closest_object_threshold={closest_to_object_threshold}; "
-            f"largest_object={largest_object}"
+            f"largest_object={largest_object}; "
+            f"best_structure_target={best_structure_target}; "
+            f"best_anchor_coverage={best_anchor_coverage}"
         )
     return {
-        "solver_version": "motion_structure_camera_v10",
+        "solver_version": "motion_structure_camera_v12",
         "profile": profile,
         "observation_intent": str(observation["intent"]),
         "structure_context": str(observation["structure_context"]),
@@ -1062,6 +1287,9 @@ def solve_camera(
         "clip_start_m": 0.05,
         "clip_end_m": 100.0,
         "diagnostics": {
+            "deterministic_variant_index": camera_variant_index,
+            "selected_azimuth_degrees": round(float(best["azimuth_degrees"]), 6),
+            "selected_elevation_degrees": round(float(best["elevation_degrees"]), 6),
             "evaluated_candidates": len(candidates),
             "attempted_full_trajectory_target_blends": [
                 round(float(value), 6) for value in attempted_blends
@@ -1075,6 +1303,7 @@ def solve_camera(
             "selected_full_trajectory_target_blend": round(
                 float(best["target_blend"]), 6
             ),
+            "selected_target_mode": str(best["target_mode"]),
             "motion_target_m": [
                 round(float(value), 6) for value in best["motion_target"]
             ],
@@ -1175,6 +1404,16 @@ def solve_camera(
             "full_trajectory_unoccluded_fraction": round(
                 float(best["full_unoccluded_fraction"]), 6
             ),
+            "target_unoccluded_fraction": round(
+                float(best["target_unoccluded_fraction"]), 6
+            ),
+            "required_structure_anchors_unoccluded_fraction": round(
+                float(best["required_structure_anchors_unoccluded_fraction"]),
+                6,
+            ),
+            "minimum_required_structure_anchor_unoccluded_fraction": round(
+                minimum_anchor_unoccluded, 6
+            ),
         },
     }
 
@@ -1262,22 +1501,45 @@ def frozen_environment_binding(
     }
 
 
+def resolve_render_request(
+    metadata: dict[str, Any],
+    resolution: tuple[int, int] | None,
+    samples: int | None,
+) -> tuple[tuple[int, int], int]:
+    render_request = metadata["render_request"]
+    resolved_resolution = (
+        resolution
+        if resolution is not None
+        else tuple(int(value) for value in render_request["resolution"])
+    )
+    if len(resolved_resolution) != 2 or min(resolved_resolution) <= 0:
+        raise ValueError("render resolution must contain two positive values")
+    resolved_samples = int(
+        samples if samples is not None else render_request["samples"]
+    )
+    if resolved_samples <= 0:
+        raise ValueError("render samples must be positive")
+    return (int(resolved_resolution[0]), int(resolved_resolution[1])), resolved_samples
+
+
 def bind_scene(
     root: Path,
     metadata_path: Path,
+    simulation_record_path: Path,
+    trajectory_path: Path,
     output_root: Path,
     rules: dict[str, Any],
-    resolution: tuple[int, int],
-    samples: int,
+    resolution: tuple[int, int] | None,
+    samples: int | None,
 ) -> dict[str, Any]:
     metadata = load_json(metadata_path)
+    resolution, samples = resolve_render_request(metadata, resolution, samples)
     scene_id = str(metadata["scene_id"])
-    trajectory_path = metadata_path.parent / "physics" / "trajectory.npz"
-    simulation_record_path = metadata_path.parent / "physics" / "simulation_record.json"
     simulation_record = load_json(simulation_record_path)
-    if simulation_record.get("schema_version") != (
-        "physweep_pybullet_simulation_record_v1"
-    ):
+    if simulation_record.get("schema_version") not in {
+        "physweep_pybullet_simulation_record_v1",
+        "physweep_dispatched_simulation_record_v1",
+    }:
         raise ValueError("unsupported PyBullet simulation record")
     record_scene = simulation_record.get("scene_id")
     expected_scene = scene_id
@@ -1296,6 +1558,7 @@ def bind_scene(
         raise ValueError("trajectory audit changed after simulation")
     with np.load(trajectory_path) as source:
         trajectory = {key: source[key] for key in source.files}
+    trajectory = object_trajectory_view(metadata, trajectory)
     camera = solve_camera(metadata, trajectory, rules)
     environment = frozen_environment_binding(metadata, camera)
     support_static_objects = copy.deepcopy(
@@ -1353,6 +1616,7 @@ def bind_scene(
                 "primitive": "solid_wedge",
                 "role": "render_only_support",
                 "material_role": "support_surface",
+                "structure_material_role": "support_structure",
                 "size_xy_m": [
                     float(value) for value in visual_geometry["size_xy_m"]
                 ],
@@ -1485,8 +1749,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
-    parser.add_argument("--resolution", type=parse_resolution, default=(640, 360))
-    parser.add_argument("--samples", type=int, default=8)
+    parser.add_argument(
+        "--resolution",
+        type=parse_resolution,
+        help="Explicit override; otherwise inherit render_request.resolution.",
+    )
+    parser.add_argument(
+        "--samples",
+        type=int,
+        help="Explicit override; otherwise inherit render_request.samples.",
+    )
     parser.add_argument("--limit", type=int)
     parser.add_argument("--workers", type=int, default=1)
     return parser.parse_args()
@@ -1512,10 +1784,27 @@ def main() -> None:
     samples = list(manifest["samples"])
     if args.limit is not None:
         samples = samples[: args.limit]
+    def sample_path(sample: dict[str, Any], key: str, fallback: Path) -> Path:
+        value = sample.get(key)
+        if value is None:
+            return fallback
+        path = Path(str(value))
+        return path if path.is_absolute() else root / path
+
     jobs = [
         (
             root,
-            root / str(sample["metadata_path"]),
+            (metadata_path := root / str(sample["metadata_path"])),
+            sample_path(
+                sample,
+                "simulation_record_path",
+                metadata_path.parent / "physics" / "simulation_record.json",
+            ),
+            sample_path(
+                sample,
+                "trajectory_path",
+                metadata_path.parent / "physics" / "trajectory.npz",
+            ),
             output_root,
             rules,
             args.resolution,

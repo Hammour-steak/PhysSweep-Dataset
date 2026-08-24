@@ -160,11 +160,11 @@
         "representation": "static_concave_mesh",
         "method": "reviewed_shell_blender_evaluated_triangle_mesh",
         "path": "assets/proxies/environment/env_kitchen_modern_9843a830/collision.obj",
-        "sha256": "47196656372d76ae4e2ae6aa1a9c696bd873cbd52ad43b0a5808eb81e125ac3d",
-        "vertex_count": 69437,
-        "face_count": 72542,
+        "sha256": "e8ca0f1becc6077bb3abfae7f09749ec4396d14b6627470e158f44d8aed2487f",
+        "vertex_count": 69043,
+        "face_count": 72174,
         "source_face_count": 72554,
-        "authoritative_floor_face_count_removed": 0,
+        "authoritative_floor_face_count_removed": 368,
         "decimation_ratio": 1.0,
         "bounds_min_m": [
           -4.204595089,
@@ -194,7 +194,7 @@
           -0.358677923679
         ],
         "world_pose_is_frozen_in_scene_metadata": true,
-        "authoritative_floor_z_m": -2.8413e-08,
+        "authoritative_floor_z_m": 0.06486835,
         "authoritative_floor_exclusion_half_band_m": 0.0576,
         "authoritative_floor_minimum_abs_normal_z": 0.94
       },

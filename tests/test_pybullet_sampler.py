@@ -19,14 +19,18 @@ from sample_pybullet_base import (  # noqa: E402
     bounce_observation_contract,
     coverage_cycle_by_group,
     build_batch,
+    derive_initial_condition,
+    direction_for_support,
     load_active_rules,
     load_json,
     manifest_counts,
     object_supports_motion,
     restitution_for_motion,
     support_mesh_scale_ratio,
+    support_allowed,
 )
 from bind_pybullet_visuals import frozen_environment_binding  # noqa: E402
+from rigid_geometry import build_support_geometry  # noqa: E402
 
 
 class PyBulletSamplerTests(unittest.TestCase):
@@ -72,6 +76,168 @@ class PyBulletSamplerTests(unittest.TestCase):
             json.dumps(repeat, sort_keys=True),
         )
 
+    def test_long_shallow_ramp_variants_are_balanced_and_frozen(self) -> None:
+        count = 6
+        scenes = build_batch(
+            self.rules,
+            self.backend,
+            self.materials,
+            self.hdri_records,
+            self.visual,
+            20260823,
+            count,
+            motion_sequence=["ramp_to_flat_1obj"] * count,
+            support_sequence=["ground_ramp_long_shallow"] * count,
+        )
+        variant_ids = [
+            scene["simulation"]["support"]["geometry_variant_id"]
+            for scene in scenes
+        ]
+        self.assertEqual(
+            set(variant_ids), {"standard", "extended_landing", "wide_gentle"}
+        )
+        self.assertTrue(all(variant_ids.count(value) == 2 for value in set(variant_ids)))
+        for scene in scenes:
+            semantic_id = scene["semantic_sampling"]["five_dimensions"][
+                "support_interaction"
+            ]["geometry_variant_id"]
+            self.assertEqual(
+                semantic_id,
+                scene["simulation"]["support"]["geometry_variant_id"],
+            )
+
+    def test_long_corridor_constrains_direction_and_motion(self) -> None:
+        corridor = next(
+            support
+            for support in self.rules["axes"]["support_axis"]
+            if support["label"] == "long_corridor"
+        )
+        positive = direction_for_support(
+            {"label": "diagonal", "angle_degrees": 70.0}, corridor
+        )
+        negative = direction_for_support(
+            {"label": "diagonal", "angle_degrees": 130.0}, corridor
+        )
+        self.assertEqual(positive["angle_degrees"], 0.0)
+        self.assertEqual(negative["angle_degrees"], 180.0)
+        self.assertTrue(support_allowed(corridor, "slide_push_1obj", self.rules))
+        self.assertFalse(support_allowed(corridor, "drop_fall_1obj", self.rules))
+
+    def test_long_corridor_distance_reaches_declared_cap(self) -> None:
+        corridor = next(
+            support
+            for support in self.rules["axes"]["support_axis"]
+            if support["label"] == "long_corridor"
+        )
+        obj = next(
+            record
+            for record in self.rules["axes"]["object_axis"]
+            if record["shape"] == "cuboid"
+            and object_supports_motion(record, "slide_push_1obj")
+        )
+        subtype = self.rules["axes"]["motion_subtype_axis"]["slide_push_1obj"][
+            -1
+        ]
+        extent = next(
+            record
+            for record in self.rules["axes"]["trajectory_extent_axis"]
+            if record["label"] == "long"
+        )
+        zone = next(
+            record
+            for record in self.rules["axes"]["initial_position_zone_axis"]
+            if record["label"] == "center_start"
+        )
+        direction = {"label": "support_axis_x_positive", "angle_degrees": 0.0}
+        geometry = build_support_geometry(
+            corridor, "slide_push_1obj", subtype, [1.0, 0.0, 0.0]
+        )
+        initial = derive_initial_condition(
+            random.Random(11),
+            self.backend,
+            "slide_push_1obj",
+            subtype,
+            extent,
+            zone,
+            direction,
+            obj["shape"],
+            obj["size"],
+            obj["pose_profile"],
+            geometry,
+            0.35,
+            0.08,
+        )
+        self.assertEqual(
+            initial["expected_motion"]["target_displacement_m"], 2.8
+        )
+        expected_friction = 2.45**2 / (2.0 * 9.81 * 2.8)
+        self.assertAlmostEqual(
+            initial["effective_contact_friction"], expected_friction, places=6
+        )
+
+    def test_long_support_does_not_expand_ballistic_distance(self) -> None:
+        corridor = next(
+            support
+            for support in self.rules["axes"]["support_axis"]
+            if support["label"] == "long_corridor"
+        )
+        obj = next(
+            record
+            for record in self.rules["axes"]["object_axis"]
+            if record["shape"] == "cylinder"
+        )
+        subtype = self.rules["axes"]["motion_subtype_axis"]["projectile_1obj"][
+            0
+        ]
+        extent = next(
+            record
+            for record in self.rules["axes"]["trajectory_extent_axis"]
+            if record["label"] == "long"
+        )
+        zone = next(
+            record
+            for record in self.rules["axes"]["initial_position_zone_axis"]
+            if record["label"] == "center_start"
+        )
+        direction = {"label": "support_axis_x_positive", "angle_degrees": 0.0}
+        geometry = build_support_geometry(
+            corridor, "projectile_1obj", subtype, [1.0, 0.0, 0.0]
+        )
+        initial = derive_initial_condition(
+            random.Random(12),
+            self.backend,
+            "projectile_1obj",
+            subtype,
+            extent,
+            zone,
+            direction,
+            obj["shape"],
+            obj["size"],
+            obj["pose_profile"],
+            geometry,
+            0.35,
+            0.08,
+        )
+        self.assertEqual(
+            initial["expected_motion"]["minimum_horizontal_displacement_m"],
+            round(1.65 * 0.35, 6),
+        )
+
+    def test_long_table_constrains_motion_to_its_long_axis(self) -> None:
+        support = next(
+            record
+            for record in self.rules["axes"]["support_axis"]
+            if record["label"] == "long_wood_table"
+        )
+        direction = direction_for_support(
+            {"label": "diagonal", "angle_degrees": 65.0}, support
+        )
+        self.assertEqual(direction["angle_degrees"], 0.0)
+        self.assertTrue(support_allowed(support, "edge_fall_1obj", self.rules))
+        self.assertFalse(
+            support_allowed(support, "slope_slide_down_1obj", self.rules)
+        )
+
     def test_object_motion_exclusions_are_enforced_for_explicit_sequences(self) -> None:
         objects = [
             {"label": "flat_only", "excluded_motion_families": ["slope"]},
@@ -83,6 +249,22 @@ class PyBulletSamplerTests(unittest.TestCase):
         self.assertEqual(selected[0]["label"], "all_motion")
         self.assertEqual(selected[2]["label"], "all_motion")
         self.assertIn("flat_only", {selected[1]["label"], selected[3]["label"]})
+
+    def test_long_ramp_rejects_objects_that_cannot_remain_readable(self) -> None:
+        remote = next(
+            record
+            for record in self.rules["axes"]["object_axis"]
+            if record["label"] == "physassets_19920_remote"
+        )
+        self.assertLess(
+            sorted(remote["size"], reverse=True)[1],
+            self.rules["architecture"]["compatibility"]["motions"]
+            ["ramp_to_flat_1obj"]["minimum_object_characteristic_extent_m"],
+        )
+        self.assertFalse(
+            object_supports_motion(remote, "ramp_to_flat_1obj", self.rules)
+        )
+        self.assertTrue(object_supports_motion(remote, "slide_push_1obj", self.rules))
 
     def test_spherical_proxies_use_rolling_instead_of_slide_push(self) -> None:
         spheres = [
@@ -790,7 +972,7 @@ print(hashlib.sha256(payload).hexdigest())
             (motion, str(obj["label"]))
             for motion in self.rules["axes"]["motion_axis"]
             for obj in self.rules["axes"]["object_axis"]
-            if motion not in obj["excluded_motion_families"]
+            if object_supports_motion(obj, motion, self.rules)
         }
         self.assertEqual(len(pairs), self.coverage_count)
         self.assertTrue(expected <= set(pairs))

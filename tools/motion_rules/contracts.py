@@ -80,6 +80,7 @@ class MotionAuditContext:
     angular_speed: np.ndarray
     support_fraction: float
     first_primary_contact: int | None
+    required_contacts: np.ndarray | None
     required_contact_index: int | None
     limits: dict[str, Any]
     absolute_distance_tolerance: float

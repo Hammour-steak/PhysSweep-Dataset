@@ -6,24 +6,30 @@ Concrete objects and scenes belong in profiles and scene kits. Compatibility bel
 
 ## Camera rule
 
-The active generic solver is `motion_structure_camera_v10`.
+The active generic solver is `motion_structure_camera_v12`.
 
 - Camera semantics have two independent parts. The motion observation intent selects the key temporal window; the structure context selects the physical anchors that explain the interaction.
 - The only observation intents are `surface_travel`, `contact_event`, `ballistic_arc`, and `support_transition`. The only structure contexts are `horizontal_surface`, `inclined_surface`, `impact_boundary`, `edge_and_landing`, and `ramp_and_landing`.
 - `expected_motion` contains physics acceptance semantics only. It must not contain camera fields. The compiled `camera_request.observation` is the sole camera contract.
 - Surface travel observes the start and main travel interval. Contact events observe the approach, first required contact, and a bounded post-contact interval. Ballistic motion observes launch, apex, and first contact. Support transitions observe both sides of the structural boundary.
-- A required structural anchor must remain visible: a horizontal support boundary, both ends of a slope, an impact surface, an edge plus landing point, or a ramp plus landing surface.
-- `ramp_and_landing` uses the ramp high edge, ramp low edge, and the trajectory-local landing contact. The remote bounds of a large environment floor are never structural anchors.
+- Structural anchors explain the interaction: a horizontal support boundary, both ends of a slope, an impact surface, an edge plus landing point, or a ramp plus landing surface. Their frame visibility and environment-occlusion thresholds are hard constraints selected by structure context. Horizontal, inclined, and edge structures require at least three quarters of their anchors unoccluded; ramp-to-landing requires four fifths; impact boundaries require one half. The synthetic camera target is a search aid, not a physical entity, and is diagnostic only.
+- A solid wedge is represented by all four outer slope corners. `ramp_and_landing` adds the trajectory-local landing contact. The remote bounds of a large environment floor are never structural anchors.
 - Camera minimum distance is derived from support size. Motion intent supplies the permitted elevation range, target blend, distance allowance, and partial-exit policy.
+- `ground_flat` intersects the motion-specific elevation range with the shared 18-28 degree ground corridor. This preserves a wall, column, or environment boundary as scale context instead of filling the frame with an undifferentiated floor; raised supports and inclined structures retain their own ranges.
 - The solver starts with the declared lens, normally 44 mm. Only when no pose satisfies every framing constraint may it try 40, 36, then 32 mm; focal fallback never relaxes object size, initial visibility, trajectory coverage, context, or occlusion thresholds.
-- Object readability is evaluated over the observed interval, not only at frame zero. The median projected AABB span must meet the intent threshold; the initial AABB must still span at least 6%, remain at least 75% visible, and keep its center inside the 5% margin.
+- Object readability is evaluated over the observed interval, not only at frame zero. The median projected AABB span must meet the intent threshold; the initial AABB must still span at least 6%, remain fully visible, and keep its center inside the declared margin.
 - At least 80% of observed trajectory centers remain inside the actual image. Full-trajectory center coverage is also measured against the exact `[0, 1]` image bounds; its motion-specific threshold controls permitted late exit. At least 90% of primary-motion samples and the declared fraction of the full trajectory remain unoccluded.
-- Static geometry blocks the camera only when metadata sets `occludes_camera`. Visible supports, ramps, landing surfaces, cabinets, legs, impact walls, and rails are blockers; the environment floor is not.
-- Environment walls, decor, set pieces, and mesh proxies are frozen before simulation. The camera solver must respect records marked `occludes_camera`; it may not delete, move, or disable a physical environment collider to improve composition.
+- Visible support geometry marked `occludes_camera` and every visible, collision-enabled environment box block the camera. This includes walls, cabinets, decor, legs, impact boundaries, and rails; the primary environment floor is not duplicated as an environment box.
+- Environment walls, decor, set pieces, and mesh proxies are frozen before simulation. The camera solver must preserve them and keep the required trajectory fractions and structure anchors unoccluded; it may not delete, move, or disable a physical environment collider to improve composition.
 - Partial exit after the primary interaction is allowed when the observation intent permits it. The solver does not pull back merely to retain an unimportant trajectory tail.
 - Asset-proxy framing follows the same intent/structure contract and expands the observed path by the dynamic asset's canonical extent plus static-prop bounds.
+- Generic and specialized cameras are separate mechanisms. The generic matrix searches geometry-derived poses and uses the scene seed to choose among near-equivalent admissible azimuth/elevation tiers. Specialized scene profiles such as billiards, edge exit, and workbench motion select from their own reviewed view pools in `visual_sampling.json`.
+- A specialized view pool belongs to a reusable scene profile, never to a concrete asset id. Changing one profile cannot alter generic-matrix views or another specialized profile. Both mechanisms still enforce the same final framing, trajectory-visibility, structure-anchor, and occlusion contracts.
+- When a static prop can occlude the moving object, the camera keeps the seed order inside the blocker-safe half of the profile pool. Occlusion safety filters admissible views; it does not replace seeded view selection with one extreme angle.
+- Billiards profiles share the reviewed yaw pool `[-30, -15, 0, 15, 30]` degrees. A 15-degree minimum spacing removes visually redundant cross-profile angles while preserving left, frontal, and right observations; profile-specific elevation pools retain low, medium, and high views.
+- Camera selection is deterministic: identical metadata, rules, implementation hashes, and seed produce the same view.
 
-The solver remains one implementation. Motion and structure change its declared objective and anchors; no concrete scene or asset receives a private camera branch.
+The generic solver remains one implementation. Motion and structure change its objective and anchors; specialized profiles provide bounded view choices without introducing concrete-scene patches.
 
 ## Temporal physics rule
 
@@ -148,7 +154,7 @@ of the motion distribution.
 
 1. Motion: eleven declared motion families and their subtypes.
 2. Foreground object: 84 reviewed PhysAssets profiles plus specialized curated assets, each bound to an explicit rigid proxy. Upright objects use support-normal placement; declared rolling drums and rods use a side-on pose aligned with motion.
-3. Support and interaction: four scene classes and twelve supports mapped to explicit floors, collision boxes, structures, trays, or ramps. Generic narrow tracks are excluded from v0.
+3. Support and interaction: four scene classes and twenty-two supports mapped to explicit floors, collision boxes, structures, trays, corridors, or ramps. Generic narrow tracks are excluded from v0.
 4. Camera and framing: six view families and three framing profiles.
 5. Appearance and lighting: curated Poly Haven materials, semantic contrast, room structure, and curated HDRIs.
 
@@ -167,6 +173,67 @@ The weights are normalized only over classes that contain a support compatible w
 
 ## General Calculation Rules
 
+- Long-distance flat structures declare their admitted motions, visual
+  environment categories, and maximum planar trajectory distance in the scene
+  kit. The common sliding and rolling rules derive motion from those bounds;
+  ballistic families retain their own height-and-flight-time range.
+- Directional structures declare a motion axis. The sampler projects a sampled
+  heading onto that axis before deriving the initial state and records the
+  effective heading in metadata.
+- `long_corridor` has two visible, camera-occluding PyBullet wall colliders.
+  Corridor walls are physical structure, not render-only decoration. Its visual
+  environment is restricted to the minimal shell so unrelated room set pieces
+  cannot occupy the motion lane.
+- Long tables are raised supports with explicit legs or cabinet structure and a
+  separate environment floor. Their x-axis is the motion axis, so long motion
+  uses the available tabletop length without inventing a diagonal path that
+  immediately exits the narrow side. Wood-table, lab-bench, and kitchen-counter
+  variants admit only semantically matching visual environments.
+- Horizontal-motion cameras on long raised supports must keep five structural
+  anchors visible: the support center, two long-axis anchors spanning the
+  declared useful travel, and two short-axis anchors showing tabletop width.
+  This preserves scene readability without forcing the entire table into frame.
+- Support transitions use distinct physical colliders: ground ramps transition
+  to `landing_surface` or the flush `environment_floor`, raised tables and the
+  low pedestal transition to `environment_floor`. Platform-to-platform motion
+  is not declared in v0 because it requires a separate lower-platform contact
+  contract; a platform is never relabeled as a floor to reuse edge-fall code.
+- Every admitted support transition compiles exactly one immutable
+  `transition_contract`. It owns the source and destination collider ids,
+  boundary point, outward horizontal direction, source and destination heights,
+  height drop, intermediate contact phase, and required contact sequence.
+  Motion derivation, camera focus, and trajectory QA read that same contract;
+  they may not infer a second destination from motion names or scene ids.
+- `raised_edge_to_floor` requires an airborne interval between source and
+  destination contact. `incline_to_horizontal` requires continuous contact at
+  a flush boundary. Both require source-before-destination contact, at least one
+  destination-only frame, and no source recontact after the transition.
+- Procedural room walls use a dynamic-clearance lower bound when initial motion
+  points toward the wall. For ramp transitions, the post-slope speed bound is
+  derived from projected initial speed plus the gravitational potential drop
+  implied by slope angle and declared downhill travel. That speed times clip
+  duration, the object's planar radius, and a fixed safety margin define the
+  clearance. The wall, decor, and collision proxies move together.
+- Large procedural environments declare a symmetric clear motion lane. Every
+  side set piece must remain outside that lane after accounting for its physical
+  half width. Warehouse, garage, and long-office shells use paired visible and
+  collision geometry; they add context without becoming undeclared obstacles.
+- Moving samples also define a conservative planar motion capsule from initial
+  velocity, clip duration, object radius, and ramp energy gain. Any procedural
+  side set piece intersecting that capsule is moved along the motion normal;
+  its visible geometry and collider share the exact same shift.
+- Camera context applies to both reviewed mesh environments and procedural room
+  shells. Large rooms use a wider focal cap and a modest target offset toward
+  the room interior so environment structure remains legible without shrinking
+  the foreground object below the common readability floor.
+- Non-spherical ramp transitions include a fixed exit-speed margin above the
+  ideal Coulomb stopping calculation. The margin covers impact and rotational
+  losses at the ramp-to-floor seam while preserving the declared target travel.
+- Long ramp-to-floor structure requires an object characteristic extent of at
+  least `0.12 m`. Spheres and cylinders use diameter; cuboids use their second
+  largest extent. Incompatible small objects are resampled into shorter motion
+  contexts rather than shrinking them below the common camera readability floor.
+
 - Simulation frequency is derived from object minimum extent and reference speed. One time step may cover at most 6% of that extent; frequency is clamped to 960-3840 Hz and rounded to an output-frame multiple. Generic, asset-proxy, and billiards branches use the same calculator.
 - Collision detection runs before frame zero. Initial penetration may not exceed 0.5 mm.
 - Runtime penetration is bounded by the stricter of 8 mm and 10% of the object's minimum extent. This prevents an absolute tolerance from accepting visibly deep overlap for plates, phones, magazines, and other thin objects.
@@ -178,27 +245,35 @@ The weights are normalized only over classes that contain a support compatible w
   yaw is sampled only from orientations that satisfy that same inequality, with
   zero yaw as the deterministic final candidate.
 - Initial poses are placed above the exact support plane with a fixed clearance.
-- Sliding speed is derived from target distance, friction, gravity, and target duration.
+- Sliding speed is derived from target distance and target duration. If the
+  launch-speed bound activates, friction is recomputed from the bounded speed
+  and target stopping distance rather than from the unreachable launch speed.
 - Curated-asset push distance is a bounded fraction of the remaining shape-safe support distance. It is limited by the declared launch-speed cap; it is never a fixed distance reused across different support sizes.
 - Pure sphere proxies use a rolling travel-time target rather than the Coulomb sliding-stop equation. Boxes and upright compound proxies keep the friction-derived sliding rule.
 - Projectile speed is derived from ballistic flight time and target horizontal extent.
 - Uphill speed is derived from slope angle, friction, gravity, and target climb distance.
 - Downhill friction is bounded by the sampled ramp angle so the object can move.
+- Ramp families have non-overlapping geometric semantics: long shallow ramps are 8-12 degrees, standard and channel ramps are 12-18 degrees, and short steep ramps are 20-30 degrees. Geometry compilation rejects a scene kit outside its declared family range.
+- One semantic support may declare deterministic geometry variants. `ground_ramp_long_shallow` cycles through standard, extended-landing, and wide-gentle structures; the chosen dimensions, slope height, landing length, and variant ID are frozen before physics and camera derivation. Variants never create new motion semantics or bypass compatibility rules.
+- Procedural ramps render as solid wedges. The inclined top uses `support_surface`; the bottom, high end, and triangular sides use `support_structure` so the physical slope remains visually distinguishable from a flat texture patch.
 - Rolling spheres and side-on cylinders receive coupled linear and angular velocity using `omega = normal cross tangent_velocity / radius`.
 - Declared rolling motion must keep the measured linear/angular coupling ratio in [0.75, 1.35].
 - Bounce restitution is sampled only for the declared bounce family.
 - Wall impact uses an explicit wall collider and friction-compensated approach speed.
 - Edge fall includes the object's directional footprint when calculating the distance and speed required to clear the support.
 - Curated-asset edge exit uses the same principle: the launch speed is derived from remaining support distance, the yaw-conservative footprint radius, combined object/support friction, gravity, and a bounded safety margin. A fixed speed is not reused across different support widths.
-- Ramp-to-flat geometry records an explicit landing collider whose top meets the computed low edge of the rotated ramp. A low ramp support is omitted when the ramp already rests near the floor.
+- Ramp-to-flat geometry records an explicit landing collider whose top meets the computed low edge of the rotated ramp. A low ramp support is omitted when the ramp already rests near the floor. The transition contract validates the declared destination height against the actual collider top.
+- Ramp-to-flat motion must contact the ramp before the landing, reach a landing-only frame, and never contact the ramp again afterward. Its minimum post-transition travel is a bounded fraction of the declared landing length. Non-spherical launch speed is derived from that distance, contact friction, gravity, slope angle, and a shape-family transition-loss margin; it is not a scene-specific constant.
 
 Rules branch only on declared metadata categories. Concrete scene ids are never used as generation conditions. Visual profiles are selected with seeded randomness among compatible candidates while globally preferring the least-used profile, so small batches remain diverse and coverage batches cannot starve a legal profile.
 
-The camera target first blends 70% primary motion with 30% of the complete simulated trajectory, then tries a primary-only target and progressively initial-biased targets when needed. The primary target is derived from the declared observation window, while the complete target always uses every simulated frame. It fits a local support patch, keeps at least 80% of primary trajectory centers inside the actual image, applies the motion-specific full-trajectory threshold, and permits limited late-motion exit. A horizontal support is anchored by the local contact region whose scale follows the observed motion span; a ramp transition is anchored by its high edge, low edge, and trajectory-local landing point. An edge transition is framed separately: the support edge, airborne path, first floor contact, and final settled pose are all mandatory, the view is 65 degrees oblique to the exit direction, and every fitted point keeps at least 7.5% image margin. The solver tests both sides of the exit and fails the sample when neither side satisfies the contract. Distant floor or tabletop boundaries remain soft context and are never mandatory framing anchors. The initial object must span at least 6% of the frame. Its sampled maximum starts at 38%, scales sublinearly for objects larger than the 0.18 m reference, and is capped at 50%; ground ballistic scenes use the stricter 18% cap. Distant legs and cabinets are not framing constraints. The declared focal length is preferred; 40, 36, and 32 mm are deterministic fallback candidates only when the current lens has no admissible pose.
+The camera target first blends 70% primary motion with 30% of the complete simulated trajectory, then tries a primary-only target and progressively initial-biased targets when needed. Long transition contexts additionally try the joint bounding center of primary trajectory samples and required structure anchors; this target is a framing fallback and does not alter physics. The primary target is derived from the declared observation window, while the complete target always uses every simulated frame. It fits a local support patch, keeps at least 80% of primary trajectory centers inside the actual image, applies the motion-specific full-trajectory threshold, and permits limited late-motion exit. A horizontal support is anchored by the local contact region whose scale follows the observed motion span; a ramp transition is anchored by all four wedge corners plus the trajectory-local landing point. An edge transition is framed separately: the support edge, airborne path, first floor contact, and final settled pose are mandatory, the view is 65 degrees oblique to the exit direction, and every fitted point keeps at least 7.5% image margin. The solver tests both sides of the exit and fails the sample when neither side satisfies the contract. Distant floor or tabletop boundaries remain soft context and are never mandatory framing anchors. The initial object must be fully visible and span at least 6% of the frame. Its sampled maximum starts at 38%, scales sublinearly for objects larger than the 0.18 m reference, and is capped at 50%; ground ballistic scenes use the stricter 18% cap. Distant legs and cabinets are not framing constraints. The declared focal length is preferred; 40, 36, 32, and 28 mm are deterministic fallback candidates only when wider framing is required and every object-size, trajectory, anchor, and occlusion gate still passes. Inclined and ramp-transition intents may search up to 4 m beyond their derived minimum, capped at 6 m, so long ramps can preserve every physical anchor without shrinking the object below the declared readability floor.
 
 ## Acceptance
 
-Every trajectory must remain finite, stay below speed and penetration limits, show the declared motion, and satisfy motion-specific checks such as support contact, ballistic apex, rolling coupling, downhill travel, uphill reversal, visible rebound, named wall contact, primary-support exit with floor contact, or named landing contact. The shared invariant audit also verifies that frame zero matches metadata; dynamic and static PyBullet parameters match their declarations; every primitive in a simple or compound collision proxy matches its declared type, dimensions, local position, and local orientation; and runtime principal inertia is finite and positive. Primitive inertia is additionally checked against its analytic value.
+Every trajectory must remain finite, stay below speed and penetration limits, show the declared motion, and satisfy motion-specific checks such as support contact, ballistic apex, rolling coupling, downhill travel, uphill reversal, visible rebound, named wall contact, or the shared support-transition contract. The shared invariant audit also verifies that frame zero matches metadata; dynamic and static PyBullet parameters match their declarations; every primitive in a simple or compound collision proxy matches its declared type, dimensions, local position, and local orientation; and runtime principal inertia is finite and positive. Primitive inertia is additionally checked against its analytic value.
+
+Environment collision proxies always remain active. A motion may contact only the support or environment collider named by its metadata contract. For `ramp_to_flat`, contact with incidental walls, baseboards, decor, or set pieces rejects the candidate; deterministic slot retry keeps the requested motion distribution while replacing that candidate.
 
 Unforced mechanical energy uses PyBullet's runtime principal inertia and vector gravity. Its numerical tolerance scales with object mass, characteristic extent, and initial energy rather than a fixed scene-independent floor. Airborne acceleration must fit gravity. Projectile positions are compared directly with `p(t) = p0 + v0*t + 0.5*g*t^2`, including three-dimensional RMS error, maximum error, and horizontal-velocity drift. Contact friction must remain inside the configured Coulomb cone, and declared kinetic-sliding cases must activate that limit. Bounce scenes compare the first observable rebound with the configured effective restitution. A terminal rest window is checked only when both linear and angular speeds are low throughout the window.
 

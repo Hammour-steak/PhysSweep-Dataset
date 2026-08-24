@@ -281,7 +281,7 @@
     "minimum_primary_trajectory_center_visible_fraction": 0.75,
     "full_trajectory_camera_target_blend": 0.30,
     "minimum_initial_object_span_ndc": 0.06,
-    "minimum_initial_object_visible_fraction": 0.65,
+    "minimum_initial_object_visible_fraction": 1.0,
     "initial_object_center_margin_ndc": 0.02,
     "camera_object_span_reference_m": 0.18,
     "maximum_initial_object_span_ndc": 0.38,

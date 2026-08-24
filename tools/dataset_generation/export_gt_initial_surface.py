@@ -908,6 +908,11 @@ def main() -> None:
     rigid_renderer.setup_scene(render_config)
     materials = rigid_renderer.build_static_scene(metadata, visual)
     dynamic_record = metadata["simulation"]["objects"][0]
+    dynamic_object_id = str(
+        dynamic_record.get("object_id", dynamic_record.get("id", ""))
+    )
+    if not dynamic_object_id:
+        raise ValueError("dynamic object record has no object_id or legacy id")
     dynamic = rigid_renderer.create_dynamic_primitive(
         dynamic_record, materials["dynamic_object"]
     )
@@ -918,7 +923,7 @@ def main() -> None:
         float(value)
         for value in state.get("orientation_quaternion_wxyz", [1.0, 0.0, 0.0, 0.0])
     )
-    dynamic["physweep_object_id"] = str(dynamic_record["id"])
+    dynamic["physweep_object_id"] = dynamic_object_id
     bpy.context.scene.frame_set(int(render_config["frame_start"]))
     bpy.context.view_layer.update()
 
@@ -1044,8 +1049,8 @@ def main() -> None:
                 "body_id": np.ones(length, dtype=np.int16),
                 "scene_part_id": np.full(
                     length,
-                    str(dynamic_record["id"]),
-                    dtype=f"<U{len(str(dynamic_record['id']))}",
+                    dynamic_object_id,
+                    dtype=f"<U{len(dynamic_object_id)}",
                 ),
             }
         )
@@ -1137,7 +1142,7 @@ def main() -> None:
         },
         "coordinate_frame": "camera_right_up_forward",
         "units": "meters",
-        "controlled_object_id": str(dynamic_record["id"]),
+        "controlled_object_id": dynamic_object_id,
         "complete_object_surface": True,
         "camera_first_hit_visible_non_ground_surface": True,
         "ground_surface_completion": True,
@@ -1183,7 +1188,7 @@ def main() -> None:
         "camera_from_world": camera_from_world.astype(np.float32),
         "camera_intrinsics": intrinsics.astype(np.float32),
         "image_size_px": np.asarray([width, height], dtype=np.int32),
-        "controlled_object_id": np.asarray(str(dynamic_record["id"])),
+        "controlled_object_id": np.asarray(dynamic_object_id),
     }
     source_report = write_gt_surface(source_output, arrays, source_metadata)
     model_report = compile_model_scene_condition(

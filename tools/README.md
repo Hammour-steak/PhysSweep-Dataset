@@ -71,6 +71,10 @@ them with the staged outer manifest:
   --output outputs/<batch>/collected
 ```
 
+Use `pilot20` or `pilot40` for compact coverage reviews. `stress60` creates a
+deterministic stress review with 30 ordinary generic motions, 20 support
+transitions, 8 curated asset-proxy scenes, and both billiards profiles.
+
 The collector intentionally rejects the raw sampling manifest because only the
 staged manifest freezes the selected subset and its canonical source manifest.
 
@@ -81,7 +85,7 @@ sampler and it does not modify the base record.
 
 ```bash
 .venv/bin/python tools/derive_physics_sweep.py \
-  --base-dir datasets/<base>/generic_matrix/candidates/initial \
+  --base-manifest datasets/one_object_base/manifest.json \
   --output-dir datasets/<sweep>/metadata
 ```
 
@@ -91,6 +95,11 @@ on one `target_object_id`, serializes the resolved physical state of all
 dynamic objects, and records its parent metadata hash in `sweep`. With no
 target filter, one-factor groups are generated for every dynamic object. See
 `configs/physics_sweep.json` and `docs/PHYSWEEP_SWEEP_PIPELINE.md`.
+
+The mixed-schema sweep manifest is metadata-only until the asset-proxy and
+billiards simulation adapters have been routed through the backend dispatcher.
+`run_pybullet_batch.py` intentionally rejects such a manifest instead of
+silently sending specialized records through the generic simulator.
 
 ## Asset Ingestion Audit
 
@@ -185,6 +194,11 @@ global floor remains the only floor contact authority.
 
 ```bash
 .venv/bin/python tools/audit_active_physweep_rules.py
+
+.venv/bin/python tools/audit_scene_first_frames.py \
+  --output-root outputs/<batch> \
+  --csv outputs/<batch>/first_frame_audit.csv \
+  --json outputs/<batch>/first_frame_audit.json
 
 .venv/bin/python -m unittest -v \
   tests.test_visual_environment_collision_v1 \

@@ -276,6 +276,7 @@
         "raised_flat"
       ],
       "support_ids": [
+        "concrete_floor_mat",
         "kitchen_counter",
         "wood_tabletop",
         "wood_floor",
@@ -308,13 +309,13 @@
         "outward_offset_m": 0.0,
         "anchor_z_m": -0.0,
         "floor_alignment": {
-          "method": "source_bbox_min",
-          "source_bbox_min_z": -0.358678,
-          "source_floor_z": -0.358678,
-          "scale": 0.372285573,
+          "method": "reviewed_horizontal_floor",
+          "source_bbox_min_z": -0.358677923679,
+          "source_floor_z": -0.184434403939,
+          "scale": 0.372285581104,
           "surface_overlap_m": 0.0,
-          "computed_anchor_z_m": -0.0,
-          "evidence": "Bound composite showed the source lower bound at the visible floor."
+          "computed_anchor_z_m": 0.0,
+          "evidence": "Horizontal-face area audit identifies the 22.6 m2 primary floor, not the source lower bound."
         },
         "exclude_object_names": [
           "Ceiling_Ceiling_0"
@@ -330,9 +331,9 @@
           "representation": "static_concave_mesh",
           "method": "reviewed_shell_blender_evaluated_triangle_mesh",
           "path": "assets/proxies/environment/env_kitchen_modern_9843a830/collision.obj",
-          "sha256": "47196656372d76ae4e2ae6aa1a9c696bd873cbd52ad43b0a5808eb81e125ac3d",
-          "vertex_count": 69437,
-          "face_count": 72542,
+          "sha256": "e8ca0f1becc6077bb3abfae7f09749ec4396d14b6627470e158f44d8aed2487f",
+          "vertex_count": 69043,
+          "face_count": 72174,
           "bounds_min_m": [
             -4.204595089,
             -2.399999619,
@@ -360,7 +361,7 @@
               -0.358677923679
             ],
             "world_pose_is_frozen_in_scene_metadata": true,
-            "authoritative_floor_z_m": -2.8413e-08,
+            "authoritative_floor_z_m": 0.06486835,
             "authoritative_floor_exclusion_half_band_m": 0.0576,
             "authoritative_floor_minimum_abs_normal_z": 0.94
           }

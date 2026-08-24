@@ -500,7 +500,7 @@ def compile_scene_kit(kit: dict[str, Any]) -> dict[str, Any]:
         "support_shape": TOPOLOGY_TO_SUPPORT_SHAPE[topology],
         "structure_style": style,
         "show_table_legs": style == "legs",
-        "ground_surface": style == "ground",
+        "ground_surface": style in {"ground", "corridor"},
     }
     key_map = {
         "thickness_m": "thickness",
@@ -517,10 +517,38 @@ def compile_scene_kit(kit: dict[str, Any]) -> dict[str, Any]:
         "pocket_radius_m": "pocket_radius_m",
         "slope_axis": "slope_axis",
         "slope_rise_m": "slope_rise_m",
+        "motion_axis": "motion_axis",
+        "maximum_planar_trajectory_distance_m": "maximum_planar_trajectory_distance_m",
+        "corridor_wall_height_m": "corridor_wall_height_m",
+        "corridor_wall_thickness_m": "corridor_wall_thickness_m",
+        "camera_clearance_m": "camera_clearance_m",
     }
     for source, target in key_map.items():
         if source in structure:
             placement[target] = structure[source]
+    if "maximum_planar_trajectory_distance_m" in placement and float(
+        placement["maximum_planar_trajectory_distance_m"]
+    ) <= 0.0:
+        raise ValueError(f"scene kit has invalid trajectory distance: {kit['id']}")
+    if "motion_axis" in placement and placement["motion_axis"] not in {"x", "y"}:
+        raise ValueError(f"scene kit has invalid motion axis: {kit['id']}")
+    corridor_fields = {
+        "corridor_wall_height_m",
+        "corridor_wall_thickness_m",
+        "camera_clearance_m",
+    }
+    if style == "corridor":
+        missing = {"motion_axis", *corridor_fields} - set(placement)
+        if missing:
+            raise ValueError(
+                f"corridor scene kit lacks {sorted(missing)}: {kit['id']}"
+            )
+    elif corridor_fields & set(placement):
+        raise ValueError(f"non-corridor scene kit declares walls: {kit['id']}")
+    if "camera_clearance_m" in placement and float(
+        placement["camera_clearance_m"]
+    ) <= 0.0:
+        raise ValueError(f"scene kit has invalid camera clearance: {kit['id']}")
     material_indices = kit.get("material_indices", {})
     record = {
         "label": str(kit["id"]),
@@ -535,6 +563,58 @@ def compile_scene_kit(kit: dict[str, Any]) -> dict[str, Any]:
     }
     if "visual" in kit:
         record["visual_profile"] = copy.deepcopy(kit["visual"])
+    if "allowed_motions" in kit:
+        record["allowed_motions"] = [str(value) for value in kit["allowed_motions"]]
+        if not record["allowed_motions"] or len(record["allowed_motions"]) != len(
+            set(record["allowed_motions"])
+        ):
+            raise ValueError(f"scene kit has invalid allowed motions: {kit['id']}")
+    if "environment_categories" in kit:
+        record["environment_categories"] = [
+            str(value) for value in kit["environment_categories"]
+        ]
+        if not record["environment_categories"] or len(
+            record["environment_categories"]
+        ) != len(set(record["environment_categories"])):
+            raise ValueError(
+                f"scene kit has invalid environment categories: {kit['id']}"
+            )
+    variants = kit.get("geometry_variants", [])
+    if variants:
+        variant_ids = [str(variant["id"]) for variant in variants]
+        if len(variant_ids) != len(set(variant_ids)):
+            raise ValueError(f"scene kit has duplicate geometry variants: {kit['id']}")
+        compiled_variants = []
+        for variant in variants:
+            unsupported = set(variant) - {
+                "id",
+                "dimensions_m",
+                "surface_z_m",
+                "structure",
+            }
+            if unsupported:
+                raise ValueError(
+                    f"scene kit geometry variant has unsupported fields: "
+                    f"{kit['id']}/{variant['id']}: {sorted(unsupported)}"
+                )
+            resolved_kit = copy.deepcopy(kit)
+            resolved_kit.pop("geometry_variants", None)
+            for field in ("dimensions_m", "surface_z_m"):
+                if field in variant:
+                    resolved_kit[field] = copy.deepcopy(variant[field])
+            resolved_structure = copy.deepcopy(resolved_kit.get("structure", {}))
+            resolved_structure.update(copy.deepcopy(variant.get("structure", {})))
+            resolved_kit["structure"] = resolved_structure
+            compiled = compile_scene_kit(resolved_kit)
+            compiled_variants.append(
+                {
+                    "id": str(variant["id"]),
+                    "size": compiled["size"],
+                    "top_z": compiled["top_z"],
+                    "overrides": compiled["overrides"],
+                }
+            )
+        record["geometry_variants"] = compiled_variants
     return record
 
 
@@ -548,6 +628,7 @@ def support_is_compatible(
     return (
         str(support["scene_class"]) in set(rule["scene_classes"])
         and str(support["topology"]) in set(rule["topologies"])
+        and motion in set(support.get("allowed_motions", [motion]))
     )
 
 
@@ -891,6 +972,21 @@ def load_sampling_bundle(root: Path, bundle_path: Path) -> dict[str, Any]:
     procedural_profiles = copy.deepcopy(scene_visual_profiles["profiles"])
     for profile in procedural_profiles:
         profile.setdefault("visual_type", "procedural_room")
+        clear_lane = profile.get("clear_lane_half_width_m")
+        if clear_lane is not None:
+            clear_lane = float(clear_lane)
+            if clear_lane <= 0.0:
+                raise ValueError(
+                    f"scene visual clear lane must be positive: {profile['id']}"
+                )
+            for piece in profile.get("set_pieces", []):
+                lateral = abs(float(piece["offset_lateral_outward_z"][0]))
+                half_width = float(piece["size_m"][0]) / 2.0
+                if lateral - half_width < clear_lane:
+                    raise ValueError(
+                        "scene visual set piece enters the clear motion lane: "
+                        f"{profile['id']}:{piece['id']}"
+                    )
     mesh_profiles = copy.deepcopy(scene_mesh_profiles["profiles"])
     bind_environment_compositions(
         environment_composition,
@@ -1140,6 +1236,20 @@ def load_sampling_bundle(root: Path, bundle_path: Path) -> dict[str, Any]:
                 f"object excludes unknown motion families: {obj['label']}: {sorted(unknown)}"
             )
     for support in result["axes"]["support_axis"]:
+        unknown_motions = set(support.get("allowed_motions", [])) - active_motions
+        if unknown_motions:
+            raise ValueError(
+                f"scene kit admits unknown motions: {support['label']}: "
+                f"{sorted(unknown_motions)}"
+            )
+        unknown_categories = set(support.get("environment_categories", [])) - set(
+            visual_rules["environment_categories"]
+        )
+        if unknown_categories:
+            raise ValueError(
+                f"scene kit admits unknown environment categories: "
+                f"{support['label']}: {sorted(unknown_categories)}"
+            )
         if not any(
             support_is_compatible(support, motion, compatibility)
             for motion in result["axes"]["motion_axis"]

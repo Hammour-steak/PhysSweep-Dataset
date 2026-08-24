@@ -17,7 +17,7 @@
       "generator": "pybullet_base",
       "id": "generic_matrix",
       "minimum_per_batch": 1,
-      "minimum_per_motion_fraction_of_batch": 0.032,
+      "minimum_per_motion_fraction_of_batch": 0.01,
       "motion_bindings": {
         "arc_projectile_1obj": [
           "five_dimensional_matrix"
@@ -53,7 +53,7 @@
           "five_dimensional_matrix"
         ]
       },
-      "weight": 0.74
+      "weight": 0.7
     },
     {
       "dynamic_pools": {
@@ -82,6 +82,15 @@
           "sketchfab_640b0c8287274629a7f4ff3ce74a5999",
           "sketchfab_76fa80950b1f48a8ad6a8441fe443241",
           "sketchfab_81578532781542c590668ab67d1121e9",
+          "sketchfab_b0902ff83cf946c984f9f7e0197ddb7f",
+          "sketchfab_beb69bc08a8f487ab8c5207fb155cbf2",
+          "sketchfab_f4d11e48cc52479c802ec2cf0d629f68"
+        ],
+        "lab_bench_edge_exit": [
+          "sketchfab_1551616939cc4da7a9d731dfddd4090f",
+          "sketchfab_3be00aa2664f4bc0b5be8b8630c2d540",
+          "sketchfab_640b0c8287274629a7f4ff3ce74a5999",
+          "sketchfab_76fa80950b1f48a8ad6a8441fe443241",
           "sketchfab_b0902ff83cf946c984f9f7e0197ddb7f",
           "sketchfab_beb69bc08a8f487ab8c5207fb155cbf2",
           "sketchfab_f4d11e48cc52479c802ec2cf0d629f68"
@@ -169,7 +178,13 @@
           "profiles": [
             "resting_push",
             "diagonal_push",
-            "vertical_drop",
+            "vertical_drop"
+          ],
+          "support_asset_id": "sketchfab_bg_bb73599044cf49e186b75842d63a280e"
+        },
+        {
+          "dynamic_pool_id": "lab_bench_edge_exit",
+          "profiles": [
             "edge_exit"
           ],
           "support_asset_id": "sketchfab_bg_bb73599044cf49e186b75842d63a280e"
@@ -259,7 +274,7 @@
           "support_asset_id": "support_school_desk_4044a253"
         }
       ],
-      "weight": 0.1
+      "weight": 0.19
     },
     {
       "dynamic_pools": {
@@ -348,7 +363,7 @@
           "support_asset_id": "sketchfab_bg_bb73599044cf49e186b75842d63a280e"
         }
       ],
-      "weight": 0.1
+      "weight": 0.05
     },
     {
       "generator": "billiards",
@@ -417,7 +432,7 @@
     {
       "id": "slide_push_1obj",
       "minimum_per_batch": 1,
-      "weight": 0.12
+      "weight": 0.1
     },
     {
       "id": "roll_or_slide_1obj",
@@ -427,32 +442,32 @@
     {
       "id": "wall_impact_1obj",
       "minimum_per_batch": 1,
-      "weight": 0.09
+      "weight": 0.1
     },
     {
       "id": "edge_fall_1obj",
       "minimum_per_batch": 1,
-      "weight": 0.09
+      "weight": 0.07
     },
     {
       "id": "drop_fall_1obj",
       "minimum_per_batch": 1,
-      "weight": 0.1
+      "weight": 0.09
     },
     {
       "id": "projectile_1obj",
       "minimum_per_batch": 1,
-      "weight": 0.1
+      "weight": 0.09
     },
     {
       "id": "arc_projectile_1obj",
       "minimum_per_batch": 1,
-      "weight": 0.1
+      "weight": 0.09
     },
     {
       "id": "slope_slide_down_1obj",
       "minimum_per_batch": 1,
-      "weight": 0.08
+      "weight": 0.1
     },
     {
       "id": "slope_slide_up_1obj",
@@ -462,12 +477,12 @@
     {
       "id": "ramp_to_flat_1obj",
       "minimum_per_batch": 1,
-      "weight": 0.07
+      "weight": 0.08
     },
     {
       "id": "bounce_1obj",
       "minimum_per_batch": 1,
-      "weight": 0.07
+      "weight": 0.1
     }
   ],
   "policy": {

@@ -182,6 +182,89 @@ def _static_box(
     }
 
 
+def _support_transition_contract(
+    motion: str,
+    support_size_m: list[float],
+    surface_top_z_m: float,
+    colliders: list[dict[str, Any]],
+    motion_direction: list[float],
+) -> dict[str, Any] | None:
+    if motion not in {"edge_fall_1obj", "ramp_to_flat_1obj"}:
+        return None
+    source = next(
+        (collider for collider in colliders if collider["role"] == "primary_support"),
+        None,
+    )
+    if source is None:
+        raise ValueError("support transition has no primary support collider")
+    destination_role_order = (
+        ["environment_floor"]
+        if motion == "edge_fall_1obj"
+        else ["landing_surface", "environment_floor"]
+    )
+    destination = next(
+        (
+            collider
+            for role in destination_role_order
+            for collider in colliders
+            if collider["role"] == role
+        ),
+        None,
+    )
+    if destination is None:
+        raise ValueError("support transition requires a destination surface")
+    destination_top_z = float(destination["position_m"][2]) + 0.5 * float(
+        destination["size_m"][2]
+    )
+    direction = [float(motion_direction[0]), float(motion_direction[1])]
+    norm = math.hypot(*direction)
+    if norm <= 1.0e-8:
+        raise ValueError("support transition direction must be nonzero")
+    direction = [value / norm for value in direction]
+    if motion == "ramp_to_flat_1obj":
+        boundary_xy = [0.0, -support_size_m[1] / 2.0]
+        boundary_z = destination_top_z
+        transition_type = "incline_to_horizontal"
+        intermediate_phase = "continuous_contact"
+    else:
+        half_size = [float(value) / 2.0 for value in support_size_m[:2]]
+        distances = [
+            half_size[axis] / abs(direction[axis])
+            for axis in range(2)
+            if abs(direction[axis]) > 1.0e-8
+        ]
+        if not distances:
+            raise ValueError("support transition direction misses the support boundary")
+        distance = min(distances)
+        boundary_xy = [value * distance for value in direction]
+        boundary_z = float(surface_top_z_m)
+        transition_type = "raised_edge_to_floor"
+        intermediate_phase = "airborne"
+    return {
+        "version": "physweep_support_transition_v1",
+        "type": transition_type,
+        "source_collider_id": str(source["id"]),
+        "destination_collider_id": str(destination["id"]),
+        "boundary_point_m": [
+            round(float(boundary_xy[0]), 6),
+            round(float(boundary_xy[1]), 6),
+            round(boundary_z, 6),
+        ],
+        "outward_direction_xy": [
+            round(float(direction[0]), 9),
+            round(float(direction[1]), 9),
+        ],
+        "source_boundary_height_m": round(boundary_z, 6),
+        "destination_surface_height_m": round(destination_top_z, 6),
+        "height_drop_m": round(
+            max(0.0, boundary_z - destination_top_z), 6
+        ),
+        "intermediate_phase": intermediate_phase,
+        "required_contact_sequence": ["source", "destination"],
+        "allow_source_recontact_after_destination": False,
+    }
+
+
 def _compile_support_geometry(
     support: dict[str, Any],
     motion: str,
@@ -194,6 +277,7 @@ def _compile_support_geometry(
     support_shape = str(placement.get("support_shape", "rectangular_slab"))
     scene_class = str(support["scene_class"])
     ground_surface = bool(placement.get("ground_surface", False))
+    structure_style = str(placement.get("structure_style", "none"))
     layout = _layout_for_support(support, motion, subtype)
     size = [float(value) for value in support["size"]]
     direction = normalize(motion_direction or [0.0, 1.0, 0.0])
@@ -238,6 +322,19 @@ def _compile_support_geometry(
         slope_angle_degrees = math.degrees(slope_angle)
         if not 5.0 <= slope_angle_degrees <= 30.0:
             raise ValueError("inclined support angle must remain within 5 to 30 degrees")
+        family_angle_ranges = {
+            "straight_long_shallow": (8.0, 12.0),
+            "straight_standard": (12.0, 18.0),
+            "channel_medium": (12.0, 18.0),
+            "straight_short_steep": (20.0, 30.0),
+        }
+        if structure_family in family_angle_ranges:
+            minimum_angle, maximum_angle = family_angle_ranges[structure_family]
+            if not minimum_angle <= slope_angle_degrees <= maximum_angle:
+                raise ValueError(
+                    f"{structure_family} angle must remain within "
+                    f"{minimum_angle:g} to {maximum_angle:g} degrees"
+                )
         anchor_to_floor = bool(placement.get("anchor_low_edge_to_floor", False))
         platform_top = placement.get("base_platform_top_z_m")
         if anchor_to_floor and platform_top is not None:
@@ -400,6 +497,28 @@ def _compile_support_geometry(
                 occludes_camera=not ground_surface,
             )
         )
+        if structure_style == "corridor":
+            wall_height = float(placement["corridor_wall_height_m"])
+            wall_thickness = float(placement["corridor_wall_thickness_m"])
+            if wall_height < 0.6 or wall_thickness < 0.04:
+                raise ValueError("corridor walls are too small for physical use")
+            if wall_thickness * 2.0 >= size[1] * 0.25:
+                raise ValueError("corridor walls leave insufficient clear width")
+            for sign in (-1.0, 1.0):
+                colliders.append(
+                    _static_box(
+                        f"corridor_wall_{int(sign):+d}",
+                        [size[0], wall_thickness, wall_height],
+                        [
+                            0.0,
+                            sign * (size[1] / 2.0 - wall_thickness / 2.0),
+                            wall_height / 2.0,
+                        ],
+                        role="support_structure",
+                        material_role="back_wall",
+                        occludes_camera=True,
+                    )
+                )
         if motion == "wall_impact_1obj":
             wall_offset = 0.46
             wall_height = 0.48
@@ -448,7 +567,6 @@ def _compile_support_geometry(
                     )
 
         structural_height = top_z - thickness
-        structure_style = str(placement.get("structure_style", "none"))
         if bool(placement.get("show_table_legs", False)) and structural_height > 0.12:
             leg_size = 0.10
             for x_sign in (-1.0, 1.0):
@@ -528,8 +646,45 @@ def _compile_support_geometry(
         },
         "colliders": colliders,
     }
+    transition_contract = _support_transition_contract(
+        motion,
+        size,
+        top_z,
+        colliders,
+        motion_direction or [0.0, -1.0, 0.0],
+    )
+    if transition_contract is not None:
+        result["transition_contract"] = transition_contract
+    if "motion_axis" in placement:
+        result["motion_axis"] = str(placement["motion_axis"])
+    if structure_style == "corridor":
+        side_walls = [
+            collider
+            for collider in colliders
+            if collider["role"] == "support_structure"
+            and collider["material_role"] == "back_wall"
+        ]
+        if len(side_walls) != 2:
+            raise ValueError("corridor camera envelope requires two side walls")
+        result["camera_envelope"] = {
+            "type": "paired_parallel_walls",
+            "motion_axis": str(placement["motion_axis"]),
+            "collider_ids": [str(collider["id"]) for collider in side_walls],
+            "clearance_m": round(float(placement["camera_clearance_m"]), 6),
+        }
     if visual_geometry is not None:
         result["visual_geometry"] = visual_geometry
+    if "landing_length_m" in placement:
+        result["landing_length_m"] = round(
+            float(placement["landing_length_m"]), 6
+        )
+    if "maximum_planar_trajectory_distance_m" in placement:
+        maximum_distance = float(placement["maximum_planar_trajectory_distance_m"])
+        if maximum_distance <= 0.0:
+            raise ValueError("maximum trajectory distance must be positive")
+        result["maximum_planar_trajectory_distance_m"] = round(
+            maximum_distance, 6
+        )
     return result
 
 

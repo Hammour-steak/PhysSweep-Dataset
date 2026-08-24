@@ -41,6 +41,12 @@ python tools/dataset_generation/build_one_object_dataset.py \
 
 Remove `--dry-run` after checking the resolved paths and stages. Downloaded assets, runtimes, generated datasets, renders, and logs remain untracked by Git.
 
+The current default build configuration covers the frozen one-object base and
+sweep-metadata phase. Mixed-schema trajectory simulation, rendering, scene
+conditions, and release packaging are enabled only after their matching backend
+dispatcher stages have been validated; they are not silently routed through the
+generic simulator.
+
 ## Layout
 
 - `assets/`: public asset manifests, curation records, and compact proxy indexes.

@@ -13,17 +13,22 @@ TOOLS = ROOT / "tools"
 sys.path.insert(0, str(TOOLS))
 
 from bind_pybullet_visuals import (  # noqa: E402
+    camera_inside_structural_envelope,
+    camera_occlusion_colliders,
     camera_target_centers,
     image_center_visibility_mask,
+    resolve_render_request,
     segment_intersects_box,
     segments_intersect_box,
     solve_camera,
     support_context_points,
+    unoccluded_fraction,
 )
 from appearance_adaptation import (  # noqa: E402
     choose_rendered_frame_exposure_adjustment,
     frame_statistics_within_fixed_limits,
 )
+from environment_collision import binding_sha256  # noqa: E402
 from rigid_trajectory import audit_trajectory  # noqa: E402
 from sample_pybullet_base import (  # noqa: E402
     BUNDLE_PATH,
@@ -36,6 +41,14 @@ from simulate_pybullet_rigid import simulate  # noqa: E402
 
 
 class PyBulletSimulationTests(unittest.TestCase):
+    def test_visual_binding_inherits_frozen_render_request(self) -> None:
+        metadata = {"render_request": {"resolution": [1280, 720], "samples": 16}}
+
+        self.assertEqual(resolve_render_request(metadata, None, None), ((1280, 720), 16))
+        self.assertEqual(
+            resolve_render_request(metadata, (640, 360), 4), ((640, 360), 4)
+        )
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.rules = load_active_rules(ROOT)
@@ -86,11 +99,71 @@ class PyBulletSimulationTests(unittest.TestCase):
             ),
         )
 
+    @staticmethod
+    def without_incidental_environment(scene: dict) -> dict:
+        isolated = copy.deepcopy(scene)
+        binding = isolated["environment_binding"]
+        binding["colliders"] = []
+        binding["binding_sha256"] = binding_sha256(binding)
+        return isolated
+
+    def test_camera_uses_visible_support_and_environment_blockers(self) -> None:
+        scene = next(
+            candidate
+            for candidate in self.candidates
+            if any(
+                collider.get("role") == "room_detail"
+                for collider in candidate["environment_binding"]["colliders"]
+            )
+        )
+        blockers = camera_occlusion_colliders(scene)
+        expected_ids = {
+            str(collider["id"])
+            for collider in scene["simulation"]["support"]["colliders"]
+            if bool(collider.get("visible", True))
+            and bool(collider.get("occludes_camera", False))
+            and collider.get("primitive") == "box"
+        }
+        expected_ids.update(
+            str(collider["id"])
+            for collider in scene["environment_binding"]["colliders"]
+            if bool(collider.get("visible", True))
+            and bool(collider.get("collision_enabled", True))
+            and collider.get("primitive") == "box"
+        )
+        self.assertEqual({str(collider["id"]) for collider in blockers}, expected_ids)
+        self.assertTrue(
+            all(
+                bool(collider["occludes_camera"])
+                for collider in scene["environment_binding"]["colliders"]
+                if collider.get("primitive") == "box"
+                and bool(collider.get("visible", True))
+            )
+        )
+
+        legacy_detail = copy.deepcopy(
+            next(
+                collider
+                for collider in scene["environment_binding"]["colliders"]
+                if collider.get("role") == "room_detail"
+                and collider.get("primitive") == "box"
+            )
+        )
+        legacy_detail["occludes_camera"] = False
+        center = np.asarray(legacy_detail["position_m"], dtype=np.float64)
+        camera = center + np.asarray([0.0, 0.0, 2.0], dtype=np.float64)
+        self.assertEqual(
+            unoccluded_fraction(camera, center[None, :], [legacy_detail]),
+            0.0,
+        )
+
     def test_every_motion_family_simulates_and_passes_semantic_qa(self) -> None:
         self.assertEqual(set(self.scene_by_motion), set(self.rules["axes"]["motion_axis"]))
         for motion, scene in self.scene_by_motion.items():
             with self.subTest(motion=motion):
-                trajectory, audit = simulate(scene)
+                trajectory, audit = simulate(
+                    self.without_incidental_environment(scene)
+                )
                 self.assertTrue(audit["passed"], audit)
                 check_ids = {record["id"] for record in audit["checks"]}
                 self.assertIn("useful_active_duration", check_ids)
@@ -142,6 +215,21 @@ class PyBulletSimulationTests(unittest.TestCase):
                         f"{scene['simulation']['objects'][0]['object_id']}__collider_contact_count__{required_collider}",
                         trajectory,
                     )
+                if motion == "ramp_to_flat_1obj":
+                    self.assertTrue(
+                        {
+                            "transition_contact_order",
+                            "transition_destination_only_contact",
+                            "transition_no_source_recontact",
+                            "no_unplanned_environment_contact",
+                            "minimum_post_transition_travel",
+                        }
+                        <= check_ids
+                    )
+                    self.assertIn(
+                        "minimum_post_transition_travel_m",
+                        scene["simulation"]["objects"][0]["expected_motion"],
+                    )
                 camera = solve_camera(scene, trajectory, self.rules)
                 diagnostics = camera["diagnostics"]
                 self.assertGreaterEqual(
@@ -169,6 +257,20 @@ class PyBulletSimulationTests(unittest.TestCase):
                     diagnostics["full_trajectory_unoccluded_fraction"],
                     scene["camera_request"][
                         "minimum_full_trajectory_unoccluded_fraction"
+                    ],
+                )
+                self.assertGreaterEqual(
+                    diagnostics["target_unoccluded_fraction"], 0.0
+                )
+                self.assertLessEqual(
+                    diagnostics["target_unoccluded_fraction"], 1.0
+                )
+                self.assertGreaterEqual(
+                    diagnostics[
+                        "required_structure_anchors_unoccluded_fraction"
+                    ],
+                    scene["camera_request"]["observation"][
+                        "minimum_anchor_unoccluded_fraction"
                     ],
                 )
                 self.assertGreaterEqual(
@@ -250,6 +352,13 @@ class PyBulletSimulationTests(unittest.TestCase):
                     },
                     "surface_frame": {"slope_angle_degrees": 14.0},
                     "surface_center_z_m": 0.15,
+                    "visual_geometry": {
+                        "primitive": "solid_wedge",
+                        "size_xy_m": [2.0, 1.0],
+                        "base_z_m": 0.0,
+                        "high_top_z_m": 0.30,
+                        "slope_axis": "y",
+                    },
                     "colliders": [
                         {
                             "id": "environment_floor",
@@ -277,9 +386,19 @@ class PyBulletSimulationTests(unittest.TestCase):
             positions=positions,
         )
         anchors = points[required]
-        self.assertEqual(len(anchors), 3)
-        self.assertTrue(np.allclose(anchors[:2, 1], [-0.5, 0.5]))
-        self.assertTrue(np.allclose(anchors[2], [0.1, -0.8, 0.01]))
+        self.assertEqual(len(anchors), 5)
+        self.assertTrue(
+            np.allclose(
+                anchors[:4],
+                [
+                    [-1.0, -0.5, 0.01],
+                    [1.0, -0.5, 0.01],
+                    [-1.0, 0.5, 0.31],
+                    [1.0, 0.5, 0.31],
+                ],
+            )
+        )
+        self.assertTrue(np.allclose(anchors[4], [0.1, -0.8, 0.01]))
         self.assertLessEqual(float(np.max(np.abs(anchors[:, 0]))), 1.0)
 
     def test_camera_policy_is_compiled_once_into_metadata(self) -> None:
@@ -300,23 +419,92 @@ class PyBulletSimulationTests(unittest.TestCase):
             self.assertNotEqual(
                 observation["focus_event"]["type"], "required_motion_collider"
             )
-            if declared["focus_event"]["type"] == "required_motion_collider":
+            if declared["focus_event"]["type"] in {
+                "required_motion_collider",
+                "transition_destination_contact",
+            }:
                 self.assertEqual(
                     observation["focus_event"]["collider_id"],
                     expected["required_collider_contact_id"],
                 )
+            if declared["focus_event"]["type"] == "transition_destination_contact":
+                contract = scene["simulation"]["support"]["transition_contract"]
+                self.assertEqual(
+                    observation["focus_event"]["collider_id"],
+                    contract["destination_collider_id"],
+                )
+                self.assertEqual(
+                    expected["transition_contract_version"], contract["version"]
+                )
             self.assertEqual(
                 request["minimum_camera_elevation_degrees"],
-                declared["elevation_range_degrees"][0],
+                observation["elevation_range_degrees"][0],
             )
             self.assertEqual(
                 request["maximum_camera_elevation_degrees"],
-                declared["elevation_range_degrees"][1],
+                observation["elevation_range_degrees"][1],
             )
+            if observation["structure_context"] in {
+                "inclined_surface",
+                "ramp_and_landing",
+            }:
+                self.assertEqual(
+                    self.rules["camera_observation"][
+                        "minimum_inclined_surface_side_readability"
+                    ],
+                    0.90,
+                )
+                self.assertEqual(
+                    observation["minimum_anchor_visible_fraction"], 1.0
+                )
+                self.assertEqual(
+                    request["minimum_support_context_visible_fraction"], 0.80
+                )
+                self.assertEqual(request["maximum_focus_span_ndc"], 1.00)
+                self.assertEqual(
+                    request["maximum_camera_distance_above_minimum_m"], 4.0
+                )
+                self.assertEqual(request["maximum_camera_distance_m"], 6.0)
             self.assertNotIn("framing_profile", request)
             self.assertFalse(
                 any(key.startswith("camera_") for key in expected), expected
             )
+
+    def test_long_raised_surface_camera_anchors_cover_both_axes(self) -> None:
+        metadata = {
+            "simulation": {
+                "support": {
+                    "scene_class": "raised_flat",
+                    "safe_surface_bounds": {
+                        "x": [-2.3, 2.3],
+                        "y": [-0.62, 0.62],
+                    },
+                    "surface_frame": {"slope_angle_degrees": 0.0},
+                    "surface_center_z_m": 0.82,
+                    "motion_axis": "x",
+                    "maximum_planar_trajectory_distance_m": 2.2,
+                    "colliders": [],
+                }
+            }
+        }
+        observation = {
+            "structure_context": "horizontal_surface",
+            "focus_event": {"type": "fraction"},
+        }
+        points, required = support_context_points(
+            metadata,
+            azimuth_degrees=35.0,
+            focus_xy=np.asarray([1.0, 0.0], dtype=np.float64),
+            observation=observation,
+            positions=np.asarray(
+                [[0.0, 0.0, 0.9], [2.0, 0.0, 0.9]], dtype=np.float64
+            ),
+        )
+        anchors = points[required]
+        self.assertEqual(len(anchors), 5)
+        self.assertAlmostEqual(float(np.ptp(anchors[:, 0])), 2.2, places=6)
+        self.assertGreater(float(np.ptp(anchors[:, 1])), 0.7)
+        self.assertTrue(np.allclose(anchors[:, 2], 0.83))
 
     def test_direct_simulation_is_repeatable(self) -> None:
         scene = self.scene_by_motion["slide_push_1obj"]
@@ -449,9 +637,10 @@ class PyBulletSimulationTests(unittest.TestCase):
         self.assertEqual(set(self.scene_by_object), expected)
         for object_type, scene in self.scene_by_object.items():
             with self.subTest(object_type=object_type):
-                obj = scene["simulation"]["objects"][0]
+                isolated_scene = self.without_incidental_environment(scene)
+                obj = isolated_scene["simulation"]["objects"][0]
                 self.assertIn(obj["geometry"]["type"], {"cuboid", "sphere", "cylinder"})
-                trajectory, audit = simulate(scene)
+                trajectory, audit = simulate(isolated_scene)
                 self.assertTrue(audit["passed"], audit)
                 self.assertTrue(
                     np.isfinite(trajectory[f"{obj['object_id']}__position_m"]).all()
@@ -526,19 +715,80 @@ class PyBulletSimulationTests(unittest.TestCase):
 
     def test_rendered_frame_exposure_gate_uses_shared_audit_limits(self) -> None:
         passing = {
-            "mean_luma": 41.8,
-            "luma_std": 8.1,
+            "mean_luma": 60.0,
+            "luma_std": 20.0,
             "mean_gradient": 5.6,
             "clipped_dark_fraction": 0.0,
             "clipped_light_fraction": 0.0,
         }
         self.assertTrue(frame_statistics_within_fixed_limits(passing))
-        failing = dict(passing, luma_std=7.1364)
+        failing = dict(passing, luma_std=13.6)
         self.assertFalse(frame_statistics_within_fixed_limits(failing))
         adjustment = choose_rendered_frame_exposure_adjustment([failing])
         self.assertIn("low_luma_contrast", adjustment["reasons"])
         self.assertGreater(adjustment["applied_delta_ev"], 0.0)
         self.assertLessEqual(adjustment["applied_delta_ev"], 0.35)
+        bright_uniform = dict(passing, mean_luma=100.0, luma_std=14.0)
+        self.assertTrue(frame_statistics_within_fixed_limits(bright_uniform))
+        self.assertNotIn(
+            "low_luma_contrast",
+            choose_rendered_frame_exposure_adjustment([bright_uniform])["reasons"],
+        )
+        pre_encode_borderline = dict(passing, mean_luma=46.0)
+        self.assertTrue(frame_statistics_within_fixed_limits(pre_encode_borderline))
+        self.assertIn(
+            "low_mean_luma",
+            choose_rendered_frame_exposure_adjustment([pre_encode_borderline])[
+                "reasons"
+            ],
+        )
+
+    def test_corridor_camera_must_remain_between_and_below_walls(self) -> None:
+        metadata = {
+            "simulation": {
+                "support": {
+                    "motion_axis": "x",
+                    "camera_envelope": {
+                        "type": "paired_parallel_walls",
+                        "motion_axis": "x",
+                        "collider_ids": ["side_wall_a", "side_wall_b"],
+                        "clearance_m": 0.35,
+                    },
+                    "colliders": [
+                        {
+                            "id": "side_wall_a",
+                            "position_m": [0.0, -1.3, 1.2],
+                            "size_m": [7.0, 0.12, 2.4],
+                        },
+                        {
+                            "id": "side_wall_b",
+                            "position_m": [0.0, 1.3, 1.2],
+                            "size_m": [7.0, 0.12, 2.4],
+                        },
+                    ],
+                }
+            }
+        }
+        self.assertTrue(
+            camera_inside_structural_envelope(
+                metadata, np.asarray([2.0, 0.4, 1.8])
+            )
+        )
+        self.assertFalse(
+            camera_inside_structural_envelope(
+                metadata, np.asarray([0.0, -1.9, 1.8])
+            )
+        )
+        self.assertFalse(
+            camera_inside_structural_envelope(
+                metadata, np.asarray([0.0, 1.0, 1.8])
+            )
+        )
+        self.assertFalse(
+            camera_inside_structural_envelope(
+                metadata, np.asarray([0.0, 0.0, 2.5])
+            )
+        )
 
     def test_rendered_frame_exposure_gate_is_bounded_and_idempotent(self) -> None:
         healthy = {
@@ -552,7 +802,7 @@ class PyBulletSimulationTests(unittest.TestCase):
         very_dark = {"mean_luma": 1.0, "luma_std": 0.5}
         first = choose_rendered_frame_exposure_adjustment([very_dark])
         self.assertEqual(first["applied_delta_ev"], 0.35)
-        second = choose_rendered_frame_exposure_adjustment([very_dark], 0.69)
+        second = choose_rendered_frame_exposure_adjustment([very_dark], 0.99)
         self.assertAlmostEqual(second["applied_delta_ev"], 0.01, places=6)
 
 

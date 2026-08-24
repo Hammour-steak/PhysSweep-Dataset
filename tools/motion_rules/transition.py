@@ -100,6 +100,7 @@ def derive(context: MotionDerivationContext, plan: MotionPlan) -> MotionPlan:
         return plan
 
     if context.motion == "edge_fall_1obj":
+        transition = context.support["transition_contract"]
         approach = min(
             float(context.subtype["approach_distance_m"]),
             context.limit * 0.72,
@@ -175,7 +176,10 @@ def derive(context: MotionDerivationContext, plan: MotionPlan) -> MotionPlan:
                 "contact_mode": "support_motion_then_edge_fall",
                 "minimum_initial_support_contact_frames": 3,
                 "must_exit_primary_support": True,
-                "required_collider_contact_id": "environment_floor",
+                "required_collider_contact_id": str(
+                    transition["destination_collider_id"]
+                ),
+                "transition_contract_version": str(transition["version"]),
                 "minimum_vertical_drop_m": round(
                     max(
                         0.18,

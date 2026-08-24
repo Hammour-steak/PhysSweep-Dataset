@@ -17,6 +17,8 @@ sys.path.insert(0, str(TOOLS))
 from environment_collision import (  # noqa: E402
     binding_sha256,
     compile_environment_binding,
+    dynamic_back_wall_clearance_m,
+    dynamic_motion_lane,
     validate_environment_binding,
 )
 from sample_one_object_scene_matrix import (  # noqa: E402
@@ -258,6 +260,107 @@ class VisualEnvironmentCollisionV1Tests(unittest.TestCase):
             )
             self.assertEqual(binding_sha256(binding), binding["binding_sha256"])
 
+    def test_room_wall_moves_beyond_a_toward_wall_motion_envelope(self) -> None:
+        metadata = {
+            "appearance": {
+                "scene_visual": {
+                    "id": "test_room",
+                    "visual_type": "procedural_room",
+                    "back_wall_distance_m": 2.0,
+                    "wall_enabled": True,
+                    "decor": [],
+                    "set_pieces": [],
+                }
+            },
+            "camera_request": {"profile": "rear_oblique"},
+            "simulation": {
+                "time": {"duration_s": 4.0},
+                "support": {
+                    "scene_class": "ground_feature",
+                    "surface_frame": {"slope_angle_degrees": 14.0},
+                    "dynamics": {
+                        "lateral_friction": 0.7,
+                        "restitution": 0.1,
+                    },
+                },
+                "objects": [
+                    {
+                        "geometry": {"size_m": [0.2, 0.2, 0.2]},
+                        "initial_state": {
+                            "position_m": [0.0, 0.0, 0.2],
+                            "linear_velocity_m_s": [0.0, -0.8, 0.0],
+                        },
+                        "expected_motion": {
+                            "minimum_downhill_displacement_m": 0.4
+                        },
+                    }
+                ],
+            },
+        }
+        camera_axis = self.rules["axes"]["camera_axis"]
+        binding = compile_environment_binding(metadata, camera_axis)
+        outward = binding["placement"]["outward_direction_xy"]
+        expected = dynamic_back_wall_clearance_m(metadata, outward)
+        self.assertGreater(expected, 6.0)
+        self.assertAlmostEqual(
+            binding["placement"]["dynamic_back_wall_clearance_m"], expected
+        )
+        self.assertAlmostEqual(
+            binding["placement"]["back_wall_distance_m"], expected
+        )
+
+    def test_procedural_set_piece_moves_outside_the_motion_capsule(self) -> None:
+        metadata = {
+            "appearance": {
+                "scene_visual": {
+                    "id": "test_room",
+                    "visual_type": "procedural_room",
+                    "back_wall_distance_m": 3.0,
+                    "wall_enabled": False,
+                    "decor": [],
+                    "set_pieces": [
+                        {
+                            "id": "blocking_piece",
+                            "size_m": [1.0, 0.6, 1.0],
+                            "offset_lateral_outward_z": [0.0, -1.0, 0.5],
+                            "material_role": "support_structure",
+                        }
+                    ],
+                }
+            },
+            "camera_request": {"profile": "rear_oblique"},
+            "simulation": {
+                "time": {"duration_s": 4.0},
+                "support": {
+                    "scene_class": "ground_flat",
+                    "surface_frame": {"slope_angle_degrees": 0.0},
+                    "dynamics": {
+                        "lateral_friction": 0.7,
+                        "restitution": 0.1,
+                    },
+                },
+                "objects": [
+                    {
+                        "geometry": {"size_m": [0.2, 0.2, 0.2]},
+                        "initial_state": {
+                            "position_m": [0.0, 0.0, 0.2],
+                            "linear_velocity_m_s": [0.0, -1.0, 0.0],
+                        },
+                    }
+                ],
+            },
+        }
+        self.assertIsNotNone(dynamic_motion_lane(metadata))
+        binding = compile_environment_binding(
+            metadata, self.rules["axes"]["camera_axis"]
+        )
+        piece = next(
+            record
+            for record in binding["colliders"]
+            if record["id"] == "environment_piece_blocking_piece"
+        )
+        self.assertGreater(piece["dynamic_lane_shift_m"], 0.0)
+
     def test_only_human_reviewed_integrated_environments_are_admitted(self) -> None:
         records = self.compositions["records"]
         self.assertEqual(
@@ -271,11 +374,11 @@ class VisualEnvironmentCollisionV1Tests(unittest.TestCase):
         self.assertEqual(len(records), 20)
         self.assertEqual(
             sum(record["review_status"] == "approved" for record in records),
-            6,
+            8,
         )
         self.assertEqual(
             sum(record["review_status"] == "paused" for record in records),
-            14,
+            12,
         )
         for record in records:
             if record["review_status"] == "approved":
@@ -313,6 +416,81 @@ class VisualEnvironmentCollisionV1Tests(unittest.TestCase):
                 self.assertGreaterEqual(camera["focal_length_cap_mm"], 20.0)
             else:
                 self.assertTrue(record["reason"])
+
+    def test_dining_modern_uses_reviewed_drop_only_action_patch(self) -> None:
+        record = next(
+            value
+            for value in self.compositions["records"]
+            if value["profile_id"] == "mesh_env_dining_modern"
+        )
+        self.assertEqual(record["review_status"], "approved")
+        self.assertEqual(
+            record["action_surface"],
+            {
+                "anchor_local_m": [-0.001026, -2.088147, 0.599033],
+                "audited_clear_radius_m": 0.68,
+                "admitted_action_radius_m": 0.52,
+            },
+        )
+        self.assertEqual(record["camera"]["reviewed_view"], "south")
+        self.assertEqual(
+            record["bindings"],
+            [
+                {
+                    "support_ids": ["wood_floor"],
+                    "motion_families": ["drop_fall_1obj"],
+                }
+            ],
+        )
+
+    def test_kitchen_modern_uses_reviewed_main_floor_drop_patch(self) -> None:
+        record = next(
+            value
+            for value in self.compositions["records"]
+            if value["profile_id"] == "mesh_env_kitchen_modern"
+        )
+        profile = next(
+            value
+            for value in self.profiles["profiles"]
+            if value["id"] == "mesh_env_kitchen_modern"
+        )
+        proxy = next(
+            value
+            for value in self.proxies["records"]
+            if value["asset_id"] == "env_kitchen_modern_9843a830"
+        )
+        self.assertEqual(record["review_status"], "approved")
+        self.assertEqual(
+            record["action_surface"],
+            {
+                "anchor_local_m": [-0.804596, -1.335845, 0.064868],
+                "audited_clear_radius_m": 0.84,
+                "admitted_action_radius_m": 0.68,
+            },
+        )
+        self.assertEqual(record["camera"]["reviewed_view"], "south")
+        self.assertEqual(
+            record["bindings"],
+            [
+                {
+                    "support_ids": ["concrete_floor_mat"],
+                    "motion_families": ["drop_fall_1obj"],
+                }
+            ],
+        )
+        self.assertEqual(
+            profile["asset"]["floor_alignment"]["method"],
+            "reviewed_horizontal_floor",
+        )
+        self.assertAlmostEqual(
+            proxy["transform_contract"]["authoritative_floor_z_m"],
+            0.06486835,
+            places=8,
+        )
+        self.assertEqual(
+            proxy["proxy"]["authoritative_floor_face_count_removed"],
+            368,
+        )
 
 if __name__ == "__main__":
     unittest.main()

@@ -36,6 +36,7 @@ from immutable_scene_contract import validate_simulation_record
 from static_support_proxy import blender_import_static_support_visual
 from video_encoding import configure_h264_output
 from appearance_adaptation import apply_material_lightness_adaptation
+from camera_geometry import blocker_safe_seeded_view_order, seeded_view_order
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -315,6 +316,7 @@ def add_edge_transition_camera(
     metadata: dict[str, Any],
     trajectory: dict[str, np.ndarray],
     dynamic_record: dict[str, Any],
+    specialized_views: dict[str, Any],
 ) -> dict[str, Any]:
     """Frame the support edge, fall, landing, and final resting pose together."""
 
@@ -410,10 +412,19 @@ def add_edge_transition_camera(
     exit_azimuth = math.degrees(
         math.atan2(float(exit_direction[1]), float(exit_direction[0]))
     )
-    obliqueness = float(observation.get("edge_view_obliqueness_degrees", 65.0))
-    azimuth_candidates = [exit_azimuth - obliqueness, exit_azimuth + obliqueness]
-    if scene_digest[4] % 2:
-        azimuth_candidates.reverse()
+    profile = str(metadata["physics"]["motion_profile"])
+    view_rule = specialized_views[profile]
+    relative_azimuths = seeded_view_order(
+        [float(value) for value in view_rule["relative_azimuth_degrees"]],
+        scene_digest,
+        4,
+    )
+    elevation_candidates = seeded_view_order(
+        [float(value) for value in view_rule["elevation_degrees"]],
+        scene_digest,
+        5,
+    )
+    azimuth_candidates = [exit_azimuth + value for value in relative_azimuths]
     lens_candidates = [
         float(value)
         for value in observation.get("focal_length_candidates_mm", [40.0, 36.0])
@@ -439,14 +450,17 @@ def add_edge_transition_camera(
     camera.data.clip_end = 100.0
     bpy.context.scene.camera = camera
 
-    def set_pose(distance: float, azimuth_degrees: float) -> mathutils.Vector:
+    def set_pose(
+        distance: float, azimuth_degrees: float, elevation_degrees: float
+    ) -> mathutils.Vector:
         azimuth = math.radians(azimuth_degrees)
-        horizontal = distance * 0.90
+        elevation = math.radians(elevation_degrees)
+        horizontal = distance * math.cos(elevation)
         location = mathutils.Vector(
             (
                 float(target[0]) + math.cos(azimuth) * horizontal,
                 float(target[1]) + math.sin(azimuth) * horizontal,
-                float(target[2]) + max(0.86, distance * 0.54),
+                float(target[2]) + distance * math.sin(elevation),
             )
         )
         camera.location = location
@@ -459,43 +473,49 @@ def add_edge_transition_camera(
         camera.data.lens = lens_mm
         admissible: list[dict[str, Any]] = []
         for azimuth_degrees in azimuth_candidates:
-            distance = minimum_distance
-            for iteration in range(16):
-                location = set_pose(distance, azimuth_degrees)
-                projected = [
-                    world_to_camera_view(bpy.context.scene, camera, point)
-                    for point in framing_points
-                ]
-                if all(
-                    point.z > 0.0
-                    and framing_margin <= point.x <= 1.0 - framing_margin
-                    and framing_margin <= point.y <= 1.0 - framing_margin
-                    for point in projected
-                ):
-                    admissible.append(
-                        {
-                            "location": location.copy(),
-                            "distance": distance,
-                            "azimuth_degrees": azimuth_degrees,
-                            "lens_mm": lens_mm,
-                            "iteration": iteration,
-                            "projected": projected,
-                        }
+            for elevation_degrees in elevation_candidates:
+                distance = minimum_distance
+                for iteration in range(16):
+                    location = set_pose(
+                        distance, azimuth_degrees, elevation_degrees
                     )
-                    break
-                next_distance = min(maximum_distance, distance * 1.08)
-                if next_distance <= distance + 1.0e-6:
-                    break
-                distance = next_distance
+                    projected = [
+                        world_to_camera_view(bpy.context.scene, camera, point)
+                        for point in framing_points
+                    ]
+                    if all(
+                        point.z > 0.0
+                        and framing_margin <= point.x <= 1.0 - framing_margin
+                        and framing_margin <= point.y <= 1.0 - framing_margin
+                        for point in projected
+                    ):
+                        admissible.append(
+                            {
+                                "location": location.copy(),
+                                "distance": distance,
+                                "azimuth_degrees": azimuth_degrees,
+                                "elevation_degrees": elevation_degrees,
+                                "lens_mm": lens_mm,
+                                "iteration": iteration,
+                                "projected": projected,
+                            }
+                        )
+                        break
+                    next_distance = min(maximum_distance, distance * 1.08)
+                    if next_distance <= distance + 1.0e-6:
+                        break
+                    distance = next_distance
         if admissible:
-            selected = min(admissible, key=lambda value: float(value["distance"]))
+            selected = admissible[0]
             break
     if selected is None:
         raise ValueError("edge-transition camera cannot satisfy its framing contract")
 
     camera.data.lens = float(selected["lens_mm"])
     location = set_pose(
-        float(selected["distance"]), float(selected["azimuth_degrees"])
+        float(selected["distance"]),
+        float(selected["azimuth_degrees"]),
+        float(selected["elevation_degrees"]),
     )
     projected_centers = [
         world_to_camera_view(
@@ -521,7 +541,7 @@ def add_edge_transition_camera(
     landing_projection = projected_centers[contact_index]
     final_projection = projected_centers[-1]
     return {
-        "solver_version": "asset_edge_transition_camera_v2",
+        "solver_version": "asset_edge_transition_camera_v3",
         "observation_intent": str(observation["intent"]),
         "structure_context": str(observation["structure_context"]),
         "position_m": [round(float(value), 6) for value in location],
@@ -529,6 +549,7 @@ def add_edge_transition_camera(
         "focal_length_mm": float(selected["lens_mm"]),
         "focus_span_m": round(focus_span, 6),
         "azimuth_degrees": float(selected["azimuth_degrees"]),
+        "elevation_degrees": float(selected["elevation_degrees"]),
         "prop_placed_behind_primary_target": False,
         "dynamic_extent_m": [round(float(value), 6) for value in dynamic_extent],
         "projection_fit_iterations": int(selected["iteration"]),
@@ -552,12 +573,15 @@ def add_camera(
     metadata: dict[str, Any],
     trajectory: dict[str, np.ndarray],
     dynamic_record: dict[str, Any],
+    specialized_views: dict[str, Any],
 ) -> dict[str, Any]:
     surface = metadata["physics"]["support_surface"]
     positions = np.asarray(trajectory["position_m"], dtype=np.float64)
     observation = metadata["camera_request"]["observation"]
     if str(observation["structure_context"]) == "edge_and_landing":
-        return add_edge_transition_camera(metadata, trajectory, dynamic_record)
+        return add_edge_transition_camera(
+            metadata, trajectory, dynamic_record, specialized_views
+        )
     focus_event = observation["focus_event"]
     event_type = str(focus_event["type"])
     if event_type == "fraction":
@@ -639,22 +663,27 @@ def add_camera(
         focus_y = min(sy * 0.96, max(float(combined_span[1]) + 0.30, focus_y))
     target[2] = float(0.5 * (content_low[2] + content_high[2]))
     focus_span = max(focus_x, focus_y * 1.45)
-    variants = (-52.0, -40.0, 38.0, 50.0)
+    profile = str(metadata["physics"]["motion_profile"])
+    view_rule = specialized_views[profile]
+    variants = [float(value) for value in view_rule["azimuth_degrees"]]
     scene_digest = hashlib.sha256(str(metadata["scene_id"]).encode("utf-8")).digest()
-    start_index = int.from_bytes(scene_digest[:4], "big") % len(variants)
-    ordered = [variants[(start_index + offset) % len(variants)] for offset in range(len(variants))]
+    ordered = seeded_view_order(variants, scene_digest, 0)
     if prop:
         prop_offset = np.asarray(prop["position_m"][:2], dtype=np.float64) - target[:2]
-        ordered.sort(
-            key=lambda degrees: float(
-                np.dot(
-                    prop_offset,
-                    np.asarray([math.cos(math.radians(degrees)), math.sin(math.radians(degrees))]),
-                )
-            )
+        ordered = blocker_safe_seeded_view_order(
+            variants,
+            scene_digest,
+            0,
+            prop_offset,
         )
     azimuth_degrees = ordered[0]
     azimuth = math.radians(azimuth_degrees)
+    elevation_degrees = seeded_view_order(
+        [float(value) for value in view_rule["elevation_degrees"]],
+        scene_digest,
+        1,
+    )[0]
+    elevation = math.radians(elevation_degrees)
     distance = max(
         1.65,
         min(
@@ -675,12 +704,12 @@ def add_camera(
     bpy.context.scene.camera = camera
 
     def set_pose(value: float) -> mathutils.Vector:
-        horizontal = value * 0.90
+        horizontal = value * math.cos(elevation)
         location = mathutils.Vector(
             (
                 float(target[0]) + math.cos(azimuth) * horizontal,
                 float(target[1]) + math.sin(azimuth) * horizontal,
-                float(target[2]) + max(0.86, value * 0.54),
+                float(target[2]) + value * math.sin(elevation),
             )
         )
         camera.location = location
@@ -726,7 +755,7 @@ def add_camera(
         distance = next_distance
         location = set_pose(distance)
     return {
-        "solver_version": "asset_motion_structure_camera_v1",
+        "solver_version": "asset_motion_structure_camera_v2",
         "observation_intent": str(observation["intent"]),
         "structure_context": str(observation["structure_context"]),
         "position_m": [round(float(value), 6) for value in location],
@@ -734,6 +763,7 @@ def add_camera(
         "focal_length_mm": 48.0,
         "focus_span_m": round(float(focus_span), 6),
         "azimuth_degrees": azimuth_degrees,
+        "elevation_degrees": elevation_degrees,
         "prop_placed_behind_primary_target": bool(prop),
         "dynamic_extent_m": [round(float(value), 6) for value in dynamic_extent],
         "projection_fit_iterations": int(projection_iterations),
@@ -784,7 +814,13 @@ def render(
             records[prop_id], metadata["physics"]["static_prop"]
         )
     dynamic_objects = add_dynamic(dynamic_record, trajectory)
-    camera = add_camera(metadata, trajectory, dynamic_record)
+    visual_rules = load_json(visual_rules_path)
+    camera = add_camera(
+        metadata,
+        trajectory,
+        dynamic_record,
+        visual_rules["specialized_camera_views"],
+    )
     add_environment(metadata["render"]["environment"], camera)
     add_lighting(
         mathutils.Vector(camera["target_m"]),

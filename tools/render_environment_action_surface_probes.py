@@ -262,6 +262,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--audit", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--profile-id", action="append", default=[])
+    parser.add_argument(
+        "--all-candidates",
+        action="store_true",
+        help=(
+            "Render every audited candidate instead of only the "
+            "highest-clearance one."
+        ),
+    )
     parser.add_argument("--resolution", default="960x720")
     parser.add_argument("--samples", type=int, default=24)
     return parser.parse_args(blender_argv())
@@ -282,34 +290,43 @@ def main() -> None:
         if audit["status"] != "candidate" or not audit.get("candidates"):
             continue
         profile = profiles[profile_id]
-        candidate = audit["candidates"][0]
         floor_z = float(audit["floor_z_local_m"])
-        anchor_local = [
-            float(candidate["anchor_xy_local_m"][0]),
-            float(candidate["anchor_xy_local_m"][1]),
-            floor_z,
-        ]
-        print(f"probe {profile_id}", flush=True)
-        setup_scene(width, height, int(args.samples))
-        meshes, low, high = import_asset(profile["asset"])
-        place_environment(meshes, low, high, profile["asset"], anchor_local)
-        add_markers(float(candidate["clear_radius_m"]))
-        camera = add_camera()
-        paths = render_views(
-            args.output.resolve(),
-            profile_id,
-            camera,
-            float(candidate["clear_radius_m"]),
+        candidates = (
+            audit["candidates"]
+            if args.all_candidates
+            else audit["candidates"][:1]
         )
-        records.append(
-            {
-                "profile_id": profile_id,
-                "asset_id": str(profile["asset"]["asset_id"]),
-                "anchor_local_m": [round(value, 6) for value in anchor_local],
-                "clear_radius_m": float(candidate["clear_radius_m"]),
-                "images": paths,
-            }
-        )
+        for candidate_index, candidate in enumerate(candidates):
+            anchor_local = [
+                float(candidate["anchor_xy_local_m"][0]),
+                float(candidate["anchor_xy_local_m"][1]),
+                floor_z,
+            ]
+            print(f"probe {profile_id} candidate {candidate_index + 1}", flush=True)
+            setup_scene(width, height, int(args.samples))
+            meshes, low, high = import_asset(profile["asset"])
+            place_environment(meshes, low, high, profile["asset"], anchor_local)
+            add_markers(float(candidate["clear_radius_m"]))
+            camera = add_camera()
+            output_profile_id = profile_id
+            if args.all_candidates:
+                output_profile_id = f"{profile_id}/candidate_{candidate_index + 1:02d}"
+            paths = render_views(
+                args.output.resolve(),
+                output_profile_id,
+                camera,
+                float(candidate["clear_radius_m"]),
+            )
+            records.append(
+                {
+                    "profile_id": profile_id,
+                    "asset_id": str(profile["asset"]["asset_id"]),
+                    "candidate_index": candidate_index,
+                    "anchor_local_m": [round(value, 6) for value in anchor_local],
+                    "clear_radius_m": float(candidate["clear_radius_m"]),
+                    "images": paths,
+                }
+            )
     manifest = {
         "schema_version": "physweep_environment_action_surface_probe_v1",
         "source_profiles": str(args.profiles),

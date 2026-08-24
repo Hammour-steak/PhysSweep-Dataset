@@ -86,7 +86,7 @@ class ObjectIdentityContractTests(unittest.TestCase):
         )
         self.assertEqual(
             metadata["object_identity"]["instance_masks"]["encoding"],
-            "rgba_alpha_binary_mask",
+            "rgba_alpha_antialiased_silhouette_mask",
         )
 
     def test_target_object_must_exist(self) -> None:

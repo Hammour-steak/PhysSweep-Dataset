@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 from rigid_geometry import SUPPORT_BUILDERS  # noqa: E402
 from sample_pybullet_base import (  # noqa: E402
     BUNDLE_PATH,
+    compile_camera_observation,
     constrained_trajectory_extent,
     load_active_rules,
     scene_visual_profile_admits_camera,
@@ -149,6 +150,26 @@ class SamplingArchitectureTests(unittest.TestCase):
             )
         )
 
+    def test_ground_flat_camera_caps_high_elevation_without_changing_tables(self) -> None:
+        camera_rules = self.base_rules["camera_observation"]
+        expected_motion = {}
+        ground = {"scene_class": "ground_flat"}
+        raised = {"scene_class": "raised_flat"}
+
+        ground_observation = compile_camera_observation(
+            camera_rules, "projectile_1obj", expected_motion, ground
+        )
+        raised_observation = compile_camera_observation(
+            camera_rules, "projectile_1obj", expected_motion, raised
+        )
+
+        self.assertEqual(
+            ground_observation["elevation_range_degrees"], [22.0, 28.0]
+        )
+        self.assertEqual(
+            raised_observation["elevation_range_degrees"], [22.0, 44.0]
+        )
+
     def test_reviewed_environment_rejects_unreadable_ramp_camera_axis(self) -> None:
         camera_rules = {
             "minimum_inclined_surface_side_readability": 0.65,
@@ -216,6 +237,7 @@ class SamplingArchitectureTests(unittest.TestCase):
         self.assertEqual(
             quality["minimum_full_trajectory_center_visible_fraction"], 0.50
         )
+        self.assertEqual(quality["minimum_initial_object_visible_fraction"], 1.0)
 
     def test_active_bundle_declares_every_sampling_dependency(self) -> None:
         required = {
@@ -469,6 +491,15 @@ class SamplingArchitectureTests(unittest.TestCase):
         self.assertTrue(self.visual_rules["fallback_object_material_pools_by_value"])
         self.assertTrue(self.visual_rules["wall_fallback_pool"])
 
+    def test_wall_material_exclusions_are_absent_from_every_wall_pool(self) -> None:
+        excluded = set(self.visual_rules["wall_material_exclusions"])
+        pools = [self.visual_rules["wall_fallback_pool"]]
+        pools.extend(self.visual_rules["wall_pools_by_environment"].values())
+        pools.extend(self.visual_rules["wall_primary_pools_by_theme"].values())
+        pools.extend(self.visual_rules["wall_accent_pools_by_theme"].values())
+        self.assertTrue(excluded)
+        self.assertTrue(all(excluded.isdisjoint(pool) for pool in pools))
+
     def test_dynamic_object_material_pools_use_only_object_admitted_grades(self) -> None:
         assets = {
             str(record["asset_id"]): record
@@ -592,6 +623,24 @@ class SamplingArchitectureTests(unittest.TestCase):
                 if kit.get("sampling_enabled", True):
                     self.assertIn("topology", compile_scene_kit(kit))
 
+    def test_long_shallow_ramp_geometry_variants_compile_to_one_semantic_support(self) -> None:
+        kit = next(
+            item for item in self.kits if item["id"] == "ground_ramp_long_shallow"
+        )
+        compiled = compile_scene_kit(kit)
+        variants = compiled["geometry_variants"]
+        self.assertEqual(
+            {variant["id"] for variant in variants},
+            {"standard", "extended_landing", "wide_gentle"},
+        )
+        self.assertTrue(all(variant["size"][1] >= 1.75 for variant in variants))
+        self.assertTrue(
+            all(
+                variant["overrides"]["placement"]["anchor_low_edge_to_floor"]
+                for variant in variants
+            )
+        )
+
     def test_each_motion_has_admitted_scene_kits(self) -> None:
         supports = self.rules["axes"]["support_axis"]
         for motion in self.rules["axes"]["motion_axis"]:
@@ -609,8 +658,73 @@ class SamplingArchitectureTests(unittest.TestCase):
         active = {item["label"] for item in self.rules["axes"]["support_axis"]}
         self.assertNotIn(pool["id"], active)
 
-    def test_scene_visual_profiles_are_visual_only_and_theme_reachable(self) -> None:
-        self.assertTrue(self.scene_visuals["policy"]["visual_only"])
+    def test_long_ground_scene_kits_compile_explicit_constraints(self) -> None:
+        expected = {
+            "indoor_long_floor": None,
+            "open_hardscape": None,
+            "long_corridor": "x",
+        }
+        for kit_id, motion_axis in expected.items():
+            kit = next(item for item in self.kits if item["id"] == kit_id)
+            compiled = compile_scene_kit(kit)
+            placement = compiled["overrides"]["placement"]
+            with self.subTest(kit=kit_id):
+                self.assertTrue(placement["ground_surface"])
+                self.assertGreater(
+                    placement["maximum_planar_trajectory_distance_m"], 1.65
+                )
+                self.assertTrue(compiled["allowed_motions"])
+                self.assertTrue(compiled["environment_categories"])
+                self.assertEqual(placement.get("motion_axis"), motion_axis)
+
+    def test_long_table_scene_kits_compile_explicit_constraints(self) -> None:
+        expected = {
+            "long_wood_table": 2.25,
+            "long_lab_bench": 2.2,
+            "long_kitchen_counter": 2.1,
+        }
+        for kit_id, maximum_distance in expected.items():
+            kit = next(item for item in self.kits if item["id"] == kit_id)
+            compiled = compile_scene_kit(kit)
+            placement = compiled["overrides"]["placement"]
+            with self.subTest(kit=kit_id):
+                self.assertFalse(placement["ground_surface"])
+                self.assertEqual(placement["motion_axis"], "x")
+                self.assertEqual(
+                    placement["maximum_planar_trajectory_distance_m"],
+                    maximum_distance,
+                )
+                self.assertIn("edge_fall_1obj", compiled["allowed_motions"])
+                self.assertTrue(compiled["environment_categories"])
+
+    def test_edge_fall_admits_a_real_low_platform_but_not_a_ramp(self) -> None:
+        supports = {
+            item["label"]: item for item in self.rules["axes"]["support_axis"]
+        }
+        self.assertTrue(
+            support_allowed(
+                supports["low_pedestal"], "edge_fall_1obj", self.rules
+            )
+        )
+        self.assertFalse(
+            support_allowed(
+                supports["raised_ramp_standard"],
+                "edge_fall_1obj",
+                self.rules,
+            )
+        )
+
+    def test_scene_visual_profiles_pair_structure_and_reach_themes(self) -> None:
+        self.assertEqual(
+            self.scene_visuals["policy"]["role"],
+            "procedural_environment_template",
+        )
+        self.assertTrue(
+            self.scene_visuals["policy"]["visual_and_collision_are_paired"]
+        )
+        self.assertTrue(
+            self.scene_visuals["policy"]["never_changes_declared_motion"]
+        )
         active_themes = {
             str(kit["theme"])
             for kit in self.kits
@@ -631,6 +745,42 @@ class SamplingArchitectureTests(unittest.TestCase):
                 self.assertEqual(len(piece["size_m"]), 3)
                 self.assertEqual(len(piece["offset_lateral_outward_z"]), 3)
                 self.assertLess(piece["offset_lateral_outward_z"][1], 0.0)
+
+    def test_large_environment_profiles_keep_a_clear_motion_lane(self) -> None:
+        expected = {
+            "warehouse_long_bay",
+            "garage_service_lane",
+            "office_long_room",
+            "outdoor_low_wall",
+        }
+        profiles = {
+            str(profile["id"]): profile
+            for profile in self.scene_visuals["profiles"]
+        }
+        self.assertTrue(expected <= set(profiles))
+        contextual_profiles = {
+            "warehouse_long_bay",
+            "garage_service_lane",
+            "office_long_room",
+        }
+        for profile_id in expected:
+            profile = profiles[profile_id]
+            clear_lane = float(profile["clear_lane_half_width_m"])
+            with self.subTest(profile=profile_id):
+                self.assertEqual(profile["layout_family"], "large_clear_lane")
+                self.assertGreaterEqual(profile["back_wall_distance_m"], 3.4)
+                for piece in profile["set_pieces"]:
+                    lateral = abs(piece["offset_lateral_outward_z"][0])
+                    half_width = piece["size_m"][0] / 2.0
+                    self.assertGreaterEqual(lateral - half_width, clear_lane)
+                if profile_id in contextual_profiles:
+                    context = profile["camera_context"]
+                    self.assertGreaterEqual(context["depth_offset_m"], 0.4)
+                    self.assertLessEqual(context["focal_length_cap_mm"], 38.0)
+                    self.assertLess(
+                        context["minimum_elevation_degrees"],
+                        context["maximum_elevation_degrees"],
+                    )
 
     def test_scene_mesh_profiles_are_audited_render_only_assets(self) -> None:
         self.assertEqual(

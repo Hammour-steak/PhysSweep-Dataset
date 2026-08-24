@@ -52,6 +52,165 @@ def active_motion_duration_s(
     return float(times[active[-1]] - times[0]) if active.size else 0.0
 
 
+def audit_support_transition_contract(
+    metadata: dict[str, Any],
+    expected: dict[str, Any],
+    primary_contacts: np.ndarray,
+    destination_contacts: np.ndarray | None,
+    destination_contact_index: int | None,
+    check: Any,
+) -> None:
+    support = metadata["simulation"]["support"]
+    contract = support.get("transition_contract")
+    if contract is None:
+        return
+    required_keys = {
+        "version",
+        "type",
+        "source_collider_id",
+        "destination_collider_id",
+        "boundary_point_m",
+        "outward_direction_xy",
+        "source_boundary_height_m",
+        "destination_surface_height_m",
+        "height_drop_m",
+        "intermediate_phase",
+        "required_contact_sequence",
+        "allow_source_recontact_after_destination",
+    }
+    missing = sorted(required_keys.difference(contract))
+    if missing:
+        raise ValueError(f"transition contract is incomplete: {missing}")
+    colliders = {str(value["id"]): value for value in support["colliders"]}
+    source_id = str(contract["source_collider_id"])
+    destination_id = str(contract["destination_collider_id"])
+    if source_id not in colliders or destination_id not in colliders:
+        raise ValueError("transition contract references an unknown collider")
+    if colliders[source_id]["role"] != "primary_support":
+        raise ValueError("transition source is not the primary support")
+    if colliders[destination_id]["role"] not in {
+        "landing_surface",
+        "environment_floor",
+    }:
+        raise ValueError("transition destination is not a landing surface")
+    if str(expected.get("transition_contract_version")) != str(contract["version"]):
+        raise ValueError("expected motion targets a different transition contract")
+    if str(expected.get("required_collider_contact_id")) != destination_id:
+        raise ValueError("expected motion targets a different destination collider")
+    if contract["required_contact_sequence"] != ["source", "destination"]:
+        raise ValueError("unsupported transition contact sequence")
+    outward = np.asarray(contract["outward_direction_xy"], dtype=np.float64)
+    if outward.shape != (2,) or not np.isfinite(outward).all():
+        raise ValueError("transition outward direction must be a finite 2D vector")
+    outward_norm = float(np.linalg.norm(outward))
+    if abs(outward_norm - 1.0) > 1.0e-6:
+        raise ValueError("transition outward direction must be normalized")
+    boundary = np.asarray(contract["boundary_point_m"], dtype=np.float64)
+    if boundary.shape != (3,) or not np.isfinite(boundary).all():
+        raise ValueError("transition boundary point must be finite 3D")
+    source_height = float(contract["source_boundary_height_m"])
+    destination_height = float(contract["destination_surface_height_m"])
+    height_drop = float(contract["height_drop_m"])
+    if abs(float(boundary[2]) - source_height) > 1.0e-6:
+        raise ValueError("transition boundary height is inconsistent")
+    if abs(height_drop - max(0.0, source_height - destination_height)) > 1.0e-6:
+        raise ValueError("transition height drop is inconsistent")
+    destination = colliders[destination_id]
+    destination_top = float(destination["position_m"][2]) + 0.5 * float(
+        destination["size_m"][2]
+    )
+    if abs(destination_height - destination_top) > 1.0e-6:
+        raise ValueError("transition destination height differs from its collider")
+    transition_type = str(contract["type"])
+    phase = str(contract["intermediate_phase"])
+    expected_phase = {
+        "raised_edge_to_floor": "airborne",
+        "incline_to_horizontal": "continuous_contact",
+    }.get(transition_type)
+    if expected_phase is None or phase != expected_phase:
+        raise ValueError("transition type and intermediate phase disagree")
+    if transition_type == "raised_edge_to_floor":
+        source = colliders[source_id]
+        source_top = float(source["position_m"][2]) + 0.5 * float(
+            source["size_m"][2]
+        )
+        if abs(source_height - source_top) > 1.0e-6:
+            raise ValueError("raised transition height differs from its source collider")
+    initial_velocity = np.asarray(
+        metadata["simulation"]["objects"][0]["initial_state"][
+            "linear_velocity_m_s"
+        ][:2],
+        dtype=np.float64,
+    )
+    initial_speed_xy = float(np.linalg.norm(initial_velocity))
+    if initial_speed_xy <= 1.0e-8 or float(initial_velocity @ outward) <= 0.0:
+        raise ValueError("transition initial velocity does not point toward the boundary")
+    source_indices = np.flatnonzero(primary_contacts > 0)
+    contact_order_valid = bool(
+        source_indices.size
+        and destination_contact_index is not None
+        and int(source_indices[0]) < destination_contact_index
+    )
+    check(
+        "transition_contact_order",
+        contact_order_valid,
+        {
+            "first_source_contact_frame": (
+                int(source_indices[0]) if source_indices.size else None
+            ),
+            "first_destination_contact_frame": destination_contact_index,
+        },
+        "source contact before destination contact",
+    )
+    if destination_contacts is None or destination_contact_index is None:
+        return
+    destination_only = np.flatnonzero(
+        (destination_contacts > 0) & (primary_contacts == 0)
+    )
+    destination_only_index = (
+        int(destination_only[0]) if destination_only.size else None
+    )
+    check(
+        "transition_destination_only_contact",
+        destination_only_index is not None,
+        destination_only_index,
+        "at_least_one_destination_only_frame",
+    )
+    if not bool(contract["allow_source_recontact_after_destination"]):
+        no_source_recontact = bool(
+            destination_only_index is not None
+            and not np.any(primary_contacts[destination_only_index + 1 :] > 0)
+        )
+        check(
+            "transition_no_source_recontact",
+            no_source_recontact,
+            no_source_recontact,
+            True,
+        )
+    if phase == "airborne":
+        source_before_destination = source_indices[
+            source_indices < destination_contact_index
+        ]
+        last_source = (
+            int(source_before_destination[-1])
+            if source_before_destination.size
+            else None
+        )
+        airborne_frames = (
+            max(0, destination_contact_index - last_source - 1)
+            if last_source is not None
+            else 0
+        )
+        check(
+            "transition_airborne_phase",
+            airborne_frames >= 1,
+            airborne_frames,
+            1,
+        )
+    elif phase != "continuous_contact":
+        raise ValueError(f"unsupported transition intermediate phase: {phase}")
+
+
 def audit_trajectory(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]) -> dict[str, Any]:
     obj = metadata["simulation"]["objects"][0]
     object_id = str(obj["object_id"])
@@ -237,6 +396,7 @@ def audit_trajectory(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]
         )
 
     required_collider_id = expected.get("required_collider_contact_id")
+    required_contacts = None
     required_contact_index = None
     if required_collider_id:
         required_key = f"{object_id}__collider_contact_count__{required_collider_id}"
@@ -250,6 +410,15 @@ def audit_trajectory(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]
             required_contact_index,
             str(required_collider_id),
         )
+
+    audit_support_transition_contract(
+        metadata,
+        expected,
+        primary_contacts,
+        required_contacts,
+        required_contact_index,
+        check,
+    )
 
     audit_motion(
         MotionAuditContext(
@@ -268,6 +437,7 @@ def audit_trajectory(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]
             angular_speed=angular_speed,
             support_fraction=support_fraction,
             first_primary_contact=first_primary_contact,
+            required_contacts=required_contacts,
             required_contact_index=required_contact_index,
             limits=limits,
             absolute_distance_tolerance=absolute_distance_tolerance,
@@ -371,8 +541,14 @@ def audit_trajectory(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]
             "required_collider_contact",
             "primary_support_exit",
             "edge_vertical_drop",
+            "transition_contact_order",
+            "transition_destination_only_contact",
+            "transition_no_source_recontact",
+            "minimum_post_transition_travel",
+            "bounded_angular_speed",
             "visible_motion",
             "ramp_transition_downhill_extent",
+            "no_unplanned_environment_contact",
             "downhill_reversal",
             "uphill_extent",
             "downhill_extent",

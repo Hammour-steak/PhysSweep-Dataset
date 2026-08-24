@@ -3,7 +3,8 @@
   "scope": "generic_single_object_matrix_axes_and_sampling_policy",
   "camera_observation": {
     "version": "physweep_motion_structure_camera_observation_v2",
-    "minimum_inclined_surface_side_readability": 0.65,
+    "minimum_inclined_surface_side_readability": 0.90,
+    "ground_flat_elevation_range_degrees": [18.0, 28.0],
     "asset_profile_motion_intents": {
       "resting_push": "slide_push_1obj",
       "diagonal_push": "slide_push_1obj",
@@ -39,7 +40,7 @@
       },
       "edge_fall_1obj": {
         "intent": "support_transition",
-        "focus_event": {"type": "collider_contact", "collider_id": "environment_floor", "post_event_frames": 18},
+        "focus_event": {"type": "transition_destination_contact", "post_event_frames": 18},
         "structure_context": "edge_and_landing",
         "preferred_object_span_ndc": 0.125,
         "minimum_median_object_span_ndc": 0.060,
@@ -87,7 +88,12 @@
         "structure_context": "inclined_surface",
         "preferred_object_span_ndc": 0.130,
         "minimum_median_object_span_ndc": 0.060,
-        "elevation_range_degrees": [18.0, 42.0]
+        "minimum_support_context_visible_fraction": 0.80,
+        "soft_maximum_focus_span_ndc": 0.82,
+        "maximum_focus_span_ndc": 1.00,
+        "maximum_camera_distance_above_minimum_m": 4.0,
+        "maximum_camera_distance_m": 6.0,
+        "elevation_range_degrees": [18.0, 28.0]
       },
       "slope_slide_up_1obj": {
         "intent": "surface_travel",
@@ -95,16 +101,26 @@
         "structure_context": "inclined_surface",
         "preferred_object_span_ndc": 0.130,
         "minimum_median_object_span_ndc": 0.060,
-        "elevation_range_degrees": [18.0, 42.0]
+        "minimum_support_context_visible_fraction": 0.80,
+        "soft_maximum_focus_span_ndc": 0.82,
+        "maximum_focus_span_ndc": 1.00,
+        "maximum_camera_distance_above_minimum_m": 4.0,
+        "maximum_camera_distance_m": 6.0,
+        "elevation_range_degrees": [18.0, 28.0]
       },
       "ramp_to_flat_1obj": {
         "intent": "support_transition",
-        "focus_event": {"type": "required_motion_collider", "post_event_frames": 8},
+        "focus_event": {"type": "transition_destination_contact", "post_event_frames": 8},
         "structure_context": "ramp_and_landing",
         "preferred_object_span_ndc": 0.125,
         "minimum_median_object_span_ndc": 0.060,
         "minimum_full_trajectory_center_visible_fraction": 0.30,
-        "elevation_range_degrees": [18.0, 42.0]
+        "minimum_support_context_visible_fraction": 0.80,
+        "soft_maximum_focus_span_ndc": 0.82,
+        "maximum_focus_span_ndc": 1.00,
+        "maximum_camera_distance_above_minimum_m": 4.0,
+        "maximum_camera_distance_m": 6.0,
+        "elevation_range_degrees": [18.0, 28.0]
       },
       "bounce_1obj": {
         "intent": "contact_event",
@@ -116,11 +132,11 @@
       }
     },
     "structure_contexts": {
-      "horizontal_surface": {"minimum_anchor_visible_fraction": 1.0},
-      "inclined_surface": {"minimum_anchor_visible_fraction": 0.5},
-      "impact_boundary": {"minimum_anchor_visible_fraction": 0.5},
-      "edge_and_landing": {"minimum_anchor_visible_fraction": 1.0},
-      "ramp_and_landing": {"minimum_anchor_visible_fraction": 0.5}
+      "horizontal_surface": {"minimum_anchor_visible_fraction": 1.0, "minimum_anchor_unoccluded_fraction": 0.75},
+      "inclined_surface": {"minimum_anchor_visible_fraction": 1.0, "minimum_anchor_unoccluded_fraction": 0.75},
+      "impact_boundary": {"minimum_anchor_visible_fraction": 0.5, "minimum_anchor_unoccluded_fraction": 0.5},
+      "edge_and_landing": {"minimum_anchor_visible_fraction": 1.0, "minimum_anchor_unoccluded_fraction": 0.75},
+      "ramp_and_landing": {"minimum_anchor_visible_fraction": 1.0, "minimum_anchor_unoccluded_fraction": 0.8}
     }
   },
   "axes": {

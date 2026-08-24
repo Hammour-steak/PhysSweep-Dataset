@@ -4,10 +4,11 @@ The sweep pipeline is a separate derivation stage after base metadata is frozen.
 
 ## Contract
 
-`tools/derive_physics_sweep.py` reads `physweep_pybullet_rigid_metadata_v1`
-records and writes derived records. It never calls the base sampler and never
-changes the base file. Sweep fields are bound to a dynamic object, not to the
-scene as a whole. Every dynamic object must already have a canonical
+`tools/derive_physics_sweep.py` reads the exact records declared by the frozen
+base manifest and writes derived records. It supports the generic rigid,
+reviewed asset-proxy, and billiards base schemas. It never calls the base
+sampler and never changes a base file. Sweep fields are bound to a dynamic
+object, not to the scene as a whole. Every dynamic object must already have a canonical
 `object_id`; array indexes and alternate ID fields are not accepted as joins.
 
 Each derived record keeps the base asset, collision proxy, support, visual
@@ -16,6 +17,23 @@ one runtime material field on exactly one target object and records the parent
 metadata hash in `sweep`. The binding includes `target_object_id`,
 `target_object_index`, `parameter`, and the resolved physical state of every
 dynamic object.
+
+For specialized schemas, the source-compatible mass, friction, and restitution
+remain materialized under `physics.runtime_material`. The schema-independent
+authority is `sweep.resolved_object_physics`, which contains one record for every
+dynamic object. Its reviewed base values come from the frozen metadata, asset
+registry, or declared backend configuration. Parent
+trajectory, audit, video, and inspection-frame paths are removed because every
+sweep trajectory and render must be regenerated.
+The backend dispatcher must treat `sweep.resolved_object_physics` as the
+authoritative per-object override; backend, registry, and legacy
+`physics.runtime_material` values are priors or compatibility projections and
+must not replace a derived sweep level.
+
+The sweep manifest pins the SHA-256 of the derivation implementation, sweep
+configuration, object-profile prior, asset registry, billiards backend, and
+frozen base manifest. If a prior that is also declared by the base manifest has
+changed, derivation stops before writing output.
 
 The multi-object shape is the same as the one-object shape:
 
@@ -58,25 +76,33 @@ All axes use the same endpoint-first algorithm:
  positions `[0.0, 0.25, 0.5, 0.75, 1.0]`.
 
 Log interpolation is used for mass; linear interpolation is used for friction
-and restitution. If the base is at a physical boundary, a one-sided sweep is
-kept instead of inventing an invalid symmetric value. The middle values are
-never hand-tuned per video.
+and restitution. A base near a physical boundary may produce an asymmetric
+range, but it must remain strictly inside both endpoints. A base exactly on a
+hard boundary is rejected because it cannot occupy the third of five distinct
+ordered levels. The middle values are never hand-tuned per video.
 
 The endpoint sources are recorded in `configs/physics_sweep.json`.
+The sweep manifest records the SHA256 of every derived metadata file, its
+parent metadata, the sweep configuration, the derivation implementation, and
+all material-prior sources. Any later mutation is therefore detectable before
+simulation or release.
 
-Each axis has five conceptual levels. The canonical base is stored once under
-the configured `canonical_base_axis`; the other axes omit their duplicate base
-metadata. Three five-level axes therefore produce 13 unique samples per base,
-not 15 files that are deduplicated after rendering. The range is resolved from
+Each axis has five conceptual levels. The canonical base is stored once as
+`kind: base`, with `target_object_id`, `parameter`, and `value` set to null. It is
+not semantically attached to the mass axis or to any object. Every object/axis
+pair then contributes four non-base variants. A one-object scene with three
+five-level axes therefore produces 13 unique samples per base. A two-object
+scene produces 25 and a three-object scene produces 37. The range is resolved from
 the frozen base record before levels are generated:
 
 - mass uses logarithmic levels inside the reviewed asset mass range, clipped to
   a base-relative `0.5x..2.0x` band;
-- friction uses a base-relative `0.25x~4.0x` band, clipped by the runtime
-  domain `[0.02, 1.0]`. For motions with a required travel distance, the high
-  endpoint is placed about 25% beyond the calculated stop/transition friction
-  threshold. This lets a valid sweep cross from “reaches the event” to “stops
-  before the event” without changing any initial state or adding a force;
+- friction uses a base-relative band clipped by the runtime domain
+  `[0.02, 1.0]`. Generic rigid records with a required travel distance also
+  place the high endpoint about 25% beyond the calculated stop/transition
+  friction threshold. Specialized asset and billiards records use their
+  reviewed material prior and stable backend domain because their compact base
+  schemas do not expose the generic analytic support-frame contract;
 - `contact_restitution` is the runtime field for the semantic control
  `elasticity` and covers the stable runtime domain `[0.0, 0.8]`. This global
  domain is intentional: it makes low-elasticity and high-elasticity behavior
@@ -89,9 +115,12 @@ changing friction or restitution is allowed to change the resulting
 trajectory, while changing mass alone may have little effect in isolated
 uniform-gravity scenes.
 
-For the current PyBullet backend, restitution uses the stable runtime domain
-`[0.0, 0.8]`. Values above `0.8` are outside the active sweep domain because
-the backend's trajectory energy audit becomes numerically unstable there.
+Generic and asset-proxy restitution use the reviewed stable runtime domain
+`[0.0, 0.8]`. Billiards uses its independently audited backend domain
+`[0.3, 1.0]`; its frozen base restitution is `0.92` and is not rewritten to fit
+the generic domain. The `0.3` lower bound is a schema-level stability limit:
+all 32 admitted one-ball table scenes passed at `0.3`, while lower values caused
+rail impacts to push some balls through the exact concave table proxy.
 
 A sweep is allowed to change the observed motion mode. For example, a low
 restitution bounce can impact and settle without a visible rebound. These
@@ -102,8 +131,9 @@ checked for support contact through its primary contact window, after which a
 physical exit from the support is allowed.
 
 If the base is exactly at a hard domain boundary, two distinct levels cannot
- exist on that side; the declared one-sided boundary policy is used only for
- that case. The applied base index and policy are recorded in `sweep` metadata.
+exist on that side, so derivation fails under the declared
+`reject_if_middle_impossible` policy. The applied base index and policy are
+recorded in `sweep` metadata for every accepted sample.
 For future multi-object
  scenes, the same endpoint algorithm is retained. The
 reference quantity may become relational, such as the mass ratio between two
@@ -146,14 +176,72 @@ Whole base collection:
 ```bash
 .venv/bin/python tools/derive_physics_sweep.py \
   --config configs/physics_sweep.json \
-  --base-dir datasets/<base>/scenes \
+  --base-manifest datasets/one_object_base/manifest.json \
   --output-dir datasets/<sweep>/metadata
 
-.venv/bin/python tools/run_pybullet_batch.py \
-  --manifest datasets/<sweep>/metadata/manifest.json \
-  --workers 24
 ```
 
-Derivation writes immutable metadata; the generic batch runner then simulates
-and audits either a base or sweep manifest. No per-video repair or hidden force
-is allowed.
+Derivation writes immutable metadata. `tools/run_pybullet_batch.py` sends every
+record through `tools/pybullet_backend_dispatcher.py`. The dispatcher compiles
+generic rigid, asset-proxy, and billiards metadata into the same
+`physweep_resolved_simulation_scene_v1` contract, then invokes the matching
+reviewed PyBullet adapter. It writes normalized trajectories under a separate
+`<dataset>/physics` tree and never mutates metadata. No per-video repair or
+hidden force is allowed.
+
+Batch simulation verifies the schema and scene id against every metadata file,
+rejects duplicate scene ids, and isolates source schemas in separate spawned
+process pools. This prevents native PyBullet state from crossing adapter
+boundaries while preserving parallelism within each adapter. A rejected audit
+or execution error makes the batch command fail. Scene ids are restricted to
+safe single-path components, and a non-empty output tree is rejected unless
+`--allow-existing-output` is explicitly supplied.
+
+Metadata is hashed before simulation and checked again before outputs are
+committed. JSON and NPZ files are written through same-directory temporary files
+and atomically replaced; `simulation_record.json` is written last as the
+per-scene completion record.
+
+Normalized trajectories use a stable object-major contract:
+
+```text
+object_ids                     [N]
+position_m                     [T, N, 3]
+quaternion_wxyz                [T, N, 4]
+linear_velocity_m_s            [T, N, 3]
+angular_velocity_rad_s         [T, N, 3]
+contact_count                  [T, N]
+runtime_material               [N, 3]
+inertia_diagonal_kg_m2         [N, 3]
+```
+
+The common audit requires an exact time axis, finite normalized orientations,
+exact frame-zero state, valid contact counts, exact runtime mass/friction/
+restitution, positive inertia, and every adapter's hard collision and energy
+invariants. A sweep may make a base motion stop before an intended edge or
+support transition; those motion-completion checks are advisory for sweep
+records only. Penetration, bounds, energy, collision-proxy, and runtime-parameter
+checks remain hard failures.
+
+Release admission is group-atomic. `tools/finalize_sweep_groups.py` joins the
+immutable sweep metadata manifest with the batch simulation manifest and
+publishes a group only when its canonical base and all twelve derived endpoint
+records pass their hard audits. One failed record rejects the complete
+thirteen-record group. The rejected-group report remains diagnostic input for
+deterministic, slot-preserving resampling; individual videos are never repaired,
+silently omitted, or replaced after rendering.
+
+The resolved scene format is object-count agnostic, but each active adapter
+declares its current capability: generic rigid and reviewed asset-proxy scenes
+support one dynamic object, while billiards supports one or three balls. Future
+two- and three-object adapters can reuse the same ordered object contract without
+silently routing unsupported scenes through a one-object solver.
+
+Raw angular-speed limits remain useful diagnostics, but sweep records use the
+shape-scaled rotational surface speed as the hard rotational bound. This avoids
+rejecting a physically valid small object merely because the same surface speed
+corresponds to a larger angular velocity.
+
+Mass is the independent sweep variable. PyBullet derives the inertia tensor from
+the unchanged collision proxy and the resolved mass, so inertia changes as a
+dependent physical quantity rather than becoming a fourth sweep axis.
