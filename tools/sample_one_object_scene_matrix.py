@@ -615,11 +615,11 @@ def validate_matrix(root: Path, matrix: dict[str, Any]) -> None:
     billiards_profiles = set(backend["billiards_rules"]["initial_states"])
     if set(specialized["billiards"]["profiles"]) != billiards_profiles:
         raise ValueError("billiards capabilities do not match backend profiles")
-    semantic_body_counts = {
-        int(family["dynamic_object_count"])
-        for family in semantic_rules["specialized_scene_families"].values()
+    billiards_body_counts = {
+        int(semantic_rule_by_profile[profile]["dynamic_object_count"])
+        for profile in billiards_profiles
     }
-    if set(specialized["billiards"]["dynamic_body_counts"]) != semantic_body_counts:
+    if set(specialized["billiards"]["dynamic_body_counts"]) != billiards_body_counts:
         raise ValueError("billiards capabilities do not match semantic body counts")
     pinball_backend = load_json(dependencies["passive_pinball_backend"])
     pinball_profiles = set(pinball_backend["profiles"])
@@ -631,6 +631,7 @@ def validate_matrix(root: Path, matrix: dict[str, Any]) -> None:
     if (
         set(pinball_family.get("profiles", [])) != pinball_profiles
         or int(pinball_family.get("dynamic_object_count", 0)) != 1
+        or int(specialized["passive_pinball"].get("dynamic_body_count", 0)) != 1
         or bool(pinball_family.get("active_mechanisms_supported", True))
     ):
         raise ValueError("passive-pinball semantic contract is inconsistent")

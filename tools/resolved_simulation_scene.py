@@ -330,6 +330,67 @@ def _billiards_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
     initial_by_id = {
         str(record["object_id"]): record for record in physics["initial_states"]
     }
+    identity_ids = [str(identity["object_id"]) for identity in identities]
+    if len(initial_by_id) != len(physics["initial_states"]):
+        raise ValueError("billiards initial states contain duplicate object ids")
+    if set(initial_by_id) != set(identity_ids):
+        raise ValueError("billiards initial states differ from dynamic object identity")
+    resolved = _resolved_materials(metadata, identity_ids)
+    backend = _load_pinned_json(root, physics["backend_config"], "PyBullet backend")
+    dynamics = backend["billiards_rules"]["ball_dynamics"]
+    objects = []
+    for index, identity in enumerate(identities):
+        object_id = str(identity["object_id"])
+        if object_id not in initial_by_id:
+            raise ValueError(f"billiards initial state is missing: {object_id}")
+        initial = initial_by_id[object_id]
+        fallback = physics.get("runtime_material") or {
+            "mass_kg": physics["ball_mass_kg"],
+            "contact_friction": dynamics["lateral_friction"],
+            "contact_restitution": dynamics["restitution"],
+        }
+        material = _material(resolved.get(object_id, fallback))
+        objects.append(
+            {
+                "object_id": object_id,
+                "object_index": index,
+                "collision_proxy": {
+                    "type": "sphere",
+                    "size_m": [2.0 * float(physics["ball_radius_m"])] * 3,
+                },
+                "initial_state": {
+                    "position_m": _finite_vector(initial["position_m"], 3, "position"),
+                    "orientation_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+                    "linear_velocity_m_s": _finite_vector(
+                        initial["velocity_m_s"], 3, "linear velocity"
+                    ),
+                    "angular_velocity_rad_s": [0.0, 0.0, 0.0],
+                },
+                "material": material,
+                "inertia_policy": "pybullet_from_collision_proxy_and_mass",
+            }
+        )
+    return {
+        "backend_binding": {
+            "backend_id": "pybullet_rigid",
+            "adapter_id": "billiards_v4",
+            "capability": "one_or_more_spheres_with_exact_table_support",
+            "supported_dynamic_object_counts": [1, 3],
+        },
+        "time": {
+            "duration_s": float(physics["duration_s"]),
+            "output_fps": int(physics["output_fps"]),
+            "simulation_hz": int(physics["simulation_hz"]),
+            "frame_count": int(physics["frame_count"]),
+        },
+        "world": {"gravity_m_s2": [0.0, 0.0, -9.81]},
+        "objects": objects,
+        "adapter_payload": {
+            "static_support_binding": copy.deepcopy(physics["static_support_binding"]),
+            "profile": str(physics["profile"]),
+            "backend": backend,
+        },
+    }
 
 
 def _passive_pinball_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
@@ -395,67 +456,6 @@ def _passive_pinball_scene(metadata: dict[str, Any], root: Path) -> dict[str, An
             "profile": profile,
             "fixture": copy.deepcopy(physics["fixture"]),
             "quality": copy.deepcopy(physics["quality"]),
-        },
-    }
-    identity_ids = [str(identity["object_id"]) for identity in identities]
-    if len(initial_by_id) != len(physics["initial_states"]):
-        raise ValueError("billiards initial states contain duplicate object ids")
-    if set(initial_by_id) != set(identity_ids):
-        raise ValueError("billiards initial states differ from dynamic object identity")
-    resolved = _resolved_materials(metadata, identity_ids)
-    backend = _load_pinned_json(root, physics["backend_config"], "PyBullet backend")
-    dynamics = backend["billiards_rules"]["ball_dynamics"]
-    objects = []
-    for index, identity in enumerate(identities):
-        object_id = str(identity["object_id"])
-        if object_id not in initial_by_id:
-            raise ValueError(f"billiards initial state is missing: {object_id}")
-        initial = initial_by_id[object_id]
-        fallback = physics.get("runtime_material") or {
-            "mass_kg": physics["ball_mass_kg"],
-            "contact_friction": dynamics["lateral_friction"],
-            "contact_restitution": dynamics["restitution"],
-        }
-        material = _material(resolved.get(object_id, fallback))
-        objects.append(
-            {
-                "object_id": object_id,
-                "object_index": index,
-                "collision_proxy": {
-                    "type": "sphere",
-                    "size_m": [2.0 * float(physics["ball_radius_m"])] * 3,
-                },
-                "initial_state": {
-                    "position_m": _finite_vector(initial["position_m"], 3, "position"),
-                    "orientation_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
-                    "linear_velocity_m_s": _finite_vector(
-                        initial["velocity_m_s"], 3, "linear velocity"
-                    ),
-                    "angular_velocity_rad_s": [0.0, 0.0, 0.0],
-                },
-                "material": material,
-                "inertia_policy": "pybullet_from_collision_proxy_and_mass",
-            }
-        )
-    return {
-        "backend_binding": {
-            "backend_id": "pybullet_rigid",
-            "adapter_id": "billiards_v4",
-            "capability": "one_or_more_spheres_with_exact_table_support",
-            "supported_dynamic_object_counts": [1, 3],
-        },
-        "time": {
-            "duration_s": float(physics["duration_s"]),
-            "output_fps": int(physics["output_fps"]),
-            "simulation_hz": int(physics["simulation_hz"]),
-            "frame_count": int(physics["frame_count"]),
-        },
-        "world": {"gravity_m_s2": [0.0, 0.0, -9.81]},
-        "objects": objects,
-        "adapter_payload": {
-            "static_support_binding": copy.deepcopy(physics["static_support_binding"]),
-            "profile": str(physics["profile"]),
-            "backend": backend,
         },
     }
 

@@ -10,7 +10,7 @@ __pycache__/
 /cache/
 
 # Bundled applications and upstream staging
-/runtime/
+/runtime
 /external/
 
 # Generated datasets, renders, and logs

@@ -2,10 +2,49 @@ import copy
 import unittest
 from pathlib import Path
 
-from tools.resolved_simulation_scene import compile_resolved_scene
+from tools.resolved_simulation_scene import compile_resolved_scene, sha256
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 class ResolvedSimulationSceneTests(unittest.TestCase):
+    def billiards_metadata(self):
+        backend = ROOT / "configs/pybullet_backend.json"
+        return {
+            "schema_version": "physweep_billiards_scene_v4",
+            "scene_id": "billiards",
+            "physics": {
+                "duration_s": 1.0,
+                "output_fps": 24,
+                "simulation_hz": 240,
+                "frame_count": 25,
+                "backend_config": {
+                    "path": str(backend.relative_to(ROOT)),
+                    "sha256": sha256(backend),
+                },
+                "ball_radius_m": 0.028575,
+                "ball_mass_kg": 0.17,
+                "profile": "single_ball_free_roll",
+                "static_support_binding": {"support_asset_id": "pool_table"},
+                "initial_states": [
+                    {
+                        "object_id": "ball_0",
+                        "position_m": [0.0, 0.0, 1.0],
+                        "velocity_m_s": [0.5, 0.0, 0.0],
+                    }
+                ],
+            },
+            "object_identity": {
+                "objects": [{"object_id": "ball_0", "role": "dynamic"}]
+            },
+        }
+
+    def test_billiards_adapter_remains_callable(self):
+        scene = compile_resolved_scene(self.billiards_metadata(), ROOT)
+        self.assertEqual(scene["backend_binding"]["adapter_id"], "billiards_v4")
+        self.assertEqual([record["object_id"] for record in scene["objects"]], ["ball_0"])
+
     def generic_metadata(self):
         return {
             "schema_version": "physweep_pybullet_rigid_metadata_v1",

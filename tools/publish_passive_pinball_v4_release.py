@@ -161,6 +161,18 @@ def main() -> None:
         int(source_release["base_group_count"]) != 3200
         or int(source_release["sample_count"]) != 41600
         or int(source_base["sample_count"]) != 3200
+        or int(source_metadata["sample_count"]) != 41600
+        or int(source_physics["sample_count"]) != 41600
+        or int(source_physics["passed_count"]) != 41600
+        or int(source_physics["rejected_count"]) != 0
+        or int(source_physics["error_count"]) != 0
+        or validate_groups(source_metadata["records"]) != 3200
+        or any(
+            not record.get("ok")
+            or not record.get("audit_passed")
+            or record.get("failed_checks")
+            for record in source_physics["records"]
+        )
         or Counter(record["pipeline"] for record in source_base["records"])
         != EXPECTED_SOURCE_PIPELINES
     ):
@@ -301,7 +313,7 @@ def main() -> None:
             ]
         ),
         "v4_source": {
-                "path": root_relative(source_root, source_generic_path),
+            "path": root_relative(source_root, source_generic_path),
             "sha256": sha256(source_generic_path),
             "removed_group_count": 32,
         },
