@@ -59,7 +59,7 @@ them with the staged outer manifest:
   --manifest outputs/<batch>/generic/bound_manifest.json --workers 8
 .venv/bin/python tools/render_asset_proxy_manifest.py \
   --manifest outputs/<batch>/asset/asset_render_manifest.json --workers 8
-.venv/bin/python tools/render_billiards_manifest.py \
+.venv/bin/python tools/render_asset_proxy_manifest.py --renderer billiards \
   --manifest outputs/<batch>/billiards/billiards_manifest.json --workers 8
 
 .venv/bin/python tools/collect_decoupled_renders.py \

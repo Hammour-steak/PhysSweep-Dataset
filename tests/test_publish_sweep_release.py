@@ -1,15 +1,20 @@
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from publish_sweep_release import (  # noqa: E402
+    main,
     merge_base_records,
     merge_generic_samples,
     select_source_records,
@@ -20,6 +25,89 @@ from publish_sweep_release import (  # noqa: E402
 
 
 class SweepReleaseTests(unittest.TestCase):
+    def test_main_publishes_complete_release_atomically(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            records = [{
+                "parent": "base.json",
+                "kind": "base",
+                "axis": None,
+                "scene_id": "base",
+                "source_schema_version": "schema",
+            }]
+            for axis in ("mass_kg", "contact_friction", "contact_restitution"):
+                records.extend(
+                    {
+                        "parent": "base.json",
+                        "kind": "sweep",
+                        "axis": axis,
+                        "level_index": level,
+                        "target_object_id": "object_a",
+                        "target_object_index": 0,
+                        "scene_id": f"{axis}_{level}",
+                        "source_schema_version": "schema",
+                    }
+                    for level in (0, 1, 3, 4)
+                )
+            physics_records = []
+            for record in records:
+                scene_id = record["scene_id"]
+                scene_root = root / "datasets/source" / scene_id
+                metadata = scene_root / "metadata.json"
+                resolved = scene_root / "resolved.json"
+                trajectory = scene_root / "trajectory.npz"
+                audit = scene_root / "audit.json"
+                scene_root.mkdir(parents=True)
+                for path, value in (
+                    (metadata, "metadata"),
+                    (resolved, "resolved"),
+                    (trajectory, "trajectory"),
+                    (audit, "audit"),
+                ):
+                    path.write_text(value, encoding="utf-8")
+                record["path"] = str(metadata.relative_to(root))
+                record["metadata_sha256"] = sha256(metadata)
+                physics_records.append({
+                    "scene_id": scene_id,
+                    "source_schema_version": "schema",
+                    "ok": True,
+                    "audit_passed": True,
+                    "failed_checks": [],
+                    "metadata_path": str(metadata),
+                    "metadata_sha256": sha256(metadata),
+                    "resolved_scene_path": str(resolved),
+                    "resolved_scene_sha256": sha256(resolved),
+                    "trajectory_path": str(trajectory),
+                    "trajectory_sha256": sha256(trajectory),
+                    "audit_path": str(audit),
+                    "audit_sha256": sha256(audit),
+                })
+            metadata_manifest = root / "datasets/source/metadata_manifest.json"
+            physics_manifest = root / "datasets/source/physics_manifest.json"
+            metadata_manifest.write_text(
+                json.dumps({"sample_count": 13, "records": records}), encoding="utf-8"
+            )
+            physics_manifest.write_text(
+                json.dumps({"sample_count": 13, "records": physics_records}),
+                encoding="utf-8",
+            )
+            output = root / "datasets/release"
+            argv = [
+                "publish_sweep_release.py",
+                "--root", str(root),
+                "--metadata-manifest", str(metadata_manifest),
+                "--physics-manifest", str(physics_manifest),
+                "--output-dir", str(output),
+            ]
+            with patch.object(sys, "argv", argv), redirect_stdout(StringIO()):
+                main()
+            release = json.loads((output / "manifest.json").read_text())
+            self.assertEqual(release["sample_count"], 13)
+            self.assertEqual(
+                release["metadata_manifest"], "datasets/release/metadata_manifest.json"
+            )
+            self.assertFalse(any(output.parent.glob(".release.*")))
+
     def test_validate_complete_group(self) -> None:
         records = [{"parent": "base.json", "kind": "base", "axis": None}]
         for axis in ("mass_kg", "contact_friction", "contact_restitution"):
@@ -60,13 +148,14 @@ class SweepReleaseTests(unittest.TestCase):
 
     def test_merge_base_records_replaces_exact_index(self) -> None:
         base = [
-            {"index": 1, "metadata_path": "old-1.json"},
-            {"index": 2, "metadata_path": "old-2.json"},
+            {"index": 1, "metadata_path": "old-1.json", "pipeline": "generic"},
+            {"index": 2, "metadata_path": "old-2.json", "pipeline": "generic"},
         ]
         replacement = {
             "index": 2,
             "metadata_path": "new-2.json",
             "replaces_metadata_path": "old-2.json",
+            "pipeline": "generic",
         }
         self.assertEqual(
             merge_base_records(base, [replacement]),

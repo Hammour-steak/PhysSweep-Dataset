@@ -19,6 +19,20 @@ from blender_worker_environment import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+RENDERERS = {
+    "asset": (
+        "tools/render_asset_proxy_scene.py",
+        "physweep_asset_proxy_render_manifest_v1",
+        "render_manifest.json",
+        "physweep_asset_proxy_scene_v3",
+    ),
+    "billiards": (
+        "tools/render_billiards_scene.py",
+        "physweep_billiards_render_manifest_v1",
+        "billiards_render_manifest.json",
+        "physweep_billiards_scene_v4",
+    ),
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -27,7 +41,11 @@ def load_json(path: Path) -> dict[str, Any]:
 
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8"
+    )
+    temporary.replace(path)
 
 
 def sha256(path: Path) -> str:
@@ -103,6 +121,32 @@ def reusable_render_record(
     )
 
 
+def render_source_records(
+    root: Path, manifest: dict[str, Any], renderer: str
+) -> list[dict[str, Any]]:
+    source_records = manifest.get("records")
+    if source_records is None and renderer == "billiards":
+        source_records = [
+            {"metadata_path": str(value)}
+            for value in manifest["billiards_metadata_paths"]
+        ]
+    if source_records is None:
+        raise ValueError("render manifest has no records")
+    expected_schema = RENDERERS[renderer][3]
+    records = [dict(record) for record in source_records]
+    for record in records:
+        metadata_path = project_path(root, record["metadata_path"])
+        metadata_path.relative_to(root)
+        metadata = load_json(metadata_path)
+        if str(metadata["schema_version"]) != expected_schema:
+            raise ValueError("render manifest contains the wrong scene schema")
+        if "scene_id" not in record:
+            record["scene_id"] = str(metadata["scene_id"])
+        elif str(record["scene_id"]) != str(metadata["scene_id"]):
+            raise ValueError("render manifest scene id does not match metadata")
+    return records
+
+
 def worker(
     root: Path,
     blender: Path,
@@ -115,6 +159,10 @@ def worker(
 ) -> dict[str, Any]:
     metadata_path = project_path(root, record["metadata_path"])
     metadata_path.relative_to(root)
+    if record.get("metadata_sha256") and sha256(metadata_path) != str(
+        record["metadata_sha256"]
+    ):
+        raise ValueError(f"render metadata hash mismatch: {metadata_path}")
     metadata = load_json(metadata_path)
     render_output = record.get("render_output", metadata["render"])
     frame_dir = output_path(root, render_output["inspection_frame_dir"])
@@ -227,6 +275,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--blender", type=Path, default=PROJECT_ROOT / "runtime/blender-3.4.0-linux-x64/blender")
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--gpus", default="0,1,2,3,4,5,6,7")
+    parser.add_argument("--renderer", choices=tuple(RENDERERS), default="asset")
     parser.add_argument(
         "--resume",
         action="store_true",
@@ -248,16 +297,18 @@ def main() -> None:
     manifest_path = project_path(root, args.manifest)
     manifest_path.relative_to(root)
     manifest = load_json(manifest_path)
-    output = output_path(root, manifest["output_root"])
+    output = output_path(root, manifest.get("output_root", manifest_path.parent))
     gpus = [int(value) for value in args.gpus.split(",") if value.strip()]
     if not gpus:
         raise SystemExit("--gpus must contain at least one id")
-    script = root / "tools/render_asset_proxy_scene.py"
+    script_name, schema_version, result_name = RENDERERS[args.renderer][:3]
+    script = root / script_name
     blender = project_path(root, args.blender)
     blender.relative_to(root)
     selector = build_egl_device_selector(root)
     selector_path = root / str(selector["binary_path"])
     started = time.perf_counter()
+    source_records = render_source_records(root, manifest, args.renderer)
     jobs = [
         (
             root,
@@ -269,13 +320,13 @@ def main() -> None:
             selector_path,
             args.resume,
         )
-        for index, record in enumerate(manifest["records"])
+        for index, record in enumerate(source_records)
     ]
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as executor:
         records = list(executor.map(lambda values: worker(*values), jobs))
     failures = [record for record in records if not record["ok"]]
     summary = {
-        "schema_version": "physweep_asset_proxy_render_manifest_v1",
+        "schema_version": schema_version,
         "source_manifest": str(manifest_path.relative_to(root)),
         "source_manifest_sha256": sha256(manifest_path),
         "sample_count": len(records),
@@ -289,9 +340,8 @@ def main() -> None:
     result_manifest = (
         output_path(root, args.result_manifest)
         if args.result_manifest is not None
-        else output / "render_manifest.json"
+        else output / result_name
     )
-    result_manifest.parent.mkdir(parents=True, exist_ok=True)
     write_json(result_manifest, summary)
     print(json.dumps({key: value for key, value in summary.items() if key != "records"}, indent=2))
     if failures:

@@ -13,23 +13,14 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-STAGE_NAMES = (
-    "prepare_base_render_plan",
-    "prepare_sweep_render_plan",
-    "bind_generic_base_cameras",
-    "bind_generic_sweep_visuals",
-    "render_asset_bases",
-    "freeze_asset_sweep_cameras",
-    "render_asset_sweeps",
-    "render_billiards_sweeps",
-    "render_generic_sweeps",
-)
 
 
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(value, indent=2, ensure_ascii=True) + "\n")
+    temporary.write_text(
+        json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8"
+    )
     temporary.replace(path)
 
 
@@ -48,7 +39,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--workers", type=int, default=6)
     parser.add_argument("--gpus", default="4,5,7")
-    parser.add_argument("--stage", choices=STAGE_NAMES, required=True)
+    parser.add_argument("--stage", required=True)
     return parser.parse_args()
 
 
@@ -96,13 +87,15 @@ def main() -> None:
         ),
         (
             "render_billiards_sweeps",
-            [python, "tools/render_billiards_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/billiards/render_input_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus, "--resume"],
+            [python, "tools/render_asset_proxy_manifest.py", "--renderer", "billiards", "--root", str(root), "--manifest", str(output / "sweep/billiards/render_input_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus, "--resume"],
         ),
         (
             "render_generic_sweeps",
             [python, "tools/render_pybullet_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/generic/bound/bound_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus, "--resume"],
         ),
     ])
+    if args.stage not in stage_commands:
+        raise ValueError(f"unknown render stage: {args.stage}")
     command = stage_commands[args.stage]
     status: dict[str, Any] = {
         "schema_version": "physweep_release_render_status_v1",

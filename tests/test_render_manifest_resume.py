@@ -12,11 +12,10 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 from render_asset_proxy_manifest import (  # noqa: E402
     output_path,
+    render_source_records,
     reusable_render_record as reusable_asset_record,
     sha256,
 )
-from render_billiards_manifest import worker as billiards_worker  # noqa: E402
-from render_asset_proxy_manifest import worker as asset_worker  # noqa: E402
 from render_pybullet_manifest import (  # noqa: E402
     reusable_render_record as reusable_generic_record,
 )
@@ -28,8 +27,38 @@ def write_json(path: Path, value: object) -> None:
 
 
 class RenderManifestResumeTests(unittest.TestCase):
-    def test_billiards_reuses_the_shared_worker(self) -> None:
-        self.assertIs(billiards_worker, asset_worker)
+    def test_billiards_legacy_paths_are_normalized(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            metadata = root / "datasets/scene.json"
+            write_json(
+                metadata,
+                {
+                    "schema_version": "physweep_billiards_scene_v4",
+                    "scene_id": "scene",
+                },
+            )
+            records = render_source_records(
+                root,
+                {"billiards_metadata_paths": [str(metadata.relative_to(root))]},
+                "billiards",
+            )
+            self.assertEqual(records[0]["scene_id"], "scene")
+
+    def test_renderer_rejects_the_wrong_scene_schema(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            metadata = root / "datasets/scene.json"
+            write_json(
+                metadata,
+                {"schema_version": "wrong", "scene_id": "scene"},
+            )
+            with self.assertRaisesRegex(ValueError, "wrong scene schema"):
+                render_source_records(
+                    root,
+                    {"records": [{"metadata_path": str(metadata)}]},
+                    "asset",
+                )
 
     def test_output_path_rejects_non_output_targets(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

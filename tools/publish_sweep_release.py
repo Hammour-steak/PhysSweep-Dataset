@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import tempfile
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
@@ -22,7 +23,12 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, value: Any) -> None:
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=True) + "\n")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8"
+    )
+    temporary.replace(path)
 
 
 def sha256(path: Path) -> str:
@@ -118,6 +124,8 @@ def merge_base_records(
             raise ValueError(f"replacement refers to an unknown base index: {index}")
         if replacement["replaces_metadata_path"] != merged[index]["metadata_path"]:
             raise ValueError(f"replacement provenance does not match base index: {index}")
+        if replacement["pipeline"] != merged[index]["pipeline"]:
+            raise ValueError(f"replacement changes the base pipeline: {index}")
         merged[index] = replacement
     return [merged[index] for index in sorted(merged)]
 
@@ -130,7 +138,9 @@ def select_source_records(
     accepted_physics = [
         record
         for record in physics["records"]
-        if record.get("ok") and record.get("audit_passed")
+        if record.get("ok")
+        and record.get("audit_passed")
+        and not record.get("failed_checks")
     ]
     accepted_ids = {str(record["scene_id"]) for record in accepted_physics}
     selected_metadata = [
@@ -199,6 +209,10 @@ def resolve(root: Path, path: Path) -> Path:
     return path.resolve() if path.is_absolute() else (root / path).resolve()
 
 
+def root_relative(root: Path, path: Path) -> str:
+    return path.resolve().relative_to(root).as_posix()
+
+
 def main() -> None:
     args = parse_args()
     if len(args.metadata_manifest) != len(args.physics_manifest):
@@ -224,7 +238,6 @@ def main() -> None:
         raise ValueError("release output must remain under datasets")
     if output_dir.exists():
         raise FileExistsError(f"release output already exists: {output_dir}")
-    output_dir.mkdir(parents=True)
 
     metadata_records: list[dict[str, Any]] = []
     physics_records: list[dict[str, Any]] = []
@@ -236,8 +249,14 @@ def main() -> None:
         physics_path = resolve(root, physics_arg)
         metadata = load_json(metadata_path)
         physics = load_json(physics_path)
+        if int(metadata["sample_count"]) != len(metadata["records"]):
+            raise ValueError("metadata manifest sample count is inconsistent")
+        if int(physics["sample_count"]) != len(physics["records"]):
+            raise ValueError("physics manifest sample count is inconsistent")
         if any(
-            not record.get("ok") or not record["audit_passed"]
+            not record.get("ok")
+            or not record["audit_passed"]
+            or record.get("failed_checks")
             for record in physics["records"]
         ):
             raise ValueError("physics manifest contains a failed record")
@@ -249,9 +268,9 @@ def main() -> None:
         physics_records.extend(selected_physics)
         sources.append(
             {
-                "metadata_manifest": str(metadata_path.relative_to(root)),
+                "metadata_manifest": root_relative(root, metadata_path),
                 "metadata_manifest_sha256": sha256(metadata_path),
-                "physics_manifest": str(physics_path.relative_to(root)),
+                "physics_manifest": root_relative(root, physics_path),
                 "physics_manifest_sha256": sha256(physics_path),
                 "sample_count": len(selected_metadata),
             }
@@ -270,10 +289,20 @@ def main() -> None:
     if sample_count != group_count * 13:
         raise ValueError("release sample count does not match group count")
 
+    output_dir.parent.mkdir(parents=True, exist_ok=True)
+    temporary_output = tempfile.TemporaryDirectory(
+        prefix=f".{output_dir.name}.", dir=output_dir.parent
+    )
+    publish_dir = Path(temporary_output.name)
+
+    def published_relative(path: Path) -> str:
+        published = output_dir / path.relative_to(publish_dir)
+        return root_relative(root, published)
+
     metadata_records.sort(key=lambda record: (record["parent"], record["scene_id"]))
     physics_records.sort(key=lambda record: record["scene_id"])
-    metadata_output = output_dir / "metadata_manifest.json"
-    physics_output = output_dir / "physics_manifest.json"
+    metadata_output = publish_dir / "metadata_manifest.json"
+    physics_output = publish_dir / "physics_manifest.json"
     write_json(
         metadata_output,
         {
@@ -312,9 +341,9 @@ def main() -> None:
         "derived_count": sample_count - group_count,
         "axes": list(AXES),
         "levels_per_axis": 5,
-        "metadata_manifest": str(metadata_output.relative_to(root)),
+        "metadata_manifest": published_relative(metadata_output),
         "metadata_manifest_sha256": sha256(metadata_output),
-        "physics_manifest": str(physics_output.relative_to(root)),
+        "physics_manifest": published_relative(physics_output),
         "physics_manifest_sha256": sha256(physics_output),
         "validation": {
             "unique_scene_ids": True,
@@ -327,7 +356,7 @@ def main() -> None:
     if replacement_path is not None and replacement is not None:
         release.update(
             {
-                "replacement_base_manifest": str(replacement_path.relative_to(root)),
+                "replacement_base_manifest": root_relative(root, replacement_path),
                 "replacement_base_manifest_sha256": sha256(replacement_path),
                 "replacement_group_count": int(replacement["sample_count"]),
             }
@@ -353,6 +382,8 @@ def main() -> None:
             }
             slot_contract = tuple(replacement["slot_contract"])
             for record in replacement["records"]:
+                if record["pipeline"] not in {"generic_pybullet", "asset_proxy"}:
+                    raise ValueError("replacement pipeline is not publishable")
                 original = base_by_index.get(int(record["index"]))
                 if original is None or any(
                     record.get(field) != original.get(field)
@@ -368,7 +399,7 @@ def main() -> None:
             )
             if len(merged_base_records) != group_count:
                 raise ValueError("published base count does not match sweep groups")
-            base_output = output_dir / "base_manifest.json"
+            base_output = publish_dir / "base_manifest.json"
             merged_base = {
                 **base,
                 "dataset_id": f"{base['dataset_id']}_release",
@@ -384,11 +415,9 @@ def main() -> None:
                 ),
                 "records": merged_base_records,
                 "release_sources": {
-                    "base_manifest": str(base_path.relative_to(root)),
+                    "base_manifest": root_relative(root, base_path),
                     "base_manifest_sha256": sha256(base_path),
-                    "replacement_base_manifest": str(
-                        replacement_path.relative_to(root)
-                    ),
+                    "replacement_base_manifest": root_relative(root, replacement_path),
                     "replacement_base_manifest_sha256": sha256(replacement_path),
                 },
             }
@@ -411,7 +440,7 @@ def main() -> None:
                         raise ValueError(
                             f"generic release metadata hash mismatch: {metadata_path}"
                         )
-                generic_output = output_dir / "generic_manifest.json"
+                generic_output = publish_dir / "generic_manifest.json"
                 generic_release = {
                     **source_generic_manifest,
                     "dataset_id": f"{source_generic_manifest['dataset_id']}_release",
@@ -424,14 +453,14 @@ def main() -> None:
                     ),
                     "samples": generic_samples,
                     "release_sources": {
-                        "generic_manifest": str(
-                            source_generic_manifest_path.relative_to(root)
+                        "generic_manifest": root_relative(
+                            root, source_generic_manifest_path
                         ),
                         "generic_manifest_sha256": sha256(
                             source_generic_manifest_path
                         ),
-                        "replacement_base_manifest": str(
-                            replacement_path.relative_to(root)
+                        "replacement_base_manifest": root_relative(
+                            root, replacement_path
                         ),
                         "replacement_base_manifest_sha256": sha256(replacement_path),
                     },
@@ -440,16 +469,14 @@ def main() -> None:
                 acceptance.update(
                     {
                         "camera_replacement_count": len(generic_replacements),
-                        "camera_replacement_manifest_path": str(
-                            replacement_path.relative_to(root)
+                        "camera_replacement_manifest_path": root_relative(
+                            root, replacement_path
                         ),
                     }
                 )
                 generic_release["acceptance"] = acceptance
                 write_json(generic_output, generic_release)
-                merged_base["generic_manifest_path"] = str(
-                    generic_output.relative_to(root)
-                )
+                merged_base["generic_manifest_path"] = published_relative(generic_output)
             source_asset_manifest_path = resolve(
                 root, Path(base["asset_proxy_manifest_path"])
             )
@@ -476,36 +503,46 @@ def main() -> None:
                     or int(child_manifest["passed_count"]) != 1
                 ):
                     raise ValueError("replacement asset child manifest is invalid")
+                child_record = child_manifest["records"][0]
+                if (
+                    resolve(root, Path(child_record["metadata_path"]))
+                    != metadata_path
+                    or str(child_record["scene_id"])
+                    != str(record["child_scene_id"])
+                    or not child_record.get("audit_passed")
+                    or child_record.get("failed_checks")
+                ):
+                    raise ValueError("replacement asset child provenance mismatch")
                 asset_records.append(
                     {
-                        **child_manifest["records"][0],
+                        **child_record,
                         "matrix_scene_id": record["scene_id"],
                     }
                 )
             asset_records.sort(key=lambda record: record["matrix_scene_id"])
-            asset_output = output_dir / "asset_proxy_manifest.json"
+            asset_output = publish_dir / "asset_proxy_manifest.json"
             write_json(
                 asset_output,
                 {
                     **source_asset_manifest,
                     "dataset_id": f"{source_asset_manifest['dataset_id']}_release",
-                    "output_root": str(output_dir.relative_to(root)),
+                    "output_root": root_relative(root, output_dir),
                     "sample_count": len(asset_records),
                     "passed_count": len(asset_records),
                     "records": asset_records,
                 },
             )
-            merged_base["asset_proxy_manifest_path"] = str(
-                asset_output.relative_to(root)
-            )
+            merged_base["asset_proxy_manifest_path"] = published_relative(asset_output)
             write_json(base_output, merged_base)
             release.update(
                 {
-                    "base_manifest": str(base_output.relative_to(root)),
+                    "base_manifest": published_relative(base_output),
                     "base_manifest_sha256": sha256(base_output),
                 }
             )
-    write_json(output_dir / "manifest.json", release)
+    write_json(publish_dir / "manifest.json", release)
+    publish_dir.replace(output_dir)
+    temporary_output.cleanup()
     print(f"release manifest: {output_dir / 'manifest.json'}")
     print(f"groups={group_count} samples={sample_count}")
 

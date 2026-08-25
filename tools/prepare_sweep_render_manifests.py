@@ -27,9 +27,11 @@ def load_json(path: Path) -> dict[str, Any]:
 
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
         json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8"
     )
+    temporary.replace(path)
 
 
 def sha256(path: Path) -> str:
@@ -70,6 +72,8 @@ def dispatched_paths(root: Path, physics: dict[str, Any]) -> dict[str, str]:
     if sha256(audit) != str(physics["audit_sha256"]):
         raise ValueError("audit hash does not match the physics manifest")
     simulation = load_json(record)
+    if str(simulation["scene_id"]) != str(physics["scene_id"]):
+        raise ValueError("simulation record scene id does not match physics manifest")
     for path_key, hash_key, expected_path in (
         ("metadata_path", "metadata_sha256", project_path(root, physics["metadata_path"])),
         ("trajectory_path", "trajectory_sha256", trajectory),
@@ -117,9 +121,16 @@ def main() -> None:
         raise ValueError("release physics manifest hash mismatch")
     metadata_manifest = load_json(metadata_path)
     physics_manifest = load_json(physics_path)
+    if int(metadata_manifest["sample_count"]) != len(metadata_manifest["records"]):
+        raise ValueError("release metadata sample count is inconsistent")
+    if int(physics_manifest["sample_count"]) != len(physics_manifest["records"]):
+        raise ValueError("release physics sample count is inconsistent")
     staged = load_json(staged_path)
     selected_parents = {str(record["metadata_path"]) for record in staged["records"]}
     selected = select_complete_groups(metadata_manifest["records"], selected_parents)
+    selected_scene_ids = [str(record["scene_id"]) for record in selected]
+    if len(selected_scene_ids) != len(set(selected_scene_ids)):
+        raise ValueError("selected sweep records contain duplicate scene ids")
     physics_by_scene = {
         str(record["scene_id"]): record for record in physics_manifest["records"]
     }
@@ -142,6 +153,10 @@ def main() -> None:
             or physics.get("failed_checks")
         ):
             raise ValueError(f"selected physics record did not pass: {record['scene_id']}")
+        if str(physics["source_schema_version"]) != str(
+            record["source_schema_version"]
+        ):
+            raise ValueError(f"selected source schema mismatch: {scene_id}")
         source_path = project_path(root, record["path"])
         if (
             project_path(root, physics["metadata_path"]) != source_path
@@ -194,6 +209,7 @@ def main() -> None:
             render_record = {
                 "scene_id": scene_id,
                 "metadata_path": relative(root, bound_path),
+                "metadata_sha256": sha256(bound_path),
                 "render_output": {
                     "video_path": relative(
                         root, output_root / branch / "videos" / f"{scene_id}.mp4"

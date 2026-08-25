@@ -37,6 +37,7 @@ class PrepareSweepRenderManifestTests(unittest.TestCase):
             trajectory.write_bytes(b"trajectory")
             audit.write_text("audit", encoding="utf-8")
             record = {
+                "scene_id": "scene",
                 "metadata_path": str(metadata),
                 "metadata_sha256": sha256(metadata),
                 "trajectory_path": str(trajectory),

@@ -163,8 +163,12 @@ def main() -> None:
         raise ValueError("candidate physics metadata path does not match metadata")
     if str(physics_record["metadata_sha256"]) != str(sample["metadata_sha256"]):
         raise ValueError("candidate physics metadata hash does not match metadata")
-    if int(physics.get("passed_count", 0)) != 1:
-        raise ValueError("candidate physics manifest does not declare one pass")
+    if (
+        int(physics.get("passed_count", 0)) != 1
+        or int(physics.get("rejected_count", 0)) != 0
+        or int(physics.get("error_count", 0)) != 0
+    ):
+        raise ValueError("candidate physics manifest does not declare one clean pass")
     trajectory_path = resolve(root, physics_record["trajectory_path"])
     simulation_record_path = (
         resolve(root, sample["simulation_record_path"])
@@ -172,16 +176,29 @@ def main() -> None:
         else trajectory_path.with_name("simulation_record.json")
     )
     audit_path = resolve(root, physics_record["audit_path"])
-    for artifact in (simulation_record_path, trajectory_path, audit_path):
+    resolved_scene_path = resolve(root, physics_record["resolved_scene_path"])
+    for artifact in (
+        simulation_record_path,
+        resolved_scene_path,
+        trajectory_path,
+        audit_path,
+    ):
         if not artifact.is_file():
             raise FileNotFoundError(f"candidate physics artifact is missing: {artifact}")
     if sha256(trajectory_path) != str(physics_record["trajectory_sha256"]):
         raise ValueError("candidate trajectory hash mismatch")
     if sha256(audit_path) != str(physics_record["audit_sha256"]):
         raise ValueError("candidate physics audit hash mismatch")
+    if sha256(resolved_scene_path) != str(physics_record["resolved_scene_sha256"]):
+        raise ValueError("candidate resolved scene hash mismatch")
     simulation_record = load_json(simulation_record_path)
     simulation_bindings = (
         ("metadata", metadata_path, sample["metadata_sha256"]),
+        (
+            "resolved_scene",
+            resolved_scene_path,
+            physics_record["resolved_scene_sha256"],
+        ),
         ("trajectory", trajectory_path, physics_record["trajectory_sha256"]),
         ("audit", audit_path, physics_record["audit_sha256"]),
     )
@@ -205,6 +222,8 @@ def main() -> None:
         raise ValueError("camera audit used a different visual binder")
     camera_rules_path = resolve(root, camera["camera_rules"]["path"])
     binder_path = resolve(root, camera["implementation"]["path"])
+    camera_rules_path.relative_to(root)
+    binder_path.relative_to(root)
     if camera_rules_path != resolve(root, candidate["rules_path"]):
         raise ValueError("camera audit rules path does not match the candidate")
     if sha256(camera_rules_path) != str(camera["camera_rules"]["sha256"]):
@@ -224,6 +243,8 @@ def main() -> None:
     bound_metadata = load_json(camera_metadata_path)
     if str(bound_metadata["scene_id"]) != str(sample["scene_id"]):
         raise ValueError("bound camera metadata scene id does not match candidate")
+    if bound_metadata["visualization"]["camera"]["diagnostics"] != diagnostics:
+        raise ValueError("camera diagnostics do not match bound metadata")
     bound_artifacts = (
         ("source metadata", bound_metadata["source_metadata"], metadata_path),
         ("trajectory", bound_metadata["trajectory"], trajectory_path),
