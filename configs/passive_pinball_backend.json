@@ -4,11 +4,11 @@
   "profiles": {
     "dense_pinfield_descent": {
       "description": "One ball descends through a staggered passive peg field into a catch bin.",
-      "initial_x_offsets_m": [-0.045, 0.0, 0.045]
+      "initial_x_offsets_m": [-0.045, 0.045]
     },
     "offset_pinfield_descent": {
       "description": "One ball starts off center and descends through the same passive peg field into a catch bin.",
-      "initial_x_offsets_m": [-0.135, -0.09, 0.09, 0.135]
+      "initial_x_offsets_m": [-0.13, -0.1, 0.1, 0.13]
     }
   },
   "dynamic_object": {

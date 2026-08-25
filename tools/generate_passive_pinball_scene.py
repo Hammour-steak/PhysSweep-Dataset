@@ -237,6 +237,33 @@ def build_fixture(config: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def validate_profile_offsets(
+    config: dict[str, Any], fixture: dict[str, Any]
+) -> None:
+    source = config["fixture"]
+    top = np.asarray(source["top_center_m"], dtype=np.float64)
+    right = np.asarray(fixture["frame"]["right"], dtype=np.float64)
+    peg_x = [
+        float((np.asarray(record["position_m"], dtype=np.float64) - top) @ right)
+        for record in fixture["colliders"]
+        if record["role"] == "peg"
+    ]
+    for profile, rules in config["profiles"].items():
+        offsets = [float(value) for value in rules["initial_x_offsets_m"]]
+        if not offsets or len(offsets) != len(set(offsets)):
+            raise ValueError(f"passive-pinball profile has invalid offsets: {profile}")
+        aligned = [
+            value
+            for value in offsets
+            if any(abs(value - peg) <= 1.0e-9 for peg in peg_x)
+        ]
+        if aligned:
+            raise ValueError(
+                f"passive-pinball profile has symmetry-degenerate offsets: "
+                f"{profile}={aligned}"
+            )
+
+
 def initial_state(seed: int, profile: str, config: dict[str, Any], fixture: dict[str, Any]) -> dict[str, Any]:
     try:
         offsets = config["profiles"][profile]["initial_x_offsets_m"]
@@ -568,6 +595,7 @@ def build_metadata(
     if profile not in config["profiles"]:
         raise ValueError(f"unsupported passive-pinball profile: {profile}")
     fixture = build_fixture(config)
+    validate_profile_offsets(config, fixture)
     dynamic = copy.deepcopy(config["dynamic_object"])
     initial = initial_state(seed, profile, config, fixture)
     dynamic_record = {

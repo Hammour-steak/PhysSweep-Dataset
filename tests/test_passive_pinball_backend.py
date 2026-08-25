@@ -11,6 +11,7 @@ from tools.generate_passive_pinball_scene import (
     build_metadata,
     initial_state,
     passive_pinball_camera,
+    validate_profile_offsets,
 )
 from tools.resolved_simulation_scene import compile_resolved_scene
 from tools.specialized_backend_registry import (
@@ -60,6 +61,7 @@ class PassivePinballBackendTests(unittest.TestCase):
             sum(record["role"] == "peg" for record in fixture["colliders"]),
             40,
         )
+        validate_profile_offsets(self.config, fixture)
 
     def test_initial_state_and_camera_are_seed_deterministic(self) -> None:
         fixture = build_fixture(self.config)
