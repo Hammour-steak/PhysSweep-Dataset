@@ -52,7 +52,10 @@ def root_relative(root: Path, path: Path) -> str:
 
 
 def stable_seed(namespace: str) -> int:
-    value = int.from_bytes(hashlib.sha256(namespace.encode("utf-8")).digest()[:8])
+    value = int.from_bytes(
+        hashlib.sha256(namespace.encode("utf-8")).digest()[:8],
+        byteorder="big",
+    )
     return value % (2**31 - 2) + 1
 
 
