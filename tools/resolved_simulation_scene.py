@@ -15,7 +15,13 @@ RESOLVED_SCENE_VERSION = "physweep_resolved_simulation_scene_v1"
 GENERIC_SCHEMA = "physweep_pybullet_rigid_metadata_v1"
 ASSET_SCHEMA = "physweep_asset_proxy_scene_v3"
 BILLIARDS_SCHEMA = "physweep_billiards_scene_v4"
-SUPPORTED_SCHEMAS = {GENERIC_SCHEMA, ASSET_SCHEMA, BILLIARDS_SCHEMA}
+PASSIVE_PINBALL_SCHEMA = "physweep_passive_pinball_scene_v1"
+SUPPORTED_SCHEMAS = {
+    GENERIC_SCHEMA,
+    ASSET_SCHEMA,
+    BILLIARDS_SCHEMA,
+    PASSIVE_PINBALL_SCHEMA,
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -324,6 +330,73 @@ def _billiards_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
     initial_by_id = {
         str(record["object_id"]): record for record in physics["initial_states"]
     }
+
+
+def _passive_pinball_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
+    identities = _identity_objects(metadata)
+    simulation = metadata["simulation"]
+    source_objects = simulation["objects"]
+    if len(source_objects) != 1 or len(identities) != 1:
+        raise ValueError("passive pinball requires exactly one dynamic object")
+    source = source_objects[0]
+    object_id = str(source["object_id"])
+    if object_id != str(identities[0]["object_id"]):
+        raise ValueError("passive-pinball object identity differs from simulation")
+    proxy = source["collision_proxy"]
+    if proxy.get("type") != "sphere" or float(proxy.get("radius_m", 0.0)) <= 0.0:
+        raise ValueError("passive-pinball dynamic collision proxy must be a sphere")
+    physics = metadata["physics"]
+    backend = _load_pinned_json(
+        root, physics["backend_config"], "passive-pinball backend"
+    )
+    if backend.get("schema_version") != "physweep_passive_pinball_backend_v1":
+        raise ValueError("unsupported passive-pinball backend config")
+    profile = str(physics["profile"])
+    if profile != str(metadata["semantics"]["profile"]):
+        raise ValueError("passive-pinball physics and semantic profiles differ")
+    if profile not in backend["profiles"]:
+        raise ValueError(f"undeclared passive-pinball profile: {profile}")
+    resolved = _resolved_materials(metadata, [object_id])
+    material = _material(resolved.get(object_id, source["material"]))
+    initial = source["initial_state"]
+    return {
+        "backend_binding": {
+            "backend_id": "pybullet_rigid",
+            "adapter_id": "passive_pinball_v1",
+            "capability": "one_sphere_with_exact_passive_pinfield_fixture",
+            "supported_dynamic_object_counts": [1],
+        },
+        "time": copy.deepcopy(simulation["time"]),
+        "world": copy.deepcopy(simulation["world"]),
+        "objects": [
+            {
+                "object_id": object_id,
+                "object_index": 0,
+                "collision_proxy": copy.deepcopy(proxy),
+                "initial_state": {
+                    "position_m": _finite_vector(
+                        initial["position_m"], 3, "position"
+                    ),
+                    "orientation_quaternion_xyzw": _finite_quaternion(
+                        initial["orientation_quaternion_xyzw"], "orientation"
+                    ),
+                    "linear_velocity_m_s": _finite_vector(
+                        initial["linear_velocity_m_s"], 3, "linear velocity"
+                    ),
+                    "angular_velocity_rad_s": _finite_vector(
+                        initial["angular_velocity_rad_s"], 3, "angular velocity"
+                    ),
+                },
+                "material": material,
+                "inertia_policy": "pybullet_from_collision_proxy_and_mass",
+            }
+        ],
+        "adapter_payload": {
+            "profile": profile,
+            "fixture": copy.deepcopy(physics["fixture"]),
+            "quality": copy.deepcopy(physics["quality"]),
+        },
+    }
     identity_ids = [str(identity["object_id"]) for identity in identities]
     if len(initial_by_id) != len(physics["initial_states"]):
         raise ValueError("billiards initial states contain duplicate object ids")
@@ -398,6 +471,7 @@ def compile_resolved_scene(
         GENERIC_SCHEMA: _generic_scene,
         ASSET_SCHEMA: _asset_scene,
         BILLIARDS_SCHEMA: _billiards_scene,
+        PASSIVE_PINBALL_SCHEMA: _passive_pinball_scene,
     }[schema]
     compiled = compiler(metadata, root)
     scene = {

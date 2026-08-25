@@ -12,6 +12,11 @@ import time
 from pathlib import Path
 from typing import Any
 
+try:
+    from specialized_backend_registry import specialized_by_pipeline
+except ModuleNotFoundError:
+    from tools.specialized_backend_registry import specialized_by_pipeline
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -121,14 +126,30 @@ def main() -> None:
             [python, "tools/render_asset_proxy_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/asset/derived_render_input_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus, "--resume", "--result-manifest", str(output / "sweep/asset/derived_render_manifest.json")],
         ),
         (
-            "render_billiards_sweeps",
-            [python, "tools/render_asset_proxy_manifest.py", "--renderer", "billiards", "--root", str(root), "--manifest", str(output / "sweep/billiards/render_input_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus, "--resume"],
-        ),
-        (
             "render_generic_sweeps",
             [python, "tools/render_pybullet_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/generic/bound/bound_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus, "--resume"],
         ),
     ])
+    for record in specialized_by_pipeline(root).values():
+        branch = str(record["sweep_branch"])
+        renderer = str(record["renderer_id"])
+        if renderer == "asset":
+            continue
+        stage_commands[f"render_{branch}_sweeps"] = [
+            python,
+            "tools/render_asset_proxy_manifest.py",
+            "--renderer",
+            renderer,
+            "--root",
+            str(root),
+            "--manifest",
+            str(output / f"sweep/{branch}/render_input_manifest.json"),
+            "--workers",
+            str(args.workers),
+            "--gpus",
+            args.gpus,
+            "--resume",
+        ]
     if args.stage not in stage_commands:
         raise ValueError(f"unknown render stage: {args.stage}")
     command = stage_commands[args.stage]

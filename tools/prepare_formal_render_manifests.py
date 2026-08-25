@@ -13,6 +13,11 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+try:
+    from specialized_backend_registry import specialized_by_pipeline
+except ModuleNotFoundError:
+    from tools.specialized_backend_registry import specialized_by_pipeline
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -46,9 +51,14 @@ def project_path(root: Path, value: str | Path) -> Path:
     return (path if path.is_absolute() else root / path).resolve()
 
 
-def validated_source_records(manifest: dict[str, Any]) -> list[dict[str, Any]]:
-    if manifest.get("schema_version") != "physweep_one_object_decoupled_manifest_v3":
-        raise ValueError("formal render preparation requires a v3 decoupled manifest")
+def validated_source_records(
+    manifest: dict[str, Any], expected_pipelines: set[str] | None = None
+) -> list[dict[str, Any]]:
+    if manifest.get("schema_version") not in {
+        "physweep_one_object_decoupled_manifest_v3",
+        "physweep_one_object_decoupled_manifest_v4",
+    }:
+        raise ValueError("formal render preparation requires a v3 or v4 manifest")
     records = list(manifest["records"])
     if int(manifest["sample_count"]) != len(records):
         raise ValueError("source manifest sample count is inconsistent")
@@ -57,9 +67,17 @@ def validated_source_records(manifest: dict[str, Any]) -> list[dict[str, Any]]:
     if len(scene_ids) != len(set(scene_ids)) or len(indices) != len(set(indices)):
         raise ValueError("source manifest contains duplicate scene ids or indices")
     pipelines = {str(record["pipeline"]) for record in records}
-    expected = {"generic_pybullet", "asset_proxy", "billiards"}
-    if not pipelines <= expected:
-        raise ValueError(f"source manifest contains unknown pipelines: {pipelines - expected}")
+    expected_pipelines = expected_pipelines or {
+        "generic_pybullet",
+        "asset_proxy",
+        "billiards",
+        "passive_pinball",
+    }
+    if not pipelines <= expected_pipelines:
+        raise ValueError(
+            f"source manifest contains unknown pipelines: "
+            f"{pipelines - expected_pipelines}"
+        )
     return records
 
 
@@ -405,7 +423,9 @@ def main() -> None:
     source_manifest_path = project_path(root, args.manifest)
     source_manifest_path.relative_to(root / "datasets")
     source_manifest = load_json(source_manifest_path)
-    validated_source_records(source_manifest)
+    specialized = specialized_by_pipeline(root)
+    pipeline_order = ["generic_pybullet", *specialized]
+    validated_source_records(source_manifest, set(pipeline_order))
     output_root = project_path(root, args.output_root)
     if (root / "outputs").resolve() not in output_root.parents:
         raise ValueError("formal render output must remain under root/outputs")
@@ -423,7 +443,7 @@ def main() -> None:
     )
     selected_by_pipeline = {
         pipeline: [record for record in records if record["pipeline"] == pipeline]
-        for pipeline in ("generic_pybullet", "asset_proxy", "billiards")
+        for pipeline in pipeline_order
     }
 
     source_generic_path = project_path(root, source_manifest["generic_manifest_path"])
@@ -499,21 +519,32 @@ def main() -> None:
     asset_manifest["records"] = staged_asset_records
     asset_manifest_path = asset_root / "asset_render_manifest.json"
 
-    billiards_root = output_root / "billiards"
-    billiards_metadata_paths = []
-    billiards_records = []
-    for outer_record in selected_by_pipeline["billiards"]:
-        staged_record = stage_render_record(root, outer_record, billiards_root)
-        billiards_records.append(staged_record)
-        billiards_metadata_paths.append(str(staged_record["metadata_path"]))
-    billiards_manifest = {
-        "schema_version": "physweep_billiards_staged_manifest_v1",
-        "dataset_id": f"{source_manifest['dataset_id']}__{args.selection}",
-        "source_manifest": str(source_manifest_path),
-        "billiards_metadata_paths": billiards_metadata_paths,
-        "records": billiards_records,
-    }
-    billiards_manifest_path = billiards_root / "billiards_manifest.json"
+    staged_specialized: dict[str, tuple[Path, dict[str, Any], list[str]]] = {}
+    for pipeline, backend in specialized.items():
+        if pipeline == "asset_proxy":
+            continue
+        branch = str(backend["sweep_branch"])
+        branch_root = output_root / branch
+        branch_records = [
+            stage_render_record(root, outer_record, branch_root)
+            for outer_record in selected_by_pipeline[pipeline]
+        ]
+        metadata_paths = [str(record["metadata_path"]) for record in branch_records]
+        branch_manifest = {
+            "schema_version": f"physweep_{branch}_staged_manifest_v1",
+            "dataset_id": f"{source_manifest['dataset_id']}__{args.selection}",
+            "source_manifest": str(source_manifest_path),
+            f"{branch}_metadata_paths": metadata_paths,
+            "output_root": root_relative(root, branch_root),
+            "sample_count": len(branch_records),
+            "records": branch_records,
+        }
+        manifest_path = branch_root / f"{branch}_manifest.json"
+        staged_specialized[pipeline] = (
+            manifest_path,
+            branch_manifest,
+            metadata_paths,
+        )
 
     staged_outer = copy.deepcopy(source_manifest)
     staged_outer["dataset_id"] = f"{source_manifest['dataset_id']}__{args.selection}"
@@ -522,7 +553,11 @@ def main() -> None:
     update_counts(staged_outer, records)
     staged_outer["generic_manifest_path"] = root_relative(root, generic_source_path)
     staged_outer["asset_proxy_manifest_path"] = root_relative(root, asset_manifest_path)
-    staged_outer["billiards_metadata_paths"] = billiards_metadata_paths
+    for pipeline, backend in specialized.items():
+        if pipeline == "asset_proxy":
+            continue
+        branch = str(backend["sweep_branch"])
+        staged_outer[f"{branch}_metadata_paths"] = staged_specialized[pipeline][2]
     outer_manifest_path = output_root / "staged_manifest.json"
 
     plan = {
@@ -539,10 +574,18 @@ def main() -> None:
         "generic_render_manifest": str(output_root / "generic" / "render_manifest.json"),
         "asset_render_input_manifest": str(asset_manifest_path),
         "asset_render_manifest": str(asset_root / "render_manifest.json"),
-        "billiards_render_input_manifest": str(billiards_manifest_path),
-        "billiards_render_manifest": str(billiards_root / "billiards_render_manifest.json"),
         "collected_output": str(output_root / "collected"),
     }
+    for pipeline, backend in specialized.items():
+        if pipeline == "asset_proxy":
+            continue
+        branch = str(backend["sweep_branch"])
+        plan[f"{branch}_render_input_manifest"] = str(
+            staged_specialized[pipeline][0]
+        )
+        plan[f"{branch}_render_manifest"] = str(
+            output_root / branch / str(backend["render_manifest_name"])
+        )
     if output_root.exists():
         if not args.overwrite:
             raise SystemExit(f"output exists; pass --overwrite: {output_root}")
@@ -550,7 +593,8 @@ def main() -> None:
     output_root.mkdir(parents=True)
     write_json(generic_source_path, generic_source)
     write_json(asset_manifest_path, asset_manifest)
-    write_json(billiards_manifest_path, billiards_manifest)
+    for manifest_path, manifest, _metadata_paths in staged_specialized.values():
+        write_json(manifest_path, manifest)
     write_json(outer_manifest_path, staged_outer)
     write_json(output_root / "render_plan.json", plan)
     print(json.dumps(plan, indent=2, ensure_ascii=True))

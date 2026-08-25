@@ -76,8 +76,9 @@ def _identity_objects(metadata: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def _dynamic_objects(metadata: dict[str, Any]) -> list[dict[str, Any]]:
-    if _schema(metadata) == "physweep_pybullet_rigid_metadata_v1":
-        return _objects(metadata)
+    objects = _objects(metadata)
+    if objects:
+        return objects
     return _identity_objects(metadata)
 
 
@@ -133,8 +134,9 @@ def _runtime_material(
     object_index: int,
 ) -> dict[str, float]:
     schema = _schema(metadata)
-    if schema == "physweep_pybullet_rigid_metadata_v1":
-        material = _objects(metadata)[object_index].get("material", {})
+    objects = _objects(metadata)
+    if objects:
+        material = objects[object_index].get("material", {})
         return {
             "mass_kg": float(material["mass_kg"]),
             "contact_friction": float(material["contact_friction"]),
@@ -169,7 +171,8 @@ def _set_runtime_material(
     material: dict[str, float],
 ) -> str:
     schema = _schema(metadata)
-    if schema == "physweep_pybullet_rigid_metadata_v1":
+    objects = _objects(metadata)
+    if objects:
         obj = _objects(metadata)[object_index]
         obj["material"].update(material)
         return f"simulation.objects[{object_index}].material"
@@ -253,6 +256,11 @@ def _mass_bounds(
     registry: dict[str, Any],
     object_index: int,
 ) -> list[float] | None:
+    objects = _objects(metadata)
+    if objects:
+        bounds = objects[object_index].get("material", {}).get("mass_range_kg")
+        if bounds and len(bounds) == 2:
+            return [float(bounds[0]), float(bounds[1])]
     for asset_id in _record_ids(metadata, object_index):
         profile = profiles.get(asset_id)
         if profile:
@@ -551,12 +559,17 @@ def _sweep_values(
     return values
 
 
-def validate_base(metadata: dict[str, Any], max_objects: int = 3) -> None:
+def validate_base(
+    metadata: dict[str, Any],
+    max_objects: int = 3,
+    supported_schemas: set[str] | None = None,
+) -> None:
     schema = _schema(metadata)
-    supported = {
+    supported = supported_schemas or {
         "physweep_pybullet_rigid_metadata_v1",
         "physweep_asset_proxy_scene_v3",
         "physweep_billiards_scene_v4",
+        "physweep_passive_pinball_scene_v1",
     }
     if schema not in supported:
         raise ValueError(f"unsupported base metadata schema: {schema!r}")
@@ -574,7 +587,7 @@ def validate_base(metadata: dict[str, Any], max_objects: int = 3) -> None:
     identifiers = [_object_id(obj, index) for index, obj in enumerate(objects)]
     if len(set(identifiers)) != len(identifiers):
         raise ValueError("dynamic object identifiers must be unique")
-    if schema == "physweep_pybullet_rigid_metadata_v1":
+    if _objects(metadata):
         for obj in objects:
             if obj.get("body_model") != "rigid_body":
                 raise ValueError("the active rigid sweep supports rigid_body records only")
@@ -599,7 +612,11 @@ def derive_one(
     target_object_index: int = 0,
 ) -> dict[str, Any]:
     max_objects = int(config.get("max_dynamic_objects", 3))
-    validate_base(base, max_objects=max_objects)
+    validate_base(
+        base,
+        max_objects=max_objects,
+        supported_schemas={str(value) for value in config["base_schema_versions"]},
+    )
     objects = _dynamic_objects(base)
     if target_object_index < 0 or target_object_index >= len(objects):
         raise IndexError(f"invalid target object index: {target_object_index}")

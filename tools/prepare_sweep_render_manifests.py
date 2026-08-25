@@ -12,13 +12,23 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+try:
+    from specialized_backend_registry import specialized_by_schema
+except ModuleNotFoundError:
+    from tools.specialized_backend_registry import specialized_by_schema
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-SCHEMA_BRANCH = {
-    "physweep_pybullet_rigid_metadata_v1": "generic",
-    "physweep_asset_proxy_scene_v3": "asset",
-    "physweep_billiards_scene_v4": "billiards",
-}
+
+
+def schema_branches(root: Path) -> dict[str, str]:
+    return {
+        "physweep_pybullet_rigid_metadata_v1": "generic",
+        **{
+            schema: record["sweep_branch"]
+            for schema, record in specialized_by_schema(root).items()
+        },
+    }
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -136,11 +146,12 @@ def main() -> None:
     }
     if len(physics_by_scene) != len(physics_manifest["records"]):
         raise ValueError("release physics manifest contains duplicate scene ids")
+    branch_by_schema = schema_branches(root)
 
     branches: dict[
         str, list[tuple[dict[str, Any], dict[str, Any], dict[str, str]]]
     ] = {
-        name: [] for name in SCHEMA_BRANCH.values()
+        name: [] for name in branch_by_schema.values()
     }
     for record in selected:
         scene_id = str(record["scene_id"])
@@ -164,7 +175,7 @@ def main() -> None:
             or str(physics["metadata_sha256"]) != str(record["metadata_sha256"])
         ):
             raise ValueError(f"selected metadata provenance mismatch: {scene_id}")
-        branch = SCHEMA_BRANCH.get(str(record["source_schema_version"]))
+        branch = branch_by_schema.get(str(record["source_schema_version"]))
         if branch is None:
             raise ValueError(f"unsupported render schema: {record['source_schema_version']}")
         branches[branch].append((record, physics, dispatched_paths(root, physics)))
@@ -189,7 +200,7 @@ def main() -> None:
     }
     write_json(output_root / "generic" / "physics_manifest.json", generic_manifest)
 
-    for branch in ("asset", "billiards"):
+    for branch in sorted(set(branches) - {"generic"}):
         render_records = []
         partitioned_records: dict[str, list[dict[str, Any]]] = {
             "base": [],

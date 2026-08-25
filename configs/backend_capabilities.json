@@ -85,6 +85,16 @@
         "three_ball_collision"
       ],
       "pocket_sink_supported": false
+    },
+    "passive_pinball": {
+      "dynamic_body_count": 1,
+      "body_model": "rigid_sphere",
+      "fixture_model": "exact_analytic_static_compound",
+      "profiles": [
+        "dense_pinfield_descent",
+        "offset_pinfield_descent"
+      ],
+      "active_mechanisms_supported": false
     }
   },
   "unsupported": [

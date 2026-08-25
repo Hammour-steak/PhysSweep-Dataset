@@ -30,6 +30,18 @@
         "three_ball_collision"
       ],
       "pocket_sink_supported": false
+    },
+    "passive_pinball_single_ball": {
+      "support_category": "passive_pinfield_fixture",
+      "dynamic_object_count": 1,
+      "dynamic_semantics": [
+        "pinball"
+      ],
+      "profiles": [
+        "dense_pinfield_descent",
+        "offset_pinfield_descent"
+      ],
+      "active_mechanisms_supported": false
     }
   }
 }

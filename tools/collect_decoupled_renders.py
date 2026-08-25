@@ -108,6 +108,7 @@ def compact_render_provenance(rendered: dict[str, Any]) -> dict[str, Any]:
         "video_encoding",
         "render_scope",
         "render_output_overridden",
+        "instance_mask_output",
         "wall_time_s",
     )
     return {field: rendered[field] for field in fields if field in rendered}
@@ -122,12 +123,16 @@ def collect(
     billiards_render_manifest_path: Path,
     output: Path,
     overwrite: bool,
+    specialized_render_manifest_paths: dict[str, Path] | None = None,
 ) -> dict[str, Any]:
     root = root.resolve()
     manifest_path = manifest_path.resolve()
     manifest = load_json(manifest_path)
-    if manifest.get("schema_version") != "physweep_one_object_decoupled_manifest_v3":
-        raise ValueError("collector requires a v3 decoupled staged manifest")
+    if manifest.get("schema_version") not in {
+        "physweep_one_object_decoupled_manifest_v3",
+        "physweep_one_object_decoupled_manifest_v4",
+    }:
+        raise ValueError("collector requires a v3 or v4 decoupled staged manifest")
     source_manifest_value = manifest.get("source_manifest")
     if not source_manifest_value:
         raise ValueError(
@@ -143,6 +148,17 @@ def collect(
         "asset_proxy": asset_render_manifest_path.resolve(),
         "billiards": billiards_render_manifest_path.resolve(),
     }
+    for pipeline, path in (specialized_render_manifest_paths or {}).items():
+        if pipeline in branch_paths:
+            raise ValueError(f"duplicate render manifest pipeline: {pipeline}")
+        branch_paths[str(pipeline)] = path.resolve()
+    required_pipelines = {str(record["pipeline"]) for record in manifest["records"]}
+    if not required_pipelines <= set(branch_paths):
+        raise ValueError(
+            "render manifest pipelines differ from staged source: "
+            f"missing={sorted(required_pipelines - set(branch_paths))}, "
+            f"available={sorted(branch_paths)}"
+        )
     branch_manifests: dict[str, dict[str, Any]] = {}
     branches: dict[str, dict[str, dict[str, Any]]] = {}
     for pipeline, path in branch_paths.items():
@@ -179,7 +195,7 @@ def collect(
             elif pipeline == "asset_proxy":
                 child_scene_id = str(outer["child_scene_id"])
                 suffix = child_scene_id
-            elif pipeline == "billiards":
+            elif pipeline in branches:
                 child_scene_id = str(outer["scene_id"])
                 suffix = str(outer["profile"])
             else:
@@ -280,8 +296,13 @@ def collect(
                     ),
                     "render_provenance": compact_render_provenance(rendered),
                     "render_worker": {
-                        "gpu": int(envelope["gpu"]),
+                        "gpu": (
+                            int(envelope["gpu"])
+                            if envelope.get("gpu") is not None
+                            else None
+                        ),
                         "egl_device_verified": True,
+                        "reused": bool(envelope.get("reused", False)),
                     },
                     "render_engine": rendered["render_engine"],
                     "video_encoding": rendered.get("video_encoding"),
@@ -338,6 +359,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--generic-render-manifest", type=Path, required=True)
     parser.add_argument("--asset-render-manifest", type=Path, required=True)
     parser.add_argument("--billiards-render-manifest", type=Path, required=True)
+    parser.add_argument(
+        "--specialized-render-manifest",
+        action="append",
+        default=[],
+        metavar="PIPELINE=PATH",
+        help="Add a registered specialized branch, for example passive_pinball=...",
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
@@ -345,6 +373,14 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    specialized: dict[str, Path] = {}
+    for value in args.specialized_render_manifest:
+        pipeline, separator, path = str(value).partition("=")
+        if not separator or not pipeline or not path:
+            raise ValueError("specialized render manifest must be PIPELINE=PATH")
+        if pipeline in specialized:
+            raise ValueError(f"duplicate specialized render pipeline: {pipeline}")
+        specialized[pipeline] = Path(path)
     result = collect(
         root=args.root,
         manifest_path=args.manifest,
@@ -353,6 +389,7 @@ def main() -> None:
         billiards_render_manifest_path=args.billiards_render_manifest,
         output=args.output,
         overwrite=args.overwrite,
+        specialized_render_manifest_paths=specialized,
     )
     print(
         json.dumps(

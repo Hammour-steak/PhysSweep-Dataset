@@ -16,23 +16,28 @@ from blender_worker_environment import (
     build_egl_device_selector,
     isolated_blender_environment,
 )
+try:
+    from specialized_backend_registry import specialized_by_pipeline
+except ModuleNotFoundError:
+    from tools.specialized_backend_registry import specialized_by_pipeline
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RENDERERS = {
-    "asset": (
-        "tools/render_asset_proxy_scene.py",
-        "physweep_asset_proxy_render_manifest_v1",
-        "render_manifest.json",
-        "physweep_asset_proxy_scene_v3",
-    ),
-    "billiards": (
-        "tools/render_billiards_scene.py",
-        "physweep_billiards_render_manifest_v1",
-        "billiards_render_manifest.json",
-        "physweep_billiards_scene_v4",
-    ),
-}
+
+
+def renderer_table(root: Path) -> dict[str, tuple[str, str, str, str]]:
+    return {
+        record["renderer_id"]: (
+            record["renderer_script"],
+            record["render_manifest_schema"],
+            record["render_manifest_name"],
+            record["source_schema_version"],
+        )
+        for record in specialized_by_pipeline(root).values()
+    }
+
+
+RENDERERS = renderer_table(PROJECT_ROOT)
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -68,6 +73,34 @@ def output_path(root: Path, value: str | Path) -> Path:
     return path
 
 
+def instance_masks_are_reusable(
+    root: Path, render_record: dict[str, Any], frame_count: int
+) -> bool:
+    binding = render_record.get("instance_mask_output")
+    if binding is None:
+        return True
+    manifest_path = project_path(root, binding["manifest_path"])
+    if (
+        not manifest_path.is_file()
+        or sha256(manifest_path) != str(binding["manifest_sha256"])
+    ):
+        return False
+    manifest = load_json(manifest_path)
+    records = manifest.get("records", [])
+    if (
+        manifest.get("schema_version") != "physweep_instance_mask_manifest_v1"
+        or int(manifest.get("frame_count", -1)) != frame_count
+        or len(records) != frame_count
+    ):
+        return False
+    directory = manifest_path.parent / str(manifest["object_id"])
+    return all(
+        (directory / str(record["filename"])).is_file()
+        and sha256(directory / str(record["filename"])) == str(record["sha256"])
+        for record in records
+    )
+
+
 def reusable_render_record(
     root: Path,
     output: Path,
@@ -97,7 +130,11 @@ def reusable_render_record(
         log_path.is_file()
         and egl_marker in log_path.read_text(encoding="utf-8", errors="replace")
     )
-    frame_count = int(metadata["physics"]["frame_count"])
+    frame_count = int(
+        metadata.get("simulation", {}).get("time", {}).get(
+            "frame_count", metadata["physics"].get("frame_count")
+        )
+    )
     expected_frames = [
         frame_dir / f"frame_{frame:04d}.png"
         for frame in (1, (frame_count + 1) // 2, frame_count)
@@ -117,6 +154,7 @@ def reusable_render_record(
             and frame.stat().st_size > 0
             for frame in inspection_frames
         )
+        and instance_masks_are_reusable(root, render_record, frame_count)
         and egl_verified
     )
 

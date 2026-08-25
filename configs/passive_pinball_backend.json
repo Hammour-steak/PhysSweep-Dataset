@@ -1,0 +1,119 @@
+{
+  "schema_version": "physweep_passive_pinball_backend_v1",
+  "scene_family": "passive_pinball",
+  "profiles": {
+    "dense_pinfield_descent": {
+      "description": "One ball descends through a staggered passive peg field into a catch bin.",
+      "initial_x_offsets_m": [-0.045, 0.0, 0.045]
+    },
+    "offset_pinfield_descent": {
+      "description": "One ball starts off center and descends through the same passive peg field into a catch bin.",
+      "initial_x_offsets_m": [-0.135, -0.09, 0.09, 0.135]
+    }
+  },
+  "dynamic_object": {
+    "object_id": "pinball",
+    "semantic_type": "pinball",
+    "body_model": "rigid_body",
+    "shape": "sphere",
+    "radius_m": 0.03,
+    "color_rgba": [0.93, 0.95, 1.0, 1.0],
+    "material": {
+      "mass_kg": 0.17,
+      "mass_range_kg": [0.085, 0.34],
+      "contact_friction": 0.18,
+      "contact_restitution": 0.58,
+      "rolling_friction": 0.0025,
+      "spinning_friction": 0.0006,
+      "linear_damping": 0.025,
+      "angular_damping": 0.01
+    }
+  },
+  "fixture": {
+    "representation": "compound_exact_analytic_static_fixture",
+    "tilt_degrees_from_vertical": 12.0,
+    "top_center_m": [0.0, -0.1, 2.0],
+    "board_width_m": 1.65,
+    "board_height_m": 1.3,
+    "board_thickness_m": 0.04,
+    "rail_width_m": 0.045,
+    "rail_height_m": 0.09,
+    "peg_radius_m": 0.022,
+    "peg_length_m": 0.09,
+    "peg_rows": 8,
+    "peg_row_start_m": 0.19,
+    "peg_row_spacing_m": 0.125,
+    "peg_column_spacing_m": 0.18,
+    "peg_horizontal_margin_m": 0.13,
+    "catch_start_m": 1.12,
+    "catch_divider_height_m": 0.18,
+    "catch_divider_x_m": [-0.55, -0.275, 0.0, 0.275, 0.55],
+    "material": {
+      "contact_friction": 0.26,
+      "contact_restitution": 0.34
+    },
+    "colors": {
+      "board_rgba": [0.10, 0.13, 0.18, 1.0],
+      "rail_rgba": [0.88, 0.22, 0.12, 1.0],
+      "peg_even_rgba": [0.98, 0.62, 0.08, 1.0],
+      "peg_odd_rgba": [0.16, 0.58, 0.93, 1.0],
+      "catch_rgba": [0.35, 0.72, 0.28, 1.0]
+    }
+  },
+  "physics": {
+    "duration_s": 4.0,
+    "output_fps": 24,
+    "simulation_hz": 3840,
+    "gravity_m_s2": [0.0, 0.0, -9.81],
+    "solver_iterations": 180,
+    "deterministic_overlapping_pairs": true,
+    "restitution_velocity_threshold_m_s": 0.02,
+    "enable_cone_friction": true,
+    "use_split_impulse": true
+  },
+  "quality": {
+    "minimum_path_length_m": 1.0,
+    "minimum_distinct_peg_contacts": 4,
+    "minimum_peg_contact_steps": 8,
+    "maximum_penetration_m": 0.001,
+    "maximum_linear_speed_m_s": 5.0,
+    "maximum_energy_gain_j_per_kg": 0.08,
+    "maximum_abs_local_x_m": 0.82,
+    "minimum_local_down_m": -0.02,
+    "maximum_local_down_m": 1.38,
+    "catch_entry_required": true
+  },
+  "camera": {
+    "distance_m": 4.35,
+    "focal_length_mm": 52.0,
+    "sensor_width_mm": 36.0,
+    "target_down_m": 0.69,
+    "target_normal_offset_m": 0.0,
+    "horizontal_offsets_m": [-0.05, 0.0, 0.05],
+    "vertical_offsets_m": [-0.03, 0.0, 0.03]
+  },
+  "render": {
+    "resolution": [1280, 720],
+    "samples": 16,
+    "engine": "BLENDER_EEVEE",
+    "world_color_rgb": [0.025, 0.035, 0.055],
+    "lights": [
+      {
+        "id": "key",
+        "type": "AREA",
+        "position_m": [-2.2, 2.8, 4.2],
+        "energy_w": 1050.0,
+        "size_m": 3.0,
+        "color_rgb": [1.0, 0.84, 0.70]
+      },
+      {
+        "id": "fill",
+        "type": "AREA",
+        "position_m": [2.4, 2.2, 2.7],
+        "energy_w": 760.0,
+        "size_m": 2.4,
+        "color_rgb": [0.65, 0.78, 1.0]
+      }
+    ]
+  }
+}

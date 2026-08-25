@@ -4,7 +4,8 @@
   "base_schema_versions": [
     "physweep_pybullet_rigid_metadata_v1",
     "physweep_asset_proxy_scene_v3",
-    "physweep_billiards_scene_v4"
+    "physweep_billiards_scene_v4",
+    "physweep_passive_pinball_scene_v1"
   ],
   "backend_contract": "physweep_resolved_simulation_scene_v1",
   "canonical_base_axis": "mass_kg",
@@ -14,7 +15,9 @@
   "prior_sources": {
     "physassets_profiles": "configs/physassets_core_object_profiles.json",
     "asset_proxy_registry": "configs/asset_proxy_registry.json",
-    "billiards_backend": "configs/pybullet_backend.json"
+    "billiards_backend": "configs/pybullet_backend.json",
+    "passive_pinball_backend": "configs/passive_pinball_backend.json",
+    "specialized_scene_backends": "configs/specialized_scene_backends.json"
   },
   "endpoint_policy": {
     "algorithm": "intersect_domains_then_interpolate",
@@ -61,7 +64,8 @@
       "level_positions": [0.0, 0.25, 0.5, 0.75, 1.0],
       "domain": [0.0, 0.8],
       "schema_domains": {
-        "physweep_billiards_scene_v4": [0.3, 1.0]
+        "physweep_billiards_scene_v4": [0.3, 1.0],
+        "physweep_passive_pinball_scene_v1": [0.18, 0.98]
       },
       "domain_policy": "schema_stable_runtime_domain",
       "semantic_control": "elasticity",

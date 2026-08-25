@@ -96,8 +96,11 @@ def trajectory_metrics(path: Path, fps: float) -> dict[str, Any]:
 
 def summarize(manifest_path: Path, project_root: Path) -> dict[str, Any]:
     manifest = load_json(manifest_path)
-    if manifest.get("schema_version") != "physweep_one_object_decoupled_manifest_v3":
-        raise ValueError("motion audit requires a v3 decoupled manifest")
+    if manifest.get("schema_version") not in {
+        "physweep_one_object_decoupled_manifest_v3",
+        "physweep_one_object_decoupled_manifest_v4",
+    }:
+        raise ValueError("motion audit requires a v3 or v4 decoupled manifest")
 
     records: list[dict[str, Any]] = []
     for outer in manifest["records"]:
@@ -118,6 +121,15 @@ def summarize(manifest_path: Path, project_root: Path) -> dict[str, Any]:
             calculation = physics.get("initial_state", {}).get("calculation", {})
             effective_friction = calculation.get("effective_friction")
             prop_id = metadata.get("assets", {}).get("static_prop_asset_id")
+        elif pipeline == "passive_pinball":
+            simulation = metadata["simulation"]
+            object_record = simulation["objects"][0]
+            trajectory_path = project_root / str(
+                metadata["physics"]["trajectory_path"]
+            )
+            fps = float(simulation["time"]["output_fps"])
+            effective_friction = object_record["material"]["contact_friction"]
+            prop_id = None
         else:
             raise ValueError(f"unknown pipeline in outer manifest: {pipeline}")
         records.append(
