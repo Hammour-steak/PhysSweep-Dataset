@@ -13,6 +13,7 @@ sys.path.insert(0, str(TOOLS))
 
 from prepare_formal_render_manifests import (  # noqa: E402
     review100_selection,
+    select_records,
     sha256,
     stage_render_record,
     stress60_selection,
@@ -21,6 +22,24 @@ from prepare_formal_render_manifests import (  # noqa: E402
 
 
 class FormalRenderPreparationTests(unittest.TestCase):
+    def test_all_selection_can_be_restricted_to_one_pipeline(self) -> None:
+        manifest = {
+            "records": [
+                {"scene_id": "generic", "pipeline": "generic_pybullet"},
+                {"scene_id": "pinball_a", "pipeline": "passive_pinball"},
+                {"scene_id": "pinball_b", "pipeline": "passive_pinball"},
+            ]
+        }
+        selected = select_records(manifest, "all", "passive_pinball")
+        self.assertEqual(
+            [record["scene_id"] for record in selected],
+            ["pinball_a", "pinball_b"],
+        )
+        with self.assertRaisesRegex(ValueError, "requires --selection all"):
+            select_records(manifest, "pilot20", "passive_pinball")
+        with self.assertRaisesRegex(ValueError, "contains no billiards"):
+            select_records(manifest, "all", "billiards")
+
     def test_source_manifest_requires_consistent_unique_records(self) -> None:
         manifest = {
             "schema_version": "physweep_one_object_decoupled_manifest_v3",

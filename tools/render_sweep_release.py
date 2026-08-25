@@ -84,6 +84,10 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--workers", type=int, default=6)
     parser.add_argument("--gpus", default="4,5,7")
+    parser.add_argument(
+        "--pipeline",
+        help="Prepare only this pipeline when staging a versioned release delta.",
+    )
     parser.add_argument("--stage", required=True)
     return parser.parse_args()
 
@@ -99,10 +103,24 @@ def main() -> None:
         raise ValueError("render output must remain under root/outputs")
     status_path = output.parent / f"{output.name}_{args.stage}_status.json"
     python = sys.executable
+    prepare_base_command = [
+        python,
+        "tools/prepare_formal_render_manifests.py",
+        "--root",
+        str(root),
+        "--manifest",
+        str(base_path),
+        "--output-root",
+        str(output),
+        "--selection",
+        "all",
+    ]
+    if args.pipeline is not None:
+        prepare_base_command.extend(["--pipeline", args.pipeline])
     stage_commands = dict([
         (
             "prepare_base_render_plan",
-            [python, "tools/prepare_formal_render_manifests.py", "--root", str(root), "--manifest", str(base_path), "--output-root", str(output), "--selection", "all"],
+            prepare_base_command,
         ),
         (
             "prepare_sweep_render_plan",
@@ -162,6 +180,7 @@ def main() -> None:
         "output_root": str(output.relative_to(root)),
         "gpus": args.gpus,
         "workers": args.workers,
+        "pipeline_filter": args.pipeline,
         "stage": args.stage,
         "state": "running",
     }

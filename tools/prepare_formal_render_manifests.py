@@ -413,8 +413,39 @@ def parse_args() -> argparse.Namespace:
         choices=("pilot20", "pilot40", "stress60", "review100", "all"),
         default="pilot20",
     )
+    parser.add_argument(
+        "--pipeline",
+        help=(
+            "Restrict an all-record plan to one pipeline. This stages a "
+            "versioned replacement branch without restaging retained data."
+        ),
+    )
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
+
+
+def select_records(
+    manifest: dict[str, Any], selection: str, pipeline: str | None = None
+) -> list[dict[str, Any]]:
+    if pipeline is not None and selection != "all":
+        raise ValueError("a pipeline filter requires --selection all")
+    selectors = {
+        "pilot20": pilot_selection,
+        "pilot40": pilot40_selection,
+        "stress60": stress60_selection,
+        "review100": review100_selection,
+    }
+    if selection == "all":
+        records = list(manifest["records"])
+    elif selection in selectors:
+        records = selectors[selection](manifest)
+    else:
+        raise ValueError(f"unknown render selection: {selection}")
+    if pipeline is not None:
+        records = [record for record in records if record["pipeline"] == pipeline]
+        if not records:
+            raise ValueError(f"source manifest contains no {pipeline} records")
+    return records
 
 
 def main() -> None:
@@ -426,21 +457,16 @@ def main() -> None:
     specialized = specialized_by_pipeline(root)
     pipeline_order = ["generic_pybullet", *specialized]
     validated_source_records(source_manifest, set(pipeline_order))
+    if args.pipeline is not None and args.pipeline not in pipeline_order:
+        raise ValueError(f"unknown pipeline filter: {args.pipeline}")
     output_root = project_path(root, args.output_root)
     if (root / "outputs").resolve() not in output_root.parents:
         raise ValueError("formal render output must remain under root/outputs")
 
-    records = (
-        pilot_selection(source_manifest)
-        if args.selection == "pilot20"
-        else pilot40_selection(source_manifest)
-        if args.selection == "pilot40"
-        else stress60_selection(source_manifest)
-        if args.selection == "stress60"
-        else review100_selection(source_manifest)
-        if args.selection == "review100"
-        else list(source_manifest["records"])
-    )
+    records = select_records(source_manifest, args.selection, args.pipeline)
+    selection_id = args.selection
+    if args.pipeline is not None:
+        selection_id = f"{selection_id}__{args.pipeline}"
     selected_by_pipeline = {
         pipeline: [record for record in records if record["pipeline"] == pipeline]
         for pipeline in pipeline_order
@@ -512,7 +538,7 @@ def main() -> None:
             stage_render_record(root, child, asset_root)
         )
     asset_manifest = copy.deepcopy(source_asset)
-    asset_manifest["dataset_id"] = f"{source_manifest['dataset_id']}__{args.selection}"
+    asset_manifest["dataset_id"] = f"{source_manifest['dataset_id']}__{selection_id}"
     asset_manifest["output_root"] = str(asset_root)
     asset_manifest["sample_count"] = len(staged_asset_records)
     asset_manifest["passed_count"] = len(staged_asset_records)
@@ -532,7 +558,7 @@ def main() -> None:
         metadata_paths = [str(record["metadata_path"]) for record in branch_records]
         branch_manifest = {
             "schema_version": f"physweep_{branch}_staged_manifest_v1",
-            "dataset_id": f"{source_manifest['dataset_id']}__{args.selection}",
+            "dataset_id": f"{source_manifest['dataset_id']}__{selection_id}",
             "source_manifest": str(source_manifest_path),
             f"{branch}_metadata_paths": metadata_paths,
             "output_root": root_relative(root, branch_root),
@@ -547,9 +573,10 @@ def main() -> None:
         )
 
     staged_outer = copy.deepcopy(source_manifest)
-    staged_outer["dataset_id"] = f"{source_manifest['dataset_id']}__{args.selection}"
+    staged_outer["dataset_id"] = f"{source_manifest['dataset_id']}__{selection_id}"
     staged_outer["source_manifest"] = str(source_manifest_path)
     staged_outer["selection"] = args.selection
+    staged_outer["pipeline_filter"] = args.pipeline
     update_counts(staged_outer, records)
     staged_outer["generic_manifest_path"] = root_relative(root, generic_source_path)
     staged_outer["asset_proxy_manifest_path"] = root_relative(root, asset_manifest_path)
@@ -563,6 +590,7 @@ def main() -> None:
     plan = {
         "schema_version": "physweep_staged_render_plan_v1",
         "selection": args.selection,
+        "pipeline_filter": args.pipeline,
         "sample_count": len(records),
         "pipeline_counts": {
             pipeline: len(values) for pipeline, values in selected_by_pipeline.items()
