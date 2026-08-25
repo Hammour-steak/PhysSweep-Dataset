@@ -78,6 +78,11 @@ class SamplingArchitectureTests(unittest.TestCase):
         cls.backend = json.loads(
             (ROOT / "configs/pybullet_backend.json").read_text(encoding="utf-8")
         )
+        cls.passive_pinball_backend = json.loads(
+            (ROOT / "configs/passive_pinball_backend.json").read_text(
+                encoding="utf-8"
+            )
+        )
         cls.base_rules = json.loads(
             (ROOT / "configs/one_object_sampling_rules.json").read_text(
                 encoding="utf-8"
@@ -932,16 +937,30 @@ class SamplingArchitectureTests(unittest.TestCase):
                 "workbench_long_axis_push",
             },
         )
+        specialized_families = self.asset_semantic_rules[
+            "specialized_scene_families"
+        ]
         semantic_billiards_profiles = {
             profile
-            for family in self.asset_semantic_rules[
-                "specialized_scene_families"
-            ].values()
-            for profile in family["profiles"]
+            for family_id in ("billiards_single_ball", "billiards_collision")
+            for profile in specialized_families[family_id]["profiles"]
         }
+        semantic_pinball_profiles = set(
+            specialized_families["passive_pinball_single_ball"]["profiles"]
+        )
+        configured_pinball_profiles = set(
+            self.passive_pinball_backend["profiles"]
+        )
+        self.assertTrue(
+            semantic_billiards_profiles.isdisjoint(semantic_pinball_profiles)
+        )
         self.assertEqual(
             set(self.backend["billiards_rules"]["initial_states"]),
             semantic_billiards_profiles,
+        )
+        self.assertEqual(
+            configured_pinball_profiles,
+            semantic_pinball_profiles,
         )
 
     def test_every_non_dynamic_asset_has_one_composition_decision(self) -> None:
