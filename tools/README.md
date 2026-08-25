@@ -121,6 +121,7 @@ The v4 extension replaces 32 complete generic drop groups. It retains the
 
 ```bash
 .venv/bin/python tools/prepare_passive_pinball_v4_replacements.py \
+  --source-root /path/to/frozen-v3-worktree \
   --source-release datasets/one_object_sweep/release/manifest.json \
   --output-root datasets/one_object_v4/passive_pinball_replacements
 
@@ -133,6 +134,7 @@ The v4 extension replaces 32 complete generic drop groups. It retains the
   --output-root datasets/one_object_v4/passive_pinball_sweep/physics
 
 .venv/bin/python tools/publish_passive_pinball_v4_release.py \
+  --source-root /path/to/frozen-v3-worktree \
   --source-release datasets/one_object_sweep/release/manifest.json \
   --replacement-manifest \
     datasets/one_object_v4/passive_pinball_replacements/manifest.json \
@@ -142,6 +144,11 @@ The v4 extension replaces 32 complete generic drop groups. It retains the
     datasets/one_object_v4/passive_pinball_sweep/physics/manifest.json \
   --output-dir datasets/one_object_v4/release
 ```
+
+Omit `--source-root` only when the frozen v3 release is physically inside the
+current worktree. An isolated feature worktree must point it at the v3
+worktree; a symlink alone is intentionally rejected by the path-provenance
+check.
 
 Prepare and render only the new release branch with the explicit pipeline
 filter. Retained v3 videos are not restaged or rerendered.
