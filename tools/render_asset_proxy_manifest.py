@@ -341,8 +341,13 @@ def main() -> None:
         raise SystemExit("--gpus must contain at least one id")
     script_name, schema_version, result_name = RENDERERS[args.renderer][:3]
     script = root / script_name
-    blender = project_path(root, args.blender)
-    blender.relative_to(root)
+    declared_blender = Path(args.blender)
+    if not declared_blender.is_absolute():
+        declared_blender = root / declared_blender
+    declared_blender.absolute().relative_to(root)
+    blender = declared_blender.resolve()
+    if not blender.is_file():
+        raise FileNotFoundError(blender)
     selector = build_egl_device_selector(root)
     selector_path = root / str(selector["binary_path"])
     started = time.perf_counter()
