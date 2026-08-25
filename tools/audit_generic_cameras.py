@@ -15,7 +15,6 @@ from bind_pybullet_visuals import (
     bind_scene,
     load_json,
     manifest_rules_path,
-    parse_resolution,
     sha256,
 )
 
@@ -66,11 +65,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
-    parser.add_argument("--resolution", type=parse_resolution)
-    parser.add_argument("--samples", type=int)
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument("--overwrite", action="store_true")
-    parser.add_argument("--resume", action="store_true")
     parser.add_argument("--job-timeout-seconds", type=int)
     return parser.parse_args()
 
@@ -86,13 +82,8 @@ def main() -> None:
     rules = load_json(rules_path)
     output_root = args.output_root.resolve()
     if output_root.exists():
-        if not args.overwrite and not args.resume:
-            raise FileExistsError(
-                f"output exists; pass --overwrite or --resume: {output_root}"
-            )
-        if args.overwrite and args.resume:
-            raise ValueError("choose --overwrite or --resume, not both")
-    if output_root.exists() and args.overwrite:
+        if not args.overwrite:
+            raise FileExistsError(f"output exists; pass --overwrite: {output_root}")
         shutil.rmtree(output_root)
     output_root.mkdir(parents=True, exist_ok=True)
     if args.job_timeout_seconds is not None and args.job_timeout_seconds <= 0:
@@ -108,33 +99,8 @@ def main() -> None:
     samples = list(manifest["samples"])
     jobs = []
     job_samples = []
-    resumed = []
     for sample in samples:
         metadata_path = root / str(sample["metadata_path"])
-        scene_id = str(sample["scene_id"])
-        existing_path = output_root / "metadata" / f"{scene_id}.json"
-        if args.resume and existing_path.is_file():
-            bound = load_json(existing_path)
-            source = bound.get("source_metadata", {})
-            if (
-                str(bound.get("scene_id")) != scene_id
-                or str(source.get("path")) != str(sample["metadata_path"])
-                or str(source.get("sha256")) != sha256(metadata_path)
-            ):
-                raise ValueError(f"existing camera audit output is stale: {scene_id}")
-            trajectory = bound["trajectory"]
-            resumed.append(
-                {
-                    "scene_id": scene_id,
-                    "metadata_path": str(existing_path.relative_to(root)),
-                    "metadata_sha256": sha256(existing_path),
-                    "trajectory_path": str(trajectory["path"]),
-                    "camera_diagnostics": bound["visualization"]["camera"][
-                        "diagnostics"
-                    ],
-                }
-            )
-            continue
         job_samples.append(sample)
         jobs.append(
             (
@@ -152,8 +118,8 @@ def main() -> None:
                 ),
                 output_root,
                 rules,
-                args.resolution,
-                args.samples,
+                None,
+                None,
             )
         )
     if args.workers == 1:
@@ -172,10 +138,7 @@ def main() -> None:
                 )
             )
     failures = [result for result in results if not result["ok"]]
-    successes = [
-        *resumed,
-        *[result["sample"] for result in results if result["ok"]],
-    ]
+    successes = [result["sample"] for result in results if result["ok"]]
     if len(successes) + len(failures) != len(samples):
         raise RuntimeError("camera audit did not account for every source sample")
     audit = {
@@ -198,7 +161,6 @@ def main() -> None:
         "sample_count": len(successes) + len(failures),
         "success_count": len(successes),
         "failure_count": len(failures),
-        "resumed_success_count": len(resumed),
         "failures": failures,
         "samples": successes,
     }

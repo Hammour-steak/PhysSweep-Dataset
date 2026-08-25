@@ -65,7 +65,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--candidate-physics-manifest", type=Path, required=True)
     parser.add_argument("--camera-bound-manifest", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
 
 
@@ -78,8 +77,8 @@ def main() -> None:
     physics_path = resolve(root, args.candidate_physics_manifest)
     camera_path = resolve(root, args.camera_bound_manifest)
     output_path = resolve(root, args.output)
-    if output_path.exists() and not args.overwrite:
-        raise FileExistsError(f"output exists; pass --overwrite: {output_path}")
+    if output_path.exists():
+        raise FileExistsError(f"replacement output already exists: {output_path}")
     datasets_root = (root / "datasets").resolve()
     if output_path.parent != datasets_root and datasets_root not in output_path.parents:
         raise ValueError("replacement manifest must remain under datasets")
