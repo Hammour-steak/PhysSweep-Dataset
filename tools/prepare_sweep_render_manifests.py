@@ -173,6 +173,22 @@ def main() -> None:
             output_root / branch / "base_render_input_manifest.json",
             base_manifest,
         )
+        derived_records = [
+            record
+            for record in render_records
+            if load_json(root / record["metadata_path"])["sweep"]["kind"]
+            == "sweep"
+        ]
+        derived_manifest = dict(manifest)
+        derived_manifest["dataset_id"] = (
+            f"one_object_sweep_review_{branch}_derived"
+        )
+        derived_manifest["sample_count"] = len(derived_records)
+        derived_manifest["records"] = derived_records
+        write_json(
+            output_root / branch / "derived_render_input_manifest.json",
+            derived_manifest,
+        )
 
     summary = {
         "schema_version": "physweep_sweep_render_plan_v1",

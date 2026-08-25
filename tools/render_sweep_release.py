@@ -13,6 +13,17 @@ from typing import Any
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+STAGE_NAMES = (
+    "prepare_base_render_plan",
+    "prepare_sweep_render_plan",
+    "bind_generic_base_cameras",
+    "bind_generic_sweep_visuals",
+    "render_asset_bases",
+    "freeze_asset_sweep_cameras",
+    "render_asset_sweeps",
+    "render_billiards_sweeps",
+    "render_generic_sweeps",
+)
 
 
 def write_json(path: Path, value: Any) -> None:
@@ -37,6 +48,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--workers", type=int, default=6)
     parser.add_argument("--gpus", default="4,5,7")
+    parser.add_argument("--from-stage", choices=STAGE_NAMES)
+    parser.add_argument("--until-stage", choices=STAGE_NAMES)
     return parser.parse_args()
 
 
@@ -67,7 +80,7 @@ def main() -> None:
         ),
         (
             "render_asset_bases",
-            [python, "tools/render_asset_proxy_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/asset/base_render_input_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus],
+            [python, "tools/render_asset_proxy_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/asset/base_render_input_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus, "--resume"],
         ),
         (
             "freeze_asset_sweep_cameras",
@@ -75,7 +88,7 @@ def main() -> None:
         ),
         (
             "render_asset_sweeps",
-            [python, "tools/render_asset_proxy_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/asset/render_input_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus],
+            [python, "tools/render_asset_proxy_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/asset/derived_render_input_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus, "--resume"],
         ),
         (
             "render_billiards_sweeps",
@@ -86,12 +99,23 @@ def main() -> None:
             [python, "tools/render_pybullet_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/generic/bound/bound_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus],
         ),
     ]
+    first_stage = STAGE_NAMES.index(args.from_stage) if args.from_stage else 0
+    last_stage = (
+        STAGE_NAMES.index(args.until_stage) + 1
+        if args.until_stage
+        else len(STAGE_NAMES)
+    )
+    if first_stage >= last_stage:
+        raise ValueError("--from-stage must not come after --until-stage")
+    stages = stages[first_stage:last_stage]
     status: dict[str, Any] = {
         "schema_version": "physweep_release_render_status_v1",
         "release_manifest": str(release_path.relative_to(root)),
         "output_root": str(output.relative_to(root)),
         "gpus": args.gpus,
         "workers": args.workers,
+        "from_stage": stages[0][0],
+        "until_stage": stages[-1][0],
         "state": "running",
         "completed_stages": [],
         "current_stage": None,

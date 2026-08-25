@@ -11,6 +11,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
+from sample_pybullet_base import manifest_counts as generic_manifest_counts
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 AXES = ("mass_kg", "contact_friction", "contact_restitution")
@@ -66,6 +68,68 @@ def merge_base_records(
     return [merged[index] for index in sorted(merged)]
 
 
+def select_source_records(
+    metadata: dict[str, Any],
+    physics: dict[str, Any],
+    replaced_parents: set[str],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    accepted_physics = [
+        record
+        for record in physics["records"]
+        if record.get("ok") and record.get("audit_passed")
+    ]
+    accepted_ids = {str(record["scene_id"]) for record in accepted_physics}
+    selected_metadata = [
+        record
+        for record in metadata["records"]
+        if str(record["scene_id"]) in accepted_ids
+        and str(record["parent"]) not in replaced_parents
+    ]
+    selected_ids = {str(record["scene_id"]) for record in selected_metadata}
+    selected_physics = [
+        record
+        for record in accepted_physics
+        if str(record["scene_id"]) in selected_ids
+    ]
+    if len(selected_metadata) != len(selected_ids):
+        raise ValueError("source metadata contains duplicate accepted scene ids")
+    if len(selected_metadata) != len(selected_physics):
+        raise ValueError("accepted physics records do not match metadata")
+    return selected_metadata, selected_physics
+
+
+def merge_generic_samples(
+    source_samples: list[dict[str, Any]],
+    replacement_records: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    merged = {str(sample["metadata_path"]): sample for sample in source_samples}
+    if len(merged) != len(source_samples):
+        raise ValueError("generic manifest contains duplicate metadata paths")
+    for replacement in replacement_records:
+        replaced_path = str(replacement["replaces_metadata_path"])
+        if replaced_path not in merged:
+            raise ValueError(
+                "generic replacement provenance does not match the source manifest: "
+                f"{replaced_path}"
+            )
+        del merged[replaced_path]
+        sample = {
+            "scene_id": str(replacement["candidate_scene_id"]),
+            "metadata_path": str(replacement["metadata_path"]),
+            "metadata_sha256": str(replacement["metadata_sha256"]),
+            "simulation_record_path": str(replacement["simulation_record_path"]),
+            "trajectory_path": str(replacement["trajectory_path"]),
+        }
+        if sample["metadata_path"] in merged:
+            raise ValueError("generic replacement metadata path is already present")
+        merged[sample["metadata_path"]] = sample
+    samples = sorted(merged.values(), key=lambda sample: str(sample["scene_id"]))
+    scene_ids = [str(sample["scene_id"]) for sample in samples]
+    if len(scene_ids) != len(set(scene_ids)):
+        raise ValueError("generic release contains duplicate scene ids")
+    return samples
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
@@ -87,6 +151,16 @@ def main() -> None:
     if len(args.metadata_manifest) != len(args.physics_manifest):
         raise ValueError("metadata and physics manifests must be paired")
     root = args.root.resolve()
+    replacement_path = None
+    replacement = None
+    replaced_parents: set[str] = set()
+    if args.replacement_base_manifest:
+        replacement_path = resolve(root, args.replacement_base_manifest)
+        replacement = load_json(replacement_path)
+        replaced_parents = {
+            str(record["replaces_metadata_path"])
+            for record in replacement["records"]
+        }
     output_dir = resolve(root, args.output_dir)
     if output_dir.exists():
         if not args.overwrite:
@@ -104,21 +178,16 @@ def main() -> None:
         physics_path = resolve(root, physics_arg)
         metadata = load_json(metadata_path)
         physics = load_json(physics_path)
-        accepted_ids = {str(record["scene_id"]) for record in physics["records"]}
-        selected_metadata = [
-            record
-            for record in metadata["records"]
-            if str(record["scene_id"]) in accepted_ids
-        ]
-        if len(selected_metadata) != len(accepted_ids):
-            raise ValueError("accepted physics records do not match metadata")
         if any(
             not record.get("ok") or not record["audit_passed"]
             for record in physics["records"]
         ):
             raise ValueError("physics manifest contains a failed record")
+        selected_metadata, selected_physics = select_source_records(
+            metadata, physics, replaced_parents
+        )
         metadata_records.extend(selected_metadata)
-        physics_records.extend(physics["records"])
+        physics_records.extend(selected_physics)
         sources.append(
             {
                 "metadata_manifest": str(metadata_path.relative_to(root)),
@@ -196,9 +265,7 @@ def main() -> None:
             "all_physics_records_passed": True,
         },
     }
-    if args.replacement_base_manifest:
-        replacement_path = resolve(root, args.replacement_base_manifest)
-        replacement = load_json(replacement_path)
+    if replacement_path is not None and replacement is not None:
         release.update(
             {
                 "replacement_base_manifest": str(replacement_path.relative_to(root)),
@@ -238,20 +305,83 @@ def main() -> None:
                     "replacement_base_manifest_sha256": sha256(replacement_path),
                 },
             }
+            generic_replacements = [
+                record
+                for record in replacement["records"]
+                if record["pipeline"] == "generic_pybullet"
+            ]
+            if generic_replacements:
+                source_generic_manifest_path = resolve(
+                    root, Path(base["generic_manifest_path"])
+                )
+                source_generic_manifest = load_json(source_generic_manifest_path)
+                generic_samples = merge_generic_samples(
+                    list(source_generic_manifest["samples"]), generic_replacements
+                )
+                for sample in generic_samples:
+                    metadata_path = resolve(root, Path(sample["metadata_path"]))
+                    if sha256(metadata_path) != str(sample["metadata_sha256"]):
+                        raise ValueError(
+                            f"generic release metadata hash mismatch: {metadata_path}"
+                        )
+                generic_output = output_dir / "generic_manifest.json"
+                generic_release = {
+                    **source_generic_manifest,
+                    "dataset_id": f"{source_generic_manifest['dataset_id']}_release",
+                    "sample_count": len(generic_samples),
+                    "coverage": generic_manifest_counts(
+                        [
+                            load_json(resolve(root, Path(sample["metadata_path"])))
+                            for sample in generic_samples
+                        ]
+                    ),
+                    "samples": generic_samples,
+                    "release_sources": {
+                        "generic_manifest": str(
+                            source_generic_manifest_path.relative_to(root)
+                        ),
+                        "generic_manifest_sha256": sha256(
+                            source_generic_manifest_path
+                        ),
+                        "replacement_base_manifest": str(
+                            replacement_path.relative_to(root)
+                        ),
+                        "replacement_base_manifest_sha256": sha256(replacement_path),
+                    },
+                }
+                acceptance = dict(generic_release.get("acceptance", {}))
+                acceptance.update(
+                    {
+                        "camera_replacement_count": len(generic_replacements),
+                        "camera_replacement_manifest_path": str(
+                            replacement_path.relative_to(root)
+                        ),
+                    }
+                )
+                generic_release["acceptance"] = acceptance
+                write_json(generic_output, generic_release)
+                merged_base["generic_manifest_path"] = str(
+                    generic_output.relative_to(root)
+                )
             source_asset_manifest_path = resolve(
                 root, Path(base["asset_proxy_manifest_path"])
             )
             source_asset_manifest = load_json(source_asset_manifest_path)
+            asset_replacements = [
+                record
+                for record in replacement["records"]
+                if record["pipeline"] == "asset_proxy"
+            ]
             replaced_outer_scene_ids = {
                 str(record["replaces_scene_id"])
-                for record in replacement["records"]
+                for record in asset_replacements
             }
             asset_records = [
                 record
                 for record in source_asset_manifest["records"]
                 if str(record["matrix_scene_id"]) not in replaced_outer_scene_ids
             ]
-            for record in replacement["records"]:
+            for record in asset_replacements:
                 metadata_path = resolve(root, Path(record["metadata_path"]))
                 child_manifest = load_json(metadata_path.parents[2] / "manifest.json")
                 if (
