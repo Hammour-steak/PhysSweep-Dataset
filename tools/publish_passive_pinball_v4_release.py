@@ -21,7 +21,6 @@ try:
         validate_source_artifacts,
         write_json,
     )
-    from sample_pybullet_base import manifest_counts as generic_manifest_counts
 except ModuleNotFoundError:
     from tools.publish_sweep_release import (
         load_json,
@@ -32,9 +31,15 @@ except ModuleNotFoundError:
         validate_source_artifacts,
         write_json,
     )
-    from tools.sample_pybullet_base import (
-        manifest_counts as generic_manifest_counts,
-    )
+
+
+def generic_manifest_counts(metadata: list[dict[str, Any]]) -> dict[str, Any]:
+    """Load generic coverage code only during the full publication command."""
+    try:
+        from sample_pybullet_base import manifest_counts
+    except ModuleNotFoundError:
+        from tools.sample_pybullet_base import manifest_counts
+    return manifest_counts(metadata)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]

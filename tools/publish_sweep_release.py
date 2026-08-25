@@ -11,16 +11,17 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-try:
-    from sample_pybullet_base import manifest_counts as generic_manifest_counts
-except ModuleNotFoundError:
-    from tools.sample_pybullet_base import (
-        manifest_counts as generic_manifest_counts,
-    )
-
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 AXES = ("mass_kg", "contact_friction", "contact_restitution")
+
+
+def generic_manifest_counts(metadata: list[dict[str, Any]]) -> dict[str, Any]:
+    """Load the generic sampler only when a release actually needs coverage."""
+    try:
+        from sample_pybullet_base import manifest_counts
+    except ModuleNotFoundError:
+        from tools.sample_pybullet_base import manifest_counts
+    return manifest_counts(metadata)
 
 
 def load_json(path: Path) -> dict[str, Any]:
