@@ -79,12 +79,14 @@ required branch, then collect them with the staged outer manifest:
 ```
 
 The collector loads only pipelines present in `staged_manifest.json`. A
-versioned delta therefore supplies only its specialized manifest; it does not
-create empty or synthetic manifests for retained branches.
+versioned delta therefore supplies only its specialized render result; it does
+not require empty or synthetic render-result manifests for retained branches.
 
 Use `pilot20` or `pilot40` for compact coverage reviews. `stress60` creates a
-deterministic stress review with 30 ordinary generic motions, 20 support
-transitions, 8 curated asset-proxy scenes, and both billiards profiles.
+deterministic stress review. A v3 manifest keeps 30 ordinary generic motions,
+20 support transitions, 8 curated asset-proxy scenes, and both billiards
+profiles. A v4 manifest uses 28 ordinary generic motions and adds one scene
+from each passive-pinball profile, preserving the fixed 60-scene review size.
 
 The collector intentionally rejects the raw sampling manifest because only the
 staged manifest freezes the selected subset and its canonical source manifest.
