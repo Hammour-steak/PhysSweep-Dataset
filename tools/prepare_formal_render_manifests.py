@@ -120,6 +120,9 @@ def pilot_selection(manifest: dict[str, Any]) -> list[dict[str, Any]]:
     generic = [record for record in records if record["pipeline"] == "generic_pybullet"]
     assets = [record for record in records if record["pipeline"] == "asset_proxy"]
     billiards = [record for record in records if record["pipeline"] == "billiards"]
+    pinball = [
+        record for record in records if record["pipeline"] == "passive_pinball"
+    ]
     dataset_id = str(manifest["dataset_id"])
 
     chosen: list[dict[str, Any]] = []
@@ -141,12 +144,25 @@ def pilot_selection(manifest: dict[str, Any]) -> list[dict[str, Any]]:
             )
         )
 
+    if pinball:
+        chosen.append(
+            choose_one(
+                pinball,
+                "pipeline",
+                "passive_pinball",
+                f"{dataset_id}:passive-pinball",
+            )
+        )
+
     chosen_ids = {str(record["scene_id"]) for record in chosen}
-    remaining_generic = [
-        record for record in generic if str(record["scene_id"]) not in chosen_ids
-    ]
-    extra = random.Random(f"{dataset_id}:generic:extra").choice(remaining_generic)
-    chosen.append(extra)
+    if not pinball:
+        remaining_generic = [
+            record for record in generic if str(record["scene_id"]) not in chosen_ids
+        ]
+        extra = random.Random(f"{dataset_id}:generic:extra").choice(
+            remaining_generic
+        )
+        chosen.append(extra)
     chosen.sort(key=lambda record: int(record["index"]))
     if len(chosen) != 20:
         raise ValueError(f"pilot selection must contain 20 records, got {len(chosen)}")
@@ -190,6 +206,27 @@ def pilot40_selection(manifest: dict[str, Any]) -> list[dict[str, Any]]:
             )
             chosen.append(extra)
             selected_ids.add(str(extra["scene_id"]))
+
+    pinball = [
+        record for record in records if record["pipeline"] == "passive_pinball"
+    ]
+    selected_pinball_profiles = {
+        str(record["profile"])
+        for record in chosen
+        if record["pipeline"] == "passive_pinball"
+    }
+    for profile in sorted({str(record["profile"]) for record in pinball}):
+        if profile in selected_pinball_profiles:
+            continue
+        extra = choose_unselected(
+            pinball,
+            "profile",
+            profile,
+            f"{dataset_id}:passive-pinball:extra:{profile}",
+            selected_ids,
+        )
+        chosen.append(extra)
+        selected_ids.add(str(extra["scene_id"]))
 
     while len(chosen) < 40:
         remaining_generic = [
@@ -261,6 +298,9 @@ def stress60_selection(manifest: dict[str, Any]) -> list[dict[str, Any]]:
     generic = [record for record in records if record["pipeline"] == "generic_pybullet"]
     assets = [record for record in records if record["pipeline"] == "asset_proxy"]
     billiards = [record for record in records if record["pipeline"] == "billiards"]
+    pinball = [
+        record for record in records if record["pipeline"] == "passive_pinball"
+    ]
     transition_motions = {"edge_fall_1obj", "ramp_to_flat_1obj"}
     ordinary = [
         record
@@ -277,7 +317,7 @@ def stress60_selection(manifest: dict[str, Any]) -> list[dict[str, Any]]:
     chosen = choose_balanced(
         ordinary,
         "motion_intent",
-        30,
+        28 if pinball else 30,
         f"{dataset_id}:stress60:ordinary",
         selected_ids,
     )
@@ -308,6 +348,16 @@ def stress60_selection(manifest: dict[str, Any]) -> list[dict[str, Any]]:
             selected_ids,
         )
     )
+    if pinball:
+        chosen.extend(
+            choose_balanced(
+                pinball,
+                "profile",
+                2,
+                f"{dataset_id}:stress60:passive-pinball",
+                selected_ids,
+            )
+        )
     if len(chosen) != 60:
         raise ValueError(f"stress60 selection must contain 60 records, got {len(chosen)}")
     chosen.sort(key=lambda record: int(record["index"]))
@@ -322,13 +372,16 @@ def review100_selection(manifest: dict[str, Any]) -> list[dict[str, Any]]:
     ]
     assets = [record for record in records if record["pipeline"] == "asset_proxy"]
     billiards = [record for record in records if record["pipeline"] == "billiards"]
+    pinball = [
+        record for record in records if record["pipeline"] == "passive_pinball"
+    ]
     dataset_id = str(manifest["dataset_id"])
     selected_ids: set[str] = set()
 
     chosen = choose_balanced(
         generic,
         "motion_intent",
-        70,
+        68 if pinball else 70,
         f"{dataset_id}:review100:generic",
         selected_ids,
     )
@@ -359,6 +412,16 @@ def review100_selection(manifest: dict[str, Any]) -> list[dict[str, Any]]:
             selected_ids,
         )
     )
+    if pinball:
+        chosen.extend(
+            choose_balanced(
+                pinball,
+                "profile",
+                2,
+                f"{dataset_id}:review100:passive-pinball",
+                selected_ids,
+            )
+        )
     if len(chosen) != 100:
         raise ValueError(
             f"review100 selection must contain 100 records, got {len(chosen)}"

@@ -149,6 +149,39 @@ class FormalRenderPreparationTests(unittest.TestCase):
             set(motions),
         )
 
+        for profile in ("dense_pinfield_descent", "offset_pinfield_descent"):
+            index += 1
+            records.append(
+                {
+                    "index": index,
+                    "scene_id": f"scene_{index:03d}",
+                    "pipeline": "passive_pinball",
+                    "motion_intent": "drop_fall_1obj",
+                    "profile": profile,
+                    "environment_id": "passive_pinball_board",
+                }
+            )
+        selected = review100_selection(
+            {"dataset_id": "test-v4", "records": records}
+        )
+        self.assertEqual(len(selected), 100)
+        self.assertEqual(
+            sum(record["pipeline"] == "generic_pybullet" for record in selected),
+            68,
+        )
+        self.assertEqual(
+            sum(record["pipeline"] == "passive_pinball" for record in selected),
+            2,
+        )
+        self.assertEqual(
+            {
+                record["profile"]
+                for record in selected
+                if record["pipeline"] == "passive_pinball"
+            },
+            {"dense_pinfield_descent", "offset_pinfield_descent"},
+        )
+
     def test_stress60_selection_has_declared_strata(self) -> None:
         records = []
         index = 0
@@ -229,6 +262,38 @@ class FormalRenderPreparationTests(unittest.TestCase):
                 for record in selected
             ),
             20,
+        )
+
+        for profile in ("dense_pinfield_descent", "offset_pinfield_descent"):
+            index += 1
+            records.append(
+                {
+                    "index": index,
+                    "scene_id": f"scene_{index:03d}",
+                    "pipeline": "passive_pinball",
+                    "motion_intent": "drop_fall_1obj",
+                    "profile": profile,
+                }
+            )
+        selected = stress60_selection(
+            {"dataset_id": "test-v4", "records": records}
+        )
+        self.assertEqual(len(selected), 60)
+        self.assertEqual(
+            sum(record["pipeline"] == "generic_pybullet" for record in selected),
+            48,
+        )
+        self.assertEqual(
+            sum(record["pipeline"] == "passive_pinball" for record in selected),
+            2,
+        )
+        self.assertEqual(
+            {
+                record["profile"]
+                for record in selected
+                if record["pipeline"] == "passive_pinball"
+            },
+            {"dense_pinfield_descent", "offset_pinfield_descent"},
         )
 
     def test_render_override_preserves_source_metadata(self) -> None:
