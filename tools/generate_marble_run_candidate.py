@@ -293,7 +293,7 @@ def materialize_collision_meshes(
         collision_path = output / "collision" / f"{source.stem}.obj"
         collision_path.parent.mkdir(parents=True, exist_ok=True)
         temporary = collision_path.with_suffix(".tmp.obj")
-        source_mesh.export(
+        mesh.export(
             temporary, file_type="obj", include_normals=False, include_color=False
         )
         temporary.replace(collision_path)

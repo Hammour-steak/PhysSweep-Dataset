@@ -89,7 +89,7 @@ class MarbleRunCandidateContractTests(unittest.TestCase):
         if not source_root.is_dir():
             self.skipTest("candidate source checkout is intentionally not stored in Git")
         try:
-            import trimesh  # noqa: F401
+            import trimesh
         except ImportError:
             self.skipTest("candidate mesh dependency is unavailable")
         source_paths = validate_config(ROOT, self.config)
@@ -98,6 +98,15 @@ class MarbleRunCandidateContractTests(unittest.TestCase):
             collision = materialize_collision_meshes(
                 ROOT, output, self.config, source_paths
             )
+            collision_record = collision["stl/straight-110.stl"]
+            collision_path = project_path(ROOT, collision_record["path"])
+            collision_mesh = trimesh.load_mesh(collision_path, process=False)
+            self.assertEqual(
+                len(collision_mesh.vertices),
+                collision_record["canonical_vertex_count"],
+            )
+            self.assertEqual(len(collision_mesh.faces), collision_record["face_count"])
+            self.assertTrue(collision_mesh.is_watertight)
             base = build_metadata(ROOT, self.config_path, self.config, collision)
             renderer = base["render"]["implementation"]
             self.assertEqual(renderer["path"], "tools/render_marble_run_candidate.py")
