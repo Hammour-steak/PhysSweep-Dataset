@@ -24,6 +24,7 @@ from physical_proxy_catalog import (
 )
 from sample_asset_proxy_scenes import proxy_volume_fill_ratio
 from sample_pybullet_base import manifest_counts as generic_manifest_counts
+from specialized_backend_registry import load_specialized_backends
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -578,7 +579,7 @@ def build_schedule(
 
 def validate_matrix(root: Path, matrix: dict[str, Any]) -> None:
     dependencies = matrix_dependency_paths(root, matrix)
-    matrix_implementation_paths(root, matrix)
+    implementation = matrix_implementation_paths(root, matrix)
     registry = load_json(dependencies["asset_proxy_registry"])
     validate_registry_counts(registry)
     _, physical_proxy_records = load_catalog(
@@ -592,6 +593,30 @@ def validate_matrix(root: Path, matrix: dict[str, Any]) -> None:
     if capabilities["active_backend"] != backend["backend_id"]:
         raise ValueError("capability id does not match physics backend")
     specialized = capabilities["specialized_scopes"]
+    registered = {
+        record["pipeline"]: record
+        for record in load_specialized_backends(
+            root, dependencies["specialized_scene_backends"]
+        )
+    }
+    expected_registered = {"asset_proxy"} | {
+        str(environment["generator"])
+        for environment in matrix["environments"]
+        if environment["generator"] != "pybullet_base"
+    }
+    if set(registered) != expected_registered:
+        raise ValueError(
+            "specialized backend registry differs from matrix generators: "
+            f"registered={sorted(registered)}, "
+            f"expected={sorted(expected_registered)}"
+        )
+    for pipeline, implementation_key in (
+        ("billiards", "billiards_renderer"),
+        ("passive_pinball", "passive_pinball_renderer"),
+    ):
+        renderer = (root / registered[pipeline]["renderer_script"]).resolve()
+        if renderer != implementation[implementation_key].resolve():
+            raise ValueError(f"{pipeline} registry renderer differs from matrix")
     asset_profiles = set(backend["asset_proxy_rules"]["motion_profiles"])
     if set(specialized["asset_proxy_single_object"]["profiles"]) != asset_profiles:
         raise ValueError("asset-proxy capabilities do not match backend profiles")

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from tools.generate_passive_pinball_scene import (
 )
 from tools.resolved_simulation_scene import compile_resolved_scene
 from tools.specialized_backend_registry import (
+    load_specialized_backends,
     specialized_by_pipeline,
     specialized_by_schema,
 )
@@ -99,6 +101,52 @@ class PassivePinballBackendTests(unittest.TestCase):
         text = json.dumps(self.config, sort_keys=True).lower()
         for forbidden in ("flipper", "spring", "motor", "joint", "actuator"):
             self.assertNotIn(forbidden, text)
+
+    def test_specialized_registry_rejects_invalid_or_external_renderers(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            root = directory / "project"
+            root.mkdir()
+            outside = directory / "renderer.py"
+            outside.write_text("", encoding="utf-8")
+            record = {
+                "pipeline": "passive_pinball",
+                "source_schema_version": "physweep_passive_pinball_scene_v1",
+                "sweep_branch": "passive_pinball",
+                "renderer_id": "passive_pinball",
+                "renderer_script": "../renderer.py",
+                "render_manifest_schema": "manifest_v1",
+                "render_manifest_name": "manifest.json",
+            }
+            registry = root / "registry.json"
+            registry.write_text(
+                json.dumps(
+                    {
+                        "schema_version": (
+                            "physweep_specialized_scene_backends_v1"
+                        ),
+                        "records": [record],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(ValueError):
+                load_specialized_backends(root, registry)
+
+            record["renderer_script"] = ""
+            registry.write_text(
+                json.dumps(
+                    {
+                        "schema_version": (
+                            "physweep_specialized_scene_backends_v1"
+                        ),
+                        "records": [record],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "invalid fields"):
+                load_specialized_backends(root, registry)
 
 
 if __name__ == "__main__":

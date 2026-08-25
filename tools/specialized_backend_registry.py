@@ -25,9 +25,12 @@ def load_specialized_backends(
     root: Path = PROJECT_ROOT,
     path: Path | str = DEFAULT_REGISTRY,
 ) -> list[dict[str, Any]]:
+    root = root.resolve()
     registry_path = Path(path)
     if not registry_path.is_absolute():
         registry_path = root / registry_path
+    registry_path = registry_path.resolve()
+    registry_path.relative_to(root)
     document = json.loads(registry_path.read_text(encoding="utf-8"))
     if document.get("schema_version") != "physweep_specialized_scene_backends_v1":
         raise ValueError("unsupported specialized backend registry")
@@ -40,8 +43,18 @@ def load_specialized_backends(
         missing = [field for field in REQUIRED_FIELDS if field not in source]
         if missing:
             raise ValueError(f"specialized backend record {index} lacks: {missing}")
-        record = {field: str(value[field]) for field in REQUIRED_FIELDS}
-        renderer = root / record["renderer_script"]
+        invalid = [
+            field
+            for field in REQUIRED_FIELDS
+            if not isinstance(source[field], str) or not source[field].strip()
+        ]
+        if invalid:
+            raise ValueError(
+                f"specialized backend record {index} has invalid fields: {invalid}"
+            )
+        record = {field: source[field] for field in REQUIRED_FIELDS}
+        renderer = (root / record["renderer_script"]).resolve()
+        renderer.relative_to(root)
         if not renderer.is_file():
             raise FileNotFoundError(renderer)
         result.append(record)
