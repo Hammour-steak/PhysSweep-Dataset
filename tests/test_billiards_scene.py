@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -49,6 +52,23 @@ class BilliardsSceneTests(unittest.TestCase):
             cls.dependencies["visual_sampling"].read_text(encoding="utf-8")
         )["specialized_camera_views"]
 
+    @staticmethod
+    def trajectory_digest(arrays: dict[str, np.ndarray]) -> str:
+        digest = hashlib.sha256()
+        for key in sorted(arrays):
+            values = np.asarray(arrays[key])
+            if np.issubdtype(values.dtype, np.floating):
+                values = np.round(values.astype("<f8"), 8)
+            else:
+                values = values.astype(
+                    values.dtype.newbyteorder("<"), copy=False
+                )
+            digest.update(key.encode("utf-8"))
+            digest.update(str(values.shape).encode("ascii"))
+            digest.update(str(values.dtype).encode("ascii"))
+            digest.update(values.tobytes(order="C"))
+        return digest.hexdigest()
+
     @classmethod
     def dependency_arguments(cls) -> list[str]:
         return [
@@ -90,6 +110,19 @@ class BilliardsSceneTests(unittest.TestCase):
         self.assertLessEqual(abs(first["target_m"][0]), 0.08)
         self.assertLessEqual(abs(first["target_m"][1]), 0.06)
 
+        self.assertEqual(
+            first,
+            {
+                "seed": 123,
+                "mode": "bounded_orbit_-15deg",
+                "position_m": [1.840359, -3.851145, 2.580362],
+                "target_m": [-0.030902, 0.01877, 0.68],
+                "focal_length_mm": 50.0,
+                "sensor_width_mm": 36.0,
+                "elevation_degrees": 24.0,
+            },
+        )
+
     def test_single_ball_profiles_pass_physics_audit(self) -> None:
         for profile in (
             "single_ball_free_roll",
@@ -120,6 +153,36 @@ class BilliardsSceneTests(unittest.TestCase):
         self.assertEqual(len(initial), 3)
         self.assertEqual(arrays["position_m"].shape, (73, 3, 3))
         self.assertTrue(audit["passed"], audit)
+
+    def test_published_profiles_keep_their_numeric_trajectory_contract(self) -> None:
+        expected = {
+            "single_ball_free_roll": (
+                "3f97e5fea4b2798e24f4ab0b7d1e016a"
+                "7c9e5632faaf354c5b1d88b42bcd9fca"
+            ),
+            "single_ball_rail_rebound": (
+                "4bfae18ca5b357132e1e4085c5d005e7"
+                "9254c7b2c7bbec4c68ab13c5bf175b8c"
+            ),
+            "three_ball_collision": (
+                "f68d2f3a26cd4401635aada54b319e50"
+                "2981e4e728b396b80366c31aeea07f7e"
+            ),
+        }
+        for profile, expected_digest in expected.items():
+            with self.subTest(profile=profile):
+                arrays, audit, _ = simulate(
+                    ROOT,
+                    self.support_binding,
+                    3.0,
+                    24,
+                    profile,
+                    self.backend,
+                )
+                self.assertTrue(audit["passed"], audit)
+                self.assertEqual(
+                    self.trajectory_digest(arrays), expected_digest
+                )
 
     def test_generator_writes_complete_visual_contract(self) -> None:
         with tempfile.TemporaryDirectory(dir=ROOT / "datasets") as temporary:

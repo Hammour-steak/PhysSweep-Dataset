@@ -1208,7 +1208,7 @@ def main() -> None:
             run(
                 [
                     sys.executable,
-                    str(root / "tools/generate_billiards_scene.py"),
+                    str(implementation_paths["billiards_generator"]),
                     "--root",
                     str(root),
                     "--output",

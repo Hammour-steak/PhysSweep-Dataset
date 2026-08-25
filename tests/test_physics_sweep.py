@@ -300,6 +300,96 @@ class PhysicsSweepTests(unittest.TestCase):
             derived["physics"]["runtime_material"]["contact_restitution"], 1.0
         )
 
+    def test_single_ball_billiards_derives_exactly_13_one_factor_records(self):
+        root = Path(__file__).resolve().parents[1]
+        config_path = root / "configs/physics_sweep.json"
+        config = load_json(config_path)
+        base = {
+            "schema_version": "physweep_billiards_scene_v4",
+            "scene_id": "billiards_single_ball",
+            "physics": {
+                "ball_mass_kg": 0.17,
+                "backend_config": {"path": "configs/pybullet_backend.json"},
+                "initial_states": [
+                    {
+                        "object_id": "cue_ball",
+                        "position_m": [-0.58, -0.16, 0.809575],
+                        "velocity_m_s": [0.48, 0.08, 0.0],
+                    }
+                ],
+            },
+            "render": {
+                "resolution": [640, 360],
+                "camera": {"seed": 123, "mode": "bounded_orbit_-15deg"},
+            },
+            "object_identity": {
+                "objects": [
+                    {
+                        "object_id": "cue_ball",
+                        "object_index": 0,
+                        "role": "dynamic",
+                    }
+                ]
+            },
+        }
+        base_material = {
+            "mass_kg": 0.17,
+            "contact_friction": 0.16,
+            "contact_restitution": 0.92,
+        }
+        records = []
+        canonical_emitted = False
+        with tempfile.TemporaryDirectory(dir=root) as temp:
+            base_path = Path(temp) / "metadata.json"
+            base_path.write_text(json.dumps(base), encoding="utf-8")
+            for axis in config["axes"]:
+                for level_index in range(config["axes"][axis]["level_count"]):
+                    derived = derive_one(
+                        base,
+                        base_path,
+                        root,
+                        config,
+                        config_path,
+                        axis,
+                        level_index,
+                        {},
+                        {},
+                    )
+                    if level_index == derived["sweep"]["base_level_index"]:
+                        if axis != config["canonical_base_axis"]:
+                            continue
+                        derived = normalize_canonical_base(derived)
+                        canonical_emitted = True
+                    records.append(derived)
+
+        self.assertTrue(canonical_emitted)
+        self.assertEqual(len(records), 13)
+        self.assertEqual(
+            [record["sweep"]["kind"] for record in records].count("base"), 1
+        )
+        for axis in config["axes"]:
+            axis_records = [
+                record
+                for record in records
+                if record["sweep"].get("axis") == axis
+            ]
+            self.assertEqual(len(axis_records), 4)
+            self.assertEqual(
+                {record["sweep"]["level_index"] for record in axis_records},
+                {0, 1, 3, 4},
+            )
+            for record in axis_records:
+                expected_material = dict(base_material)
+                expected_material[axis] = record["sweep"]["value"]
+                self.assertEqual(
+                    record["physics"]["runtime_material"], expected_material
+                )
+                self.assertEqual(
+                    record["physics"]["initial_states"],
+                    base["physics"]["initial_states"],
+                )
+                self.assertEqual(record["render"], base["render"])
+
     def test_one_factor_derivation_preserves_base(self):
         root = Path(__file__).resolve().parents[1]
         config_path = root / "configs/physics_sweep.json"
