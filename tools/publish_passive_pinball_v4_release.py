@@ -120,6 +120,11 @@ def replacement_index(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
+    parser.add_argument(
+        "--source-root",
+        type=Path,
+        help="Read the immutable v3 release from another worktree; defaults to --root.",
+    )
     parser.add_argument("--source-release", type=Path, required=True)
     parser.add_argument("--replacement-manifest", type=Path, required=True)
     parser.add_argument("--pinball-metadata-manifest", type=Path, required=True)
@@ -131,23 +136,24 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     root = args.root.resolve()
-    source_release_path = project_path(root, args.source_release)
-    source_release_path.relative_to(root / "datasets")
+    source_root = (args.source_root or root).resolve()
+    source_release_path = project_path(source_root, args.source_release)
+    source_release_path.relative_to(source_root / "datasets")
     source_release = load_json(source_release_path)
     if source_release.get("schema_version") != "physweep_one_object_sweep_release_v1":
         raise ValueError("v4 publisher requires the published v3 release")
     source_base_path, source_base = verified_manifest(
-        root,
+        source_root,
         source_release["base_manifest"],
         str(source_release["base_manifest_sha256"]),
     )
     source_metadata_path, source_metadata = verified_manifest(
-        root,
+        source_root,
         source_release["metadata_manifest"],
         str(source_release["metadata_manifest_sha256"]),
     )
     source_physics_path, source_physics = verified_manifest(
-        root,
+        source_root,
         source_release["physics_manifest"],
         str(source_release["physics_manifest_sha256"]),
     )
@@ -168,9 +174,10 @@ def main() -> None:
     ):
         raise ValueError("unsupported passive-pinball replacement manifest")
     if (
-        project_path(root, replacement["source_release"]) != source_release_path
+        project_path(source_root, replacement["source_release"])
+        != source_release_path
         or str(replacement["source_release_sha256"]) != sha256(source_release_path)
-        or project_path(root, replacement["source_base_manifest"])
+        or project_path(source_root, replacement["source_base_manifest"])
         != source_base_path
         or str(replacement["source_base_manifest_sha256"])
         != sha256(source_base_path)
@@ -251,7 +258,7 @@ def main() -> None:
         raise ValueError(f"v4 base pipeline distribution is wrong: {pipeline_counts}")
 
     source_generic_path, source_generic = verified_manifest(
-        root, source_base["generic_manifest_path"]
+        source_root, source_base["generic_manifest_path"]
     )
     generic_samples = [
         sample
@@ -261,12 +268,12 @@ def main() -> None:
     if len(generic_samples) != EXPECTED_V4_PIPELINES["generic_pybullet"]:
         raise ValueError("v4 generic child manifest did not remove exactly 32 samples")
     for sample in generic_samples:
-        path = project_path(root, sample["metadata_path"])
+        path = project_path(source_root, sample["metadata_path"])
         if sha256(path) != str(sample["metadata_sha256"]):
             raise ValueError(f"retained generic metadata hash mismatch: {path}")
 
     source_asset_path, source_asset = verified_manifest(
-        root, source_base["asset_proxy_manifest_path"]
+        source_root, source_base["asset_proxy_manifest_path"]
     )
     output_dir = project_path(root, args.output_dir)
     output_dir.relative_to(root / "datasets")
@@ -289,12 +296,12 @@ def main() -> None:
         "samples": generic_samples,
         "coverage": generic_manifest_counts(
             [
-                load_json(project_path(root, sample["metadata_path"]))
+                load_json(project_path(source_root, sample["metadata_path"]))
                 for sample in generic_samples
             ]
         ),
         "v4_source": {
-            "path": root_relative(root, source_generic_path),
+                "path": root_relative(source_root, source_generic_path),
             "sha256": sha256(source_generic_path),
             "removed_group_count": 32,
         },
@@ -308,7 +315,7 @@ def main() -> None:
             **source_asset,
             "dataset_id": "physweep_one_object_v4_asset_proxy",
             "v4_source": {
-                "path": root_relative(root, source_asset_path),
+                "path": root_relative(source_root, source_asset_path),
                 "sha256": sha256(source_asset_path),
                 "record_policy": "byte_equivalent_source_records",
             },
@@ -335,7 +342,7 @@ def main() -> None:
         "records": merged_base_records,
         "v4_extension": {
             "mode": "deterministic_whole_group_replacement",
-            "source_base_manifest": root_relative(root, source_base_path),
+            "source_base_manifest": root_relative(source_root, source_base_path),
             "source_base_manifest_sha256": sha256(source_base_path),
             "replacement_manifest": root_relative(root, replacement_path),
             "replacement_manifest_sha256": sha256(replacement_path),
@@ -353,11 +360,11 @@ def main() -> None:
     sources = [
         {
             "kind": "v3_retained_groups",
-            "release": root_relative(root, source_release_path),
+            "release": root_relative(source_root, source_release_path),
             "release_sha256": sha256(source_release_path),
-            "metadata_manifest": root_relative(root, source_metadata_path),
+            "metadata_manifest": root_relative(source_root, source_metadata_path),
             "metadata_manifest_sha256": sha256(source_metadata_path),
-            "physics_manifest": root_relative(root, source_physics_path),
+            "physics_manifest": root_relative(source_root, source_physics_path),
             "physics_manifest_sha256": sha256(source_physics_path),
             "group_count": 3168,
             "sample_count": 41184,
@@ -421,7 +428,7 @@ def main() -> None:
         "metadata_manifest_sha256": sha256(metadata_output),
         "physics_manifest": published_relative(physics_output),
         "physics_manifest_sha256": sha256(physics_output),
-        "source_release": root_relative(root, source_release_path),
+        "source_release": root_relative(source_root, source_release_path),
         "source_release_sha256": sha256(source_release_path),
         "replacement_manifest": root_relative(root, replacement_path),
         "replacement_manifest_sha256": sha256(replacement_path),

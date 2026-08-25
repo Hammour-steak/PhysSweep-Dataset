@@ -133,6 +133,11 @@ def validate_existing_candidate(
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
+    parser.add_argument(
+        "--source-root",
+        type=Path,
+        help="Read the frozen v3 release from another worktree; defaults to --root.",
+    )
     parser.add_argument("--source-release", type=Path, default=DEFAULT_RELEASE)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--count", type=int, default=32)
@@ -146,12 +151,13 @@ def main() -> None:
     if args.count <= 0 or args.count % len(PROFILES):
         raise ValueError("replacement count must be a positive multiple of profile count")
     root = args.root.resolve()
-    release_path = project_path(root, args.source_release)
-    release_path.relative_to(root / "datasets")
+    source_root = (args.source_root or root).resolve()
+    release_path = project_path(source_root, args.source_release)
+    release_path.relative_to(source_root / "datasets")
     release = load_json(release_path)
     if release.get("schema_version") != "physweep_one_object_sweep_release_v1":
         raise ValueError("v4 replacement source must be the published v3 sweep release")
-    base_path = project_path(root, release["base_manifest"])
+    base_path = project_path(source_root, release["base_manifest"])
     if sha256(base_path) != str(release["base_manifest_sha256"]):
         raise ValueError("source release base manifest hash mismatch")
     base = load_json(base_path)
@@ -172,7 +178,9 @@ def main() -> None:
     records = []
     for ordinal, original in enumerate(chosen):
         index = int(original["index"])
-        original_metadata_path = project_path(root, original["metadata_path"])
+        original_metadata_path = project_path(
+            source_root, original["metadata_path"]
+        )
         if sha256(original_metadata_path) != str(original["metadata_sha256"]):
             raise ValueError(
                 f"source slot metadata hash mismatch: {original_metadata_path}"
@@ -258,9 +266,9 @@ def main() -> None:
         "schema_version": "physweep_passive_pinball_v4_replacement_manifest_v1",
         "dataset_id": "physweep_one_object_v4_passive_pinball_replacements",
         "sample_count": len(records),
-        "source_release": root_relative(root, release_path),
+        "source_release": root_relative(source_root, release_path),
         "source_release_sha256": sha256(release_path),
-        "source_base_manifest": root_relative(root, base_path),
+        "source_base_manifest": root_relative(source_root, base_path),
         "source_base_manifest_sha256": sha256(base_path),
         "selection_policy": {
             "version": "physweep_passive_pinball_slot_selection_v1",
