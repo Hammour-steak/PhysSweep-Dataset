@@ -101,6 +101,55 @@ class SupportMeshSafetyTest(unittest.TestCase):
                     metadata=changed,
                 )
 
+    def test_bound_metadata_accepts_dispatched_simulation_record(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source_path = root / "source.json"
+            bound_path = root / "bound.json"
+            trajectory_path = root / "trajectory.npz"
+            audit_path = root / "audit.json"
+            record_path = root / "simulation_record.json"
+            source = {"schema_version": "test", "scene_id": "scene_a"}
+            source_path.write_text(json.dumps(source), encoding="utf-8")
+            trajectory_path.write_bytes(b"trajectory")
+            audit_path.write_text("{}\n", encoding="utf-8")
+            import hashlib
+
+            digest = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+            record_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "physweep_dispatched_simulation_record_v1",
+                        "scene_id": "scene_a",
+                        "metadata_path": str(source_path),
+                        "metadata_sha256": digest(source_path),
+                        "trajectory_path": str(trajectory_path),
+                        "trajectory_sha256": digest(trajectory_path),
+                        "audit_path": str(audit_path),
+                        "audit_sha256": digest(audit_path),
+                    }
+                ),
+                encoding="utf-8",
+            )
+            bound = {
+                **source,
+                "source_metadata": {
+                    "path": "source.json",
+                    "sha256": digest(source_path),
+                },
+                "physics": {
+                    "trajectory_path": "trajectory.npz",
+                    "audit_path": "audit.json",
+                    "simulation_record_path": "simulation_record.json",
+                },
+            }
+            bound_path.write_text(json.dumps(bound), encoding="utf-8")
+            validate_simulation_record(
+                root=root,
+                metadata_path=bound_path,
+                metadata=bound,
+            )
+
 
 class VideoEncodingTest(unittest.TestCase):
     def test_perceptually_lossless_long_gop_profile(self) -> None:

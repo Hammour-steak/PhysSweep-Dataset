@@ -23,6 +23,8 @@ class SweepVisualBindingTest(unittest.TestCase):
                 {
                     "scene_id": "sample_001",
                     "metadata_path": "/project/sample_001/metadata.json",
+                    "trajectory_path": "/project/physics/sample_001/trajectory.npz",
+                    "audit_path": "/project/physics/sample_001/trajectory_audit.json",
                     "ok": True,
                     "audit_passed": True,
                 }
@@ -36,6 +38,9 @@ class SweepVisualBindingTest(unittest.TestCase):
                 {
                     "scene_id": "sample_001",
                     "metadata_path": "/project/sample_001/metadata.json",
+                    "trajectory_path": "/project/physics/sample_001/trajectory.npz",
+                    "audit_path": "/project/physics/sample_001/trajectory_audit.json",
+                    "simulation_record_path": "/project/physics/sample_001/simulation_record.json",
                 }
             ],
         )

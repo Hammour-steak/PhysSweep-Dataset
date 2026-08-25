@@ -37,6 +37,7 @@ from render_asset_proxy_scene import (  # pylint: disable=wrong-import-position
 from immutable_scene_contract import validate_simulation_record
 from render_asset_proxy_reviews import clear_scene, look_at  # pylint: disable=wrong-import-position
 from video_encoding import configure_h264_output
+from trajectory_contract import adapter_trajectory_view
 
 
 def blender_args() -> argparse.Namespace:
@@ -158,6 +159,7 @@ def render(
     )
     with np.load(trajectory_path) as source:
         trajectory = {key: source[key] for key in source.files}
+    trajectory = adapter_trajectory_view(trajectory)
     clear_scene()
     setup_scene(metadata)
     apply_hdri(metadata["render"]["environment"])

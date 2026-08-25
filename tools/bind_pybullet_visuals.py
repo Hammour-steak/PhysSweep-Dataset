@@ -690,6 +690,15 @@ def solve_camera(
     minimum_full_center_fraction = float(
         request["minimum_full_trajectory_center_visible_fraction"]
     )
+    if str(observation["intent"]) == "ballistic_arc":
+        minimum_full_center_fraction = max(
+            minimum_full_center_fraction,
+            float(
+                rules["camera_observation"][
+                    "minimum_ballistic_full_trajectory_center_visible_fraction"
+                ]
+            ),
+        )
     minimum_object_span = float(request["minimum_initial_object_span_ndc"])
     minimum_initial_object_visible_fraction = float(
         request.get("minimum_initial_object_visible_fraction", 0.75)

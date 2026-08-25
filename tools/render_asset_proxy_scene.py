@@ -35,6 +35,7 @@ from blender_render_settings import configure_render_engine
 from immutable_scene_contract import validate_simulation_record
 from static_support_proxy import blender_import_static_support_visual
 from video_encoding import configure_h264_output
+from trajectory_contract import adapter_trajectory_view
 from appearance_adaptation import apply_material_lightness_adaptation
 from camera_geometry import blocker_safe_seeded_view_order, seeded_view_order
 
@@ -575,6 +576,19 @@ def add_camera(
     dynamic_record: dict[str, Any],
     specialized_views: dict[str, Any],
 ) -> dict[str, Any]:
+    frozen = metadata.get("camera_binding")
+    if frozen is not None:
+        bpy.ops.object.camera_add()
+        camera = bpy.context.object
+        camera.name = "asset_only_camera"
+        camera.data.lens = float(frozen["focal_length_mm"])
+        camera.data.sensor_width = 36.0
+        camera.data.clip_start = 0.03
+        camera.data.clip_end = 100.0
+        camera.location = tuple(float(value) for value in frozen["position_m"])
+        look_at(camera, mathutils.Vector(frozen["target_m"]))
+        bpy.context.scene.camera = camera
+        return dict(frozen)
     surface = metadata["physics"]["support_surface"]
     positions = np.asarray(trajectory["position_m"], dtype=np.float64)
     observation = metadata["camera_request"]["observation"]
@@ -802,6 +816,7 @@ def render(
     )
     with np.load(trajectory_path) as source:
         trajectory = {key: source[key] for key in source.files}
+    trajectory = adapter_trajectory_view(trajectory)
     dynamic_record = records[metadata["assets"]["dynamic_asset_id"]]
     prop_id = metadata["assets"]["static_prop_asset_id"]
     clear_scene()

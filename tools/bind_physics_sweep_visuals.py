@@ -75,6 +75,13 @@ def validated_sweep_samples(manifest: dict[str, Any]) -> list[dict[str, Any]]:
             {
                 "scene_id": str(record["scene_id"]),
                 "metadata_path": str(record["metadata_path"]),
+                "trajectory_path": str(record["trajectory_path"]),
+                "audit_path": str(record["audit_path"]),
+                "simulation_record_path": str(
+                    Path(str(record["trajectory_path"])).with_name(
+                        "simulation_record.json"
+                    )
+                ),
             }
         )
     return samples
@@ -103,9 +110,11 @@ def bind_one(
     ):
         raise ValueError(f"parent is not bound metadata: {parent_bound_path}")
 
-    trajectory_path = sweep_path.parent / "physics" / "trajectory.npz"
-    simulation_record_path = sweep_path.parent / "physics" / "simulation_record.json"
-    audit_path = sweep_path.parent / "physics" / "trajectory_audit.json"
+    trajectory_path = project_path(root, str(sweep_sample["trajectory_path"]))
+    simulation_record_path = project_path(
+        root, str(sweep_sample["simulation_record_path"])
+    )
+    audit_path = project_path(root, str(sweep_sample["audit_path"]))
     simulation_record = load_json(simulation_record_path)
     if simulation_record.get("scene_id") != scene_id:
         raise ValueError(f"simulation scene mismatch: {scene_id}")
@@ -149,17 +158,21 @@ def bind_one(
     render["inspection_frame_dir"] = root_relative(
         root, output_root / "frames" / scene_id
     )
+    render["instance_mask_dir"] = root_relative(
+        root, output_root / "masks" / scene_id
+    )
     output_path = output_root / "metadata" / f"{scene_id}.json"
     write_json(output_path, bound)
     return {
         "scene_id": scene_id,
         "parent_scene_id": parent_scene_id,
+        "kind": sweep_binding["kind"],
         "mode": sweep_binding.get("mode", "one_factor"),
         "target_object_id": sweep_binding.get("target_object_id"),
         "target_object_index": sweep_binding.get("target_object_index"),
-        "parameter": sweep_binding.get("parameter", sweep_binding["axis"]),
-        "axis": sweep_binding["axis"],
-        "level_index": sweep_binding["level_index"],
+        "parameter": sweep_binding.get("parameter") or sweep_binding.get("axis"),
+        "axis": sweep_binding.get("axis"),
+        "level_index": sweep_binding.get("level_index"),
         "metadata_path": root_relative(root, output_path),
         "metadata_sha256": sha256(output_path),
         "camera_policy": "copied_from_parent_base",

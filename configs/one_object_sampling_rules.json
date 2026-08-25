@@ -4,6 +4,7 @@
   "camera_observation": {
     "version": "physweep_motion_structure_camera_observation_v2",
     "minimum_inclined_surface_side_readability": 0.90,
+    "minimum_ballistic_full_trajectory_center_visible_fraction": 0.60,
     "ground_flat_elevation_range_degrees": [18.0, 28.0],
     "asset_profile_motion_intents": {
       "resting_push": "slide_push_1obj",
@@ -66,7 +67,7 @@
         "structure_context": "horizontal_surface",
         "preferred_object_span_ndc": 0.130,
         "minimum_median_object_span_ndc": 0.065,
-        "minimum_full_trajectory_center_visible_fraction": 0.30,
+        "minimum_full_trajectory_center_visible_fraction": 0.60,
         "full_trajectory_camera_target_blend": 0.10,
         "maximum_camera_distance_above_minimum_m": 4.0,
         "elevation_range_degrees": [22.0, 44.0]
@@ -77,7 +78,7 @@
         "structure_context": "horizontal_surface",
         "preferred_object_span_ndc": 0.130,
         "minimum_median_object_span_ndc": 0.065,
-        "minimum_full_trajectory_center_visible_fraction": 0.30,
+        "minimum_full_trajectory_center_visible_fraction": 0.60,
         "full_trajectory_camera_target_blend": 0.10,
         "maximum_camera_distance_above_minimum_m": 4.0,
         "elevation_range_degrees": [22.0, 44.0]

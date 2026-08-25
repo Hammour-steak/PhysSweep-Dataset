@@ -170,7 +170,7 @@ def _asset(scene: dict[str, Any], root: Path) -> tuple[dict[str, np.ndarray], di
         + np.asarray(arrays["ground_contact"], dtype=np.int32)
         + np.asarray(arrays["prop_contact"], dtype=np.int32)
     )[:, None]
-    return {
+    normalized = {
         "time_s": arrays["time_s"],
         "position_m": arrays["position_m"][:, None, :],
         "quaternion_wxyz": _xyzw_to_wxyz(arrays["quaternion_xyzw"])[:, None, :],
@@ -181,7 +181,10 @@ def _asset(scene: dict[str, Any], root: Path) -> tuple[dict[str, np.ndarray], di
             None, :
         ],
         "inertia_diagonal_kg_m2": arrays["runtime_inertia_diagonal_kg_m2"][None, :],
-    }, audit
+    }
+    for key, value in arrays.items():
+        normalized[f"adapter__{key}"] = value
+    return normalized, audit
 
 
 def _billiards(scene: dict[str, Any], root: Path) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
@@ -209,7 +212,7 @@ def _billiards(scene: dict[str, Any], root: Path) -> tuple[dict[str, np.ndarray]
     )
     if simulated_initial != initial:
         raise RuntimeError("billiards adapter changed the initial state")
-    return {
+    normalized = {
         "time_s": arrays["time_s"],
         "position_m": arrays["position_m"],
         "quaternion_wxyz": _xyzw_to_wxyz(arrays["quaternion_xyzw"]),
@@ -218,7 +221,10 @@ def _billiards(scene: dict[str, Any], root: Path) -> tuple[dict[str, np.ndarray]
         "contact_count": arrays["contact_count"],
         "runtime_material": arrays["runtime_material"],
         "inertia_diagonal_kg_m2": arrays["runtime_inertia_diagonal_kg_m2"],
-    }, audit
+    }
+    for key, value in arrays.items():
+        normalized[f"adapter__{key}"] = value
+    return normalized, audit
 
 
 def _adapter_hard_results(

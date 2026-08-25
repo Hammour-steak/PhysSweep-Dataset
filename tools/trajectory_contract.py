@@ -8,6 +8,21 @@ from typing import Any
 import numpy as np
 
 
+def adapter_trajectory_view(
+    trajectory: dict[str, np.ndarray],
+) -> dict[str, np.ndarray]:
+    """Restore adapter-native channels retained beside the canonical layout."""
+    result = dict(trajectory)
+    result.update(
+        {
+            key[len("adapter__") :]: value
+            for key, value in trajectory.items()
+            if key.startswith("adapter__")
+        }
+    )
+    return result
+
+
 def object_trajectory_view(
     metadata: dict[str, Any], trajectory: dict[str, np.ndarray]
 ) -> dict[str, np.ndarray]:
