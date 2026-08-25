@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from render_asset_proxy_manifest import (  # noqa: E402
+    instance_masks_are_reusable,
     output_path,
     render_source_records,
     reusable_render_record as reusable_asset_record,
@@ -27,6 +28,48 @@ def write_json(path: Path, value: object) -> None:
 
 
 class RenderManifestResumeTests(unittest.TestCase):
+    def test_specialized_mask_reuse_requires_matching_scene_and_object(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            mask_root = root / "outputs/run/masks/scene"
+            mask_dir = mask_root / "object"
+            masks = [mask_dir / f"frame_{index:04d}.png" for index in (1, 2)]
+            for mask in masks:
+                mask.parent.mkdir(parents=True, exist_ok=True)
+                mask.write_bytes(b"mask")
+            manifest = {
+                "schema_version": "physweep_instance_mask_manifest_v1",
+                "scene_id": "scene",
+                "object_id": "object",
+                "frame_count": 2,
+                "records": [
+                    {"filename": mask.name, "sha256": sha256(mask)}
+                    for mask in masks
+                ],
+            }
+            manifest_path = mask_root / "mask_manifest.json"
+            write_json(manifest_path, manifest)
+            render_record = {
+                "scene_id": "scene",
+                "instance_mask_output": {
+                    "manifest_path": str(manifest_path),
+                    "manifest_sha256": sha256(manifest_path),
+                    "objects": {"object": {"directory": str(mask_dir)}},
+                },
+            }
+            self.assertTrue(
+                instance_masks_are_reusable(root, render_record, 2)
+            )
+
+            manifest["scene_id"] = "different_scene"
+            write_json(manifest_path, manifest)
+            render_record["instance_mask_output"]["manifest_sha256"] = sha256(
+                manifest_path
+            )
+            self.assertFalse(
+                instance_masks_are_reusable(root, render_record, 2)
+            )
+
     def test_billiards_legacy_paths_are_normalized(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -42,6 +85,7 @@ class RenderManifestResumeTests(unittest.TestCase):
                 root,
                 {"billiards_metadata_paths": [str(metadata.relative_to(root))]},
                 "billiards",
+                {"billiards": ("", "", "", "physweep_billiards_scene_v4")},
             )
             self.assertEqual(records[0]["scene_id"], "scene")
 
@@ -58,6 +102,7 @@ class RenderManifestResumeTests(unittest.TestCase):
                     root,
                     {"records": [{"metadata_path": str(metadata)}]},
                     "asset",
+                    {"asset": ("", "", "", "physweep_asset_proxy_scene_v3")},
                 )
 
     def test_output_path_rejects_non_output_targets(self) -> None:

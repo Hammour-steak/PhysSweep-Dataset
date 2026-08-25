@@ -173,7 +173,7 @@ def _set_runtime_material(
     schema = _schema(metadata)
     objects = _objects(metadata)
     if objects:
-        obj = _objects(metadata)[object_index]
+        obj = objects[object_index]
         obj["material"].update(material)
         return f"simulation.objects[{object_index}].material"
     physics = metadata.setdefault("physics", {})

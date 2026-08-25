@@ -108,6 +108,7 @@ def compact_render_provenance(rendered: dict[str, Any]) -> dict[str, Any]:
         "video_encoding",
         "render_scope",
         "render_output_overridden",
+        "render_samples",
         "instance_mask_output",
         "wall_time_s",
     )

@@ -37,9 +37,6 @@ def renderer_table(root: Path) -> dict[str, tuple[str, str, str, str]]:
     }
 
 
-RENDERERS = renderer_table(PROJECT_ROOT)
-
-
 def load_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -81,23 +78,36 @@ def instance_masks_are_reusable(
         return True
     manifest_path = project_path(root, binding["manifest_path"])
     if (
-        not manifest_path.is_file()
+        root.resolve() not in manifest_path.parents
+        or not manifest_path.is_file()
         or sha256(manifest_path) != str(binding["manifest_sha256"])
     ):
         return False
     manifest = load_json(manifest_path)
     records = manifest.get("records", [])
+    object_id = str(manifest.get("object_id", ""))
+    objects = binding.get("objects", {})
     if (
         manifest.get("schema_version") != "physweep_instance_mask_manifest_v1"
+        or str(manifest.get("scene_id")) != str(render_record.get("scene_id"))
+        or set(objects) != {object_id}
         or int(manifest.get("frame_count", -1)) != frame_count
+        or not isinstance(records, list)
         or len(records) != frame_count
     ):
         return False
-    directory = manifest_path.parent / str(manifest["object_id"])
+    directory = (manifest_path.parent / object_id).resolve()
+    if project_path(root, objects[object_id]["directory"]) != directory:
+        return False
+    filenames = [str(record.get("filename", "")) for record in records]
+    if len(filenames) != len(set(filenames)) or any(
+        not filename or Path(filename).name != filename for filename in filenames
+    ):
+        return False
     return all(
-        (directory / str(record["filename"])).is_file()
-        and sha256(directory / str(record["filename"])) == str(record["sha256"])
-        for record in records
+        (directory / filename).is_file()
+        and sha256(directory / filename) == str(record["sha256"])
+        for filename, record in zip(filenames, records)
     )
 
 
@@ -139,6 +149,11 @@ def reusable_render_record(
         frame_dir / f"frame_{frame:04d}.png"
         for frame in (1, (frame_count + 1) // 2, frame_count)
     ]
+    samples_reusable = (
+        metadata.get("schema_version") != "physweep_passive_pinball_scene_v1"
+        or int(render_record.get("render_samples", -1))
+        == int(metadata["render"]["samples"])
+    )
     return (
         str(render_record.get("scene_id")) == str(source_record["scene_id"])
         and project_path(root, str(render_record.get("metadata_path")))
@@ -154,14 +169,22 @@ def reusable_render_record(
             and frame.stat().st_size > 0
             for frame in inspection_frames
         )
+        and samples_reusable
         and instance_masks_are_reusable(root, render_record, frame_count)
         and egl_verified
     )
 
 
 def render_source_records(
-    root: Path, manifest: dict[str, Any], renderer: str
+    root: Path,
+    manifest: dict[str, Any],
+    renderer: str,
+    renderers: dict[str, tuple[str, str, str, str]] | None = None,
 ) -> list[dict[str, Any]]:
+    if renderers is None:
+        renderers = renderer_table(root)
+    if renderer not in renderers:
+        raise ValueError(f"unknown specialized renderer: {renderer}")
     source_records = manifest.get("records")
     if source_records is None and renderer == "billiards":
         source_records = [
@@ -170,7 +193,7 @@ def render_source_records(
         ]
     if source_records is None:
         raise ValueError("render manifest has no records")
-    expected_schema = RENDERERS[renderer][3]
+    expected_schema = renderers[renderer][3]
     records = [dict(record) for record in source_records]
     for record in records:
         metadata_path = project_path(root, record["metadata_path"])
@@ -313,7 +336,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--blender", type=Path, default=PROJECT_ROOT / "runtime/blender-3.4.0-linux-x64/blender")
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--gpus", default="0,1,2,3,4,5,6,7")
-    parser.add_argument("--renderer", choices=tuple(RENDERERS), default="asset")
+    parser.add_argument("--renderer", default="asset")
     parser.add_argument(
         "--resume",
         action="store_true",
@@ -339,7 +362,10 @@ def main() -> None:
     gpus = [int(value) for value in args.gpus.split(",") if value.strip()]
     if not gpus:
         raise SystemExit("--gpus must contain at least one id")
-    script_name, schema_version, result_name = RENDERERS[args.renderer][:3]
+    renderers = renderer_table(root)
+    if args.renderer not in renderers:
+        raise ValueError(f"unknown specialized renderer: {args.renderer}")
+    script_name, schema_version, result_name = renderers[args.renderer][:3]
     script = root / script_name
     declared_blender = Path(args.blender)
     if not declared_blender.is_absolute():
@@ -351,7 +377,9 @@ def main() -> None:
     selector = build_egl_device_selector(root)
     selector_path = root / str(selector["binary_path"])
     started = time.perf_counter()
-    source_records = render_source_records(root, manifest, args.renderer)
+    source_records = render_source_records(
+        root, manifest, args.renderer, renderers
+    )
     jobs = [
         (
             root,

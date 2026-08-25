@@ -157,7 +157,10 @@ def configure_scene(metadata: dict[str, Any]) -> None:
     scene = bpy.context.scene
     render = metadata["render"]
     time_binding = metadata["simulation"]["time"]
-    scene.render.engine = "BLENDER_EEVEE"
+    if render["engine"] != "BLENDER_EEVEE":
+        raise ValueError("passive-pinball renderer requires BLENDER_EEVEE")
+    scene.render.engine = str(render["engine"])
+    scene.eevee.taa_render_samples = int(render["samples"])
     scene.eevee.use_gtao = True
     scene.eevee.gtao_distance = 3.0
     scene.eevee.gtao_factor = 1.2
@@ -345,6 +348,7 @@ def render(
         "instance_mask_output": instance_mask_output,
         "camera": camera,
         "render_engine": scene.render.engine,
+        "render_samples": int(scene.eevee.taa_render_samples),
         "video_encoding": video_encoding,
         "wall_time_s": round(time.perf_counter() - started, 6),
     }

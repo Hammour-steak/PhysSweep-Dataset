@@ -117,40 +117,98 @@ def main() -> None:
     ]
     if args.pipeline is not None:
         prepare_base_command.extend(["--pipeline", args.pipeline])
-    stage_commands = dict([
-        (
-            "prepare_base_render_plan",
-            prepare_base_command,
-        ),
-        (
-            "prepare_sweep_render_plan",
-            [python, "tools/prepare_sweep_render_manifests.py", "--root", str(root), "--release-manifest", str(release_path), "--staged-base-manifest", str(output / "staged_manifest.json"), "--output-root", str(output / "sweep")],
-        ),
-        (
-            "bind_generic_base_cameras",
-            [python, "tools/bind_pybullet_visuals.py", "--root", str(root), "--manifest", str(output / "manifests/generic_source_manifest.json"), "--output-root", str(output / "generic"), "--workers", str(args.workers)],
-        ),
-        (
-            "bind_generic_sweep_visuals",
-            [python, "tools/bind_physics_sweep_visuals.py", "--root", str(root), "--sweep-manifest", str(output / "sweep/generic/physics_manifest.json"), "--base-bound-manifest", str(output / "generic/bound_manifest.json"), "--output-root", str(output / "sweep/generic/bound")],
-        ),
-        (
-            "render_asset_bases",
-            [python, "tools/render_asset_proxy_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/asset/base_render_input_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus, "--resume", "--result-manifest", str(output / "sweep/asset/base_render_manifest.json")],
-        ),
-        (
-            "freeze_asset_sweep_cameras",
-            [python, "tools/freeze_asset_sweep_cameras.py", "--root", str(root), "--manifest", str(output / "sweep/asset/render_input_manifest.json"), "--base-manifest", str(output / "sweep/asset/base_render_input_manifest.json")],
-        ),
-        (
-            "render_asset_sweeps",
-            [python, "tools/render_asset_proxy_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/asset/derived_render_input_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus, "--resume", "--result-manifest", str(output / "sweep/asset/derived_render_manifest.json")],
-        ),
-        (
-            "render_generic_sweeps",
-            [python, "tools/render_pybullet_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/generic/bound/bound_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus, "--resume"],
-        ),
-    ])
+    stage_commands = {
+        "prepare_base_render_plan": prepare_base_command,
+        "prepare_sweep_render_plan": [
+            python,
+            "tools/prepare_sweep_render_manifests.py",
+            "--root",
+            str(root),
+            "--release-manifest",
+            str(release_path),
+            "--staged-base-manifest",
+            str(output / "staged_manifest.json"),
+            "--output-root",
+            str(output / "sweep"),
+        ],
+        "bind_generic_base_cameras": [
+            python,
+            "tools/bind_pybullet_visuals.py",
+            "--root",
+            str(root),
+            "--manifest",
+            str(output / "manifests/generic_source_manifest.json"),
+            "--output-root",
+            str(output / "generic"),
+            "--workers",
+            str(args.workers),
+        ],
+        "bind_generic_sweep_visuals": [
+            python,
+            "tools/bind_physics_sweep_visuals.py",
+            "--root",
+            str(root),
+            "--sweep-manifest",
+            str(output / "sweep/generic/physics_manifest.json"),
+            "--base-bound-manifest",
+            str(output / "generic/bound_manifest.json"),
+            "--output-root",
+            str(output / "sweep/generic/bound"),
+        ],
+        "render_asset_bases": [
+            python,
+            "tools/render_asset_proxy_manifest.py",
+            "--root",
+            str(root),
+            "--manifest",
+            str(output / "sweep/asset/base_render_input_manifest.json"),
+            "--workers",
+            str(args.workers),
+            "--gpus",
+            args.gpus,
+            "--resume",
+            "--result-manifest",
+            str(output / "sweep/asset/base_render_manifest.json"),
+        ],
+        "freeze_asset_sweep_cameras": [
+            python,
+            "tools/freeze_asset_sweep_cameras.py",
+            "--root",
+            str(root),
+            "--manifest",
+            str(output / "sweep/asset/render_input_manifest.json"),
+            "--base-manifest",
+            str(output / "sweep/asset/base_render_input_manifest.json"),
+        ],
+        "render_asset_sweeps": [
+            python,
+            "tools/render_asset_proxy_manifest.py",
+            "--root",
+            str(root),
+            "--manifest",
+            str(output / "sweep/asset/derived_render_input_manifest.json"),
+            "--workers",
+            str(args.workers),
+            "--gpus",
+            args.gpus,
+            "--resume",
+            "--result-manifest",
+            str(output / "sweep/asset/derived_render_manifest.json"),
+        ],
+        "render_generic_sweeps": [
+            python,
+            "tools/render_pybullet_manifest.py",
+            "--root",
+            str(root),
+            "--manifest",
+            str(output / "sweep/generic/bound/bound_manifest.json"),
+            "--workers",
+            str(args.workers),
+            "--gpus",
+            args.gpus,
+            "--resume",
+        ],
+    }
     for record in specialized_by_pipeline(root).values():
         branch = str(record["sweep_branch"])
         renderer = str(record["renderer_id"])
