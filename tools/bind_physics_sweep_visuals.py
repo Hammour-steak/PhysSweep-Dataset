@@ -8,6 +8,7 @@ import copy
 import hashlib
 import json
 import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -21,10 +22,12 @@ def load_json(path: Path) -> dict[str, Any]:
 
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
         json.dumps(value, indent=2, ensure_ascii=True) + "\n",
         encoding="utf-8",
     )
+    temporary.replace(path)
 
 
 def sha256(path: Path) -> str:
@@ -84,6 +87,9 @@ def validated_sweep_samples(manifest: dict[str, Any]) -> list[dict[str, Any]]:
                 ),
             }
         )
+    scene_ids = [sample["scene_id"] for sample in samples]
+    if len(scene_ids) != len(set(scene_ids)):
+        raise ValueError("simulation manifest contains duplicate scene ids")
     return samples
 
 
@@ -92,7 +98,9 @@ def bind_one(
     sweep_sample: dict[str, Any],
     base_bound_by_scene: dict[str, dict[str, Any]],
     output_root: Path,
+    published_root: Path | None = None,
 ) -> dict[str, Any]:
+    published_root = published_root or output_root
     scene_id = str(sweep_sample["scene_id"])
     sweep_path = project_path(root, str(sweep_sample["metadata_path"]))
     sweep = load_json(sweep_path)
@@ -153,13 +161,13 @@ def bind_one(
     }
     render = bound["visualization"]["render"]
     render["video_path"] = root_relative(
-        root, output_root / "videos" / f"{scene_id}.mp4"
+        root, published_root / "videos" / f"{scene_id}.mp4"
     )
     render["inspection_frame_dir"] = root_relative(
-        root, output_root / "frames" / scene_id
+        root, published_root / "frames" / scene_id
     )
     render["instance_mask_dir"] = root_relative(
-        root, output_root / "masks" / scene_id
+        root, published_root / "masks" / scene_id
     )
     output_path = output_root / "metadata" / f"{scene_id}.json"
     write_json(output_path, bound)
@@ -173,7 +181,9 @@ def bind_one(
         "parameter": sweep_binding.get("parameter") or sweep_binding.get("axis"),
         "axis": sweep_binding.get("axis"),
         "level_index": sweep_binding.get("level_index"),
-        "metadata_path": root_relative(root, output_path),
+        "metadata_path": root_relative(
+            root, published_root / "metadata" / f"{scene_id}.json"
+        ),
         "metadata_sha256": sha256(output_path),
         "camera_policy": "copied_from_parent_base",
     }
@@ -192,15 +202,11 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     root = args.root.resolve()
-    output_root = args.output_root.resolve()
-    if output_root.exists():
-        if not args.overwrite:
-            raise SystemExit(f"output exists; pass --overwrite: {output_root}")
-        shutil.rmtree(output_root)
-    output_root.mkdir(parents=True)
-
-    sweep_manifest_path = args.sweep_manifest.resolve()
-    base_bound_manifest_path = args.base_bound_manifest.resolve()
+    output_root = project_path(root, str(args.output_root))
+    if (root / "outputs").resolve() not in output_root.parents:
+        raise ValueError("sweep visual output must remain under root/outputs")
+    sweep_manifest_path = project_path(root, str(args.sweep_manifest))
+    base_bound_manifest_path = project_path(root, str(args.base_bound_manifest))
     sweep_manifest = load_json(sweep_manifest_path)
     base_bound_manifest = load_json(base_bound_manifest_path)
     sweep_samples = validated_sweep_samples(sweep_manifest)
@@ -212,21 +218,39 @@ def main() -> None:
         str(record["scene_id"]): record
         for record in base_bound_manifest["samples"]
     }
-    records = [
-        bind_one(root, sample, base_bound_by_scene, output_root)
-        for sample in sweep_samples
-    ]
-    manifest = {
-        "schema_version": "physweep_pybullet_sweep_bound_manifest_v1",
-        "dataset_id": str(sweep_manifest["dataset_id"]),
-        "source_manifest": root_relative(root, sweep_manifest_path),
-        "base_bound_manifest": root_relative(root, base_bound_manifest_path),
-        "output_root": root_relative(root, output_root),
-        "sample_count": len(records),
-        "camera_policy": "parent_base_binding_is_frozen_for_each_one_factor_group",
-        "samples": records,
-    }
-    write_json(output_root / "bound_manifest.json", manifest)
+    if (
+        int(base_bound_manifest["sample_count"]) != len(base_bound_manifest["samples"])
+        or len(base_bound_by_scene) != len(base_bound_manifest["samples"])
+    ):
+        raise ValueError("base bound manifest contains duplicate or missing samples")
+    if output_root.exists() and not args.overwrite:
+        raise SystemExit(f"output exists; pass --overwrite: {output_root}")
+    output_root.parent.mkdir(parents=True, exist_ok=True)
+    temporary_output = tempfile.TemporaryDirectory(
+        prefix=f".{output_root.name}.", dir=output_root.parent
+    )
+    staging = Path(temporary_output.name)
+    try:
+        records = [
+            bind_one(root, sample, base_bound_by_scene, staging, output_root)
+            for sample in sweep_samples
+        ]
+        manifest = {
+            "schema_version": "physweep_pybullet_sweep_bound_manifest_v1",
+            "dataset_id": str(sweep_manifest["dataset_id"]),
+            "source_manifest": root_relative(root, sweep_manifest_path),
+            "base_bound_manifest": root_relative(root, base_bound_manifest_path),
+            "output_root": root_relative(root, output_root),
+            "sample_count": len(records),
+            "camera_policy": "parent_base_binding_is_frozen_for_each_one_factor_group",
+            "samples": records,
+        }
+        write_json(staging / "bound_manifest.json", manifest)
+        if output_root.exists():
+            shutil.rmtree(output_root)
+        staging.replace(output_root)
+    finally:
+        temporary_output.cleanup()
     print(f"bound manifest: {output_root / 'bound_manifest.json'}")
     print(f"samples: {len(records)}")
 

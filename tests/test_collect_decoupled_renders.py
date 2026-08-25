@@ -74,16 +74,24 @@ class CollectedRenderTests(unittest.TestCase):
             "egl_device_verified": True,
             "render_record": {
                 "schema_version": "physweep_pybullet_render_record_v1",
+                "scene_id": "scene",
                 "metadata_path": str(bound_metadata),
                 "metadata_sha256": sha256(bound_metadata),
                 "trajectory_path": str(trajectory),
                 "trajectory_sha256": sha256(trajectory),
                 "video_path": str(video),
                 "video_sha256": declared_video_hash,
+                "inspection_frames": [],
                 "render_engine": "BLENDER_EEVEE",
                 "video_encoding": {"fps": 24},
             },
         }
+        inspection_frame = (
+            root / "outputs/.staging_current_v4/generic/frames/scene/frame_0001.png"
+        )
+        inspection_frame.parent.mkdir(parents=True)
+        inspection_frame.write_bytes(b"frame")
+        render_record["render_record"]["inspection_frames"] = [str(inspection_frame)]
         branch_paths = {}
         for name, records in {
             "generic": [render_record],
@@ -134,6 +142,12 @@ class CollectedRenderTests(unittest.TestCase):
             self.assertEqual(sha256(retained), record["effective_render_metadata_sha256"])
             retained_value = json.loads(retained.read_text(encoding="utf-8"))
             self.assertNotIn(".staging_current_v4", json.dumps(retained_value))
+            retained_frames = root / retained_value["visualization"]["render"][
+                "inspection_frame_dir"
+            ]
+            self.assertEqual(
+                [path.name for path in retained_frames.iterdir()], ["frame_0001.png"]
+            )
             shutil_target = root / record["video_path"]
             self.assertTrue(shutil_target.is_file())
             self.assertEqual(sha256(shutil_target), record["sha256"])
@@ -144,6 +158,26 @@ class CollectedRenderTests(unittest.TestCase):
             paths = self.fixture(root, video_hash="0" * 64)
             with self.assertRaises(ValueError):
                 self.run_collect(root, paths)
+
+    def test_failed_overwrite_preserves_existing_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root, video_hash="0" * 64)
+            output = root / "outputs/current"
+            sentinel = output / "sentinel"
+            sentinel.parent.mkdir(parents=True)
+            sentinel.write_text("keep", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                collect(
+                    root=root,
+                    manifest_path=paths["manifest"],
+                    generic_render_manifest_path=paths["generic"],
+                    asset_render_manifest_path=paths["asset"],
+                    billiards_render_manifest_path=paths["billiards"],
+                    output=output,
+                    overwrite=True,
+                )
+            self.assertEqual(sentinel.read_text(encoding="utf-8"), "keep")
 
     def test_raw_source_manifest_is_rejected_before_output_is_created(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

@@ -38,11 +38,29 @@ def sha256(path: Path) -> str:
 
 
 def root_relative(root: Path, path: Path) -> str:
-    resolved = path.resolve()
-    try:
-        return str(resolved.relative_to(root))
-    except ValueError:
-        return str(resolved)
+    return str(path.resolve().relative_to(root))
+
+
+def project_path(root: Path, value: str | Path) -> Path:
+    path = Path(value)
+    return (path if path.is_absolute() else root / path).resolve()
+
+
+def validated_source_records(manifest: dict[str, Any]) -> list[dict[str, Any]]:
+    if manifest.get("schema_version") != "physweep_one_object_decoupled_manifest_v3":
+        raise ValueError("formal render preparation requires a v3 decoupled manifest")
+    records = list(manifest["records"])
+    if int(manifest["sample_count"]) != len(records):
+        raise ValueError("source manifest sample count is inconsistent")
+    scene_ids = [str(record["scene_id"]) for record in records]
+    indices = [int(record["index"]) for record in records]
+    if len(scene_ids) != len(set(scene_ids)) or len(indices) != len(set(indices)):
+        raise ValueError("source manifest contains duplicate scene ids or indices")
+    pipelines = {str(record["pipeline"]) for record in records}
+    expected = {"generic_pybullet", "asset_proxy", "billiards"}
+    if not pipelines <= expected:
+        raise ValueError(f"source manifest contains unknown pipelines: {pipelines - expected}")
+    return records
 
 
 def choose_one(
@@ -351,7 +369,8 @@ def stage_render_record(
     output_root: Path,
 ) -> dict[str, Any]:
     record = copy.deepcopy(source_record)
-    source_path = root / str(record["metadata_path"])
+    source_path = project_path(root, record["metadata_path"])
+    source_path.relative_to(root)
     source_hash = sha256(source_path)
     declared_hash = record.get("metadata_sha256")
     if declared_hash is not None and str(declared_hash) != source_hash:
@@ -383,14 +402,13 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     root = args.root.resolve()
-    source_manifest_path = args.manifest.resolve()
+    source_manifest_path = project_path(root, args.manifest)
+    source_manifest_path.relative_to(root / "datasets")
     source_manifest = load_json(source_manifest_path)
-    output_root = args.output_root.resolve()
-    if output_root.exists():
-        if not args.overwrite:
-            raise SystemExit(f"output exists; pass --overwrite: {output_root}")
-        shutil.rmtree(output_root)
-    output_root.mkdir(parents=True)
+    validated_source_records(source_manifest)
+    output_root = project_path(root, args.output_root)
+    if (root / "outputs").resolve() not in output_root.parents:
+        raise ValueError("formal render output must remain under root/outputs")
 
     records = (
         pilot_selection(source_manifest)
@@ -408,26 +426,42 @@ def main() -> None:
         for pipeline in ("generic_pybullet", "asset_proxy", "billiards")
     }
 
-    source_generic_path = root / str(source_manifest["generic_manifest_path"])
+    source_generic_path = project_path(root, source_manifest["generic_manifest_path"])
+    source_generic_path.relative_to(root / "datasets")
     source_generic = load_json(source_generic_path)
+    generic_source_samples = list(source_generic["samples"])
+    if int(source_generic["sample_count"]) != len(generic_source_samples):
+        raise ValueError("generic source manifest sample count is inconsistent")
+    generic_paths = [str(sample["metadata_path"]) for sample in generic_source_samples]
+    if len(generic_paths) != len(set(generic_paths)):
+        raise ValueError("generic source manifest contains duplicate metadata paths")
     selected_generic_paths = {
         str(record["metadata_path"])
         for record in selected_by_pipeline["generic_pybullet"]
     }
     generic_samples = [
         sample
-        for sample in source_generic["samples"]
+        for sample in generic_source_samples
         if str(sample["metadata_path"]) in selected_generic_paths
     ]
     if len(generic_samples) != len(selected_generic_paths):
         raise ValueError("generic render selection does not match source manifest")
+    for sample in generic_samples:
+        metadata_path = project_path(root, sample["metadata_path"])
+        metadata_path.relative_to(root / "datasets")
+        metadata = load_json(metadata_path)
+        if (
+            sha256(metadata_path) != str(sample["metadata_sha256"])
+            or str(metadata["scene_id"]) != str(sample["scene_id"])
+        ):
+            raise ValueError(f"generic source provenance mismatch: {metadata_path}")
     generic_source = copy.deepcopy(source_generic)
     generic_source["sample_count"] = len(generic_samples)
     generic_source["samples"] = generic_samples
     generic_source_path = output_root / "manifests" / "generic_source_manifest.json"
-    write_json(generic_source_path, generic_source)
 
-    source_asset_path = root / str(source_manifest["asset_proxy_manifest_path"])
+    source_asset_path = project_path(root, source_manifest["asset_proxy_manifest_path"])
+    source_asset_path.relative_to(root / "datasets")
     source_asset = load_json(source_asset_path)
     selected_child_ids = {
         str(record["child_scene_id"])
@@ -436,11 +470,26 @@ def main() -> None:
     source_asset_records = {
         str(record["scene_id"]): record for record in source_asset["records"]
     }
+    if (
+        int(source_asset["sample_count"]) != len(source_asset["records"])
+        or len(source_asset_records) != len(source_asset["records"])
+    ):
+        raise ValueError("asset source manifest contains duplicate or missing records")
     asset_root = output_root / "asset"
     staged_asset_records = []
     for scene_id in sorted(selected_child_ids):
+        child = source_asset_records.get(scene_id)
+        if child is None:
+            raise ValueError(f"asset child is missing from source manifest: {scene_id}")
+        outer_scene_ids = {
+            str(record["scene_id"])
+            for record in selected_by_pipeline["asset_proxy"]
+            if str(record["child_scene_id"]) == scene_id
+        }
+        if outer_scene_ids != {str(child["matrix_scene_id"])}:
+            raise ValueError(f"asset child matrix provenance mismatch: {scene_id}")
         staged_asset_records.append(
-            stage_render_record(root, source_asset_records[scene_id], asset_root)
+            stage_render_record(root, child, asset_root)
         )
     asset_manifest = copy.deepcopy(source_asset)
     asset_manifest["dataset_id"] = f"{source_manifest['dataset_id']}__{args.selection}"
@@ -449,7 +498,6 @@ def main() -> None:
     asset_manifest["passed_count"] = len(staged_asset_records)
     asset_manifest["records"] = staged_asset_records
     asset_manifest_path = asset_root / "asset_render_manifest.json"
-    write_json(asset_manifest_path, asset_manifest)
 
     billiards_root = output_root / "billiards"
     billiards_metadata_paths = []
@@ -466,7 +514,6 @@ def main() -> None:
         "records": billiards_records,
     }
     billiards_manifest_path = billiards_root / "billiards_manifest.json"
-    write_json(billiards_manifest_path, billiards_manifest)
 
     staged_outer = copy.deepcopy(source_manifest)
     staged_outer["dataset_id"] = f"{source_manifest['dataset_id']}__{args.selection}"
@@ -477,7 +524,6 @@ def main() -> None:
     staged_outer["asset_proxy_manifest_path"] = root_relative(root, asset_manifest_path)
     staged_outer["billiards_metadata_paths"] = billiards_metadata_paths
     outer_manifest_path = output_root / "staged_manifest.json"
-    write_json(outer_manifest_path, staged_outer)
 
     plan = {
         "schema_version": "physweep_staged_render_plan_v1",
@@ -497,6 +543,15 @@ def main() -> None:
         "billiards_render_manifest": str(billiards_root / "billiards_render_manifest.json"),
         "collected_output": str(output_root / "collected"),
     }
+    if output_root.exists():
+        if not args.overwrite:
+            raise SystemExit(f"output exists; pass --overwrite: {output_root}")
+        shutil.rmtree(output_root)
+    output_root.mkdir(parents=True)
+    write_json(generic_source_path, generic_source)
+    write_json(asset_manifest_path, asset_manifest)
+    write_json(billiards_manifest_path, billiards_manifest)
+    write_json(outer_manifest_path, staged_outer)
     write_json(output_root / "render_plan.json", plan)
     print(json.dumps(plan, indent=2, ensure_ascii=True))
 

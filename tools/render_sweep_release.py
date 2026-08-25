@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
@@ -22,6 +23,42 @@ def write_json(path: Path, value: Any) -> None:
         json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8"
     )
     temporary.replace(path)
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def project_path(root: Path, value: str | Path) -> Path:
+    path = Path(value)
+    return (path if path.is_absolute() else root / path).resolve()
+
+
+def load_release(root: Path, value: str | Path) -> tuple[Path, dict[str, Any], Path]:
+    root = root.resolve()
+    release_path = project_path(root, value)
+    release_path.relative_to(root / "datasets")
+    release = json.loads(release_path.read_text(encoding="utf-8"))
+    if release.get("schema_version") != "physweep_one_object_sweep_release_v1":
+        raise ValueError("render runner requires a one-object sweep release")
+    base_path = project_path(root, release["base_manifest"])
+    base_path.relative_to(root / "datasets")
+    if sha256(base_path) != str(release["base_manifest_sha256"]):
+        raise ValueError("release base manifest hash mismatch")
+    base = json.loads(base_path.read_text(encoding="utf-8"))
+    group_count = int(release["base_group_count"])
+    sample_count = int(release["sample_count"])
+    if (
+        int(base["sample_count"]) != len(base["records"])
+        or len(base["records"]) != group_count
+        or sample_count != 13 * group_count
+    ):
+        raise ValueError("release and base manifest counts are inconsistent")
+    return release_path, release, base_path
 
 
 def parse_args() -> argparse.Namespace:
@@ -48,10 +85,8 @@ def main() -> None:
     if args.workers < 1:
         raise ValueError("workers must be positive")
     root = args.root.resolve()
-    release_path = (root / args.release_manifest).resolve()
-    release_path.relative_to(root / "datasets")
-    release = json.loads(release_path.read_text(encoding="utf-8"))
-    output = (root / args.output_root).resolve()
+    release_path, release, base_path = load_release(root, args.release_manifest)
+    output = project_path(root, args.output_root)
     if (root / "outputs").resolve() not in output.parents:
         raise ValueError("render output must remain under root/outputs")
     status_path = output.parent / f"{output.name}_{args.stage}_status.json"
@@ -59,7 +94,7 @@ def main() -> None:
     stage_commands = dict([
         (
             "prepare_base_render_plan",
-            [python, "tools/prepare_formal_render_manifests.py", "--root", str(root), "--manifest", str(root / release["base_manifest"]), "--output-root", str(output), "--selection", "all"],
+            [python, "tools/prepare_formal_render_manifests.py", "--root", str(root), "--manifest", str(base_path), "--output-root", str(output), "--selection", "all"],
         ),
         (
             "prepare_sweep_render_plan",

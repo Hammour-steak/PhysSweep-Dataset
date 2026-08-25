@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -20,10 +21,12 @@ def load_json(path: Path) -> dict[str, Any]:
 
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
         json.dumps(value, indent=2, ensure_ascii=True) + "\n",
         encoding="utf-8",
     )
+    temporary.replace(path)
 
 
 def sha256(path: Path) -> str:
@@ -56,6 +59,8 @@ def load_render_records(
             raise ValueError(f"failed render remains in manifest: {record['scene_id']}")
         if not record.get("egl_device_verified"):
             raise ValueError(f"unverified EGL device: {record['scene_id']}")
+        if str(record["render_record"].get("scene_id")) != str(record["scene_id"]):
+            raise ValueError(f"embedded render scene id mismatch: {record['scene_id']}")
         records[str(record["scene_id"])] = record
     if len(records) != int(manifest["sample_count"]):
         raise ValueError(f"duplicate or missing render records: {path}")
@@ -152,145 +157,173 @@ def collect(
         raise ValueError("render branches used different EGL selector builds")
 
     output = output.resolve()
-    if output.exists():
-        if not overwrite:
-            raise SystemExit(f"output exists; pass --overwrite: {output}")
-        shutil.rmtree(output)
-    videos = output / "videos"
-    render_metadata_root = output / "provenance" / "generic_render_metadata"
-    videos.mkdir(parents=True, exist_ok=True)
+    if output.exists() and not overwrite:
+        raise SystemExit(f"output exists; pass --overwrite: {output}")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary_output = tempfile.TemporaryDirectory(
+        prefix=f".{output.name}.", dir=output.parent
+    )
+    staging = Path(temporary_output.name)
+    videos = staging / "videos"
+    render_metadata_root = staging / "provenance" / "generic_render_metadata"
+    videos.mkdir(parents=True)
 
-    collected = []
-    for outer in manifest["records"]:
-        pipeline = str(outer["pipeline"])
-        if pipeline == "generic_pybullet":
-            source_metadata = load_json(root / str(outer["metadata_path"]))
-            child_scene_id = str(source_metadata["scene_id"])
-            suffix = child_scene_id
-        elif pipeline == "asset_proxy":
-            child_scene_id = str(outer["child_scene_id"])
-            suffix = child_scene_id
-        elif pipeline == "billiards":
-            child_scene_id = str(outer["scene_id"])
-            suffix = str(outer["profile"])
-        else:
-            raise ValueError(f"unknown render pipeline: {pipeline}")
+    try:
+        collected = []
+        for outer in manifest["records"]:
+            pipeline = str(outer["pipeline"])
+            if pipeline == "generic_pybullet":
+                source_metadata = load_json(root / str(outer["metadata_path"]))
+                child_scene_id = str(source_metadata["scene_id"])
+                suffix = child_scene_id
+            elif pipeline == "asset_proxy":
+                child_scene_id = str(outer["child_scene_id"])
+                suffix = child_scene_id
+            elif pipeline == "billiards":
+                child_scene_id = str(outer["scene_id"])
+                suffix = str(outer["profile"])
+            else:
+                raise ValueError(f"unknown render pipeline: {pipeline}")
 
-        envelope = branches[pipeline][child_scene_id]
-        rendered = envelope["render_record"]
-        if rendered["render_engine"] != "BLENDER_EEVEE":
-            raise ValueError(
-                f"non-Eevee render in base batch: {outer['scene_id']} "
-                f"{rendered['render_engine']}"
-            )
+            envelope = branches[pipeline][child_scene_id]
+            rendered = envelope["render_record"]
+            if rendered["render_engine"] != "BLENDER_EEVEE":
+                raise ValueError(
+                    f"non-Eevee render in base batch: {outer['scene_id']} "
+                    f"{rendered['render_engine']}"
+                )
 
-        metadata_path = verified_file(
-            root,
-            str(outer["metadata_path"]),
-            str(outer["metadata_sha256"]),
-        )
-        source_video = verified_file(
-            root,
-            str(rendered["video_path"]),
-            str(rendered["video_sha256"]),
-        )
-        destination = videos / f"{outer['scene_id']}__{suffix}.mp4"
-        shutil.copy2(source_video, destination)
-        destination_hash = sha256(destination)
-        if destination_hash != rendered["video_sha256"]:
-            raise ValueError(f"copied video hash mismatch: {outer['scene_id']}")
-
-        effective_metadata_path = verified_file(
-            root,
-            str(rendered["metadata_path"]),
-            str(rendered["metadata_sha256"]),
-        )
-        if rendered.get("trajectory_path") or rendered.get("trajectory_sha256"):
-            if not rendered.get("trajectory_path") or not rendered.get(
-                "trajectory_sha256"
-            ):
-                raise ValueError(f"incomplete trajectory provenance: {child_scene_id}")
-            verified_file(
+            metadata_path = verified_file(
                 root,
-                str(rendered["trajectory_path"]),
-                str(rendered["trajectory_sha256"]),
+                str(outer["metadata_path"]),
+                str(outer["metadata_sha256"]),
             )
-        effective_metadata_source_hash = str(rendered["metadata_sha256"])
-        if pipeline == "generic_pybullet":
-            retained_metadata_path = render_metadata_root / f"{child_scene_id}.json"
-            retained_metadata = normalized_render_metadata(
-                effective_metadata_path,
-                destination,
-                output / "provenance" / "inspection_frames" / child_scene_id,
+            source_video = verified_file(
+                root,
+                str(rendered["video_path"]),
+                str(rendered["video_sha256"]),
             )
-            write_json(retained_metadata_path, retained_metadata)
-            effective_metadata_value = project_path(root, retained_metadata_path)
-            effective_metadata_hash = sha256(retained_metadata_path)
-        else:
-            retained_metadata_path = metadata_path
-            effective_metadata_value = project_path(root, retained_metadata_path)
-            effective_metadata_hash = sha256(retained_metadata_path)
+            filename = f"{outer['scene_id']}__{suffix}.mp4"
+            destination = videos / filename
+            published_destination = output / "videos" / filename
+            shutil.copy2(source_video, destination)
+            destination_hash = sha256(destination)
+            if destination_hash != rendered["video_sha256"]:
+                raise ValueError(f"copied video hash mismatch: {outer['scene_id']}")
 
-        collected.append(
-            {
-                "index": int(outer["index"]),
-                "scene_id": str(outer["scene_id"]),
-                "child_scene_id": child_scene_id,
-                "motion_intent": str(outer["motion_intent"]),
-                "environment_id": str(outer["environment_id"]),
-                "profile": str(outer["profile"]),
-                "pipeline": pipeline,
-                "dynamic_asset_id": outer.get("dynamic_asset_id"),
-                "support_asset_id": outer.get("support_asset_id"),
-                "static_prop_asset_id": outer.get("static_prop_asset_id"),
-                "metadata_path": project_path(root, metadata_path),
-                "metadata_sha256": str(outer["metadata_sha256"]),
-                "effective_render_metadata_path": effective_metadata_value,
-                "effective_render_metadata_sha256": effective_metadata_hash,
-                "effective_render_metadata_source_sha256": (
-                    effective_metadata_source_hash
-                ),
-                "render_provenance": compact_render_provenance(rendered),
-                "render_worker": {
-                    "gpu": int(envelope["gpu"]),
-                    "egl_device_verified": True,
+            effective_metadata_path = verified_file(
+                root,
+                str(rendered["metadata_path"]),
+                str(rendered["metadata_sha256"]),
+            )
+            if rendered.get("trajectory_path") or rendered.get("trajectory_sha256"):
+                if not rendered.get("trajectory_path") or not rendered.get(
+                    "trajectory_sha256"
+                ):
+                    raise ValueError(f"incomplete trajectory provenance: {child_scene_id}")
+                verified_file(
+                    root,
+                    str(rendered["trajectory_path"]),
+                    str(rendered["trajectory_sha256"]),
+                )
+            effective_metadata_source_hash = str(rendered["metadata_sha256"])
+            if pipeline == "generic_pybullet":
+                inspection_directory = (
+                    staging / "provenance" / "inspection_frames" / child_scene_id
+                )
+                inspection_frames = [
+                    resolve_path(root, value)
+                    for value in rendered.get("inspection_frames", [])
+                ]
+                if not inspection_frames:
+                    raise ValueError(f"render has no inspection frames: {child_scene_id}")
+                inspection_directory.mkdir(parents=True)
+                for inspection_frame in inspection_frames:
+                    if not inspection_frame.is_file() or inspection_frame.stat().st_size <= 0:
+                        raise FileNotFoundError(inspection_frame)
+                    shutil.copy2(inspection_frame, inspection_directory / inspection_frame.name)
+                retained_metadata_path = render_metadata_root / f"{child_scene_id}.json"
+                retained_metadata = normalized_render_metadata(
+                    effective_metadata_path,
+                    published_destination,
+                    output / "provenance" / "inspection_frames" / child_scene_id,
+                )
+                write_json(retained_metadata_path, retained_metadata)
+                effective_metadata_value = project_path(
+                    root,
+                    output / "provenance" / "generic_render_metadata" / f"{child_scene_id}.json",
+                )
+                effective_metadata_hash = sha256(retained_metadata_path)
+            else:
+                retained_metadata_path = metadata_path
+                effective_metadata_value = project_path(root, retained_metadata_path)
+                effective_metadata_hash = sha256(retained_metadata_path)
+
+            collected.append(
+                {
+                    "index": int(outer["index"]),
+                    "scene_id": str(outer["scene_id"]),
+                    "child_scene_id": child_scene_id,
+                    "motion_intent": str(outer["motion_intent"]),
+                    "environment_id": str(outer["environment_id"]),
+                    "profile": str(outer["profile"]),
+                    "pipeline": pipeline,
+                    "dynamic_asset_id": outer.get("dynamic_asset_id"),
+                    "support_asset_id": outer.get("support_asset_id"),
+                    "static_prop_asset_id": outer.get("static_prop_asset_id"),
+                    "metadata_path": project_path(root, metadata_path),
+                    "metadata_sha256": str(outer["metadata_sha256"]),
+                    "effective_render_metadata_path": effective_metadata_value,
+                    "effective_render_metadata_sha256": effective_metadata_hash,
+                    "effective_render_metadata_source_sha256": (
+                        effective_metadata_source_hash
+                    ),
+                    "render_provenance": compact_render_provenance(rendered),
+                    "render_worker": {
+                        "gpu": int(envelope["gpu"]),
+                        "egl_device_verified": True,
+                    },
+                    "render_engine": rendered["render_engine"],
+                    "video_encoding": rendered.get("video_encoding"),
+                    "video_path": project_path(root, published_destination),
+                    "sha256": destination_hash,
+                }
+            )
+
+        collected.sort(key=lambda record: record["index"])
+        if len(collected) != int(manifest["sample_count"]):
+            raise ValueError("collected render count does not match source manifest")
+
+        result = {
+            "schema_version": "physweep_decoupled_collected_renders_v4",
+            "dataset_id": manifest["dataset_id"],
+            "source_manifest": project_path(root, canonical_source_manifest),
+            "source_manifest_sha256": sha256(canonical_source_manifest),
+            "collection_input_sha256": sha256(manifest_path),
+            "sample_count": len(collected),
+            "render_engine": "BLENDER_EEVEE",
+            "production_spec": manifest.get("production_spec"),
+            "sampling_matrix": manifest.get("sampling_matrix"),
+            "dependencies": manifest.get("dependencies"),
+            "implementation": manifest.get("implementation"),
+            "motion_counts": manifest.get("motion_counts"),
+            "environment_counts": manifest.get("environment_counts"),
+            "profile_counts": manifest.get("profile_counts"),
+            "render_runtime": {
+                "egl_device_selector": selectors[0] if selectors else None,
+                "branch_manifest_sha256": {
+                    pipeline: sha256(path) for pipeline, path in branch_paths.items()
                 },
-                "render_engine": rendered["render_engine"],
-                "video_encoding": rendered.get("video_encoding"),
-                "video_path": project_path(root, destination),
-                "sha256": destination_hash,
-            }
-        )
-
-    collected.sort(key=lambda record: record["index"])
-    if len(collected) != int(manifest["sample_count"]):
-        raise ValueError("collected render count does not match source manifest")
-
-    result = {
-        "schema_version": "physweep_decoupled_collected_renders_v4",
-        "dataset_id": manifest["dataset_id"],
-        "source_manifest": project_path(root, canonical_source_manifest),
-        "source_manifest_sha256": sha256(canonical_source_manifest),
-        "collection_input_sha256": sha256(manifest_path),
-        "sample_count": len(collected),
-        "render_engine": "BLENDER_EEVEE",
-        "production_spec": manifest.get("production_spec"),
-        "sampling_matrix": manifest.get("sampling_matrix"),
-        "dependencies": manifest.get("dependencies"),
-        "implementation": manifest.get("implementation"),
-        "motion_counts": manifest.get("motion_counts"),
-        "environment_counts": manifest.get("environment_counts"),
-        "profile_counts": manifest.get("profile_counts"),
-        "render_runtime": {
-            "egl_device_selector": selectors[0] if selectors else None,
-            "branch_manifest_sha256": {
-                pipeline: sha256(path) for pipeline, path in branch_paths.items()
             },
-        },
-        "records": collected,
-    }
-    write_json(output / "collected_render_manifest.json", result)
-    return result
+            "records": collected,
+        }
+        write_json(staging / "collected_render_manifest.json", result)
+        if output.exists():
+            shutil.rmtree(output)
+        staging.replace(output)
+        return result
+    finally:
+        temporary_output.cleanup()
 
 
 def parse_args() -> argparse.Namespace:
