@@ -11,7 +11,7 @@ __pycache__/
 
 # Bundled applications and upstream staging
 /runtime
-/external/
+/external
 
 # Generated datasets, renders, and logs
 /datasets/
