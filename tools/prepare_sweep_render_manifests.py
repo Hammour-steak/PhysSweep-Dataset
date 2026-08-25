@@ -27,7 +27,9 @@ def load_json(path: Path) -> dict[str, Any]:
 
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=True) + "\n")
+    path.write_text(
+        json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8"
+    )
 
 
 def sha256(path: Path) -> str:
@@ -36,6 +38,11 @@ def sha256(path: Path) -> str:
 
 def relative(root: Path, path: Path) -> str:
     return str(path.resolve().relative_to(root))
+
+
+def project_path(root: Path, value: Path | str) -> Path:
+    path = Path(value)
+    return (path if path.is_absolute() else root / path).resolve()
 
 
 def select_complete_groups(
@@ -51,13 +58,28 @@ def select_complete_groups(
 
 
 def dispatched_paths(root: Path, physics: dict[str, Any]) -> dict[str, str]:
-    trajectory = Path(str(physics["trajectory_path"])).resolve()
-    audit = Path(str(physics["audit_path"])).resolve()
+    trajectory = project_path(root, physics["trajectory_path"])
+    audit = project_path(root, physics["audit_path"])
     record = trajectory.with_name("simulation_record.json")
     for path in (trajectory, audit, record):
         path.relative_to(root)
         if not path.is_file():
             raise FileNotFoundError(path)
+    if sha256(trajectory) != str(physics["trajectory_sha256"]):
+        raise ValueError("trajectory hash does not match the physics manifest")
+    if sha256(audit) != str(physics["audit_sha256"]):
+        raise ValueError("audit hash does not match the physics manifest")
+    simulation = load_json(record)
+    for path_key, hash_key, expected_path in (
+        ("metadata_path", "metadata_sha256", project_path(root, physics["metadata_path"])),
+        ("trajectory_path", "trajectory_sha256", trajectory),
+        ("audit_path", "audit_sha256", audit),
+    ):
+        if (
+            project_path(root, simulation[path_key]) != expected_path
+            or str(simulation[hash_key]) != str(physics[hash_key])
+        ):
+            raise ValueError(f"simulation record provenance mismatch: {path_key}")
     return {
         "trajectory_path": relative(root, trajectory),
         "audit_path": relative(root, audit),
@@ -78,40 +100,69 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     root = args.root.resolve()
-    release_path = args.release_manifest.resolve()
-    staged_path = args.staged_base_manifest.resolve()
-    output_root = args.output_root.resolve()
-    if output_root.exists():
-        if not args.overwrite:
-            raise FileExistsError(f"output exists; pass --overwrite: {output_root}")
-        shutil.rmtree(output_root)
-    output_root.mkdir(parents=True)
+    release_path = project_path(root, args.release_manifest)
+    staged_path = project_path(root, args.staged_base_manifest)
+    output_root = project_path(root, args.output_root)
+    release_path.relative_to(root / "datasets")
+    staged_path.relative_to(root / "outputs")
+    if (root / "outputs").resolve() not in output_root.parents:
+        raise ValueError("sweep render plan output must remain under root/outputs")
 
     release = load_json(release_path)
-    metadata_manifest = load_json(root / str(release["metadata_manifest"]))
-    physics_manifest = load_json(root / str(release["physics_manifest"]))
+    metadata_path = project_path(root, release["metadata_manifest"])
+    physics_path = project_path(root, release["physics_manifest"])
+    if sha256(metadata_path) != str(release["metadata_manifest_sha256"]):
+        raise ValueError("release metadata manifest hash mismatch")
+    if sha256(physics_path) != str(release["physics_manifest_sha256"]):
+        raise ValueError("release physics manifest hash mismatch")
+    metadata_manifest = load_json(metadata_path)
+    physics_manifest = load_json(physics_path)
     staged = load_json(staged_path)
     selected_parents = {str(record["metadata_path"]) for record in staged["records"]}
     selected = select_complete_groups(metadata_manifest["records"], selected_parents)
     physics_by_scene = {
         str(record["scene_id"]): record for record in physics_manifest["records"]
     }
+    if len(physics_by_scene) != len(physics_manifest["records"]):
+        raise ValueError("release physics manifest contains duplicate scene ids")
 
-    branches: dict[str, list[tuple[dict[str, Any], dict[str, Any]]]] = {
+    branches: dict[
+        str, list[tuple[dict[str, Any], dict[str, Any], dict[str, str]]]
+    ] = {
         name: [] for name in SCHEMA_BRANCH.values()
     }
     for record in selected:
-        physics = physics_by_scene[str(record["scene_id"])]
-        if not physics.get("ok") or not physics.get("audit_passed"):
+        scene_id = str(record["scene_id"])
+        physics = physics_by_scene.get(scene_id)
+        if physics is None:
+            raise ValueError(f"selected physics record is missing: {scene_id}")
+        if (
+            not physics.get("ok")
+            or not physics.get("audit_passed")
+            or physics.get("failed_checks")
+        ):
             raise ValueError(f"selected physics record did not pass: {record['scene_id']}")
+        source_path = project_path(root, record["path"])
+        if (
+            project_path(root, physics["metadata_path"]) != source_path
+            or sha256(source_path) != str(record["metadata_sha256"])
+            or str(physics["metadata_sha256"]) != str(record["metadata_sha256"])
+        ):
+            raise ValueError(f"selected metadata provenance mismatch: {scene_id}")
         branch = SCHEMA_BRANCH.get(str(record["source_schema_version"]))
         if branch is None:
             raise ValueError(f"unsupported render schema: {record['source_schema_version']}")
-        branches[branch].append((record, physics))
+        branches[branch].append((record, physics, dispatched_paths(root, physics)))
+
+    if output_root.exists():
+        if not args.overwrite:
+            raise FileExistsError(f"output exists; pass --overwrite: {output_root}")
+        shutil.rmtree(output_root)
+    output_root.mkdir(parents=True)
 
     generic_records = []
-    for record, physics in branches["generic"]:
-        generic_records.append({**physics, **dispatched_paths(root, physics)})
+    for _record, physics, paths in branches["generic"]:
+        generic_records.append({**physics, **paths})
     generic_manifest = {
         "schema_version": "physweep_pybullet_batch_record_v1",
         "dataset_id": "one_object_sweep_review_generic",
@@ -129,11 +180,9 @@ def main() -> None:
             "base": [],
             "derived": [],
         }
-        for record, physics in branches[branch]:
-            source_path = Path(str(physics["metadata_path"])).resolve()
-            source_path.relative_to(root)
+        for record, physics, paths in branches[branch]:
+            source_path = project_path(root, physics["metadata_path"])
             bound = copy.deepcopy(load_json(source_path))
-            paths = dispatched_paths(root, physics)
             bound["source_metadata"] = {
                 "path": relative(root, source_path),
                 "sha256": sha256(source_path),
@@ -184,7 +233,9 @@ def main() -> None:
     summary = {
         "schema_version": "physweep_sweep_render_plan_v1",
         "source_release": relative(root, release_path),
+        "source_release_sha256": sha256(release_path),
         "source_staged_base_manifest": relative(root, staged_path),
+        "source_staged_base_manifest_sha256": sha256(staged_path),
         "group_count": len(selected_parents),
         "sample_count": len(selected),
         "branch_counts": {name: len(records) for name, records in branches.items()},

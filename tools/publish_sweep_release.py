@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import shutil
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
@@ -48,7 +47,59 @@ def validate_groups(records: list[dict[str, Any]]) -> int:
         )
         if axis_counts != Counter({axis: 4 for axis in AXES}):
             raise ValueError(f"group has an invalid axis layout: {parent}")
+        derived = [record for record in group if record["kind"] == "sweep"]
+        for axis in AXES:
+            levels = {
+                int(record["level_index"])
+                for record in derived
+                if record["axis"] == axis
+            }
+            if levels != {0, 1, 3, 4}:
+                raise ValueError(f"group has invalid sweep levels: {parent}/{axis}")
+        targets = {
+            (str(record["target_object_id"]), int(record["target_object_index"]))
+            for record in derived
+        }
+        if len(targets) != 1 or next(iter(targets))[1] != 0:
+            raise ValueError(f"group does not target one object: {parent}")
     return len(groups)
+
+
+def validate_source_artifacts(
+    root: Path,
+    metadata_records: list[dict[str, Any]],
+    physics_records: list[dict[str, Any]],
+) -> None:
+    physics_by_id = {str(record["scene_id"]): record for record in physics_records}
+    if len(physics_by_id) != len(physics_records):
+        raise ValueError("physics manifest contains duplicate scene ids")
+    for metadata in metadata_records:
+        scene_id = str(metadata["scene_id"])
+        physics = physics_by_id.get(scene_id)
+        if physics is None:
+            raise ValueError(f"physics record is missing: {scene_id}")
+        metadata_path = resolve(root, Path(metadata["path"]))
+        metadata_path.relative_to(root)
+        metadata_hash = sha256(metadata_path)
+        if (
+            resolve(root, Path(physics["metadata_path"])) != metadata_path
+            or str(metadata["metadata_sha256"]) != metadata_hash
+            or str(physics["metadata_sha256"]) != metadata_hash
+        ):
+            raise ValueError(f"metadata provenance mismatch: {scene_id}")
+        if str(metadata["source_schema_version"]) != str(
+            physics["source_schema_version"]
+        ):
+            raise ValueError(f"source schema mismatch: {scene_id}")
+        for path_key, hash_key in (
+            ("resolved_scene_path", "resolved_scene_sha256"),
+            ("trajectory_path", "trajectory_sha256"),
+            ("audit_path", "audit_sha256"),
+        ):
+            artifact = resolve(root, Path(physics[path_key]))
+            artifact.relative_to(root)
+            if sha256(artifact) != str(physics[hash_key]):
+                raise ValueError(f"physics artifact hash mismatch: {scene_id}/{path_key}")
 
 
 def merge_base_records(
@@ -58,6 +109,9 @@ def merge_base_records(
     merged = {int(record["index"]): record for record in base_records}
     if len(merged) != len(base_records):
         raise ValueError("base manifest contains duplicate indices")
+    replacement_indices = [int(record["index"]) for record in replacement_records]
+    if len(replacement_indices) != len(set(replacement_indices)):
+        raise ValueError("replacement manifest contains duplicate indices")
     for replacement in replacement_records:
         index = int(replacement["index"])
         if index not in merged:
@@ -138,7 +192,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--base-manifest", type=Path)
     parser.add_argument("--replacement-base-manifest", type=Path)
-    parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
 
 
@@ -150,6 +203,10 @@ def main() -> None:
     args = parse_args()
     if len(args.metadata_manifest) != len(args.physics_manifest):
         raise ValueError("metadata and physics manifests must be paired")
+    if (args.base_manifest is None) != (args.replacement_base_manifest is None):
+        raise ValueError(
+            "--base-manifest and --replacement-base-manifest must be paired"
+        )
     root = args.root.resolve()
     replacement_path = None
     replacement = None
@@ -162,10 +219,11 @@ def main() -> None:
             for record in replacement["records"]
         }
     output_dir = resolve(root, args.output_dir)
+    datasets_root = (root / "datasets").resolve()
+    if datasets_root not in output_dir.parents:
+        raise ValueError("release output must remain under datasets")
     if output_dir.exists():
-        if not args.overwrite:
-            raise FileExistsError(f"output exists; pass --overwrite: {output_dir}")
-        shutil.rmtree(output_dir)
+        raise FileExistsError(f"release output already exists: {output_dir}")
     output_dir.mkdir(parents=True)
 
     metadata_records: list[dict[str, Any]] = []
@@ -186,6 +244,7 @@ def main() -> None:
         selected_metadata, selected_physics = select_source_records(
             metadata, physics, replaced_parents
         )
+        validate_source_artifacts(root, selected_metadata, selected_physics)
         metadata_records.extend(selected_metadata)
         physics_records.extend(selected_physics)
         sources.append(
@@ -276,6 +335,34 @@ def main() -> None:
         if args.base_manifest:
             base_path = resolve(root, args.base_manifest)
             base = load_json(base_path)
+            if int(replacement.get("sample_count", -1)) != len(
+                replacement["records"]
+            ):
+                raise ValueError("replacement sample count is inconsistent")
+            source_base_path = resolve(
+                root, Path(replacement["source_base_manifest"])
+            )
+            if (
+                source_base_path != base_path
+                or sha256(source_base_path)
+                != str(replacement["source_base_manifest_sha256"])
+            ):
+                raise ValueError("replacement source base provenance does not match")
+            base_by_index = {
+                int(record["index"]): record for record in base["records"]
+            }
+            slot_contract = tuple(replacement["slot_contract"])
+            for record in replacement["records"]:
+                original = base_by_index.get(int(record["index"]))
+                if original is None or any(
+                    record.get(field) != original.get(field)
+                    for field in slot_contract
+                ):
+                    raise ValueError("replacement changes its frozen base slot")
+                metadata_path = resolve(root, Path(record["metadata_path"]))
+                metadata_path.relative_to(root)
+                if sha256(metadata_path) != str(record["metadata_sha256"]):
+                    raise ValueError("replacement metadata hash mismatch")
             merged_base_records = merge_base_records(
                 list(base["records"]), list(replacement["records"])
             )
@@ -418,8 +505,6 @@ def main() -> None:
                     "base_manifest_sha256": sha256(base_output),
                 }
             )
-    elif args.base_manifest:
-        raise ValueError("--base-manifest requires --replacement-base-manifest")
     write_json(output_dir / "manifest.json", release)
     print(f"release manifest: {output_dir / 'manifest.json'}")
     print(f"groups={group_count} samples={sample_count}")

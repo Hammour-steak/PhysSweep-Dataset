@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import hashlib
 import json
 import subprocess
 import time
@@ -29,6 +30,116 @@ def write_json(path: Path, value: Any) -> None:
     path.write_text(json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
 
 
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def project_path(root: Path, value: str | Path) -> Path:
+    path = Path(value)
+    return (path if path.is_absolute() else root / path).resolve()
+
+
+def reusable_render_record(
+    root: Path,
+    output_root: Path,
+    sample: dict[str, Any],
+    metadata_path: Path,
+    metadata: dict[str, Any],
+    record: dict[str, Any],
+    first_frame_only: bool,
+    gpu: int,
+) -> bool:
+    render = metadata["visualization"]["render"]
+    frame_dir = project_path(root, render["inspection_frame_dir"])
+    if output_root not in frame_dir.parents:
+        raise ValueError("inspection frames must remain below the render output root")
+    expected_scope = "first_frame_only" if first_frame_only else "full_animation"
+    trajectory = metadata["trajectory"]
+    trajectory_path = project_path(root, trajectory["path"])
+    trajectory_path.relative_to(root)
+    inspection_frames = [
+        project_path(root, value) for value in record.get("inspection_frames", [])
+    ]
+    expected_inspection_frames = (
+        [int(render["frame_start"])]
+        if first_frame_only
+        else [int(value) for value in render["inspection_frames"]]
+    )
+    expected_inspection_paths = [
+        frame_dir / f"frame_{frame:04d}.png" for frame in expected_inspection_frames
+    ]
+    log_path = output_root / "logs" / f"{sample['scene_id']}.log"
+    egl_marker = f"PhysSweep EGL selector: CUDA device {gpu} "
+    egl_verified = bool(record.get("egl_device_verified")) or (
+        log_path.is_file()
+        and egl_marker in log_path.read_text(encoding="utf-8", errors="replace")
+    )
+    reusable = (
+        str(record.get("scene_id")) == str(sample["scene_id"])
+        and record.get("render_scope") == expected_scope
+        and project_path(root, str(record.get("metadata_path"))) == metadata_path
+        and str(record.get("metadata_sha256")) == sha256(metadata_path)
+        and str(sample.get("metadata_sha256")) == sha256(metadata_path)
+        and project_path(root, str(record.get("trajectory_path"))) == trajectory_path
+        and str(record.get("trajectory_sha256")) == sha256(trajectory_path)
+        and str(trajectory["sha256"]) == sha256(trajectory_path)
+        and inspection_frames == expected_inspection_paths
+        and all(
+            frame.parent == frame_dir
+            and frame.is_file()
+            and frame.stat().st_size > 0
+            for frame in inspection_frames
+        )
+        and egl_verified
+    )
+    if not reusable:
+        return False
+    if first_frame_only:
+        return record.get("video_path") is None and record.get("video_sha256") is None
+    video_path = project_path(root, render["video_path"])
+    if output_root not in video_path.parents:
+        raise ValueError("video must remain below the render output root")
+    if not (
+        project_path(root, str(record.get("video_path"))) == video_path
+        and video_path.is_file()
+        and video_path.stat().st_size > 0
+        and str(record.get("video_sha256")) == sha256(video_path)
+    ):
+        return False
+    mask_output = record.get("instance_mask_output")
+    validation = mask_output.get("validation") if isinstance(mask_output, dict) else None
+    if not isinstance(validation, dict):
+        return False
+    expected_frame_count = int(render["frame_end"]) - int(render["frame_start"]) + 1
+    for object_id, object_record in mask_output.get("objects", {}).items():
+        report = validation.get("objects", {}).get(str(object_id))
+        object_dir = project_path(root, object_record["directory"])
+        if output_root not in object_dir.parents:
+            raise ValueError("instance masks must remain below the render output root")
+        masks = list(object_dir.glob("frame_*.png"))
+        expected_masks = [
+            object_dir / f"frame_{frame:04d}.png"
+            for frame in range(
+                int(render["frame_start"]), int(render["frame_end"]) + 1
+            )
+        ]
+        if (
+            not isinstance(report, dict)
+            or int(report.get("frame_count", -1)) != expected_frame_count
+            or len(masks) != expected_frame_count
+            or any(
+                not mask.is_file() or mask.stat().st_size == 0
+                for mask in expected_masks
+            )
+        ):
+            return False
+    return bool(mask_output.get("objects"))
+
+
 def worker(
     root: str,
     blender: str,
@@ -38,11 +149,47 @@ def worker(
     gpu: int,
     first_frame_only: bool,
     selector_path: str,
+    resume: bool,
 ) -> dict[str, Any]:
     project_root = Path(root)
-    metadata_path = project_root / str(sample["metadata_path"])
+    metadata_path = project_path(project_root, str(sample["metadata_path"]))
+    metadata_path.relative_to(project_root)
+    metadata = load_json(metadata_path)
     record_path = Path(output_root) / "frames" / str(sample["scene_id"]) / "render_record.json"
+    if resume and record_path.is_file():
+        record = load_json(record_path)
+        if reusable_render_record(
+            project_root,
+            Path(output_root),
+            sample,
+            metadata_path,
+            metadata,
+            record,
+            first_frame_only,
+            gpu,
+        ):
+            if not record.get("egl_device_verified"):
+                record["egl_device_verified"] = True
+                write_json(record_path, record)
+            return {
+                "scene_id": str(sample["scene_id"]),
+                "ok": True,
+                "returncode": 0,
+                "gpu": None,
+                "egl_device_verified": True,
+                "wall_time_s": 0.0,
+                "log_path": None,
+                "render_record": record,
+                "reused": True,
+            }
     record_path.unlink(missing_ok=True)
+    if not first_frame_only:
+        video_path = project_path(
+            project_root, metadata["visualization"]["render"]["video_path"]
+        )
+        if Path(output_root) not in video_path.parents:
+            raise ValueError("video must remain below the render output root")
+        video_path.unlink(missing_ok=True)
     command = [blender, "-b", "--python", script, "--", "--metadata", str(metadata_path)]
     if first_frame_only:
         command.append("--first-frame-only")
@@ -65,15 +212,34 @@ def worker(
     log_path.write_text(completed.stdout, encoding="utf-8")
     record = load_json(record_path) if completed.returncode == 0 and record_path.exists() else None
     selector_verified = selector_marker in completed.stdout
+    if record is not None:
+        record["egl_device_verified"] = selector_verified
+        write_json(record_path, record)
+    ok = (
+        completed.returncode == 0
+        and record is not None
+        and selector_verified
+        and reusable_render_record(
+            project_root,
+            Path(output_root),
+            sample,
+            metadata_path,
+            metadata,
+            record,
+            first_frame_only,
+            gpu,
+        )
+    )
     return {
         "scene_id": str(sample["scene_id"]),
-        "ok": completed.returncode == 0 and record is not None and selector_verified,
+        "ok": ok,
         "returncode": completed.returncode,
         "gpu": gpu,
         "egl_device_verified": selector_verified,
         "wall_time_s": round(time.perf_counter() - started, 6),
         "log_path": str(log_path),
         "render_record": record,
+        "reused": False,
     }
 
 
@@ -89,6 +255,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--gpus", default="0,1,2,3,4,5,6")
     parser.add_argument("--first-frame-only", action="store_true")
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Reuse only hash-verified complete render outputs.",
+    )
     parser.add_argument("--limit", type=int)
     parser.add_argument(
         "--profiles",
@@ -100,8 +271,13 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if args.workers < 1:
+        raise ValueError("workers must be positive")
+    if args.limit is not None and args.limit < 1:
+        raise ValueError("limit must be positive")
     root = args.root.resolve()
-    manifest_path = args.manifest.resolve()
+    manifest_path = project_path(root, args.manifest)
+    manifest_path.relative_to(root)
     manifest = load_json(manifest_path)
     samples = list(manifest["samples"])
     if args.profiles:
@@ -109,7 +285,7 @@ def main() -> None:
         selected_samples = []
         selected_profiles = set()
         for sample in samples:
-            metadata_path = root / str(sample["metadata_path"])
+            metadata_path = project_path(root, str(sample["metadata_path"]))
             metadata = load_json(metadata_path)
             profile_id = str(metadata["visualization"]["environment"]["profile_id"])
             if profile_id in requested_profiles:
@@ -132,34 +308,41 @@ def main() -> None:
         if output_root_value.is_absolute()
         else root / output_root_value
     ).resolve()
+    if (root / "outputs").resolve() not in output_root.parents:
+        raise ValueError(f"render output must be below root/outputs: {output_root}")
     selector = build_egl_device_selector(root)
     selector_path = root / str(selector["binary_path"])
     script = root / "tools/render_pybullet_rigid.py"
     started = time.perf_counter()
+    blender = project_path(root, args.blender)
+    blender.relative_to(root)
     jobs = [
         (
             str(root),
-            str(args.blender.resolve()),
+            str(blender),
             str(script),
             str(output_root),
             sample,
             gpus[index % len(gpus)],
             bool(args.first_frame_only),
             str(selector_path),
+            bool(args.resume),
         )
         for index, sample in enumerate(samples)
     ]
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.workers)) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as executor:
         records = list(executor.map(lambda values: worker(*values), jobs))
     records.sort(key=lambda record: record["scene_id"])
     failures = [record for record in records if not record["ok"]]
     summary = {
         "schema_version": "physweep_pybullet_render_manifest_v1",
-        "source_manifest": str(manifest_path),
+        "source_manifest": str(manifest_path.relative_to(root)),
+        "source_manifest_sha256": sha256(manifest_path),
         "render_scope": "first_frame_only" if args.first_frame_only else "full_animation",
         "sample_count": len(records),
         "success_count": len(records) - len(failures),
         "failure_count": len(failures),
+        "reused_count": sum(record.get("reused", False) for record in records),
         "wall_time_s": round(time.perf_counter() - started, 6),
         "egl_device_selector": selector,
         "records": records,

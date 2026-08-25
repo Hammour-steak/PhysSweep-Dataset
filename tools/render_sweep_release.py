@@ -54,20 +54,25 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if args.workers < 1:
+        raise ValueError("workers must be positive")
     root = args.root.resolve()
     release_path = (root / args.release_manifest).resolve()
+    release_path.relative_to(root / "datasets")
     release = json.loads(release_path.read_text(encoding="utf-8"))
     output = (root / args.output_root).resolve()
-    status_path = output.parent / f"{output.name}_status.json"
+    if (root / "outputs").resolve() not in output.parents:
+        raise ValueError("render output must remain under root/outputs")
+    status_path = output.parent / f"{output.name}_{args.stage}_status.json"
     python = sys.executable
-    stages = [
+    stage_commands = dict([
         (
             "prepare_base_render_plan",
-            [python, "tools/prepare_formal_render_manifests.py", "--root", str(root), "--manifest", str(root / release["base_manifest"]), "--output-root", str(output), "--selection", "all", "--overwrite"],
+            [python, "tools/prepare_formal_render_manifests.py", "--root", str(root), "--manifest", str(root / release["base_manifest"]), "--output-root", str(output), "--selection", "all"],
         ),
         (
             "prepare_sweep_render_plan",
-            [python, "tools/prepare_sweep_render_manifests.py", "--root", str(root), "--release-manifest", str(release_path), "--staged-base-manifest", str(output / "staged_manifest.json"), "--output-root", str(output / "sweep"), "--overwrite"],
+            [python, "tools/prepare_sweep_render_manifests.py", "--root", str(root), "--release-manifest", str(release_path), "--staged-base-manifest", str(output / "staged_manifest.json"), "--output-root", str(output / "sweep")],
         ),
         (
             "bind_generic_base_cameras",
@@ -75,7 +80,7 @@ def main() -> None:
         ),
         (
             "bind_generic_sweep_visuals",
-            [python, "tools/bind_physics_sweep_visuals.py", "--root", str(root), "--sweep-manifest", str(output / "sweep/generic/physics_manifest.json"), "--base-bound-manifest", str(output / "generic/bound_manifest.json"), "--output-root", str(output / "sweep/generic/bound"), "--overwrite"],
+            [python, "tools/bind_physics_sweep_visuals.py", "--root", str(root), "--sweep-manifest", str(output / "sweep/generic/physics_manifest.json"), "--base-bound-manifest", str(output / "generic/bound_manifest.json"), "--output-root", str(output / "sweep/generic/bound")],
         ),
         (
             "render_asset_bases",
@@ -91,16 +96,14 @@ def main() -> None:
         ),
         (
             "render_billiards_sweeps",
-            [python, "tools/render_billiards_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/billiards/render_input_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus],
+            [python, "tools/render_billiards_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/billiards/render_input_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus, "--resume"],
         ),
         (
             "render_generic_sweeps",
-            [python, "tools/render_pybullet_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/generic/bound/bound_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus],
+            [python, "tools/render_pybullet_manifest.py", "--root", str(root), "--manifest", str(output / "sweep/generic/bound/bound_manifest.json"), "--workers", str(args.workers), "--gpus", args.gpus, "--resume"],
         ),
-    ]
-    stages = [stage for stage in stages if stage[0] == args.stage]
-    if len(stages) != 1:
-        raise RuntimeError(f"stage command is missing: {args.stage}")
+    ])
+    command = stage_commands[args.stage]
     status: dict[str, Any] = {
         "schema_version": "physweep_release_render_status_v1",
         "release_manifest": str(release_path.relative_to(root)),
@@ -109,18 +112,12 @@ def main() -> None:
         "workers": args.workers,
         "stage": args.stage,
         "state": "running",
-        "completed_stages": [],
-        "current_stage": None,
     }
     started = time.time()
     try:
-        for name, command in stages:
-            status["current_stage"] = name
-            write_json(status_path, status)
-            subprocess.run(command, cwd=root, check=True)
-            status["completed_stages"].append(name)
+        write_json(status_path, status)
+        subprocess.run(command, cwd=root, check=True)
         status["state"] = "complete"
-        status["current_stage"] = None
     except Exception as error:
         status["state"] = "failed"
         status["error"] = str(error)

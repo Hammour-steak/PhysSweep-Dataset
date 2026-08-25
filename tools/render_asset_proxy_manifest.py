@@ -38,6 +38,71 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def project_path(root: Path, value: str | Path) -> Path:
+    path = Path(value)
+    return (path if path.is_absolute() else root / path).resolve()
+
+
+def output_path(root: Path, value: str | Path) -> Path:
+    path = project_path(root, value)
+    if (root / "outputs").resolve() not in path.parents:
+        raise ValueError(f"render output must be below root/outputs: {path}")
+    return path
+
+
+def reusable_render_record(
+    root: Path,
+    output: Path,
+    source_record: dict[str, Any],
+    metadata_path: Path,
+    metadata: dict[str, Any],
+    frame_dir: Path,
+    video_path: Path,
+    render_record: dict[str, Any],
+    gpu: int,
+) -> bool:
+    inspection_frames = [
+        project_path(root, value)
+        for value in render_record.get("inspection_frames", [])
+    ]
+    source_metadata = metadata.get("source_metadata")
+    expected_metadata_sha256 = sha256(metadata_path)
+    if isinstance(source_metadata, dict):
+        source_path = project_path(root, str(source_metadata["path"]))
+        source_path.relative_to(root)
+        expected_metadata_sha256 = sha256(source_path)
+        if expected_metadata_sha256 != str(source_metadata["sha256"]):
+            raise ValueError(f"source metadata hash mismatch: {source_path}")
+    log_path = output / "logs" / f"{source_record['scene_id']}.log"
+    egl_marker = f"PhysSweep EGL selector: CUDA device {gpu} "
+    egl_verified = bool(render_record.get("egl_device_verified")) or (
+        log_path.is_file()
+        and egl_marker in log_path.read_text(encoding="utf-8", errors="replace")
+    )
+    frame_count = int(metadata["physics"]["frame_count"])
+    expected_frames = [
+        frame_dir / f"frame_{frame:04d}.png"
+        for frame in (1, (frame_count + 1) // 2, frame_count)
+    ]
+    return (
+        str(render_record.get("scene_id")) == str(source_record["scene_id"])
+        and project_path(root, str(render_record.get("metadata_path")))
+        == metadata_path
+        and str(render_record.get("metadata_sha256")) == expected_metadata_sha256
+        and project_path(root, str(render_record.get("video_path"))) == video_path
+        and str(render_record.get("video_sha256")) == sha256(video_path)
+        and video_path.stat().st_size > 0
+        and inspection_frames == expected_frames
+        and all(
+            frame.parent == frame_dir
+            and frame.is_file()
+            and frame.stat().st_size > 0
+            for frame in inspection_frames
+        )
+        and egl_verified
+    )
+
+
 def worker(
     root: Path,
     blender: Path,
@@ -48,44 +113,37 @@ def worker(
     selector_path: Path,
     resume: bool,
 ) -> dict[str, Any]:
-    metadata_path = root / record["metadata_path"]
+    metadata_path = project_path(root, record["metadata_path"])
+    metadata_path.relative_to(root)
     metadata = load_json(metadata_path)
     render_output = record.get("render_output", metadata["render"])
-    frame_dir = Path(render_output["inspection_frame_dir"])
-    if not frame_dir.is_absolute():
-        frame_dir = root / frame_dir
-    video_path = Path(render_output["video_path"])
-    if not video_path.is_absolute():
-        video_path = root / video_path
+    frame_dir = output_path(root, render_output["inspection_frame_dir"])
+    video_path = output_path(root, render_output["video_path"])
+    if output not in frame_dir.parents or output not in video_path.parents:
+        raise ValueError("render paths must remain below the manifest output root")
     render_record_path = frame_dir / "render_record.json"
     if resume and render_record_path.is_file() and video_path.is_file():
         render_record = load_json(render_record_path)
-        inspection_frames = sorted(frame_dir.glob("frame_*.png"))
-        source_metadata = metadata.get("source_metadata")
-        expected_metadata_sha256 = sha256(metadata_path)
-        if isinstance(source_metadata, dict):
-            source_path = root / str(source_metadata["path"])
-            expected_metadata_sha256 = sha256(source_path)
-            if expected_metadata_sha256 != str(source_metadata["sha256"]):
-                raise ValueError(f"source metadata hash mismatch: {source_path}")
-        reusable = (
-            str(render_record.get("scene_id")) == str(record["scene_id"])
-            and str(render_record.get("metadata_sha256"))
-            == expected_metadata_sha256
-            and str(render_record.get("video_sha256")) == sha256(video_path)
-            and video_path.stat().st_size > 0
-            and len(inspection_frames) == 3
-            and all(frame.stat().st_size > 0 for frame in inspection_frames)
-        )
-        if reusable:
+        if reusable_render_record(
+            root,
+            output,
+            record,
+            metadata_path,
+            metadata,
+            frame_dir,
+            video_path,
+            render_record,
+            gpu,
+        ):
+            if not render_record.get("egl_device_verified"):
+                render_record["egl_device_verified"] = True
+                write_json(render_record_path, render_record)
             return {
                 "scene_id": record["scene_id"],
                 "ok": True,
                 "returncode": 0,
                 "gpu": None,
-                "egl_device_verified": bool(
-                    render_record.get("egl_device_verified", True)
-                ),
+                "egl_device_verified": True,
                 "wall_time_s": 0.0,
                 "log_path": None,
                 "render_record": render_record,
@@ -128,19 +186,33 @@ def worker(
         if completed.returncode == 0 and render_record_path.is_file()
         else None
     )
+    selector_verified = selector_marker in completed.stdout
+    if render_record is not None:
+        render_record["egl_device_verified"] = selector_verified
+        write_json(render_record_path, render_record)
     ok = (
         completed.returncode == 0
         and render_record is not None
         and video_path.is_file()
-        and video_path.stat().st_size > 0
-        and selector_marker in completed.stdout
+        and selector_verified
+        and reusable_render_record(
+            root,
+            output,
+            record,
+            metadata_path,
+            metadata,
+            frame_dir,
+            video_path,
+            render_record,
+            gpu,
+        )
     )
     return {
         "scene_id": record["scene_id"],
         "ok": ok,
         "returncode": completed.returncode,
         "gpu": gpu,
-        "egl_device_verified": selector_marker in completed.stdout,
+        "egl_device_verified": selector_verified,
         "wall_time_s": round(time.perf_counter() - started, 6),
         "log_path": str(log_path),
         "render_record": render_record,
@@ -170,20 +242,26 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if args.workers < 1:
+        raise ValueError("workers must be positive")
     root = args.root.resolve()
-    manifest = load_json(args.manifest.resolve())
-    output = Path(manifest["output_root"])
+    manifest_path = project_path(root, args.manifest)
+    manifest_path.relative_to(root)
+    manifest = load_json(manifest_path)
+    output = output_path(root, manifest["output_root"])
     gpus = [int(value) for value in args.gpus.split(",") if value.strip()]
     if not gpus:
         raise SystemExit("--gpus must contain at least one id")
     script = root / "tools/render_asset_proxy_scene.py"
+    blender = project_path(root, args.blender)
+    blender.relative_to(root)
     selector = build_egl_device_selector(root)
     selector_path = root / str(selector["binary_path"])
     started = time.perf_counter()
     jobs = [
         (
             root,
-            args.blender.resolve(),
+            blender,
             script,
             record,
             output,
@@ -193,13 +271,13 @@ def main() -> None:
         )
         for index, record in enumerate(manifest["records"])
     ]
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.workers)) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as executor:
         records = list(executor.map(lambda values: worker(*values), jobs))
     failures = [record for record in records if not record["ok"]]
     summary = {
         "schema_version": "physweep_asset_proxy_render_manifest_v1",
-        "source_manifest": str(args.manifest.resolve().relative_to(root)),
-        "source_manifest_sha256": sha256(args.manifest.resolve()),
+        "source_manifest": str(manifest_path.relative_to(root)),
+        "source_manifest_sha256": sha256(manifest_path),
         "sample_count": len(records),
         "success_count": len(records) - len(failures),
         "failure_count": len(failures),
@@ -209,7 +287,7 @@ def main() -> None:
         "records": records,
     }
     result_manifest = (
-        args.result_manifest.resolve()
+        output_path(root, args.result_manifest)
         if args.result_manifest is not None
         else output / "render_manifest.json"
     )

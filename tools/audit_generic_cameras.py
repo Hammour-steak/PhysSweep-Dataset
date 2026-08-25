@@ -75,32 +75,43 @@ def main() -> None:
     args = parse_args()
     if args.workers < 1:
         raise ValueError("workers must be positive")
+    if args.job_timeout_seconds is not None and args.job_timeout_seconds <= 0:
+        raise ValueError("--job-timeout-seconds must be positive")
     root = args.root.resolve()
-    manifest_path = args.manifest.resolve()
+    manifest_path = (
+        args.manifest if args.manifest.is_absolute() else root / args.manifest
+    ).resolve()
+    manifest_path.relative_to(root)
     manifest = load_json(manifest_path)
     rules_path = manifest_rules_path(root, manifest)
     rules = load_json(rules_path)
-    output_root = args.output_root.resolve()
-    if output_root.exists():
-        if not args.overwrite:
-            raise FileExistsError(f"output exists; pass --overwrite: {output_root}")
-        shutil.rmtree(output_root)
-    output_root.mkdir(parents=True, exist_ok=True)
-    if args.job_timeout_seconds is not None and args.job_timeout_seconds <= 0:
-        raise ValueError("--job-timeout-seconds must be positive")
-
+    output_root = (
+        args.output_root
+        if args.output_root.is_absolute()
+        else root / args.output_root
+    ).resolve()
+    outputs_root = (root / "outputs").resolve()
+    if outputs_root not in output_root.parents:
+        raise ValueError("camera audit output must remain under outputs")
     def sample_path(sample: dict[str, Any], key: str, fallback: Path) -> Path:
         value = sample.get(key)
         if value is None:
             return fallback
         path = Path(str(value))
-        return path if path.is_absolute() else root / path
+        path = (path if path.is_absolute() else root / path).resolve()
+        path.relative_to(root)
+        return path
 
     samples = list(manifest["samples"])
+    scene_ids = [str(sample["scene_id"]) for sample in samples]
+    if len(scene_ids) != len(set(scene_ids)):
+        raise ValueError("camera source manifest contains duplicate scene ids")
     jobs = []
     job_samples = []
     for sample in samples:
-        metadata_path = root / str(sample["metadata_path"])
+        metadata_path = sample_path(sample, "metadata_path", Path())
+        if sha256(metadata_path) != str(sample["metadata_sha256"]):
+            raise ValueError(f"camera source metadata hash mismatch: {metadata_path}")
         job_samples.append(sample)
         jobs.append(
             (
@@ -122,6 +133,11 @@ def main() -> None:
                 None,
             )
         )
+    if output_root.exists():
+        if not args.overwrite:
+            raise FileExistsError(f"output exists; pass --overwrite: {output_root}")
+        shutil.rmtree(output_root)
+    output_root.mkdir(parents=True, exist_ok=True)
     if args.workers == 1:
         results = [
             audit_job(sample, job, args.job_timeout_seconds)
@@ -170,8 +186,9 @@ def main() -> None:
             output_root / "bound_manifest.json",
             {
                 "schema_version": "physweep_pybullet_bound_manifest_v2",
-                "source_manifest": str(manifest_path),
-                "output_root": str(output_root),
+                "source_manifest": str(manifest_path.relative_to(root)),
+                "source_manifest_sha256": sha256(manifest_path),
+                "output_root": str(output_root.relative_to(root)),
                 "implementation": audit["visual_binder"],
                 "camera_rules": audit["camera_rules"],
                 "sample_count": len(successes),

@@ -32,7 +32,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-manifest", type=Path, required=True)
     parser.add_argument("--camera-audit-manifest", type=Path, required=True)
     parser.add_argument("--output-manifest", type=Path, required=True)
-    parser.add_argument("--base-seed", type=int, required=True)
     parser.add_argument("--max-attempts", type=int, default=8)
     parser.add_argument("--camera-timeout-seconds", type=int, default=120)
     return parser.parse_args()
@@ -54,9 +53,14 @@ def main() -> None:
     if datasets_root not in output_path.parents:
         raise ValueError("output manifest must remain under datasets")
     base = load_json(base_path)
+    base_seed = int(base["seed"])
     audit = load_json(audit_path)
     if int(audit["failure_count"]) != len(audit["failures"]):
         raise ValueError("camera audit failure count is inconsistent")
+    if int(audit["sample_count"]) != int(audit["success_count"]) + int(
+        audit["failure_count"]
+    ):
+        raise ValueError("camera audit sample counts are inconsistent")
     if sha256(root / str(audit["source_manifest"])) != str(
         audit["source_manifest_sha256"]
     ):
@@ -64,9 +68,15 @@ def main() -> None:
     by_metadata_path = {
         str(record["metadata_path"]): record for record in base["records"]
     }
+    if len(by_metadata_path) != len(base["records"]):
+        raise ValueError("base manifest contains duplicate metadata paths")
     originals = []
+    failed_paths: set[str] = set()
     for failure in audit["failures"]:
         metadata_path = str(failure["metadata_path"])
+        if metadata_path in failed_paths:
+            raise ValueError(f"camera audit repeats a failure: {metadata_path}")
+        failed_paths.add(metadata_path)
         if metadata_path not in by_metadata_path:
             raise ValueError(f"camera failure is absent from base manifest: {metadata_path}")
         original = by_metadata_path[metadata_path]
@@ -76,6 +86,26 @@ def main() -> None:
     originals.sort(key=lambda record: int(record["index"]))
 
     generic_manifest = load_json(root / str(base["generic_manifest_path"]))
+    if str(audit["camera_rules"]["sha256"]) != str(
+        generic_manifest["rules_sha256"]
+    ):
+        raise ValueError("camera audit used different generic camera rules")
+    if str(audit["visual_binder"]["sha256"]) != str(
+        generic_manifest["implementation"]["visual_binder"]["sha256"]
+    ):
+        raise ValueError("camera audit used a different visual binder")
+    generic_samples = {
+        str(sample["metadata_path"]): sample
+        for sample in generic_manifest["samples"]
+    }
+    if len(generic_samples) != len(generic_manifest["samples"]):
+        raise ValueError("generic manifest contains duplicate metadata paths")
+    for original in originals:
+        source = generic_samples.get(str(original["metadata_path"]))
+        if source is None or str(source["metadata_sha256"]) != str(
+            original["metadata_sha256"]
+        ):
+            raise ValueError("failed slot does not match the generic source manifest")
     bundle_path = root / str(generic_manifest["sampling_bundle_path"])
     production = generic_manifest["production_spec"]
     attempts: list[dict[str, Any]] = []
@@ -83,7 +113,7 @@ def main() -> None:
     for original in originals:
         slot_index = int(original["index"])
         for attempt in range(2, args.max_attempts + 1):
-            seed = generic_retry_seed(args.base_seed, slot_index, attempt)
+            seed = generic_retry_seed(base_seed, slot_index, attempt)
             dataset_id = (
                 f"one_object_camera_replacements/slot_{slot_index:06d}_"
                 f"attempt_{attempt:02d}"
@@ -120,7 +150,9 @@ def main() -> None:
                 "candidate_physics_manifest": str(physics_manifest_path.relative_to(root)),
                 "candidate_physics_manifest_sha256": sha256(physics_manifest_path),
                 "physics_accepted": bool(
-                    physics_record.get("ok") and physics_record.get("audit_passed")
+                    physics_record.get("ok")
+                    and physics_record.get("audit_passed")
+                    and not physics_record.get("failed_checks")
                 ),
                 "failed_checks": list(physics_record.get("failed_checks", [])),
             }
@@ -182,6 +214,15 @@ def main() -> None:
             bound_manifest_path = camera_output / "bound_manifest.json"
             audit_manifest_path = camera_output / "camera_audit_manifest.json"
             camera_accepted = camera_returncode == 0 and bound_manifest_path.is_file()
+            if camera_accepted:
+                camera_audit = load_json(audit_manifest_path)
+                camera_accepted = (
+                    int(camera_audit["sample_count"]) == 1
+                    and int(camera_audit["success_count"]) == 1
+                    and int(camera_audit["failure_count"]) == 0
+                    and sha256(camera_source_path)
+                    == str(camera_audit["source_manifest_sha256"])
+                )
             attempt_record.update(
                 {
                     "camera_accepted": camera_accepted,
@@ -223,7 +264,7 @@ def main() -> None:
         "base_manifest_sha256": sha256(base_path),
         "camera_audit_manifest": str(audit_path.relative_to(root)),
         "camera_audit_manifest_sha256": sha256(audit_path),
-        "base_seed": args.base_seed,
+        "base_seed": base_seed,
         "failed_slot_count": len(originals),
         "attempt_count": len(attempts),
         "accepted_count": len(accepted),
