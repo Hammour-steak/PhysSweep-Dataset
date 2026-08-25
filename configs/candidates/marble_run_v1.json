@@ -1,0 +1,414 @@
+{
+  "schema_version": "physweep_static_fixture_candidate_config_v1",
+  "candidate_id": "marble_run_straight_drop_chain_v1",
+  "admission": {
+    "status": "candidate_only",
+    "release_enabled": false,
+    "reason": "Requires numerical, visual, sweep, and camera review before release registration."
+  },
+  "semantics": {
+    "scene_family": "marble_run",
+    "profile": "straight_drop_chain",
+    "dynamic_object_count": 1,
+    "dynamic_semantics": [
+      "marble"
+    ],
+    "description": "One marble traverses four passive channel segments and three short airborne gaps before entering a catch tray."
+  },
+  "source": {
+    "repository_url": "https://github.com/jhpieper/marble-run",
+    "local_root": "assets/library/github/jhpieper_marble_run",
+    "commit": "64b8f62091775c56ffcdbe276b6a8cbad95581f7",
+    "author": "Jan Pieper",
+    "license": {
+      "code": "MIT",
+      "stl_objects": "CC BY 4.0",
+      "attribution_required": true
+    },
+    "files": [
+      {
+        "path": "README.md",
+        "role": "license_declaration_and_source_documentation",
+        "sha256": "cac85999149240741cddbab188891d929e5f82d6e42735d39be84b6a5ebbbddf"
+      },
+      {
+        "path": "LICENSE",
+        "role": "code_license",
+        "sha256": "6b74ec2125719a431aac4610a0ba6239a81e468138b86ee11b6c49cf7702b206"
+      },
+      {
+        "path": "stl/straight-110.stl",
+        "role": "passive_track_visual_and_collision_source",
+        "sha256": "e91fa2b9fad00a9e25e64e19d5d393dd8eb3372169c42a1abda4b67800d24bcd",
+        "topology": {
+          "source_vertex_count": 5640,
+          "canonical_vertex_count": 942,
+          "face_count": 1880,
+          "source_watertight": false,
+          "watertight_after_vertex_merge": true
+        }
+      }
+    ]
+  },
+  "fixture": {
+    "classification": "static",
+    "representation": "compound_exact_static_triangle_mesh_and_analytic_boxes",
+    "collision_authority": "reviewed_static_fixture_candidate_v1",
+    "source_units": "millimeter",
+    "uniform_scale_m_per_source_unit": 0.003,
+    "source_to_world_rotation_matrix": [
+      [
+        0.13917310096006544,
+        0.9902680687415704,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ],
+      [
+        0.9902680687415704,
+        -0.13917310096006544,
+        0.0
+      ]
+    ],
+    "source_to_world_orientation_quaternion_xyzw": [
+      0.5336602620019747,
+      0.46390378825784945,
+      0.46390378825784945,
+      -0.5336602620019747
+    ],
+    "mesh_components": [
+      {
+        "id": "track_1",
+        "source_file": "stl/straight-110.stl",
+        "base_position_m": [
+          0.0,
+          0.0,
+          1.55
+        ],
+        "color_rgba": [
+          0.93,
+          0.23,
+          0.12,
+          1.0
+        ]
+      },
+      {
+        "id": "track_2",
+        "source_file": "stl/straight-110.stl",
+        "base_position_m": [
+          0.357,
+          0.0,
+          1.464
+        ],
+        "color_rgba": [
+          0.98,
+          0.58,
+          0.08,
+          1.0
+        ]
+      },
+      {
+        "id": "track_3",
+        "source_file": "stl/straight-110.stl",
+        "base_position_m": [
+          0.717,
+          0.0,
+          1.374
+        ],
+        "color_rgba": [
+          0.18,
+          0.55,
+          0.91,
+          1.0
+        ]
+      },
+      {
+        "id": "track_4",
+        "source_file": "stl/straight-110.stl",
+        "base_position_m": [
+          1.077,
+          0.0,
+          1.284
+        ],
+        "color_rgba": [
+          0.38,
+          0.72,
+          0.24,
+          1.0
+        ]
+      }
+    ],
+    "analytic_colliders": [
+      {
+        "id": "catch_floor",
+        "shape": "box",
+        "half_extents_m": [
+          0.38,
+          0.3,
+          0.03
+        ],
+        "position_m": [
+          1.43,
+          0.0,
+          0.95
+        ],
+        "color_rgba": [
+          0.16,
+          0.18,
+          0.22,
+          1.0
+        ]
+      },
+      {
+        "id": "catch_side_positive_y",
+        "shape": "box",
+        "half_extents_m": [
+          0.38,
+          0.025,
+          0.13
+        ],
+        "position_m": [
+          1.43,
+          0.325,
+          1.05
+        ],
+        "color_rgba": [
+          0.16,
+          0.18,
+          0.22,
+          0.22
+        ]
+      },
+      {
+        "id": "catch_side_negative_y",
+        "shape": "box",
+        "half_extents_m": [
+          0.38,
+          0.025,
+          0.13
+        ],
+        "position_m": [
+          1.43,
+          -0.325,
+          1.05
+        ],
+        "color_rgba": [
+          0.16,
+          0.18,
+          0.22,
+          1.0
+        ]
+      },
+      {
+        "id": "catch_end",
+        "shape": "box",
+        "half_extents_m": [
+          0.03,
+          0.3,
+          0.13
+        ],
+        "position_m": [
+          1.84,
+          0.0,
+          1.05
+        ],
+        "color_rgba": [
+          0.16,
+          0.18,
+          0.22,
+          1.0
+        ]
+      },
+      {
+        "id": "safety_floor",
+        "shape": "box",
+        "half_extents_m": [
+          1.5,
+          1.0,
+          0.05
+        ],
+        "position_m": [
+          0.5,
+          0.0,
+          0.15
+        ],
+        "color_rgba": [
+          0.31,
+          0.33,
+          0.36,
+          1.0
+        ]
+      }
+    ],
+    "material": {
+      "contact_friction": 0.24,
+      "contact_restitution": 0.18
+    },
+    "catch_material": {
+      "contact_friction": 0.5,
+      "contact_restitution": 0.12
+    }
+  },
+  "dynamic_object": {
+    "object_id": "marble",
+    "shape": "sphere",
+    "radius_m": 0.0225,
+    "material": {
+      "mass_kg": 0.17,
+      "mass_range_kg": [
+        0.085,
+        0.34
+      ],
+      "contact_friction": 0.16,
+      "contact_restitution": 0.55,
+      "rolling_friction": 0.0025,
+      "spinning_friction": 0.0006,
+      "linear_damping": 0.025,
+      "angular_damping": 0.01
+    },
+    "initial_state": {
+      "position_m": [
+        -0.28222639959134754,
+        0.0,
+        1.5896643337736187
+      ],
+      "orientation_quaternion_xyzw": [
+        0.0,
+        0.0,
+        0.0,
+        1.0
+      ],
+      "linear_velocity_m_s": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "angular_velocity_rad_s": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "color_rgba": [
+      0.96,
+      0.97,
+      1.0,
+      1.0
+    ]
+  },
+  "physics": {
+    "backend": "pybullet_static_fixture_candidate_v1",
+    "duration_s": 3.0,
+    "output_fps": 24,
+    "simulation_hz": 3840,
+    "gravity_m_s2": [
+      0.0,
+      0.0,
+      -9.81
+    ],
+    "solver_iterations": 180,
+    "deterministic_overlapping_pairs": true,
+    "restitution_velocity_threshold_m_s": 0.02,
+    "enable_cone_friction": true,
+    "use_split_impulse": true
+  },
+  "quality": {
+    "minimum_path_length_m": 2.0,
+    "maximum_linear_speed_m_s": 6.0,
+    "maximum_penetration_m": 0.001,
+    "minimum_world_z_m": 0.19,
+    "maximum_abs_wall_normal_y_m": 0.4,
+    "maximum_energy_gain_j_per_kg": 0.08,
+    "required_mesh_contact_ids": [
+      "track_1",
+      "track_2",
+      "track_3",
+      "track_4"
+    ],
+    "minimum_analytic_contact_count": 1,
+    "sweep_minimum_analytic_contact_count": 0
+  },
+  "render": {
+    "resolution": [
+      768,
+      512
+    ],
+    "fps": 24,
+    "camera": {
+      "position_m": [
+        0.7,
+        3.8,
+        1.6
+      ],
+      "target_m": [
+        0.7,
+        0.0,
+        1.05
+      ],
+      "focal_length_mm": 50.0
+    },
+    "world_color_rgb": [
+      0.035,
+      0.045,
+      0.065
+    ],
+    "context": {
+      "backboard": {
+        "half_extents_m": [
+          1.3,
+          0.05,
+          1.05
+        ],
+        "position_m": [
+          0.7,
+          -0.16,
+          1.05
+        ],
+        "color_rgba": [
+          0.12,
+          0.15,
+          0.2,
+          1.0
+        ],
+        "physics_role": "render_only_context"
+      }
+    },
+    "lights": [
+      {
+        "id": "key",
+        "type": "AREA",
+        "position_m": [
+          -1.5,
+          2.5,
+          4.2
+        ],
+        "energy_w": 1150.0,
+        "size_m": 3.0,
+        "color_rgb": [
+          1.0,
+          0.82,
+          0.68
+        ]
+      },
+      {
+        "id": "fill",
+        "type": "AREA",
+        "position_m": [
+          4.0,
+          1.5,
+          2.8
+        ],
+        "energy_w": 850.0,
+        "size_m": 2.5,
+        "color_rgb": [
+          0.62,
+          0.76,
+          1.0
+        ]
+      }
+    ]
+  }
+}
