@@ -11,7 +11,12 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-from sample_pybullet_base import manifest_counts as generic_manifest_counts
+try:
+    from sample_pybullet_base import manifest_counts as generic_manifest_counts
+except ModuleNotFoundError:
+    from tools.sample_pybullet_base import (
+        manifest_counts as generic_manifest_counts,
+    )
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
