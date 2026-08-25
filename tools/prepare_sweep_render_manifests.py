@@ -136,7 +136,13 @@ def main() -> None:
     if int(physics_manifest["sample_count"]) != len(physics_manifest["records"]):
         raise ValueError("release physics sample count is inconsistent")
     staged = load_json(staged_path)
-    selected_parents = {str(record["metadata_path"]) for record in staged["records"]}
+    selected_parents = {
+        str(record.get("metadata_path") or record.get("parent"))
+        for record in staged["records"]
+        if record.get("metadata_path") or record.get("parent")
+    }
+    if not selected_parents:
+        raise ValueError("staged manifest contains no base metadata paths")
     selected = select_complete_groups(metadata_manifest["records"], selected_parents)
     selected_scene_ids = [str(record["scene_id"]) for record in selected]
     if len(selected_scene_ids) != len(set(selected_scene_ids)):
