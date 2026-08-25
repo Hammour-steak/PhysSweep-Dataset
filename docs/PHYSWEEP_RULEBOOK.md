@@ -23,7 +23,7 @@ The active generic solver is `motion_structure_camera_v12`.
 - Environment walls, decor, set pieces, and mesh proxies are frozen before simulation. The camera solver must preserve them and keep the required trajectory fractions and structure anchors unoccluded; it may not delete, move, or disable a physical environment collider to improve composition.
 - Partial exit after the primary interaction is allowed when the observation intent permits it. The solver does not pull back merely to retain an unimportant trajectory tail.
 - Asset-proxy framing follows the same intent/structure contract and expands the observed path by the dynamic asset's canonical extent plus static-prop bounds.
-- Generic and specialized cameras are separate mechanisms. The generic matrix searches geometry-derived poses and uses the scene seed to choose among near-equivalent admissible azimuth/elevation tiers. Specialized scene profiles such as billiards, edge exit, and workbench motion select from their own reviewed view pools in `visual_sampling.json`.
+- Generic and specialized cameras are separate mechanisms. The generic matrix searches geometry-derived poses and uses the scene seed to choose among near-equivalent admissible azimuth/elevation tiers. Specialized scene profiles such as billiards, edge exit, and workbench motion select from their own reviewed view pools in `visual_sampling.json`; passive pinball uses the geometry-bound front-oblique camera declared by its own backend configuration.
 - A specialized view pool belongs to a reusable scene profile, never to a concrete asset id. Changing one profile cannot alter generic-matrix views or another specialized profile. Both mechanisms still enforce the same final framing, trajectory-visibility, structure-anchor, and occlusion contracts.
 - When a static prop can occlude the moving object, the camera keeps the seed order inside the blocker-safe half of the profile pool. Occlusion safety filters admissible views; it does not replace seeded view selection with one extreme angle.
 - Billiards profiles share the reviewed yaw pool `[-30, -15, 0, 15, 30]` degrees. A 15-degree minimum spacing removes visually redundant cross-profile angles while preserving left, frontal, and right observations; profile-specific elevation pools retain low, medium, and high views.
@@ -94,6 +94,7 @@ The generic solver remains one implementation. Motion and structure change its o
   support/profile/dynamic compatibility probe passes.
 - The billiards 1obj family contains one regulation cue ball. Its supported profiles are free rolling without rail contact and one rail impact followed by rebound. Static table, bed, and rails do not count as dynamic objects.
 - The billiards v1 family uses three regulation-sized balls, requires a central ball-ball collision, and rejects rail or pocket contact because pocket sinking is not yet represented by the collision proxy.
+- The passive-pinball family contains one unforced sphere and one exact analytic static fixture. Dense and offset profiles differ only through declared seeded launch offsets; both use the same board, rails, peg field, catch geometry, material rules, and camera mechanism. Active mechanisms and per-scene fixture edits are forbidden.
 - Asset scenes must bind a hashed HDRI plus hashed PBR floor and wall materials in metadata. A neutral fallback plane is not a valid background.
 - Asset-scene metadata also binds color management, HDRI strength, light scaling, and every area light. The renderer may not inject private lights. One dominant key plus weak fill and rim lights preserves contact shadows without washing out light-colored supports.
 - After material binding, the renderer measures the actual Base Color texture pixels for the dynamic object and visible support assets separately. This pre-render policy may adjust exposure, HDRI strength, and fill/rim energy for light-light, very-light-support, and dark-dark combinations. It may not inspect semantic names or use a rendered image, and every decision and measurement must be recorded in `render_record.json`.
@@ -122,7 +123,12 @@ The generic solver remains one implementation. Motion and structure change its o
 - Active bundle: `configs/one_object_sampling_bundle.json`
 - Runtime-validated supported scope: `configs/backend_capabilities.json`
 
-Numerical ownership follows the thing being described: object profiles own per-object dimensions and nominal physical ranges, scene kits own support geometry, and `pybullet_backend.json` owns engine settings, global calibration, specialized initial states, and acceptance thresholds. Semantic files only declare admitted meanings and combinations.
+Numerical ownership follows the thing being described: object profiles own
+per-object dimensions and nominal physical ranges, scene kits own support
+geometry, `pybullet_backend.json` owns generic/asset/billiards engine rules, and
+`passive_pinball_backend.json` owns the pinball fixture, material, engine,
+camera, and acceptance rules. Semantic files only declare admitted meanings
+and combinations.
 
 The metadata JSON is the contract. Simulation may only read it. Camera solving and rendering happen after simulation and cannot change physical state.
 
@@ -147,7 +153,10 @@ environment admits every motion and receives the unmatched catch-all slots.
 
 Identity-bearing environments keep narrow constraints. A billiards environment
 admits only a regulation ball with free-roll or rail-rebound motion. The
-workbench admits only reviewed clear-zone drop and long-axis push profiles.
+passive-pinball environment admits only its declared one-ball gravity descent.
+It replaces complete generic drop slots without changing the outer motion
+quota. The workbench admits only reviewed clear-zone drop and long-axis push
+profiles.
 Ordinary curated supports use named dynamic pools. These compatibility masks
 prevent nonsensical Cartesian products without making asset coverage the owner
 of the motion distribution.
@@ -234,7 +243,7 @@ The weights are normalized only over classes that contain a support compatible w
   largest extent. Incompatible small objects are resampled into shorter motion
   contexts rather than shrinking them below the common camera readability floor.
 
-- Simulation frequency is derived from object minimum extent and reference speed. One time step may cover at most 6% of that extent; frequency is clamped to 960-3840 Hz and rounded to an output-frame multiple. Generic, asset-proxy, and billiards branches use the same calculator.
+- Simulation frequency is derived from object minimum extent and reference speed. One time step may cover at most 6% of that extent; frequency is clamped to 960-3840 Hz and rounded to an output-frame multiple. Generic, asset-proxy, and billiards branches use this calculator. Passive pinball freezes its separately reviewed 3840 Hz rate in metadata.
 - Collision detection runs before frame zero. Initial penetration may not exceed 0.5 mm.
 - Runtime penetration is bounded by the stricter of 8 mm and 10% of the object's minimum extent. This prevents an absolute tolerance from accepting visibly deep overlap for plates, phones, magazines, and other thin objects.
 - The solver uses 100 iterations. Integration parameters are scene-derived and recorded in immutable metadata; a renderer may not reinterpret them.
@@ -285,6 +294,10 @@ Curated asset scenes additionally enforce profile semantics:
 - Edge exits require initial support, a sustained loss of support contact, subsequent ground contact, and measurable vertical drop.
 - Workbench profiles must start inside a reviewed conservative interaction footprint. Long-axis pushes retain support contact; clear-zone drops use only the reviewed landing region.
 - Billiards free roll may not touch a rail or reverse direction. Rail-rebound profiles must contact the named rail, reverse the normal velocity component, and retain a bounded rebound-speed ratio.
+- Passive pinball must contact the declared minimum number of distinct pegs,
+  enter the catch region, remain within fixture-local bounds, and satisfy hard
+  penetration, speed, and unforced-energy limits. Visibility never substitutes
+  for these physical checks.
 
 Leaving the support or frame after the primary interaction is allowed. Substitution, hidden forces after frame zero, and per-video repair are forbidden.
 

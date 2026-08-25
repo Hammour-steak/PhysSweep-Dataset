@@ -6,10 +6,11 @@ The sweep pipeline is a separate derivation stage after base metadata is frozen.
 
 `tools/derive_physics_sweep.py` reads the exact records declared by the frozen
 base manifest and writes derived records. It supports the generic rigid,
-reviewed asset-proxy, and billiards base schemas. It never calls the base
-sampler and never changes a base file. Sweep fields are bound to a dynamic
-object, not to the scene as a whole. Every dynamic object must already have a canonical
-`object_id`; array indexes and alternate ID fields are not accepted as joins.
+reviewed asset-proxy, billiards, and passive-pinball base schemas. It never
+calls the base sampler and never changes a base file. Sweep fields are bound to
+a dynamic object, not to the scene as a whole. Every dynamic object must already
+have a canonical `object_id`; array indexes and alternate ID fields are not
+accepted as joins.
 
 Each derived record keeps the base asset, collision proxy, support, visual
 binding, camera request, render request, and initial state. It changes exactly
@@ -31,9 +32,10 @@ authoritative per-object override; backend, registry, and legacy
 must not replace a derived sweep level.
 
 The sweep manifest pins the SHA-256 of the derivation implementation, sweep
-configuration, object-profile prior, asset registry, billiards backend, and
-frozen base manifest. If a prior that is also declared by the base manifest has
-changed, derivation stops before writing output.
+configuration, object-profile prior, asset registry, billiards backend,
+passive-pinball backend, specialized backend registry, and frozen base
+manifest. If a prior that is also declared by the base manifest has changed,
+derivation stops before writing output.
 
 The multi-object shape is the same as the one-object shape:
 
@@ -100,9 +102,9 @@ the frozen base record before levels are generated:
 - friction uses a base-relative band clipped by the runtime domain
   `[0.02, 1.0]`. Generic rigid records with a required travel distance also
   place the high endpoint about 25% beyond the calculated stop/transition
-  friction threshold. Specialized asset and billiards records use their
-  reviewed material prior and stable backend domain because their compact base
-  schemas do not expose the generic analytic support-frame contract;
+  friction threshold. Registered specialized records use their reviewed
+  material prior and stable backend domain because their compact base schemas
+  do not expose the generic analytic support-frame contract;
 - `contact_restitution` is the runtime field for the semantic control
  `elasticity` and covers the stable runtime domain `[0.0, 0.8]`. This global
  domain is intentional: it makes low-elasticity and high-elasticity behavior
@@ -121,6 +123,10 @@ Generic and asset-proxy restitution use the reviewed stable runtime domain
 the generic domain. The `0.3` lower bound is a schema-level stability limit:
 all 32 admitted one-ball table scenes passed at `0.3`, while lower values caused
 rail impacts to push some balls through the exact concave table proxy.
+Passive pinball uses the independently audited `[0.18, 0.98]` domain. Its
+frozen base value remains the exact middle level, and every endpoint is replayed
+against peg-contact, penetration, speed, energy, board-bound, and catch-entry
+hard checks.
 
 A sweep is allowed to change the observed motion mode. For example, a low
 restitution bounce can impact and settle without a visible rebound. These
@@ -183,7 +189,7 @@ Whole base collection:
 
 Derivation writes immutable metadata. `tools/run_pybullet_batch.py` sends every
 record through `tools/pybullet_backend_dispatcher.py`. The dispatcher compiles
-generic rigid, asset-proxy, and billiards metadata into the same
+generic rigid, asset-proxy, billiards, and passive-pinball metadata into the same
 `physweep_resolved_simulation_scene_v1` contract, then invokes the matching
 reviewed PyBullet adapter. It writes normalized trajectories under a separate
 `<dataset>/physics` tree and never mutates metadata. No per-video repair or
@@ -232,8 +238,9 @@ deterministic, slot-preserving resampling; individual videos are never repaired,
 silently omitted, or replaced after rendering.
 
 The resolved scene format is object-count agnostic, but each active adapter
-declares its current capability: generic rigid and reviewed asset-proxy scenes
-support one dynamic object, while billiards supports one or three balls. Future
+declares its current capability: generic rigid, reviewed asset-proxy, and
+passive-pinball scenes support one dynamic object, while billiards supports one
+or three balls. Future
 two- and three-object adapters can reuse the same ordered object contract without
 silently routing unsupported scenes through a one-object solver.
 
