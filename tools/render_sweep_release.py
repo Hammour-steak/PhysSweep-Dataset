@@ -48,8 +48,11 @@ def load_release(root: Path, value: str | Path) -> tuple[Path, dict[str, Any], P
     release_path = project_path(root, value)
     release_path.relative_to(root / "datasets")
     release = json.loads(release_path.read_text(encoding="utf-8"))
-    if release.get("schema_version") != "physweep_one_object_sweep_release_v1":
-        raise ValueError("render runner requires a one-object sweep release")
+    if release.get("schema_version") not in {
+        "physweep_one_object_sweep_release_v1",
+        "physweep_one_object_sweep_release_v2",
+    }:
+        raise ValueError("render runner requires a v1 or v2 one-object sweep release")
     base_path = project_path(root, release["base_manifest"])
     base_path.relative_to(root / "datasets")
     if sha256(base_path) != str(release["base_manifest_sha256"]):

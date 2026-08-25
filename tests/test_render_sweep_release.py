@@ -14,7 +14,11 @@ def write_json(path: Path, value: object) -> None:
 
 
 class RenderSweepReleaseTests(unittest.TestCase):
-    def fixture(self, root: Path) -> Path:
+    def fixture(
+        self,
+        root: Path,
+        schema: str = "physweep_one_object_sweep_release_v1",
+    ) -> Path:
         base_path = root / "datasets/release/base.json"
         write_json(
             base_path,
@@ -24,7 +28,7 @@ class RenderSweepReleaseTests(unittest.TestCase):
         write_json(
             release_path,
             {
-                "schema_version": "physweep_one_object_sweep_release_v1",
+                "schema_version": schema,
                 "base_group_count": 1,
                 "sample_count": 13,
                 "base_manifest": str(base_path.relative_to(root)),
@@ -44,6 +48,18 @@ class RenderSweepReleaseTests(unittest.TestCase):
             base_path.write_text("{}", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "hash mismatch"):
                 load_release(root, release_path)
+
+    def test_v4_release_schema_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            release_path = self.fixture(
+                root, "physweep_one_object_sweep_release_v2"
+            )
+            _, release, _ = load_release(root, release_path)
+            self.assertEqual(
+                release["schema_version"],
+                "physweep_one_object_sweep_release_v2",
+            )
 
 
 if __name__ == "__main__":
