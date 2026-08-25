@@ -23,7 +23,7 @@ __pycache__/
 *.pid
 
 # Downloaded binary asset libraries and generated review images
-/assets/library/
+/assets/library
 /assets/proxies/**
 !assets/proxies/README.md
 !assets/proxies/catalog.json

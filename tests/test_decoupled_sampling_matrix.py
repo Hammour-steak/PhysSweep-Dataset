@@ -122,6 +122,8 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
                 "production_video",
                 "environment_collision_proxies",
                 "environment_composition",
+                "passive_pinball_backend",
+                "specialized_scene_backends",
             },
         )
         self.assertEqual(
@@ -140,6 +142,9 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
                 "motion_rule_ballistic",
                 "motion_rule_incline",
                 "motion_rule_transition",
+                "passive_pinball_generator",
+                "passive_pinball_renderer",
+                "specialized_backend_registry",
             },
         )
         invalid = copy.deepcopy(self.matrix)
@@ -169,10 +174,11 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
         self.assertEqual(
             allocate_axis_counts(self.matrix["environments"], 40, "environment"),
             {
-                "generic_matrix": 27,
+                "generic_matrix": 26,
                 "curated_support_asset": 8,
                 "curated_support_with_prop": 2,
                 "billiards_single_ball": 1,
+                "passive_pinball_board": 1,
                 "workbench_single_object": 2,
             },
         )
@@ -180,10 +186,11 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
     def test_motion_distribution_does_not_change_with_environment_weights(self) -> None:
         changed = copy.deepcopy(self.matrix)
         weights = {
-            "generic_matrix": 0.80,
+            "generic_matrix": 0.75,
             "curated_support_asset": 0.05,
             "curated_support_with_prop": 0.05,
             "billiards_single_ball": 0.05,
+            "passive_pinball_board": 0.05,
             "workbench_single_object": 0.05,
         }
         for environment in changed["environments"]:
