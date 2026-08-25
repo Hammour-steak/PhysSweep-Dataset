@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import copy
 import json
 import subprocess
 import sys
@@ -133,16 +132,20 @@ def main() -> None:
             trajectory_path = Path(str(physics_record["trajectory_path"]))
             if not trajectory_path.is_absolute():
                 trajectory_path = root / trajectory_path
-            source = copy.deepcopy(candidate_manifest)
-            source["samples"] = [
-                {
-                    **sample,
-                    "simulation_record_path": str(
-                        trajectory_path.with_name("simulation_record.json").relative_to(root)
-                    ),
-                    "trajectory_path": str(trajectory_path.relative_to(root)),
-                }
-            ]
+            source = {
+                **candidate_manifest,
+                "samples": [
+                    {
+                        **sample,
+                        "simulation_record_path": str(
+                            trajectory_path.with_name(
+                                "simulation_record.json"
+                            ).relative_to(root)
+                        ),
+                        "trajectory_path": str(trajectory_path.relative_to(root)),
+                    }
+                ],
+            }
             camera_source_path = candidate_manifest_path.parent / "camera_source_manifest.json"
             write_json(camera_source_path, source)
             camera_output = (
@@ -153,7 +156,7 @@ def main() -> None:
             )
             command = [
                 sys.executable,
-                str(root / "tools/bind_pybullet_visuals.py"),
+                str(root / "tools/audit_generic_cameras.py"),
                 "--root",
                 str(root),
                 "--manifest",
@@ -162,38 +165,38 @@ def main() -> None:
                 str(camera_output),
                 "--workers",
                 "1",
+                "--overwrite",
+                "--job-timeout-seconds",
+                str(args.camera_timeout_seconds),
             ]
-            try:
-                completed = subprocess.run(
-                    command,
-                    cwd=root,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    check=False,
-                    timeout=args.camera_timeout_seconds,
-                )
-                camera_stdout = completed.stdout
-                camera_returncode = completed.returncode
-            except subprocess.TimeoutExpired as error:
-                captured = error.stdout or ""
-                camera_stdout = (
-                    captured.decode("utf-8", errors="replace")
-                    if isinstance(captured, bytes)
-                    else captured
-                )
-                camera_stdout += (
-                    f"\nTimeoutError: camera binding exceeded "
-                    f"{args.camera_timeout_seconds} seconds"
-                )
-                camera_returncode = 124
+            completed = subprocess.run(
+                command,
+                cwd=root,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                check=False,
+            )
+            camera_stdout = completed.stdout
+            camera_returncode = completed.returncode
             bound_manifest_path = camera_output / "bound_manifest.json"
+            audit_manifest_path = camera_output / "camera_audit_manifest.json"
             camera_accepted = camera_returncode == 0 and bound_manifest_path.is_file()
             attempt_record.update(
                 {
                     "camera_accepted": camera_accepted,
                     "camera_source_manifest": str(camera_source_path.relative_to(root)),
                     "camera_source_manifest_sha256": sha256(camera_source_path),
+                    "camera_audit_manifest": (
+                        str(audit_manifest_path.relative_to(root))
+                        if audit_manifest_path.is_file()
+                        else None
+                    ),
+                    "camera_audit_manifest_sha256": (
+                        sha256(audit_manifest_path)
+                        if audit_manifest_path.is_file()
+                        else None
+                    ),
                     "camera_bound_manifest": (
                         str(bound_manifest_path.relative_to(root))
                         if bound_manifest_path.is_file()

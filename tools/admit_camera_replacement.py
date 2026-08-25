@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import copy
 import hashlib
 import json
 import math
@@ -181,7 +180,7 @@ def main() -> None:
         f"{original['scene_id']}__camera_replacement_{args.attempt:02d}"
     )
     replacement_record = {
-        **copy.deepcopy(original),
+        **original,
         "scene_id": replacement_scene_id,
         "seed": int(candidate["seed"]),
         "candidate_scene_id": str(sample["scene_id"]),
@@ -207,7 +206,7 @@ def main() -> None:
             "visual_binder_sha256": str(camera["implementation"]["sha256"]),
         },
     }
-    records = [*copy.deepcopy(existing["records"]), replacement_record]
+    records = [*existing["records"], replacement_record]
     records.sort(key=lambda record: int(record["index"]))
     output = {
         **existing,

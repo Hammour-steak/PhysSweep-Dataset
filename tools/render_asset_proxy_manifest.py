@@ -160,6 +160,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Reuse a video only when its scene id and metadata/video hashes verify.",
     )
+    parser.add_argument(
+        "--result-manifest",
+        type=Path,
+        help="Explicit summary path; defaults to OUTPUT_ROOT/render_manifest.json.",
+    )
     return parser.parse_args()
 
 
@@ -193,6 +198,8 @@ def main() -> None:
     failures = [record for record in records if not record["ok"]]
     summary = {
         "schema_version": "physweep_asset_proxy_render_manifest_v1",
+        "source_manifest": str(args.manifest.resolve().relative_to(root)),
+        "source_manifest_sha256": sha256(args.manifest.resolve()),
         "sample_count": len(records),
         "success_count": len(records) - len(failures),
         "failure_count": len(failures),
@@ -201,7 +208,13 @@ def main() -> None:
         "egl_device_selector": selector,
         "records": records,
     }
-    write_json(output / "render_manifest.json", summary)
+    result_manifest = (
+        args.result_manifest.resolve()
+        if args.result_manifest is not None
+        else output / "render_manifest.json"
+    )
+    result_manifest.parent.mkdir(parents=True, exist_ok=True)
+    write_json(result_manifest, summary)
     print(json.dumps({key: value for key, value in summary.items() if key != "records"}, indent=2))
     if failures:
         print(json.dumps(failures[:5], indent=2))

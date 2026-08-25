@@ -125,6 +125,10 @@ def main() -> None:
 
     for branch in ("asset", "billiards"):
         render_records = []
+        partitioned_records: dict[str, list[dict[str, Any]]] = {
+            "base": [],
+            "derived": [],
+        }
         for record, physics in branches[branch]:
             source_path = Path(str(physics["metadata_path"])).resolve()
             source_path.relative_to(root)
@@ -138,20 +142,25 @@ def main() -> None:
             scene_id = str(record["scene_id"])
             bound_path = output_root / branch / "metadata" / f"{scene_id}.json"
             write_json(bound_path, bound)
-            render_records.append(
-                {
-                    "scene_id": scene_id,
-                    "metadata_path": relative(root, bound_path),
-                    "render_output": {
-                        "video_path": relative(
-                            root, output_root / branch / "videos" / f"{scene_id}.mp4"
-                        ),
-                        "inspection_frame_dir": relative(
-                            root, output_root / branch / "frames" / scene_id
-                        ),
-                    },
-                }
-            )
+            render_record = {
+                "scene_id": scene_id,
+                "metadata_path": relative(root, bound_path),
+                "render_output": {
+                    "video_path": relative(
+                        root, output_root / branch / "videos" / f"{scene_id}.mp4"
+                    ),
+                    "inspection_frame_dir": relative(
+                        root, output_root / branch / "frames" / scene_id
+                    ),
+                },
+            }
+            render_records.append(render_record)
+            sweep_kind = str(bound["sweep"]["kind"])
+            if sweep_kind not in {"base", "sweep"}:
+                raise ValueError(f"unsupported sweep kind: {sweep_kind}")
+            partitioned_records[
+                "base" if sweep_kind == "base" else "derived"
+            ].append(render_record)
         manifest = {
             "schema_version": f"physweep_sweep_{branch}_render_manifest_v1",
             "dataset_id": f"one_object_sweep_review_{branch}",
@@ -160,35 +169,17 @@ def main() -> None:
             "records": render_records,
         }
         write_json(output_root / branch / "render_input_manifest.json", manifest)
-        base_records = [
-            record
-            for record in render_records
-            if load_json(root / record["metadata_path"])["sweep"]["kind"] == "base"
-        ]
-        base_manifest = dict(manifest)
-        base_manifest["dataset_id"] = f"one_object_sweep_review_{branch}_base"
-        base_manifest["sample_count"] = len(base_records)
-        base_manifest["records"] = base_records
-        write_json(
-            output_root / branch / "base_render_input_manifest.json",
-            base_manifest,
-        )
-        derived_records = [
-            record
-            for record in render_records
-            if load_json(root / record["metadata_path"])["sweep"]["kind"]
-            == "sweep"
-        ]
-        derived_manifest = dict(manifest)
-        derived_manifest["dataset_id"] = (
-            f"one_object_sweep_review_{branch}_derived"
-        )
-        derived_manifest["sample_count"] = len(derived_records)
-        derived_manifest["records"] = derived_records
-        write_json(
-            output_root / branch / "derived_render_input_manifest.json",
-            derived_manifest,
-        )
+        for partition, records in partitioned_records.items():
+            partition_manifest = {
+                **manifest,
+                "dataset_id": f"one_object_sweep_review_{branch}_{partition}",
+                "sample_count": len(records),
+                "records": records,
+            }
+            write_json(
+                output_root / branch / f"{partition}_render_input_manifest.json",
+                partition_manifest,
+            )
 
     summary = {
         "schema_version": "physweep_sweep_render_plan_v1",
