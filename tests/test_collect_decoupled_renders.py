@@ -191,6 +191,39 @@ class CollectedRenderTests(unittest.TestCase):
                 self.run_collect(root, paths)
             self.assertFalse(output.exists())
 
+    def test_only_required_specialized_branch_is_loaded(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = self.fixture(root)
+            staged = json.loads(paths["manifest"].read_text(encoding="utf-8"))
+            staged["schema_version"] = "physweep_one_object_decoupled_manifest_v4"
+            staged["records"][0]["pipeline"] = "passive_pinball"
+            write_json(paths["manifest"], staged)
+
+            generic = json.loads(paths["generic"].read_text(encoding="utf-8"))
+            envelope = generic["records"][0]
+            envelope["scene_id"] = "outer"
+            envelope["render_record"]["scene_id"] = "outer"
+            specialized = root / "outputs/.staging_current_v4/pinball/render_manifest.json"
+            write_json(specialized, generic)
+
+            result = collect(
+                root=root,
+                manifest_path=paths["manifest"],
+                generic_render_manifest_path=None,
+                asset_render_manifest_path=None,
+                billiards_render_manifest_path=None,
+                output=root / "outputs/current",
+                overwrite=False,
+                specialized_render_manifest_paths={"passive_pinball": specialized},
+            )
+
+            self.assertEqual(result["records"][0]["pipeline"], "passive_pinball")
+            self.assertEqual(
+                set(result["render_runtime"]["branch_manifest_sha256"]),
+                {"passive_pinball"},
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

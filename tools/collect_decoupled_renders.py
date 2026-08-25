@@ -118,9 +118,9 @@ def collect(
     *,
     root: Path,
     manifest_path: Path,
-    generic_render_manifest_path: Path,
-    asset_render_manifest_path: Path,
-    billiards_render_manifest_path: Path,
+    generic_render_manifest_path: Path | None,
+    asset_render_manifest_path: Path | None,
+    billiards_render_manifest_path: Path | None,
     output: Path,
     overwrite: bool,
     specialized_render_manifest_paths: dict[str, Path] | None = None,
@@ -143,22 +143,30 @@ def collect(
     if not canonical_source_manifest.is_file():
         raise FileNotFoundError(canonical_source_manifest)
 
-    branch_paths = {
-        "generic_pybullet": generic_render_manifest_path.resolve(),
-        "asset_proxy": asset_render_manifest_path.resolve(),
-        "billiards": billiards_render_manifest_path.resolve(),
+    supplied_branch_paths = {
+        pipeline: path.resolve()
+        for pipeline, path in {
+            "generic_pybullet": generic_render_manifest_path,
+            "asset_proxy": asset_render_manifest_path,
+            "billiards": billiards_render_manifest_path,
+        }.items()
+        if path is not None
     }
     for pipeline, path in (specialized_render_manifest_paths or {}).items():
-        if pipeline in branch_paths:
+        if pipeline in supplied_branch_paths:
             raise ValueError(f"duplicate render manifest pipeline: {pipeline}")
-        branch_paths[str(pipeline)] = path.resolve()
+        supplied_branch_paths[str(pipeline)] = path.resolve()
     required_pipelines = {str(record["pipeline"]) for record in manifest["records"]}
-    if not required_pipelines <= set(branch_paths):
+    if not required_pipelines <= set(supplied_branch_paths):
         raise ValueError(
             "render manifest pipelines differ from staged source: "
-            f"missing={sorted(required_pipelines - set(branch_paths))}, "
-            f"available={sorted(branch_paths)}"
+            f"missing={sorted(required_pipelines - set(supplied_branch_paths))}, "
+            f"available={sorted(supplied_branch_paths)}"
         )
+    branch_paths = {
+        pipeline: supplied_branch_paths[pipeline]
+        for pipeline in sorted(required_pipelines)
+    }
     branch_manifests: dict[str, dict[str, Any]] = {}
     branches: dict[str, dict[str, dict[str, Any]]] = {}
     for pipeline, path in branch_paths.items():
@@ -356,9 +364,9 @@ def parse_args() -> argparse.Namespace:
         required=True,
         help="staged_manifest.json produced by prepare_formal_render_manifests.py",
     )
-    parser.add_argument("--generic-render-manifest", type=Path, required=True)
-    parser.add_argument("--asset-render-manifest", type=Path, required=True)
-    parser.add_argument("--billiards-render-manifest", type=Path, required=True)
+    parser.add_argument("--generic-render-manifest", type=Path)
+    parser.add_argument("--asset-render-manifest", type=Path)
+    parser.add_argument("--billiards-render-manifest", type=Path)
     parser.add_argument(
         "--specialized-render-manifest",
         action="append",
