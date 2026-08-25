@@ -9,3 +9,4 @@
 *.pt binary
 *.pth binary
 *.safetensors binary
+/assets/proxies/objects/records.jsonl text eol=crlf
