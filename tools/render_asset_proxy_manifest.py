@@ -12,10 +12,16 @@ import time
 from pathlib import Path
 from typing import Any
 
-from blender_worker_environment import (
-    build_egl_device_selector,
-    isolated_blender_environment,
-)
+try:
+    from blender_worker_environment import (
+        build_egl_device_selector,
+        isolated_blender_environment,
+    )
+except ModuleNotFoundError:  # imported as tools.* in tests and library callers
+    from tools.blender_worker_environment import (
+        build_egl_device_selector,
+        isolated_blender_environment,
+    )
 try:
     from specialized_backend_registry import specialized_by_pipeline
 except ModuleNotFoundError:
@@ -68,6 +74,33 @@ def output_path(root: Path, value: str | Path) -> Path:
     if (root / "outputs").resolve() not in path.parents:
         raise ValueError(f"render output must be below root/outputs: {path}")
     return path
+
+
+def result_manifest_path(
+    root: Path,
+    output: Path,
+    value: str | Path | None,
+    default_name: str,
+) -> Path:
+    path = output_path(root, value) if value is not None else output / default_name
+    if output not in path.parents:
+        raise ValueError("render result manifest must remain below its output root")
+    return path
+
+
+def render_samples_are_reusable(
+    metadata: dict[str, Any], render_record: dict[str, Any]
+) -> bool:
+    schema = str(metadata.get("schema_version", ""))
+    if schema not in {
+        "physweep_passive_pinball_scene_v1",
+        "physweep_marble_run_scene_v1",
+    }:
+        return True
+    declared = metadata.get("render", {}).get("samples")
+    return declared is not None and int(
+        render_record.get("render_samples", -1)
+    ) == int(declared)
 
 
 def instance_masks_are_reusable(
@@ -149,11 +182,6 @@ def reusable_render_record(
         frame_dir / f"frame_{frame:04d}.png"
         for frame in (1, (frame_count + 1) // 2, frame_count)
     ]
-    samples_reusable = (
-        metadata.get("schema_version") != "physweep_passive_pinball_scene_v1"
-        or int(render_record.get("render_samples", -1))
-        == int(metadata["render"]["samples"])
-    )
     return (
         str(render_record.get("scene_id")) == str(source_record["scene_id"])
         and project_path(root, str(render_record.get("metadata_path")))
@@ -169,7 +197,7 @@ def reusable_render_record(
             and frame.stat().st_size > 0
             for frame in inspection_frames
         )
-        and samples_reusable
+        and render_samples_are_reusable(metadata, render_record)
         and instance_masks_are_reusable(root, render_record, frame_count)
         and egl_verified
     )
@@ -263,6 +291,8 @@ def worker(
     command = [
         str(blender),
         "-b",
+        "--python-exit-code",
+        "1",
         "--python",
         str(script),
         "--",
@@ -408,10 +438,11 @@ def main() -> None:
         "egl_device_selector": selector,
         "records": records,
     }
-    result_manifest = (
-        output_path(root, args.result_manifest)
-        if args.result_manifest is not None
-        else output / result_name
+    result_manifest = result_manifest_path(
+        root,
+        output,
+        args.result_manifest,
+        result_name,
     )
     write_json(result_manifest, summary)
     print(json.dumps({key: value for key, value in summary.items() if key != "records"}, indent=2))

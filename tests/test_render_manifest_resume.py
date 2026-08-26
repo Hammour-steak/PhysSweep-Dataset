@@ -13,6 +13,8 @@ sys.path.insert(0, str(ROOT / "tools"))
 from render_asset_proxy_manifest import (  # noqa: E402
     instance_masks_are_reusable,
     output_path,
+    render_samples_are_reusable,
+    result_manifest_path,
     render_source_records,
     reusable_render_record as reusable_asset_record,
     sha256,
@@ -28,6 +30,25 @@ def write_json(path: Path, value: object) -> None:
 
 
 class RenderManifestResumeTests(unittest.TestCase):
+    def test_only_sample_bound_specialized_schemas_require_render_samples(self) -> None:
+        record: dict[str, object] = {}
+        billiards = {
+            "schema_version": "physweep_billiards_scene_v4",
+            "render": {"samples": 16},
+        }
+        self.assertTrue(render_samples_are_reusable(billiards, record))
+        for schema in (
+            "physweep_passive_pinball_scene_v1",
+            "physweep_marble_run_scene_v1",
+        ):
+            metadata = {"schema_version": schema, "render": {"samples": 16}}
+            self.assertFalse(render_samples_are_reusable(metadata, record))
+            record["render_samples"] = 16
+            self.assertTrue(render_samples_are_reusable(metadata, record))
+            record["render_samples"] = 8
+            self.assertFalse(render_samples_are_reusable(metadata, record))
+            record.clear()
+
     def test_specialized_mask_reuse_requires_matching_scene_and_object(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -110,6 +131,22 @@ class RenderManifestResumeTests(unittest.TestCase):
             root = Path(directory)
             with self.assertRaisesRegex(ValueError, "root/outputs"):
                 output_path(root, "datasets/formal/video.mp4")
+
+    def test_result_manifest_remains_below_its_render_output(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / "outputs/run/branch"
+            self.assertEqual(
+                result_manifest_path(root, output, None, "render_manifest.json"),
+                output / "render_manifest.json",
+            )
+            with self.assertRaisesRegex(ValueError, "below its output root"):
+                result_manifest_path(
+                    root,
+                    output,
+                    root / "outputs/run/other/render_manifest.json",
+                    "render_manifest.json",
+                )
 
     def test_asset_record_requires_verified_egl_provenance(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

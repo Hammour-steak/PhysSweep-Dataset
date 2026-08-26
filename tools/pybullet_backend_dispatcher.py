@@ -15,12 +15,14 @@ import numpy as np
 
 try:
     from generate_billiards_scene import simulate as simulate_billiards
+    from generate_marble_run_scene import simulate as simulate_marble_run
     from generate_passive_pinball_scene import simulate as simulate_passive_pinball
     from resolved_simulation_scene import compile_resolved_scene
     from sample_asset_proxy_scenes import simulate_scene as simulate_asset_proxy
     from simulate_pybullet_rigid import simulate as simulate_generic_rigid
 except ModuleNotFoundError:  # package imports in tests and library callers
     from tools.generate_billiards_scene import simulate as simulate_billiards
+    from tools.generate_marble_run_scene import simulate as simulate_marble_run
     from tools.generate_passive_pinball_scene import simulate as simulate_passive_pinball
     from tools.resolved_simulation_scene import compile_resolved_scene
     from tools.sample_asset_proxy_scenes import simulate_scene as simulate_asset_proxy
@@ -229,18 +231,22 @@ def _billiards(scene: dict[str, Any], root: Path) -> tuple[dict[str, np.ndarray]
     return normalized, audit
 
 
-def _passive_pinball(
-    scene: dict[str, Any], root: Path
+def _single_sphere_fixture(
+    scene: dict[str, Any],
+    root: Path,
+    *,
+    label: str,
+    simulator: Any,
 ) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     if len(scene["objects"]) != 1:
-        raise ValueError("passive-pinball adapter requires exactly one object")
+        raise ValueError(f"{label} adapter requires exactly one object")
     source = copy.deepcopy(scene["source_metadata"])
     source_object = source["simulation"]["objects"][0]
     resolved_object = scene["objects"][0]
     if source_object["object_id"] != resolved_object["object_id"]:
-        raise ValueError("passive-pinball source and resolved object ids differ")
+        raise ValueError(f"{label} source and resolved object ids differ")
     source_object["material"].update(copy.deepcopy(resolved_object["material"]))
-    arrays, audit = simulate_passive_pinball(root, source)
+    arrays, audit = simulator(root, source)
     normalized = {
         "time_s": arrays["time_s"],
         "position_m": arrays["position_m"],
@@ -256,6 +262,28 @@ def _passive_pinball(
     return normalized, audit
 
 
+def _passive_pinball(
+    scene: dict[str, Any], root: Path
+) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+    return _single_sphere_fixture(
+        scene,
+        root,
+        label="passive-pinball",
+        simulator=simulate_passive_pinball,
+    )
+
+
+def _marble_run(
+    scene: dict[str, Any], root: Path
+) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+    return _single_sphere_fixture(
+        scene,
+        root,
+        label="marble-run",
+        simulator=simulate_marble_run,
+    )
+
+
 def _adapter_hard_results(
     scene: dict[str, Any], adapter_audit: dict[str, Any]
 ) -> list[bool]:
@@ -268,7 +296,7 @@ def _adapter_hard_results(
         ]
     if not isinstance(records, dict):
         raise ValueError(f"{adapter_id} adapter returned invalid audit checks")
-    if adapter_id == "passive_pinball_v1":
+    if adapter_id in {"passive_pinball_v1", "marble_run_v1"}:
         return [bool(passed) for passed in records.values()]
     hard_exact = {
         "finite_trajectory",
@@ -482,6 +510,8 @@ def dispatch_simulation(
         trajectory, adapter_audit = _billiards(scene, root)
     elif adapter_id == "passive_pinball_v1":
         trajectory, adapter_audit = _passive_pinball(scene, root)
+    elif adapter_id == "marble_run_v1":
+        trajectory, adapter_audit = _marble_run(scene, root)
     else:
         raise ValueError(f"unsupported adapter: {adapter_id}")
     audit = _common_audit(scene, trajectory, adapter_audit)

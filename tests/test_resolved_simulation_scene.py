@@ -9,6 +9,57 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ResolvedSimulationSceneTests(unittest.TestCase):
+    def marble_run_metadata(self):
+        backend = ROOT / "configs/marble_run_backend.json"
+        return {
+            "schema_version": "physweep_marble_run_scene_v1",
+            "scene_id": "marble_run",
+            "semantics": {"profile": "early_release_chain"},
+            "simulation": {
+                "time": {
+                    "duration_s": 4.0,
+                    "output_fps": 24,
+                    "simulation_hz": 240,
+                    "frame_count": 97,
+                },
+                "world": {"gravity_m_s2": [0.0, 0.0, -9.81]},
+                "objects": [
+                    {
+                        "object_id": "marble",
+                        "collision_proxy": {"type": "sphere", "radius_m": 0.011},
+                        "material": {
+                            "mass_kg": 0.120208,
+                            "contact_friction": 0.16,
+                            "contact_restitution": 0.55,
+                        },
+                        "initial_state": {
+                            "position_m": [0.0, 0.0, 1.5],
+                            "orientation_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+                            "linear_velocity_m_s": [0.0, 0.0, 0.0],
+                            "angular_velocity_rad_s": [0.0, 0.0, 0.0],
+                        },
+                    }
+                ],
+            },
+            "physics": {
+                "backend_config": {
+                    "path": str(backend.relative_to(ROOT)),
+                    "sha256": sha256(backend),
+                },
+                "profile": "early_release_chain",
+                "fixture": {"mesh_components": [], "analytic_colliders": []},
+                "quality": {},
+            },
+            "object_identity": {
+                "objects": [{"object_id": "marble", "role": "dynamic"}]
+            },
+        }
+
+    def test_marble_run_adapter_remains_callable(self):
+        scene = compile_resolved_scene(self.marble_run_metadata(), ROOT)
+        self.assertEqual(scene["backend_binding"]["adapter_id"], "marble_run_v1")
+        self.assertEqual([record["object_id"] for record in scene["objects"]], ["marble"])
+
     def billiards_metadata(self):
         backend = ROOT / "configs/pybullet_backend.json"
         return {

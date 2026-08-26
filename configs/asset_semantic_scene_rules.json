@@ -42,6 +42,18 @@
         "offset_pinfield_descent"
       ],
       "active_mechanisms_supported": false
+    },
+    "marble_run_single_ball": {
+      "support_category": "passive_marble_track_fixture",
+      "dynamic_object_count": 1,
+      "dynamic_semantics": [
+        "marble"
+      ],
+      "profiles": [
+        "early_release_chain",
+        "late_release_chain"
+      ],
+      "active_mechanisms_supported": false
     }
   }
 }

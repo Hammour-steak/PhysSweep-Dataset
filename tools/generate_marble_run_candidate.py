@@ -424,13 +424,20 @@ def _validate_metadata_files(root: Path, metadata: dict[str, Any]) -> None:
             raise ValueError(f"component collision hash mismatch: {component['id']}")
 
 
-def simulate(root: Path, metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+def simulate_marble_run_physics(
+    root: Path, metadata: dict[str, Any]
+) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+    """Simulate an already validated marble-run physics payload.
+
+    The formal release adapter uses this exact implementation after validating
+    its own immutable bindings.  Keeping one numerical implementation prevents
+    the candidate and release paths from drifting.
+    """
     try:
         import pybullet as pb  # pylint: disable=import-outside-toplevel
     except ImportError as exc:
         raise RuntimeError("pybullet is required to simulate the candidate") from exc
 
-    _validate_metadata_files(root, metadata)
     physics = metadata["physics"]
     dynamic = physics["objects"][0]
     initial = dynamic["initial_state"]
@@ -555,11 +562,24 @@ def simulate(root: Path, metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray
             angularDamping=float(material["angular_damping"]),
             contactProcessingThreshold=0.0,
         )
+        dynamics_info = pb.getDynamicsInfo(ball, -1)
+        runtime_material = np.asarray(
+            [[
+                float(dynamics_info[0]),
+                float(dynamics_info[1]),
+                float(dynamics_info[5]),
+            ]],
+            dtype=np.float64,
+        )
+        runtime_inertia = np.asarray(
+            [[float(value) for value in dynamics_info[2]]], dtype=np.float64
+        )
 
         positions: list[list[float]] = []
         orientations: list[list[float]] = []
         linear_velocities: list[list[float]] = []
         angular_velocities: list[list[float]] = []
+        contact_counts: list[int] = []
         touched: set[str] = set()
         contact_steps: dict[str, int] = {key: 0 for key in body_ids}
         minimum_contact_distance = 0.0
@@ -578,6 +598,7 @@ def simulate(root: Path, metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray
             orientations.append([float(value) for value in orientation])
             linear_velocities.append([float(value) for value in linear])
             angular_velocities.append([float(value) for value in angular])
+            contact_counts.append(len(pb.getContactPoints(bodyA=ball)))
 
         observe()
         initial_linear = np.asarray(initial["linear_velocity_m_s"], dtype=float)
@@ -624,6 +645,9 @@ def simulate(root: Path, metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray
         "angular_velocities": np.asarray(angular_velocities, dtype=np.float64),
         "times": np.arange(frame_count, dtype=np.float64) / output_fps,
         "object_ids": np.asarray([str(dynamic["object_id"])]),
+        "contact_count": np.asarray(contact_counts, dtype=np.int32).reshape(-1, 1),
+        "runtime_material": runtime_material,
+        "runtime_inertia_diagonal_kg_m2": runtime_inertia,
     }
     quality = metadata["quality"]
     mesh_ids = {
@@ -668,6 +692,23 @@ def simulate(root: Path, metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray
         },
     }
     return arrays, audit
+
+
+def simulate(
+    root: Path, metadata: dict[str, Any]
+) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+    """Validate and simulate the isolated candidate contract."""
+    _validate_metadata_files(root, metadata)
+    arrays, audit = simulate_marble_run_physics(root, metadata)
+    candidate_fields = (
+        "positions",
+        "orientations_xyzw",
+        "linear_velocities",
+        "angular_velocities",
+        "times",
+        "object_ids",
+    )
+    return {field: arrays[field] for field in candidate_fields}, audit
 
 
 def derive_sweep_metadata(

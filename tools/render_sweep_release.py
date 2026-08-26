@@ -51,8 +51,9 @@ def load_release(root: Path, value: str | Path) -> tuple[Path, dict[str, Any], P
     if release.get("schema_version") not in {
         "physweep_one_object_sweep_release_v1",
         "physweep_one_object_sweep_release_v2",
+        "physweep_one_object_sweep_release_v3",
     }:
-        raise ValueError("render runner requires a v1 or v2 one-object sweep release")
+        raise ValueError("render runner requires a v1, v2, or v3 one-object sweep release")
     base_path = project_path(root, release["base_manifest"])
     base_path.relative_to(root / "datasets")
     if sha256(base_path) != str(release["base_manifest_sha256"]):
@@ -206,7 +207,28 @@ def main() -> None:
             str(args.workers),
             "--gpus",
             args.gpus,
+            "--sweep-kind",
+            "sweep",
             "--resume",
+            "--result-manifest",
+            str(output / "sweep/generic/bound/derived_render_manifest.json"),
+        ],
+        "render_generic_bases": [
+            python,
+            "tools/render_pybullet_manifest.py",
+            "--root",
+            str(root),
+            "--manifest",
+            str(output / "sweep/generic/bound/bound_manifest.json"),
+            "--workers",
+            str(args.workers),
+            "--gpus",
+            args.gpus,
+            "--sweep-kind",
+            "base",
+            "--resume",
+            "--result-manifest",
+            str(output / "sweep/generic/bound/base_render_manifest.json"),
         ],
     }
     for record in specialized_by_pipeline(root).values():
@@ -214,21 +236,27 @@ def main() -> None:
         renderer = str(record["renderer_id"])
         if renderer == "asset":
             continue
-        stage_commands[f"render_{branch}_sweeps"] = [
-            python,
-            "tools/render_asset_proxy_manifest.py",
-            "--renderer",
-            renderer,
-            "--root",
-            str(root),
-            "--manifest",
-            str(output / f"sweep/{branch}/render_input_manifest.json"),
-            "--workers",
-            str(args.workers),
-            "--gpus",
-            args.gpus,
-            "--resume",
-        ]
+        for kind, stage_suffix in (("base", "bases"), ("derived", "sweeps")):
+            stage_commands[f"render_{branch}_{stage_suffix}"] = [
+                python,
+                "tools/render_asset_proxy_manifest.py",
+                "--renderer",
+                renderer,
+                "--root",
+                str(root),
+                "--manifest",
+                str(
+                    output
+                    / f"sweep/{branch}/{kind}_render_input_manifest.json"
+                ),
+                "--workers",
+                str(args.workers),
+                "--gpus",
+                args.gpus,
+                "--resume",
+                "--result-manifest",
+                str(output / f"sweep/{branch}/{kind}_render_manifest.json"),
+            ]
     if args.stage not in stage_commands:
         raise ValueError(f"unknown render stage: {args.stage}")
     command = stage_commands[args.stage]
@@ -247,6 +275,10 @@ def main() -> None:
         write_json(status_path, status)
         subprocess.run(command, cwd=root, check=True)
         status["state"] = "complete"
+    except KeyboardInterrupt:
+        status["state"] = "interrupted"
+        status["error"] = "keyboard interrupt"
+        raise
     except Exception as error:
         status["state"] = "failed"
         status["error"] = str(error)

@@ -27,6 +27,15 @@
       "renderer_script": "tools/render_passive_pinball_scene.py",
       "render_manifest_schema": "physweep_passive_pinball_render_manifest_v1",
       "render_manifest_name": "passive_pinball_render_manifest.json"
+    },
+    {
+      "pipeline": "marble_run",
+      "source_schema_version": "physweep_marble_run_scene_v1",
+      "sweep_branch": "marble_run",
+      "renderer_id": "marble_run",
+      "renderer_script": "tools/render_marble_run_scene.py",
+      "render_manifest_schema": "physweep_marble_run_render_manifest_v1",
+      "render_manifest_name": "marble_run_render_manifest.json"
     }
   ]
 }

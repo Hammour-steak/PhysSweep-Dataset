@@ -63,6 +63,7 @@ def matrix_dependency_paths(
         "production_video",
         "environment_collision_proxies",
         "environment_composition",
+        "marble_run_backend",
         "passive_pinball_backend",
         "specialized_scene_backends",
     }
@@ -91,6 +92,8 @@ def matrix_implementation_paths(
         "asset_proxy_sampler",
         "billiards_generator",
         "billiards_renderer",
+        "marble_run_generator",
+        "marble_run_renderer",
         "passive_pinball_generator",
         "passive_pinball_renderer",
         "specialized_backend_registry",
@@ -610,10 +613,8 @@ def validate_matrix(root: Path, matrix: dict[str, Any]) -> None:
             f"registered={sorted(registered)}, "
             f"expected={sorted(expected_registered)}"
         )
-    for pipeline, implementation_key in (
-        ("billiards", "billiards_renderer"),
-        ("passive_pinball", "passive_pinball_renderer"),
-    ):
+    for pipeline in sorted(set(registered) - {"asset_proxy"}):
+        implementation_key = f"{pipeline}_renderer"
         renderer = (root / registered[pipeline]["renderer_script"]).resolve()
         if renderer != implementation[implementation_key].resolve():
             raise ValueError(f"{pipeline} registry renderer differs from matrix")
@@ -646,20 +647,28 @@ def validate_matrix(root: Path, matrix: dict[str, Any]) -> None:
     }
     if set(specialized["billiards"]["dynamic_body_counts"]) != billiards_body_counts:
         raise ValueError("billiards capabilities do not match semantic body counts")
-    pinball_backend = load_json(dependencies["passive_pinball_backend"])
-    pinball_profiles = set(pinball_backend["profiles"])
-    if set(specialized["passive_pinball"]["profiles"]) != pinball_profiles:
-        raise ValueError("passive-pinball capabilities do not match backend profiles")
-    pinball_family = semantic_rules["specialized_scene_families"].get(
-        "passive_pinball_single_ball", {}
-    )
-    if (
-        set(pinball_family.get("profiles", [])) != pinball_profiles
-        or int(pinball_family.get("dynamic_object_count", 0)) != 1
-        or int(specialized["passive_pinball"].get("dynamic_body_count", 0)) != 1
-        or bool(pinball_family.get("active_mechanisms_supported", True))
+    passive_fixture_profiles: dict[str, set[str]] = {}
+    for pipeline, dependency_key, family_id in (
+        (
+            "passive_pinball",
+            "passive_pinball_backend",
+            "passive_pinball_single_ball",
+        ),
+        ("marble_run", "marble_run_backend", "marble_run_single_ball"),
     ):
-        raise ValueError("passive-pinball semantic contract is inconsistent")
+        fixture_backend = load_json(dependencies[dependency_key])
+        profiles = set(fixture_backend["profiles"])
+        passive_fixture_profiles[pipeline] = profiles
+        family = semantic_rules["specialized_scene_families"].get(family_id, {})
+        if (
+            set(specialized[pipeline]["profiles"]) != profiles
+            or set(family.get("profiles", [])) != profiles
+            or int(family.get("dynamic_object_count", 0)) != 1
+            or int(specialized[pipeline].get("dynamic_body_count", 0)) != 1
+            or bool(family.get("active_mechanisms_supported", True))
+            or bool(specialized[pipeline].get("active_mechanisms_supported", True))
+        ):
+            raise ValueError(f"{pipeline} semantic contract is inconsistent")
     registry_by_id = {record["asset_id"]: record for record in registry["records"]}
     composition_by_id = {
         record["asset_id"]: record for record in composition["records"]
@@ -744,14 +753,14 @@ def validate_matrix(root: Path, matrix: dict[str, Any]) -> None:
                 for profile in profiles
             ):
                 raise ValueError("multi-object billiards profile leaked into one-object matrix")
-        elif generator == "passive_pinball":
-            if profiles != pinball_profiles:
+        elif generator in passive_fixture_profiles:
+            if profiles != passive_fixture_profiles[generator]:
                 raise ValueError(
-                    "passive-pinball environment must bind every declared profile"
+                    f"{generator} environment must bind every declared profile"
                 )
             if specialized_support_axes:
                 raise ValueError(
-                    "passive-pinball fixture must not be represented as an asset axis"
+                    f"{generator} fixture must not be represented as an asset axis"
                 )
         else:
             raise ValueError(f"unknown environment generator: {generator}")
@@ -994,6 +1003,11 @@ def main() -> None:
     validate_matrix(root, matrix)
     dependency_paths = matrix_dependency_paths(root, matrix)
     implementation_paths = matrix_implementation_paths(root, matrix)
+    passive_fixture_pipelines = {
+        str(environment["generator"])
+        for environment in matrix["environments"]
+        if f"{environment['generator']}_backend" in dependency_paths
+    }
     production_spec = load_json(dependency_paths["production_video"])
     duration_s = float(production_spec["duration_s"])
     output_fps = int(production_spec["output_fps"])
@@ -1253,7 +1267,9 @@ def main() -> None:
 
     asset_records: list[dict[str, Any]] = []
     billiards_records: list[dict[str, Any]] = []
-    passive_pinball_records: list[dict[str, Any]] = []
+    passive_fixture_records: dict[str, list[dict[str, Any]]] = {
+        pipeline: [] for pipeline in passive_fixture_pipelines
+    }
     for slot in schedule:
         if slot["generator"] == "pybullet_base":
             continue
@@ -1324,15 +1340,16 @@ def main() -> None:
             records.append(record)
             billiards_records.append(record)
             continue
-        if slot["generator"] == "passive_pinball":
+        if slot["generator"] in passive_fixture_records:
+            pipeline = str(slot["generator"])
             run(
                 [
                     sys.executable,
-                    str(implementation_paths["passive_pinball_generator"]),
+                    str(implementation_paths[f"{pipeline}_generator"]),
                     "--root",
                     str(root),
                     "--config",
-                    str(dependency_paths["passive_pinball_backend"]),
+                    str(dependency_paths[f"{pipeline}_backend"]),
                     "--output",
                     str(scene_dir),
                     "--profile",
@@ -1351,9 +1368,7 @@ def main() -> None:
             metadata_path = scene_dir / "metadata.json"
             metadata = load_json(metadata_path)
             if metadata["semantics"]["profile"] != slot["profile"]:
-                raise RuntimeError(
-                    "passive-pinball profile does not match the schedule"
-                )
+                raise RuntimeError(f"{pipeline} profile does not match the schedule")
             if (
                 float(metadata["simulation"]["time"]["duration_s"]) != duration_s
                 or int(metadata["simulation"]["time"]["output_fps"])
@@ -1361,16 +1376,16 @@ def main() -> None:
                 or list(metadata["render"]["resolution"]) != resolution
                 or int(metadata["render"]["samples"]) != render_samples
             ):
-                raise RuntimeError("passive-pinball production contract mismatch")
+                raise RuntimeError(f"{pipeline} production contract mismatch")
             record = {
                 **slot,
-                "pipeline": "passive_pinball",
+                "pipeline": pipeline,
                 "metadata_path": str(metadata_path.relative_to(root)),
                 "metadata_sha256": sha256(metadata_path),
                 "status": "simulated_accepted",
             }
             records.append(record)
-            passive_pinball_records.append(record)
+            passive_fixture_records[pipeline].append(record)
             continue
         if slot["generator"] != "asset_proxy":
             raise ValueError(f"unknown scene generator: {slot['generator']}")
@@ -1470,7 +1485,7 @@ def main() -> None:
             },
         )
     manifest = {
-        "schema_version": "physweep_one_object_decoupled_manifest_v4",
+        "schema_version": "physweep_one_object_decoupled_manifest_v5",
         "dataset_id": args.output_dataset,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "seed": args.seed,
@@ -1528,9 +1543,12 @@ def main() -> None:
         "billiards_metadata_paths": [
             record["metadata_path"] for record in billiards_records
         ],
-        "passive_pinball_metadata_paths": [
-            record["metadata_path"] for record in passive_pinball_records
-        ],
+        **{
+            f"{pipeline}_metadata_paths": [
+                record["metadata_path"] for record in pipeline_records
+            ]
+            for pipeline, pipeline_records in passive_fixture_records.items()
+        },
         "records": records,
     }
     write_json(dataset_root / "manifest.json", manifest)

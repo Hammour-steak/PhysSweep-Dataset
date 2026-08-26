@@ -122,6 +122,7 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
                 "production_video",
                 "environment_collision_proxies",
                 "environment_composition",
+                "marble_run_backend",
                 "passive_pinball_backend",
                 "specialized_scene_backends",
             },
@@ -142,6 +143,8 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
                 "motion_rule_ballistic",
                 "motion_rule_incline",
                 "motion_rule_transition",
+                "marble_run_generator",
+                "marble_run_renderer",
                 "passive_pinball_generator",
                 "passive_pinball_renderer",
                 "specialized_backend_registry",
@@ -174,11 +177,12 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
         self.assertEqual(
             allocate_axis_counts(self.matrix["environments"], 40, "environment"),
             {
-                "generic_matrix": 26,
+                "generic_matrix": 25,
                 "curated_support_asset": 8,
                 "curated_support_with_prop": 2,
                 "billiards_single_ball": 1,
                 "passive_pinball_board": 1,
+                "marble_run_track": 1,
                 "workbench_single_object": 2,
             },
         )
@@ -186,11 +190,12 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
     def test_motion_distribution_does_not_change_with_environment_weights(self) -> None:
         changed = copy.deepcopy(self.matrix)
         weights = {
-            "generic_matrix": 0.75,
+            "generic_matrix": 0.70,
             "curated_support_asset": 0.05,
             "curated_support_with_prop": 0.05,
             "billiards_single_ball": 0.05,
             "passive_pinball_board": 0.05,
+            "marble_run_track": 0.05,
             "workbench_single_object": 0.05,
         }
         for environment in changed["environments"]:
@@ -316,6 +321,10 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
         self.assertIn("generic_matrix", environments_by_motion["drop_fall_1obj"])
         self.assertIn(
             "workbench_single_object",
+            environments_by_motion["drop_fall_1obj"],
+        )
+        self.assertIn(
+            "marble_run_track",
             environments_by_motion["drop_fall_1obj"],
         )
         self.assertIn(

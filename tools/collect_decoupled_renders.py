@@ -132,8 +132,9 @@ def collect(
     if manifest.get("schema_version") not in {
         "physweep_one_object_decoupled_manifest_v3",
         "physweep_one_object_decoupled_manifest_v4",
+        "physweep_one_object_decoupled_manifest_v5",
     }:
-        raise ValueError("collector requires a v3 or v4 decoupled staged manifest")
+        raise ValueError("collector requires a v3, v4, or v5 decoupled staged manifest")
     source_manifest_value = manifest.get("source_manifest")
     if not source_manifest_value:
         raise ValueError(

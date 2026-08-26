@@ -5,21 +5,51 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import signal
 import shutil
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 from typing import Any
 
-from bind_pybullet_visuals import (
-    bind_scene,
-    load_json,
-    manifest_rules_path,
-    sha256,
-)
+try:
+    from bind_pybullet_visuals import (
+        bind_scene,
+        load_json,
+        manifest_rules_path,
+        sha256,
+    )
+except ModuleNotFoundError:
+    from tools.bind_pybullet_visuals import (
+        bind_scene,
+        load_json,
+        manifest_rules_path,
+        sha256,
+    )
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def project_input_path(
+    root: Path,
+    value: str | Path | None,
+    fallback: Path,
+) -> Path:
+    """Validate and preserve a project path while allowing storage symlinks."""
+    if value is None:
+        if fallback == Path():
+            raise ValueError("camera source path is missing")
+        path = fallback
+    else:
+        path = Path(str(value))
+    declared = path if path.is_absolute() else root / path
+    # ``abspath`` collapses ``..`` without dereferencing a project symlink.
+    # The binder must retain this lexical path so it can publish a path relative
+    # to the current release root; ordinary file reads still follow the symlink.
+    declared_absolute = Path(os.path.abspath(declared))
+    declared_absolute.relative_to(Path(os.path.abspath(root)))
+    return declared_absolute
 
 
 def write_json(path: Path, value: Any) -> None:
@@ -93,15 +123,6 @@ def main() -> None:
     outputs_root = (root / "outputs").resolve()
     if outputs_root not in output_root.parents:
         raise ValueError("camera audit output must remain under outputs")
-    def sample_path(sample: dict[str, Any], key: str, fallback: Path) -> Path:
-        value = sample.get(key)
-        if value is None:
-            return fallback
-        path = Path(str(value))
-        path = (path if path.is_absolute() else root / path).resolve()
-        path.relative_to(root)
-        return path
-
     samples = list(manifest["samples"])
     scene_ids = [str(sample["scene_id"]) for sample in samples]
     if len(scene_ids) != len(set(scene_ids)):
@@ -109,7 +130,9 @@ def main() -> None:
     jobs = []
     job_samples = []
     for sample in samples:
-        metadata_path = sample_path(sample, "metadata_path", Path())
+        metadata_path = project_input_path(
+            root, sample.get("metadata_path"), Path()
+        )
         if sha256(metadata_path) != str(sample["metadata_sha256"]):
             raise ValueError(f"camera source metadata hash mismatch: {metadata_path}")
         job_samples.append(sample)
@@ -117,14 +140,14 @@ def main() -> None:
             (
                 root,
                 metadata_path,
-                sample_path(
-                    sample,
-                    "simulation_record_path",
+                project_input_path(
+                    root,
+                    sample.get("simulation_record_path"),
                     metadata_path.parent / "physics" / "simulation_record.json",
                 ),
-                sample_path(
-                    sample,
-                    "trajectory_path",
+                project_input_path(
+                    root,
+                    sample.get("trajectory_path"),
                     metadata_path.parent / "physics" / "trajectory.npz",
                 ),
                 output_root,

@@ -99,8 +99,9 @@ def summarize(manifest_path: Path, project_root: Path) -> dict[str, Any]:
     if manifest.get("schema_version") not in {
         "physweep_one_object_decoupled_manifest_v3",
         "physweep_one_object_decoupled_manifest_v4",
+        "physweep_one_object_decoupled_manifest_v5",
     }:
-        raise ValueError("motion audit requires a v3 or v4 decoupled manifest")
+        raise ValueError("motion audit requires a v3, v4, or v5 decoupled manifest")
 
     records: list[dict[str, Any]] = []
     for outer in manifest["records"]:
@@ -121,7 +122,7 @@ def summarize(manifest_path: Path, project_root: Path) -> dict[str, Any]:
             calculation = physics.get("initial_state", {}).get("calculation", {})
             effective_friction = calculation.get("effective_friction")
             prop_id = metadata.get("assets", {}).get("static_prop_asset_id")
-        elif pipeline == "passive_pinball":
+        elif pipeline in {"passive_pinball", "marble_run"}:
             simulation = metadata["simulation"]
             object_record = simulation["objects"][0]
             trajectory_path = project_root / str(

@@ -12,10 +12,16 @@ import time
 from pathlib import Path
 from typing import Any
 
-from blender_worker_environment import (
-    build_egl_device_selector,
-    isolated_blender_environment,
-)
+try:
+    from blender_worker_environment import (
+        build_egl_device_selector,
+        isolated_blender_environment,
+    )
+except ModuleNotFoundError:  # imported as tools.* in tests and library callers
+    from tools.blender_worker_environment import (
+        build_egl_device_selector,
+        isolated_blender_environment,
+    )
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -45,6 +51,87 @@ def sha256(path: Path) -> str:
 def project_path(root: Path, value: str | Path) -> Path:
     path = Path(value)
     return (path if path.is_absolute() else root / path).resolve()
+
+
+def select_release_records(
+    samples: list[dict[str, Any]],
+    selection_manifest: dict[str, Any],
+    source_schema_version: str | None,
+) -> list[dict[str, Any]]:
+    """Select the exact scene identities declared by a release manifest."""
+    records = selection_manifest.get("records")
+    if not isinstance(records, list) or int(
+        selection_manifest.get("sample_count", -1)
+    ) != len(records):
+        raise ValueError("render selection manifest count is inconsistent")
+    record_ids = [str(record.get("scene_id", "")) for record in records]
+    if "" in record_ids or len(record_ids) != len(set(record_ids)):
+        raise ValueError("render selection manifest scene ids are invalid")
+    if source_schema_version is not None:
+        records = [
+            record
+            for record in records
+            if str(record.get("source_schema_version")) == source_schema_version
+        ]
+    if not records:
+        raise ValueError("render selection manifest selected no records")
+    requested = {str(record["scene_id"]): record for record in records}
+    sample_ids = [str(sample.get("scene_id", "")) for sample in samples]
+    if "" in sample_ids or len(sample_ids) != len(set(sample_ids)):
+        raise ValueError("bound render manifest scene ids are invalid")
+    available = set(sample_ids)
+    missing = set(requested) - available
+    if missing:
+        raise ValueError(
+            f"bound render manifest lacks {len(missing)} selected release scenes"
+        )
+    selected = []
+    for sample in samples:
+        scene_id = str(sample["scene_id"])
+        record = requested.get(scene_id)
+        if record is None:
+            continue
+        if str(sample.get("kind")) != str(record.get("kind")):
+            raise ValueError(f"release and bound sweep kinds differ: {scene_id}")
+        selected.append(sample)
+    if len(selected) != len(requested):
+        raise RuntimeError("release scene selection is incomplete")
+    return selected
+
+
+def select_sweep_kind(
+    root: Path,
+    samples: list[dict[str, Any]],
+    sweep_kind: str | None,
+) -> list[dict[str, Any]]:
+    """Select base or derived records using the immutable metadata contract."""
+    if sweep_kind is None:
+        return samples
+    if sweep_kind not in {"base", "sweep"}:
+        raise ValueError(f"unsupported sweep kind: {sweep_kind}")
+    selected = []
+    for sample in samples:
+        metadata_path = project_path(root, str(sample["metadata_path"]))
+        metadata_path.relative_to(root)
+        if sha256(metadata_path) != str(sample["metadata_sha256"]):
+            raise ValueError(f"render metadata hash mismatch: {metadata_path}")
+        metadata_kind = str(load_json(metadata_path).get("sweep", {}).get("kind"))
+        record_kind = str(sample.get("kind"))
+        if metadata_kind not in {"base", "sweep"} or record_kind != metadata_kind:
+            raise ValueError(
+                f"render manifest and metadata sweep kinds differ: {metadata_path}"
+            )
+        if metadata_kind == sweep_kind:
+            selected.append(sample)
+    return selected
+
+
+def result_manifest_name(sweep_kind: str | None) -> str:
+    return {
+        None: "render_manifest.json",
+        "base": "base_render_manifest.json",
+        "sweep": "derived_render_manifest.json",
+    }[sweep_kind]
 
 
 def reusable_render_record(
@@ -260,6 +347,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--gpus", default="0,1,2,3,4,5,6")
     parser.add_argument("--first-frame-only", action="store_true")
     parser.add_argument(
+        "--sweep-kind",
+        choices=("base", "sweep"),
+        help="Render only canonical bases or only derived one-factor sweeps.",
+    )
+    parser.add_argument(
+        "--selection-manifest",
+        type=Path,
+        help="Hashed release metadata manifest whose scene ids define this run.",
+    )
+    parser.add_argument(
+        "--selection-manifest-sha256",
+        help="Required expected hash for --selection-manifest.",
+    )
+    parser.add_argument(
+        "--selection-source-schema",
+        help="Select only release records with this source_schema_version.",
+    )
+    parser.add_argument(
         "--resume",
         action="store_true",
         help="Reuse only hash-verified complete render outputs.",
@@ -269,6 +374,11 @@ def parse_args() -> argparse.Namespace:
         "--profiles",
         nargs="+",
         help="Render only samples bound to these scene-visual profile ids.",
+    )
+    parser.add_argument(
+        "--result-manifest",
+        type=Path,
+        help="Explicit summary path below the render output root.",
     )
     return parser.parse_args()
 
@@ -284,6 +394,32 @@ def main() -> None:
     manifest_path.relative_to(root)
     manifest = load_json(manifest_path)
     samples = list(manifest["samples"])
+    selection_binding = None
+    if (args.selection_manifest is None) != (
+        args.selection_manifest_sha256 is None
+    ):
+        raise ValueError(
+            "selection manifest and expected sha256 must be provided together"
+        )
+    if args.selection_source_schema and args.selection_manifest is None:
+        raise ValueError("selection source schema requires a selection manifest")
+    if args.selection_manifest is not None:
+        selection_path = project_path(root, args.selection_manifest)
+        expected_hash = str(args.selection_manifest_sha256)
+        if not selection_path.is_file() or sha256(selection_path) != expected_hash:
+            raise ValueError("render selection manifest hash mismatch")
+        samples = select_release_records(
+            samples,
+            load_json(selection_path),
+            args.selection_source_schema,
+        )
+        selection_binding = {
+            "path": str(selection_path),
+            "sha256": expected_hash,
+            "source_schema_version": args.selection_source_schema,
+            "selected_sample_count": len(samples),
+        }
+    samples = select_sweep_kind(root, samples, args.sweep_kind)
     if args.profiles:
         requested_profiles = {str(value) for value in args.profiles}
         selected_samples = []
@@ -314,6 +450,12 @@ def main() -> None:
     ).resolve()
     if (root / "outputs").resolve() not in output_root.parents:
         raise ValueError(f"render output must be below root/outputs: {output_root}")
+    result_manifest_path = project_path(
+        root,
+        args.result_manifest or output_root / result_manifest_name(args.sweep_kind),
+    )
+    if output_root not in result_manifest_path.parents:
+        raise ValueError("render result manifest must remain below the output root")
     selector = build_egl_device_selector(root)
     selector_path = root / str(selector["binary_path"])
     script = root / "tools/render_pybullet_rigid.py"
@@ -342,6 +484,7 @@ def main() -> None:
         "schema_version": "physweep_pybullet_render_manifest_v1",
         "source_manifest": str(manifest_path.relative_to(root)),
         "source_manifest_sha256": sha256(manifest_path),
+        "selection_manifest": selection_binding,
         "render_scope": "first_frame_only" if args.first_frame_only else "full_animation",
         "sample_count": len(records),
         "success_count": len(records) - len(failures),
@@ -351,9 +494,8 @@ def main() -> None:
         "egl_device_selector": selector,
         "records": records,
     }
-    output_path = output_root / "render_manifest.json"
-    write_json(output_path, summary)
-    print(f"render manifest: {output_path}")
+    write_json(result_manifest_path, summary)
+    print(f"render manifest: {result_manifest_path}")
     print(
         f"success={summary['success_count']} failures={summary['failure_count']} "
         f"wall_time_s={summary['wall_time_s']:.3f}"

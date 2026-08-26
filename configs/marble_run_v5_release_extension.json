@@ -1,0 +1,54 @@
+{
+  "schema_version": "physweep_specialized_release_extension_v1",
+  "extension_id": "marble_run_v5",
+  "source_release": {
+    "schema_version": "physweep_one_object_sweep_release_v2",
+    "dataset_id": "physweep_one_object_v4",
+    "base_manifest_schema": "physweep_one_object_decoupled_manifest_v4",
+    "pipeline_group_counts": {
+      "generic_pybullet": 2208,
+      "asset_proxy": 928,
+      "billiards": 32,
+      "passive_pinball": 32
+    }
+  },
+  "target_release": {
+    "schema_version": "physweep_one_object_sweep_release_v3",
+    "dataset_id": "physweep_one_object_v5",
+    "base_manifest_schema": "physweep_one_object_decoupled_manifest_v5",
+    "pipeline_group_counts": {
+      "generic_pybullet": 2176,
+      "asset_proxy": 928,
+      "billiards": 32,
+      "passive_pinball": 32,
+      "marble_run": 32
+    }
+  },
+  "group_contract": {
+    "base_group_count": 3200,
+    "samples_per_group": 13,
+    "sample_count": 41600,
+    "replacement_group_count": 32,
+    "preserved_slot_fields": [
+      "index",
+      "motion_intent"
+    ]
+  },
+  "replacement": {
+    "source_pipeline": "generic_pybullet",
+    "source_motion_intent": "drop_fall_1obj",
+    "pipeline": "marble_run",
+    "generator": "marble_run",
+    "environment_id": "marble_run_track",
+    "scene_schema_version": "physweep_marble_run_scene_v1",
+    "backend_config": "configs/marble_run_backend.json",
+    "generator_script": "tools/generate_marble_run_scene.py",
+    "profiles": [
+      "early_release_chain",
+      "late_release_chain"
+    ],
+    "scene_id_template": "physweep1scene_{index:06d}_drop_fall_1obj_marble_run_track",
+    "selection_namespace": "physweep-v5-marble-run-slot-v1",
+    "candidate_seed_namespace": "physweep-v5-marble-run-candidate-v1"
+  }
+}

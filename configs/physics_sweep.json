@@ -5,7 +5,8 @@
     "physweep_pybullet_rigid_metadata_v1",
     "physweep_asset_proxy_scene_v3",
     "physweep_billiards_scene_v4",
-    "physweep_passive_pinball_scene_v1"
+    "physweep_passive_pinball_scene_v1",
+    "physweep_marble_run_scene_v1"
   ],
   "backend_contract": "physweep_resolved_simulation_scene_v1",
   "canonical_base_axis": "mass_kg",
@@ -17,6 +18,8 @@
     "asset_proxy_registry": "configs/asset_proxy_registry.json",
     "billiards_backend": "configs/pybullet_backend.json",
     "passive_pinball_backend": "configs/passive_pinball_backend.json",
+    "marble_run_backend": "configs/marble_run_backend.json",
+    "marble_run_candidate": "configs/candidates/marble_run_v1.json",
     "specialized_scene_backends": "configs/specialized_scene_backends.json"
   },
   "endpoint_policy": {

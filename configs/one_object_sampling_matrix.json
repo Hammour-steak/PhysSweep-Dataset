@@ -5,6 +5,7 @@
     "asset_semantic_scene_rules": "configs/asset_semantic_scene_rules.json",
     "backend_capabilities": "configs/backend_capabilities.json",
     "generic_sampling_bundle": "configs/one_object_sampling_bundle.json",
+    "marble_run_backend": "configs/marble_run_backend.json",
     "passive_pinball_backend": "configs/passive_pinball_backend.json",
     "physical_proxy_catalog": "assets/proxies/catalog.json",
     "physics_backend": "configs/pybullet_backend.json",
@@ -55,7 +56,7 @@
           "five_dimensional_matrix"
         ]
       },
-      "weight": 0.69
+      "weight": 0.68
     },
     {
       "dynamic_pools": {
@@ -397,6 +398,18 @@
       "weight": 0.01
     },
     {
+      "generator": "marble_run",
+      "id": "marble_run_track",
+      "minimum_per_batch": 1,
+      "motion_bindings": {
+        "drop_fall_1obj": [
+          "early_release_chain",
+          "late_release_chain"
+        ]
+      },
+      "weight": 0.01
+    },
+    {
       "dynamic_asset_ids": [
         "sketchfab_1551616939cc4da7a9d731dfddd4090f",
         "sketchfab_3be00aa2664f4bc0b5be8b8630c2d540",
@@ -432,6 +445,8 @@
     "billiards_generator": "tools/generate_billiards_scene.py",
     "billiards_renderer": "tools/render_billiards_scene.py",
     "matrix_sampler": "tools/sample_one_object_scene_matrix.py",
+    "marble_run_generator": "tools/generate_marble_run_scene.py",
+    "marble_run_renderer": "tools/render_marble_run_scene.py",
     "motion_rule_package": "tools/motion_rules/__init__.py",
     "motion_rule_contracts": "tools/motion_rules/contracts.py",
     "motion_rule_common": "tools/motion_rules/common.py",

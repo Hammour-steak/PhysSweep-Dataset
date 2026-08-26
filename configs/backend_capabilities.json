@@ -95,6 +95,16 @@
         "offset_pinfield_descent"
       ],
       "active_mechanisms_supported": false
+    },
+    "marble_run": {
+      "dynamic_body_count": 1,
+      "body_model": "rigid_sphere",
+      "fixture_model": "exact_static_triangle_mesh_and_analytic_boxes",
+      "profiles": [
+        "early_release_chain",
+        "late_release_chain"
+      ],
+      "active_mechanisms_supported": false
     }
   },
   "unsupported": [

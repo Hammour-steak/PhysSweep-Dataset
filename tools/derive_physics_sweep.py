@@ -570,6 +570,7 @@ def validate_base(
         "physweep_asset_proxy_scene_v3",
         "physweep_billiards_scene_v4",
         "physweep_passive_pinball_scene_v1",
+        "physweep_marble_run_scene_v1",
     }
     if schema not in supported:
         raise ValueError(f"unsupported base metadata schema: {schema!r}")

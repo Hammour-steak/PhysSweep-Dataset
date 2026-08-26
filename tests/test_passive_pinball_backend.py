@@ -34,7 +34,8 @@ class PassivePinballBackendTests(unittest.TestCase):
     def test_specialized_registry_preserves_existing_backends(self) -> None:
         pipelines = specialized_by_pipeline(ROOT)
         self.assertEqual(
-            set(pipelines), {"asset_proxy", "billiards", "passive_pinball"}
+            set(pipelines),
+            {"asset_proxy", "billiards", "passive_pinball", "marble_run"},
         )
         self.assertEqual(pipelines["asset_proxy"]["renderer_id"], "asset")
         self.assertEqual(pipelines["billiards"]["renderer_id"], "billiards")

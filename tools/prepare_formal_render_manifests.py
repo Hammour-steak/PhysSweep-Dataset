@@ -57,8 +57,9 @@ def validated_source_records(
     if manifest.get("schema_version") not in {
         "physweep_one_object_decoupled_manifest_v3",
         "physweep_one_object_decoupled_manifest_v4",
+        "physweep_one_object_decoupled_manifest_v5",
     }:
-        raise ValueError("formal render preparation requires a v3 or v4 manifest")
+        raise ValueError("formal render preparation requires a v3, v4, or v5 manifest")
     records = list(manifest["records"])
     if int(manifest["sample_count"]) != len(records):
         raise ValueError("source manifest sample count is inconsistent")

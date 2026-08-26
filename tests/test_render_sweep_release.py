@@ -61,6 +61,18 @@ class RenderSweepReleaseTests(unittest.TestCase):
                 "physweep_one_object_sweep_release_v2",
             )
 
+    def test_v5_release_schema_is_accepted(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            release_path = self.fixture(
+                root, "physweep_one_object_sweep_release_v3"
+            )
+            _, release, _ = load_release(root, release_path)
+            self.assertEqual(
+                release["schema_version"],
+                "physweep_one_object_sweep_release_v3",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

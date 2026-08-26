@@ -16,11 +16,13 @@ GENERIC_SCHEMA = "physweep_pybullet_rigid_metadata_v1"
 ASSET_SCHEMA = "physweep_asset_proxy_scene_v3"
 BILLIARDS_SCHEMA = "physweep_billiards_scene_v4"
 PASSIVE_PINBALL_SCHEMA = "physweep_passive_pinball_scene_v1"
+MARBLE_RUN_SCHEMA = "physweep_marble_run_scene_v1"
 SUPPORTED_SCHEMAS = {
     GENERIC_SCHEMA,
     ASSET_SCHEMA,
     BILLIARDS_SCHEMA,
     PASSIVE_PINBALL_SCHEMA,
+    MARBLE_RUN_SCHEMA,
 }
 
 
@@ -393,38 +395,44 @@ def _billiards_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
     }
 
 
-def _passive_pinball_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
+def _single_sphere_fixture_scene(
+    metadata: dict[str, Any],
+    root: Path,
+    *,
+    label: str,
+    backend_schema: str,
+    adapter_id: str,
+    capability: str,
+) -> dict[str, Any]:
     identities = _identity_objects(metadata)
     simulation = metadata["simulation"]
     source_objects = simulation["objects"]
     if len(source_objects) != 1 or len(identities) != 1:
-        raise ValueError("passive pinball requires exactly one dynamic object")
+        raise ValueError(f"{label} requires exactly one dynamic object")
     source = source_objects[0]
     object_id = str(source["object_id"])
     if object_id != str(identities[0]["object_id"]):
-        raise ValueError("passive-pinball object identity differs from simulation")
+        raise ValueError(f"{label} object identity differs from simulation")
     proxy = source["collision_proxy"]
     if proxy.get("type") != "sphere" or float(proxy.get("radius_m", 0.0)) <= 0.0:
-        raise ValueError("passive-pinball dynamic collision proxy must be a sphere")
+        raise ValueError(f"{label} dynamic collision proxy must be a sphere")
     physics = metadata["physics"]
-    backend = _load_pinned_json(
-        root, physics["backend_config"], "passive-pinball backend"
-    )
-    if backend.get("schema_version") != "physweep_passive_pinball_backend_v1":
-        raise ValueError("unsupported passive-pinball backend config")
+    backend = _load_pinned_json(root, physics["backend_config"], f"{label} backend")
+    if backend.get("schema_version") != backend_schema:
+        raise ValueError(f"unsupported {label} backend config")
     profile = str(physics["profile"])
     if profile != str(metadata["semantics"]["profile"]):
-        raise ValueError("passive-pinball physics and semantic profiles differ")
+        raise ValueError(f"{label} physics and semantic profiles differ")
     if profile not in backend["profiles"]:
-        raise ValueError(f"undeclared passive-pinball profile: {profile}")
+        raise ValueError(f"undeclared {label} profile: {profile}")
     resolved = _resolved_materials(metadata, [object_id])
     material = _material(resolved.get(object_id, source["material"]))
     initial = source["initial_state"]
     return {
         "backend_binding": {
             "backend_id": "pybullet_rigid",
-            "adapter_id": "passive_pinball_v1",
-            "capability": "one_sphere_with_exact_passive_pinfield_fixture",
+            "adapter_id": adapter_id,
+            "capability": capability,
             "supported_dynamic_object_counts": [1],
         },
         "time": copy.deepcopy(simulation["time"]),
@@ -460,6 +468,28 @@ def _passive_pinball_scene(metadata: dict[str, Any], root: Path) -> dict[str, An
     }
 
 
+def _passive_pinball_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
+    return _single_sphere_fixture_scene(
+        metadata,
+        root,
+        label="passive-pinball",
+        backend_schema="physweep_passive_pinball_backend_v1",
+        adapter_id="passive_pinball_v1",
+        capability="one_sphere_with_exact_passive_pinfield_fixture",
+    )
+
+
+def _marble_run_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
+    return _single_sphere_fixture_scene(
+        metadata,
+        root,
+        label="marble-run",
+        backend_schema="physweep_marble_run_backend_v1",
+        adapter_id="marble_run_v1",
+        capability="one_sphere_with_exact_passive_track_fixture",
+    )
+
+
 def compile_resolved_scene(
     metadata: dict[str, Any], root: Path, metadata_path: Path | None = None
 ) -> dict[str, Any]:
@@ -472,6 +502,7 @@ def compile_resolved_scene(
         ASSET_SCHEMA: _asset_scene,
         BILLIARDS_SCHEMA: _billiards_scene,
         PASSIVE_PINBALL_SCHEMA: _passive_pinball_scene,
+        MARBLE_RUN_SCHEMA: _marble_run_scene,
     }[schema]
     compiled = compiler(metadata, root)
     scene = {

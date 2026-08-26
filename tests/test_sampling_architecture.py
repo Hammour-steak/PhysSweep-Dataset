@@ -83,6 +83,11 @@ class SamplingArchitectureTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
+        cls.marble_run_backend = json.loads(
+            (ROOT / "configs/marble_run_backend.json").read_text(
+                encoding="utf-8"
+            )
+        )
         cls.base_rules = json.loads(
             (ROOT / "configs/one_object_sampling_rules.json").read_text(
                 encoding="utf-8"
@@ -948,9 +953,13 @@ class SamplingArchitectureTests(unittest.TestCase):
         semantic_pinball_profiles = set(
             specialized_families["passive_pinball_single_ball"]["profiles"]
         )
+        semantic_marble_profiles = set(
+            specialized_families["marble_run_single_ball"]["profiles"]
+        )
         configured_pinball_profiles = set(
             self.passive_pinball_backend["profiles"]
         )
+        configured_marble_profiles = set(self.marble_run_backend["profiles"])
         self.assertTrue(
             semantic_billiards_profiles.isdisjoint(semantic_pinball_profiles)
         )
@@ -962,6 +971,13 @@ class SamplingArchitectureTests(unittest.TestCase):
             configured_pinball_profiles,
             semantic_pinball_profiles,
         )
+        self.assertTrue(
+            semantic_billiards_profiles.isdisjoint(semantic_marble_profiles)
+        )
+        self.assertTrue(
+            semantic_pinball_profiles.isdisjoint(semantic_marble_profiles)
+        )
+        self.assertEqual(configured_marble_profiles, semantic_marble_profiles)
 
     def test_every_non_dynamic_asset_has_one_composition_decision(self) -> None:
         expected = {

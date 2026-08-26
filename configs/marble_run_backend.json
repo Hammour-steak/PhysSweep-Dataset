@@ -1,0 +1,60 @@
+{
+  "schema_version": "physweep_marble_run_backend_v1",
+  "scene_family": "marble_run",
+  "admission": {
+    "status": "approved_specialized",
+    "release_enabled": true,
+    "dynamic_object_count": 1,
+    "active_mechanisms_supported": false
+  },
+  "candidate_config": {
+    "path": "configs/candidates/marble_run_v1.json",
+    "sha256": "1fc5b34f8667136c142cda3ead3fb7e2b10d843fc9d43e42334b484e2ed8093c"
+  },
+  "profiles": {
+    "early_release_chain": {
+      "description": "One marble starts slightly upstream on the first passive channel and traverses the four-segment drop chain.",
+      "initial_track_offsets_m": [-0.015, -0.01, -0.006, -0.003]
+    },
+    "late_release_chain": {
+      "description": "One marble starts slightly downstream on the first passive channel and traverses the same four-segment drop chain.",
+      "initial_track_offsets_m": [0.003, 0.006, 0.01, 0.015]
+    }
+  },
+  "physics": {
+    "duration_s": 4.0,
+    "candidate_fields_inherited": [
+      "output_fps",
+      "simulation_hz",
+      "gravity_m_s2",
+      "solver_iterations",
+      "deterministic_overlapping_pairs",
+      "restitution_velocity_threshold_m_s",
+      "enable_cone_friction",
+      "use_split_impulse"
+    ]
+  },
+  "camera": {
+    "sensor_width_mm": 36.0,
+    "horizontal_offsets_m": [-0.04, 0.0, 0.04],
+    "vertical_offsets_m": [-0.025, 0.0, 0.025]
+  },
+  "render": {
+    "engine": "BLENDER_EEVEE",
+    "resolution": [1280, 720],
+    "samples": 16,
+    "visual_fields_inherited": [
+      "world_color_rgb",
+      "context",
+      "lights"
+    ]
+  },
+  "attribution": {
+    "author": "Jan Pieper",
+    "source_repository": "https://github.com/jhpieper/marble-run",
+    "source_commit": "64b8f62091775c56ffcdbe276b6a8cbad95581f7",
+    "code_license": "MIT",
+    "stl_license": "CC BY 4.0",
+    "attribution_required": true
+  }
+}
