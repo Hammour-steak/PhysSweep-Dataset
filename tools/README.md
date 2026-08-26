@@ -256,6 +256,32 @@ reviewed shell edits and exports a separate, decimated static collision mesh.
 Near-horizontal faces in the reviewed floor band are removed so the analytic
 global floor remains the only floor contact authority.
 
+## Base Release View
+
+`build_base_release_view.py` creates an atomic, base-only symlink view without
+moving or copying release artifacts. The frozen release manifest remains the
+authority. Each `--pipeline` argument binds one source metadata schema to its
+project and render roots:
+
+```bash
+.venv/bin/python tools/build_base_release_view.py \
+  --release-project-root <frozen-project> \
+  --release-manifest datasets/<dataset>/release/manifest.json \
+  --output outputs/<release>/base \
+  --pipeline <name> <source-schema> <source-project> <render-root>
+```
+
+Repeat `--pipeline` for every schema in the release. The command refuses to
+overwrite an existing view, validates the logical-base-to-generated-base
+mapping, physics audit records, render provenance, source hashes, videos, and
+inspection frames before publishing the directory. It deliberately excludes
+all derived sweep samples. Recheck an existing view with:
+
+```bash
+.venv/bin/python tools/build_base_release_view.py \
+  --verify-only --output outputs/<release>/base
+```
+
 ## Audits
 
 ```bash
