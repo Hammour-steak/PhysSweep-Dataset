@@ -304,7 +304,26 @@ class BaseReleaseViewTests(unittest.TestCase):
             with np.load(sample / "trajectory.npz", allow_pickle=False) as archive:
                 self.assertEqual(tuple(archive.files), TRAJECTORY_FIELDS)
                 self.assertNotIn("adapter__position_m", archive.files)
+            root_manifest = json.loads(
+                (output / "manifest.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                set(root_manifest["pipelines"]["generic"]),
+                {"manifest", "manifest_sha256"},
+            )
+            generic_manifest = json.loads(
+                (output / "generic/manifest.json").read_text(encoding="utf-8")
+            )
+            self.assertNotIn("sample_path", generic_manifest["records"][0])
             self.assertEqual(verify_view(output), result)
+            root_manifest["storage_mode"] = "unexpected"
+            write_json(output / "manifest.json", root_manifest)
+            with self.assertRaisesRegex(ValueError, "canonical PhysSweep"):
+                verify_view(output)
+            root_manifest["storage_mode"] = (
+                "compact_metadata_with_absolute_artifact_symlinks"
+            )
+            write_json(output / "manifest.json", root_manifest)
             with self.assertRaises(FileExistsError):
                 build_view(
                     release_project_root=root,

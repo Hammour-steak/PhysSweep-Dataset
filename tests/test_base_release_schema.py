@@ -158,10 +158,14 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                 trajectory_info=trajectory,
                 trajectory_sha256="b" * 64,
                 video_sha256="c" * 64,
-                mask_manifest_sha256=None,
             )
             summary = validate_base_metadata(metadata)
             self.assertEqual(metadata["schema_version"], BASE_SAMPLE_SCHEMA)
+            self.assertNotIn("kind", metadata)
+            metadata["kind"] = "base"
+            with self.assertRaisesRegex(ValueError, "base fields"):
+                validate_base_metadata(metadata)
+            del metadata["kind"]
             self.assertEqual(summary["object_ids"], ["ball"])
             obj = metadata["physics"]["objects"][0]
             self.assertEqual(obj["array_index"], 0)
@@ -171,6 +175,10 @@ class BaseReleaseSchemaTests(unittest.TestCase):
             self.assertNotIn("trajectory_key", json.dumps(metadata))
             self.assertNotIn("diagnostics", metadata["visual"]["camera"])
             self.assertNotIn("dynamic_object_count", metadata["semantics"])
+            metadata["artifacts"]["trajectory"]["path"] = "../trajectory.npz"
+            with self.assertRaisesRegex(ValueError, "trajectory binding"):
+                validate_base_metadata(metadata)
+            del metadata["artifacts"]["trajectory"]["path"]
             camera_without_sensor = dict(render_record)
             camera_without_sensor["camera"] = {
                 key: value
@@ -189,7 +197,6 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                     trajectory_info=trajectory,
                     trajectory_sha256="b" * 64,
                     video_sha256="c" * 64,
-                    mask_manifest_sha256=None,
                 )
 
     def test_mask_manifest_uses_object_axis_and_ordered_hashes(self) -> None:

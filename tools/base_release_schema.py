@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import copy
-import hashlib
 import io
 import json
 import math
@@ -16,8 +15,13 @@ from typing import Any, Mapping
 
 import numpy as np
 
+try:
+    from audit_release_provenance import sha256
+except ModuleNotFoundError:
+    from tools.audit_release_provenance import sha256
 
-BASE_SAMPLE_SCHEMA = "physweep_base_sample_v1"
+
+BASE_SAMPLE_SCHEMA = "physweep_base_sample_v2"
 TRAJECTORY_SCHEMA = "physweep_object_trajectory_v3"
 MASK_MANIFEST_SCHEMA = "physweep_instance_mask_manifest_v3"
 
@@ -31,15 +35,6 @@ TRAJECTORY_FIELDS = (
     "angular_velocity_rad_s",
     "contact_count",
 )
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
 
 def verified_file(path: Path, expected_hash: str, label: str) -> Path:
     if not path.is_file():
@@ -513,7 +508,6 @@ def build_base_metadata(
     trajectory_info: Mapping[str, Any],
     trajectory_sha256: str,
     video_sha256: str,
-    mask_manifest_sha256: str | None,
 ) -> dict[str, Any]:
     scene_id = str(source["scene_id"])
     if scene_id != str(resolved_scene.get("scene_id")) or scene_id != str(render_record.get("scene_id")):
@@ -534,9 +528,9 @@ def build_base_metadata(
     materials = _compact_material_bindings(source)
     if materials:
         visual["materials"] = materials
-    assets = _without_none(_mapping(source.get("assets")))
-    if assets:
-        visual["assets"] = assets
+    static_prop = _mapping(source.get("assets")).get("static_prop_asset_id")
+    if static_prop is not None:
+        visual["assets"] = {"static_prop_asset_id": str(static_prop)}
     lighting = _compact_lighting(render_record)
     if lighting:
         visual["lighting"] = lighting
@@ -555,27 +549,14 @@ def build_base_metadata(
         physics["fixture"] = fixture
 
     artifacts: dict[str, Any] = {
-        "trajectory": {
-            "path": "trajectory.npz",
-            "sha256": trajectory_sha256,
-            "schema_version": TRAJECTORY_SCHEMA,
-        },
-        "video": {"path": "video.mp4", "sha256": video_sha256},
+        "trajectory": {"sha256": trajectory_sha256},
+        "video": {"sha256": video_sha256},
     }
-    if mask_manifest_sha256 is not None:
-        artifacts["masks"] = {
-            "path": "masks",
-            "manifest_path": "mask_manifest.json",
-            "manifest_sha256": mask_manifest_sha256,
-            "schema_version": MASK_MANIFEST_SCHEMA,
-        }
-
     caption = _mapping(_mapping(source.get("object_identity")).get("text")).get("caption")
     metadata = {
         "schema_version": BASE_SAMPLE_SCHEMA,
         "scene_id": scene_id,
         "group_id": group_id,
-        "kind": "base",
         "family": family,
         "seed": int(source["seed"]),
         "semantics": _compact_semantics(source, family),
@@ -662,33 +643,6 @@ def materialize_base_sample(
     trajectory_hash = sha256(trajectory_path)
     linked_file(target / "video.mp4", video_source_path)
 
-    provisional = build_base_metadata(
-        family=family,
-        group_id=group_id,
-        source=source,
-        source_metadata_sha256=source_metadata_sha256,
-        resolved_scene=resolved_scene,
-        render_record=render_record,
-        render_metadata=render_metadata,
-        trajectory_info=trajectory_info,
-        trajectory_sha256=trajectory_hash,
-        video_sha256=video_sha256,
-        mask_manifest_sha256=None,
-    )
-    mask_hash = None
-    if masks_source_path is not None:
-        if not masks_source_path.is_dir():
-            raise FileNotFoundError(f"{scene_id} masks: {masks_source_path}")
-        linked_file(target / "masks", masks_source_path)
-        mask_manifest = build_mask_manifest(
-            scene_id=scene_id,
-            mask_root=masks_source_path,
-            objects=provisional["physics"]["objects"],
-        )
-        mask_manifest_path = target / "mask_manifest.json"
-        write_json(mask_manifest_path, mask_manifest)
-        mask_hash = sha256(mask_manifest_path)
-
     metadata = build_base_metadata(
         family=family,
         group_id=group_id,
@@ -700,15 +654,29 @@ def materialize_base_sample(
         trajectory_info=trajectory_info,
         trajectory_sha256=trajectory_hash,
         video_sha256=video_sha256,
-        mask_manifest_sha256=mask_hash,
     )
+    mask_hash = None
+    if masks_source_path is not None:
+        if not masks_source_path.is_dir():
+            raise FileNotFoundError(f"{scene_id} masks: {masks_source_path}")
+        linked_file(target / "masks", masks_source_path)
+        mask_manifest = build_mask_manifest(
+            scene_id=scene_id,
+            mask_root=masks_source_path,
+            objects=metadata["physics"]["objects"],
+        )
+        mask_manifest_path = target / "mask_manifest.json"
+        write_json(mask_manifest_path, mask_manifest)
+        mask_hash = sha256(mask_manifest_path)
+        metadata["artifacts"]["masks"] = {
+            "manifest_sha256": mask_hash,
+        }
     validate_base_metadata(metadata)
     metadata_path = target / "metadata.json"
     write_json(metadata_path, metadata)
     return {
         "scene_id": scene_id,
         "group_id": group_id,
-        "sample_path": scene_id,
         "metadata_sha256": sha256(metadata_path),
         "source_metadata_sha256": source_metadata_sha256,
         "has_masks": mask_hash is not None,
@@ -716,8 +684,14 @@ def materialize_base_sample(
 
 
 def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
-    if metadata.get("schema_version") != BASE_SAMPLE_SCHEMA or metadata.get("kind") != "base":
+    if metadata.get("schema_version") != BASE_SAMPLE_SCHEMA:
         raise ValueError("not canonical PhysSweep base metadata")
+    required = {
+        "schema_version", "scene_id", "group_id", "family", "seed",
+        "semantics", "physics", "visual", "artifacts", "lineage",
+    }
+    if not required.issubset(metadata) or set(metadata) - required - {"caption"}:
+        raise ValueError("canonical base fields are invalid")
     scene_id = str(metadata.get("scene_id", ""))
     group_id = str(metadata.get("group_id", ""))
     family = str(metadata.get("family", ""))
@@ -746,10 +720,26 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
     if any(key not in camera for key in ("position_m", "target_m", "focal_length_mm", "sensor_width_mm")):
         raise ValueError("canonical final camera is incomplete")
     artifacts = _mapping(metadata.get("artifacts"))
-    for key in ("trajectory", "video"):
-        binding = _mapping(artifacts.get(key))
-        if not binding.get("path") or len(str(binding.get("sha256", ""))) != 64:
-            raise ValueError(f"canonical artifact binding is invalid: {key}")
+    trajectory = _mapping(artifacts.get("trajectory"))
+    if (
+        set(trajectory) != {"sha256"}
+        or len(str(trajectory.get("sha256", ""))) != 64
+    ):
+        raise ValueError("canonical trajectory binding is invalid")
+    video = _mapping(artifacts.get("video"))
+    if (
+        set(video) != {"sha256"}
+        or len(str(video.get("sha256", ""))) != 64
+    ):
+        raise ValueError("canonical video binding is invalid")
+    masks = _mapping(artifacts.get("masks"))
+    if masks and (
+        set(masks) != {"manifest_sha256"}
+        or len(str(masks.get("manifest_sha256", ""))) != 64
+    ):
+        raise ValueError("canonical mask binding is invalid")
+    if set(artifacts) != ({"trajectory", "video", "masks"} if masks else {"trajectory", "video"}):
+        raise ValueError("canonical artifact set is invalid")
     return {
         "schema_version": BASE_SAMPLE_SCHEMA,
         "scene_id": scene_id,

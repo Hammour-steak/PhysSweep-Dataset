@@ -50,9 +50,9 @@ except ModuleNotFoundError:
     )
 
 
-VIEW_SCHEMA = "physweep_base_release_view_v2"
-PIPELINE_SCHEMA = "physweep_base_pipeline_view_v2"
-AUDIT_SCHEMA = "physweep_base_release_view_audit_v2"
+VIEW_SCHEMA = "physweep_base_release_view_v3"
+PIPELINE_SCHEMA = "physweep_base_pipeline_view_v3"
+AUDIT_SCHEMA = "physweep_base_release_view_audit_v3"
 
 
 @dataclass(frozen=True)
@@ -416,9 +416,6 @@ def build_view(
             }
             write_json(pipeline_path, pipeline_manifest)
             pipeline_bindings[spec.name] = {
-                "source_schema_version": spec.source_schema_version,
-                "sample_count": len(records),
-                "mask_count": mask_counts[spec.name],
                 "manifest": f"{spec.name}/manifest.json",
                 "manifest_sha256": sha256(pipeline_path),
             }
@@ -485,7 +482,7 @@ def _validate_trajectory(path: Path, metadata: dict[str, Any]) -> None:
 def _validate_masks(sample: Path, metadata: dict[str, Any]) -> None:
     binding = metadata["artifacts"]["masks"]
     manifest_path = verified_file(
-        sample / str(binding["manifest_path"]),
+        sample / "mask_manifest.json",
         str(binding["manifest_sha256"]),
         f"{metadata['scene_id']} mask manifest",
     )
@@ -495,19 +492,23 @@ def _validate_masks(sample: Path, metadata: dict[str, Any]) -> None:
         or manifest.get("scene_id") != metadata.get("scene_id")
     ):
         raise ValueError("mask manifest identity differs")
-    masks = sample / str(binding["path"])
+    masks = sample / "masks"
     if not masks.is_symlink() or not masks.is_dir():
         raise ValueError("mask artifact is not a valid symlink")
-    expected_ids = [record["object_id"] for record in metadata["physics"]["objects"]]
+    expected_objects = [
+        (record["object_id"], int(record["mask_instance_id"]))
+        for record in metadata["physics"]["objects"]
+    ]
     records = manifest.get("objects", [])
-    if [record["object_id"] for record in records] != expected_ids:
+    if [(record["object_id"], int(record["instance_id"])) for record in records] != expected_objects:
         raise ValueError("mask manifest object axis differs")
     frame_count = int(manifest["frame_count"])
     for record in records:
         object_id = safe_scene_id(record["object_id"])
         paths = sorted((masks / object_id).glob("frame_*.png"))
         hashes = record.get("frame_sha256", [])
-        if len(paths) != frame_count or len(hashes) != frame_count:
+        expected_names = [f"frame_{index:04d}.png" for index in range(1, frame_count + 1)]
+        if [path.name for path in paths] != expected_names or len(hashes) != frame_count:
             raise ValueError("mask manifest frame count differs")
         for path, expected_hash in zip(paths, hashes):
             verified_file(
@@ -523,6 +524,8 @@ def verify_view(output: Path) -> dict[str, Any]:
     if (
         manifest.get("schema_version") != VIEW_SCHEMA
         or manifest.get("kind") != "base_only"
+        or manifest.get("storage_mode")
+        != "compact_metadata_with_absolute_artifact_symlinks"
         or manifest.get("sample_schema_version") != BASE_SAMPLE_SCHEMA
         or manifest.get("trajectory_schema_version") != TRAJECTORY_SCHEMA
         or manifest.get("mask_manifest_schema_version") != MASK_MANIFEST_SCHEMA
@@ -545,13 +548,11 @@ def verify_view(output: Path) -> dict[str, Any]:
     release = load_json(release_path)
     release_root = _release_root(release_path, release)
     for key in ("base_manifest", "metadata_manifest", "physics_manifest"):
-        expected = manifest.get(f"{key}_sha256")
-        if expected is not None:
-            verified_file(
-                project_path(release_root, str(release[key])),
-                str(expected),
-                f"base release {key}",
-            )
+        verified_file(
+            project_path(release_root, str(release[key])),
+            str(manifest[f"{key}_sha256"]),
+            f"base release {key}",
+        )
     if (
         str(manifest["dataset_id"]) != str(release["dataset_id"])
         or int(manifest["sample_count"]) != int(release["base_count"])
@@ -567,23 +568,37 @@ def verify_view(output: Path) -> dict[str, Any]:
     for family, binding in manifest["pipelines"].items():
         family = safe_scene_id(family)
         expected_top.add(family)
+        relative_manifest = Path(family) / "manifest.json"
+        if (
+            set(binding) != {"manifest", "manifest_sha256"}
+            or Path(str(binding.get("manifest", ""))) != relative_manifest
+        ):
+            raise ValueError(f"pipeline manifest path differs: {family}")
         pipeline_path = verified_file(
-            output / str(binding["manifest"]),
+            output / relative_manifest,
             str(binding["manifest_sha256"]),
             f"{family} pipeline manifest",
         )
         document = load_json(pipeline_path)
+        records = document.get("records", [])
         if (
             document.get("schema_version") != PIPELINE_SCHEMA
+            or set(document)
+            != {"schema_version", "pipeline", "source_schema_version", "sample_count", "mask_count", "records"}
             or document.get("pipeline") != family
-            or document.get("source_schema_version")
-            != binding.get("source_schema_version")
-            or len(document.get("records", [])) != int(binding["sample_count"])
+            or not document.get("source_schema_version")
+            or not isinstance(records, list)
+            or int(document.get("sample_count", -1)) != len(records)
         ):
             raise ValueError(f"pipeline manifest differs: {family}")
         expected_samples = set()
         family_masks = 0
-        for record in document["records"]:
+        for record in records:
+            if set(record) != {
+                "scene_id", "group_id", "metadata_sha256",
+                "source_metadata_sha256", "source_metadata_path",
+            }:
+                raise ValueError(f"pipeline record fields differ: {family}")
             scene_id = safe_scene_id(record["scene_id"])
             group_id = safe_scene_id(record["group_id"])
             source_path = str(record.get("source_metadata_path", ""))
@@ -624,7 +639,7 @@ def verify_view(output: Path) -> dict[str, Any]:
                 raise ValueError(f"video and physics frame rates differ: {scene_id}")
             trajectory_binding = metadata["artifacts"]["trajectory"]
             trajectory = verified_file(
-                sample / str(trajectory_binding["path"]),
+                sample / "trajectory.npz",
                 str(trajectory_binding["sha256"]),
                 f"{scene_id} trajectory",
             )
@@ -633,7 +648,7 @@ def verify_view(output: Path) -> dict[str, Any]:
             _validate_trajectory(trajectory, metadata)
             video_binding = metadata["artifacts"]["video"]
             video = verified_file(
-                sample / str(video_binding["path"]),
+                sample / "video.mp4",
                 str(video_binding["sha256"]),
                 f"{scene_id} video",
             )
@@ -654,7 +669,7 @@ def verify_view(output: Path) -> dict[str, Any]:
         }
         if actual_samples != expected_samples:
             raise ValueError(f"pipeline sample directories differ: {family}")
-        if family_masks != int(binding["mask_count"]):
+        if family_masks != int(document.get("mask_count", -1)):
             raise ValueError(f"pipeline mask count differs: {family}")
         mask_count += family_masks
     if {path.name for path in output.iterdir()} != expected_top:
