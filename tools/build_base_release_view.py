@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build a non-destructive, pipeline-classified view of release base samples."""
+"""Build the canonical, compact, pipeline-classified PhysSweep base release."""
 
 from __future__ import annotations
 
@@ -10,13 +10,25 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
+import numpy as np
+
 try:
     from audit_release_provenance import (
         audit_release,
         load_json,
         manifest_binding,
         project_path,
+    )
+    from base_release_schema import (
+        BASE_SAMPLE_SCHEMA,
+        MASK_MANIFEST_SCHEMA,
+        TRAJECTORY_FIELDS,
+        TRAJECTORY_SCHEMA,
+        materialize_base_sample,
         sha256,
+        validate_base_metadata,
+        verified_file,
+        write_json,
     )
 except ModuleNotFoundError:
     from tools.audit_release_provenance import (
@@ -24,12 +36,23 @@ except ModuleNotFoundError:
         load_json,
         manifest_binding,
         project_path,
+    )
+    from tools.base_release_schema import (
+        BASE_SAMPLE_SCHEMA,
+        MASK_MANIFEST_SCHEMA,
+        TRAJECTORY_FIELDS,
+        TRAJECTORY_SCHEMA,
+        materialize_base_sample,
         sha256,
+        validate_base_metadata,
+        verified_file,
+        write_json,
     )
 
 
-VIEW_SCHEMA = "physweep_base_release_view_v1"
-PIPELINE_SCHEMA = "physweep_base_pipeline_view_v1"
+VIEW_SCHEMA = "physweep_base_release_view_v2"
+PIPELINE_SCHEMA = "physweep_base_pipeline_view_v2"
+AUDIT_SCHEMA = "physweep_base_release_view_audit_v2"
 
 
 @dataclass(frozen=True)
@@ -38,14 +61,6 @@ class PipelineSpec:
     source_schema_version: str
     project_root: Path
     render_root: Path
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(value, indent=2, ensure_ascii=True) + "\n",
-        encoding="utf-8",
-    )
 
 
 def safe_scene_id(value: Any) -> str:
@@ -81,48 +96,19 @@ def index_unique_string(
     return result
 
 
-def verified_file(path: Path, expected_hash: str, label: str) -> Path:
-    path = path.resolve()
-    if not path.is_file():
-        raise FileNotFoundError(f"{label}: {path}")
-    actual = sha256(path)
-    if actual != expected_hash:
-        raise ValueError(
-            f"{label} hash mismatch: {path}; expected={expected_hash} actual={actual}"
-        )
-    return path
-
-
-def linked_file(path: Path, source: Path) -> None:
-    path.symlink_to(source.resolve())
-
-
-def is_within(path: Path, root: Path) -> bool:
-    try:
-        path.resolve().relative_to(root.resolve())
-    except ValueError:
-        return False
-    return True
-
-
-def resolved_record_path(
-    project_root: Path,
-    record: dict[str, Any],
-    path_key: str,
-    hash_key: str,
-    label: str,
-) -> Path:
-    return verified_file(
-        project_path(project_root, str(record[path_key])),
-        str(record[hash_key]),
-        label,
-    )
-
-
 def release_documents(
     release_project_root: Path,
     release_manifest: Path,
-) -> tuple[Path, dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
+) -> tuple[
+    Path,
+    dict[str, Any],
+    Path,
+    dict[str, Any],
+    Path,
+    dict[str, Any],
+    Path,
+    dict[str, Any],
+]:
     release_project_root = release_project_root.resolve()
     release_path = project_path(release_project_root, release_manifest)
     audit_release(release_path, release_project_root)
@@ -151,8 +137,11 @@ def release_documents(
     return (
         release_path,
         release,
+        base_path,
         load_json(base_path),
+        metadata_path,
         load_json(metadata_path),
+        physics_path,
         load_json(physics_path),
     )
 
@@ -174,9 +163,7 @@ def validate_pipeline_specs(
             ),
         )
         if spec.source_schema_version in by_schema:
-            raise ValueError(
-                f"duplicate pipeline schema: {spec.source_schema_version}"
-            )
+            raise ValueError(f"duplicate pipeline schema: {spec.source_schema_version}")
         if spec.name in names:
             raise ValueError(f"duplicate pipeline name: {spec.name}")
         if not spec.render_root.is_dir():
@@ -188,23 +175,31 @@ def validate_pipeline_specs(
     return by_schema
 
 
+def resolved_record_path(
+    project_root: Path,
+    record: dict[str, Any],
+    path_key: str,
+    hash_key: str,
+    label: str,
+) -> Path:
+    return verified_file(
+        project_path(project_root, str(record[path_key])),
+        str(record[hash_key]),
+        label,
+    )
+
+
 def render_sources(
     spec: PipelineSpec,
     scene_id: str,
     physics_record: dict[str, Any],
 ) -> dict[str, Any]:
-    frame_root = spec.render_root / "frames" / scene_id
-    render_record_path = frame_root / "render_record.json"
-    render_record = load_json(render_record_path)
-    if str(render_record.get("scene_id")) != scene_id:
-        raise ValueError(f"render record scene id mismatch: {scene_id}")
-    if not bool(physics_record.get("ok")) or not bool(
-        physics_record.get("audit_passed")
+    if (
+        not bool(physics_record.get("ok"))
+        or not bool(physics_record.get("audit_passed"))
+        or physics_record.get("failed_checks")
     ):
         raise ValueError(f"base physics audit did not pass: {scene_id}")
-    if physics_record.get("failed_checks"):
-        raise ValueError(f"base physics has failed checks: {scene_id}")
-
     metadata = resolved_record_path(
         spec.project_root,
         physics_record,
@@ -219,12 +214,12 @@ def render_sources(
         "trajectory_sha256",
         f"{scene_id} trajectory",
     )
-    audit = resolved_record_path(
+    resolved_record_path(
         spec.project_root,
         physics_record,
         "audit_path",
         "audit_sha256",
-        f"{scene_id} audit",
+        f"{scene_id} trajectory audit",
     )
     resolved_scene = resolved_record_path(
         spec.project_root,
@@ -233,127 +228,85 @@ def render_sources(
         "resolved_scene_sha256",
         f"{scene_id} resolved scene",
     )
+    render_record_path = spec.render_root / "frames" / scene_id / "render_record.json"
+    render_record = load_json(render_record_path)
+    if str(render_record.get("scene_id")) != scene_id:
+        raise ValueError(f"render record scene id mismatch: {scene_id}")
+    render_record_hash = sha256(render_record_path)
     render_metadata_hash = str(render_record["metadata_sha256"])
     if render_metadata_hash == str(physics_record["metadata_sha256"]):
-        render_metadata = metadata
+        render_metadata = None
     else:
         render_metadata = verified_file(
             project_path(spec.project_root, str(render_record["metadata_path"])),
             render_metadata_hash,
             f"{scene_id} render metadata",
         )
-        bound_metadata = load_json(render_metadata)
-        source_binding = bound_metadata.get("source_metadata", {})
-        trajectory_binding = bound_metadata.get("trajectory", {})
+        bound = load_json(render_metadata)
+        source_binding = bound.get("source_metadata", {})
+        trajectory_binding = bound.get("trajectory", {})
         if (
             str(source_binding.get("sha256"))
             != str(physics_record["metadata_sha256"])
             or str(trajectory_binding.get("sha256"))
             != str(physics_record["trajectory_sha256"])
-            or project_path(
-                spec.project_root, str(source_binding.get("path", ""))
-            ).resolve()
+            or project_path(spec.project_root, str(source_binding.get("path", ""))).resolve()
             != metadata
             or project_path(
                 spec.project_root, str(trajectory_binding.get("path", ""))
             ).resolve()
             != trajectory
         ):
-            raise ValueError(
-                f"render metadata is not bound to release physics: {scene_id}"
-            )
+            raise ValueError(f"render metadata is not bound to release physics: {scene_id}")
     if render_record.get("trajectory_sha256") not in (
         None,
         physics_record["trajectory_sha256"],
     ):
         raise ValueError(f"render and release trajectories differ: {scene_id}")
-
     video = verified_file(
         project_path(spec.project_root, str(render_record["video_path"])),
         str(render_record["video_sha256"]),
         f"{scene_id} video",
     )
-    inspection_frames = [
-        project_path(spec.project_root, str(value))
-        for value in render_record.get("inspection_frames", [])
-    ]
-    if not inspection_frames or any(not path.is_file() for path in inspection_frames):
-        raise FileNotFoundError(f"inspection frames are incomplete: {scene_id}")
-    if len({path.resolve() for path in inspection_frames}) != len(inspection_frames):
-        raise ValueError(f"inspection frames contain duplicates: {scene_id}")
-    if any(
-        path.parent.name != scene_id
-        or not is_within(path, spec.project_root)
-        for path in inspection_frames
-    ):
-        raise ValueError(f"inspection frame has an invalid source path: {scene_id}")
-
-    masks = spec.render_root / "masks" / scene_id
-    hashes = {
-        "metadata_sha256": str(physics_record["metadata_sha256"]),
-        "trajectory_sha256": str(physics_record["trajectory_sha256"]),
-        "audit_sha256": str(physics_record["audit_sha256"]),
-        "resolved_scene_sha256": str(physics_record["resolved_scene_sha256"]),
-        "video_sha256": str(render_record["video_sha256"]),
-        "render_record_sha256": sha256(render_record_path),
-    }
-    linked_render_metadata = (
-        render_metadata if render_metadata != metadata else None
+    source_metadata = load_json(metadata)
+    render_config = source_metadata.get("render_request") or source_metadata.get(
+        "render"
     )
-    if linked_render_metadata is not None:
-        hashes["render_metadata_sha256"] = render_metadata_hash
+    if not isinstance(render_config, dict):
+        raise ValueError(f"render configuration is missing: {scene_id}")
+    render_contract = {
+        "engine": render_record.get("render_engine") or render_config.get("engine"),
+        "samples": render_record.get("render_samples")
+        or render_config.get("samples"),
+        "video_encoding": render_record.get("video_encoding"),
+    }
+    if (
+        not render_contract["engine"]
+        or int(render_contract["samples"] or 0) <= 0
+        or not isinstance(render_contract["video_encoding"], dict)
+    ):
+        raise ValueError(f"render contract is incomplete: {scene_id}")
+    render_contract["samples"] = int(render_contract["samples"])
+    masks = spec.render_root / "masks" / scene_id
     return {
         "metadata": metadata,
-        "render_metadata": linked_render_metadata,
         "trajectory": trajectory,
-        "audit": audit,
         "resolved_scene": resolved_scene,
-        "video": video,
         "render_record": render_record_path.resolve(),
-        "inspection_frames": [path.resolve() for path in inspection_frames],
+        "render_record_sha256": render_record_hash,
+        "render_metadata": render_metadata,
+        "render_metadata_sha256": (
+            render_metadata_hash if render_metadata is not None else None
+        ),
+        "video": video,
         "masks": masks.resolve() if masks.is_dir() else None,
-        "hashes": hashes,
-    }
-
-
-def materialize_sample(
-    sample_dir: Path,
-    sources: dict[str, Any],
-) -> None:
-    sample_dir.mkdir(parents=True)
-    for name, filename in (
-        ("metadata", "metadata.json"),
-        ("trajectory", "trajectory.npz"),
-        ("audit", "trajectory_audit.json"),
-        ("resolved_scene", "resolved_scene.json"),
-        ("video", "video.mp4"),
-        ("render_record", "render_record.json"),
-    ):
-        linked_file(sample_dir / filename, sources[name])
-    if sources["render_metadata"] is not None:
-        linked_file(sample_dir / "render_metadata.json", sources["render_metadata"])
-    frame_dir = sample_dir / "frames"
-    frame_dir.mkdir()
-    for source in sources["inspection_frames"]:
-        linked_file(frame_dir / source.name, source)
-    if sources["masks"] is not None:
-        (sample_dir / "masks").symlink_to(
-            sources["masks"], target_is_directory=True
-        )
-
-
-def record_hashes(
-    scene_id: str,
-    logical_base_id: str,
-    source_metadata_path: str,
-    sources: dict[str, Any],
-) -> dict[str, Any]:
-    return {
-        "scene_id": scene_id,
-        "logical_base_id": logical_base_id,
-        "source_metadata_path": source_metadata_path,
-        "sample_path": scene_id,
-        **sources["hashes"],
+        "render_contract": render_contract,
+        "hashes": {
+            "metadata_sha256": str(physics_record["metadata_sha256"]),
+            "trajectory_sha256": str(physics_record["trajectory_sha256"]),
+            "resolved_scene_sha256": str(physics_record["resolved_scene_sha256"]),
+            "video_sha256": str(render_record["video_sha256"]),
+        },
     }
 
 
@@ -365,20 +318,24 @@ def build_view(
     pipeline_specs: Iterable[PipelineSpec],
 ) -> dict[str, Any]:
     output = output.resolve()
-    if output.exists():
-        raise FileExistsError(f"base view already exists: {output}")
+    if output.exists() or output.is_symlink():
+        raise FileExistsError(f"base release already exists: {output}")
     specs = validate_pipeline_specs(pipeline_specs)
-    release_path, release, base, metadata, physics = release_documents(
-        release_project_root, release_manifest
-    )
+    (
+        release_path,
+        release,
+        base_path,
+        base,
+        metadata_path,
+        metadata,
+        physics_path,
+        physics,
+    ) = release_documents(release_project_root, release_manifest)
     base_records = [
         record for record in metadata["records"] if record.get("kind") == "base"
     ]
     expected_count = int(release["base_count"])
-    if (
-        len(base_records) != expected_count
-        or int(base["sample_count"]) != expected_count
-    ):
+    if len(base_records) != expected_count or int(base["sample_count"]) != expected_count:
         raise ValueError("release base counts disagree")
     base_by_source = index_unique_string(
         base["records"], "metadata_path", "base source metadata path"
@@ -388,17 +345,6 @@ def build_view(
     )
     if set(base_by_source) != set(metadata_by_source):
         raise ValueError("base and metadata manifests select different source records")
-    logical_base_ids = {
-        safe_scene_id(record["scene_id"]) for record in base["records"]
-    }
-    generated_base_ids = {
-        safe_scene_id(record["scene_id"]) for record in base_records
-    }
-    if (
-        len(logical_base_ids) != expected_count
-        or len(generated_base_ids) != expected_count
-    ):
-        raise ValueError("base manifests contain duplicate scene ids")
     physics_by_id = index_unique(physics["records"], "physics")
     selected_schemas = {str(record["source_schema_version"]) for record in base_records}
     if selected_schemas != set(specs):
@@ -408,21 +354,18 @@ def build_view(
         )
 
     output.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(
-        prefix=f".{output.name}.", dir=output.parent
-    ) as temporary:
+    with tempfile.TemporaryDirectory(prefix=f".{output.name}.", dir=output.parent) as temporary:
         work = Path(temporary) / output.name
         work.mkdir()
         grouped: dict[str, list[dict[str, Any]]] = {
             spec.name: [] for spec in specs.values()
         }
         mask_counts = {spec.name: 0 for spec in specs.values()}
+        render_contract: dict[str, Any] | None = None
         for metadata_record in sorted(base_records, key=lambda item: item["scene_id"]):
             scene_id = safe_scene_id(metadata_record["scene_id"])
             source_metadata_path = str(metadata_record["parent"])
-            logical_base_id = safe_scene_id(
-                base_by_source[source_metadata_path]["scene_id"]
-            )
+            group_id = safe_scene_id(base_by_source[source_metadata_path]["scene_id"])
             spec = specs[str(metadata_record["source_schema_version"])]
             physics_record = physics_by_id.get(scene_id)
             if physics_record is None:
@@ -432,19 +375,35 @@ def build_view(
             ):
                 raise ValueError(f"metadata manifest hash differs: {scene_id}")
             sources = render_sources(spec, scene_id, physics_record)
-            materialize_sample(work / spec.name / scene_id, sources)
-            grouped[spec.name].append(
-                record_hashes(
-                    scene_id,
-                    logical_base_id,
-                    source_metadata_path,
-                    sources,
-                )
+            if render_contract is None:
+                render_contract = sources["render_contract"]
+            elif render_contract != sources["render_contract"]:
+                raise ValueError(f"release render contract differs: {scene_id}")
+            compact = materialize_base_sample(
+                target=work / spec.name / scene_id,
+                family=spec.name,
+                group_id=group_id,
+                source_metadata_path=sources["metadata"],
+                source_metadata_sha256=sources["hashes"]["metadata_sha256"],
+                resolved_scene_path=sources["resolved_scene"],
+                resolved_scene_sha256=sources["hashes"]["resolved_scene_sha256"],
+                render_record_path=sources["render_record"],
+                render_record_sha256=sources["render_record_sha256"],
+                trajectory_source_path=sources["trajectory"],
+                trajectory_source_sha256=sources["hashes"]["trajectory_sha256"],
+                video_source_path=sources["video"],
+                video_sha256=sources["hashes"]["video_sha256"],
+                masks_source_path=sources["masks"],
+                render_metadata_path=sources["render_metadata"],
+                render_metadata_sha256=sources["render_metadata_sha256"],
             )
-            mask_counts[spec.name] += int(sources["masks"] is not None)
+            mask_counts[spec.name] += int(compact.pop("has_masks"))
+            compact["source_metadata_path"] = source_metadata_path
+            grouped[spec.name].append(compact)
 
-        pipelines: dict[str, Any] = {}
-        for spec in sorted(specs.values(), key=lambda item: item.name):
+        pipeline_bindings: dict[str, Any] = {}
+        total_masks = 0
+        for spec in sorted(specs.values(), key=lambda value: value.name):
             records = grouped[spec.name]
             pipeline_path = work / spec.name / "manifest.json"
             pipeline_manifest = {
@@ -456,48 +415,106 @@ def build_view(
                 "records": records,
             }
             write_json(pipeline_path, pipeline_manifest)
-            pipelines[spec.name] = {
+            pipeline_bindings[spec.name] = {
                 "source_schema_version": spec.source_schema_version,
                 "sample_count": len(records),
                 "mask_count": mask_counts[spec.name],
                 "manifest": f"{spec.name}/manifest.json",
                 "manifest_sha256": sha256(pipeline_path),
             }
+            total_masks += mask_counts[spec.name]
 
-        base_manifest_path = project_path(
-            release_project_root, str(release["base_manifest"])
-        )
-        metadata_manifest_path = project_path(
-            release_project_root, str(release["metadata_manifest"])
-        )
-        physics_manifest_path = project_path(
-            release_project_root, str(release["physics_manifest"])
-        )
-        view_manifest = {
+        manifest = {
             "schema_version": VIEW_SCHEMA,
             "dataset_id": str(release["dataset_id"]),
             "kind": "base_only",
-            "storage_mode": "absolute_symlink_view",
+            "storage_mode": "compact_metadata_with_absolute_artifact_symlinks",
             "sample_count": expected_count,
+            "mask_count": total_masks,
             "release_manifest": str(release_path),
             "release_manifest_sha256": sha256(release_path),
-            "base_manifest_sha256": sha256(base_manifest_path),
-            "metadata_manifest_sha256": sha256(metadata_manifest_path),
-            "physics_manifest_sha256": sha256(physics_manifest_path),
-            "pipelines": pipelines,
+            "base_manifest_sha256": sha256(base_path),
+            "metadata_manifest_sha256": sha256(metadata_path),
+            "physics_manifest_sha256": sha256(physics_path),
+            "render_contract": render_contract,
+            "sample_schema_version": BASE_SAMPLE_SCHEMA,
+            "trajectory_schema_version": TRAJECTORY_SCHEMA,
+            "mask_manifest_schema_version": MASK_MANIFEST_SCHEMA,
+            "pipelines": pipeline_bindings,
         }
-        write_json(work / "manifest.json", view_manifest)
+        write_json(work / "manifest.json", manifest)
         (work / "README.txt").write_text(
-            "This is a non-authoritative symlink view of release base samples.\n"
-            "Source metadata and release manifests remain the sole authority.\n"
-            "Derived sweep samples are deliberately excluded.\n",
+            "Canonical PhysSweep base release.\n"
+            "metadata.json is the sample authority; trajectory arrays use one object axis.\n"
+            "Generation diagnostics and inspection frames are not release artifacts.\n",
             encoding="utf-8",
         )
         verify_view(work)
-        if output.exists():
-            raise FileExistsError(f"base view appeared during build: {output}")
+        if output.exists() or output.is_symlink():
+            raise FileExistsError(f"base release appeared during build: {output}")
         work.replace(output)
     return verify_view(output)
+
+
+def _release_root(release_path: Path, release: dict[str, Any]) -> Path:
+    base_reference = Path(str(release["base_manifest"]))
+    if base_reference.is_absolute():
+        return release_path.parent
+    candidates = [
+        parent for parent in release_path.parents if (parent / base_reference).is_file()
+    ]
+    if len(candidates) != 1:
+        raise ValueError("cannot identify the release project root")
+    return candidates[0]
+
+
+def _validate_trajectory(path: Path, metadata: dict[str, Any]) -> None:
+    with np.load(path, allow_pickle=False) as archive:
+        if tuple(archive.files) != TRAJECTORY_FIELDS:
+            raise ValueError(f"non-canonical trajectory fields: {path}")
+        if str(np.asarray(archive["schema_version"]).item()) != TRAJECTORY_SCHEMA:
+            raise ValueError(f"trajectory schema differs: {path}")
+        object_ids = [str(value) for value in np.asarray(archive["object_ids"]).tolist()]
+        metadata_ids = [
+            str(record["object_id"]) for record in metadata["physics"]["objects"]
+        ]
+        if object_ids != metadata_ids:
+            raise ValueError(f"trajectory object axis differs: {path}")
+
+
+def _validate_masks(sample: Path, metadata: dict[str, Any]) -> None:
+    binding = metadata["artifacts"]["masks"]
+    manifest_path = verified_file(
+        sample / str(binding["manifest_path"]),
+        str(binding["manifest_sha256"]),
+        f"{metadata['scene_id']} mask manifest",
+    )
+    manifest = load_json(manifest_path)
+    if (
+        manifest.get("schema_version") != MASK_MANIFEST_SCHEMA
+        or manifest.get("scene_id") != metadata.get("scene_id")
+    ):
+        raise ValueError("mask manifest identity differs")
+    masks = sample / str(binding["path"])
+    if not masks.is_symlink() or not masks.is_dir():
+        raise ValueError("mask artifact is not a valid symlink")
+    expected_ids = [record["object_id"] for record in metadata["physics"]["objects"]]
+    records = manifest.get("objects", [])
+    if [record["object_id"] for record in records] != expected_ids:
+        raise ValueError("mask manifest object axis differs")
+    frame_count = int(manifest["frame_count"])
+    for record in records:
+        object_id = safe_scene_id(record["object_id"])
+        paths = sorted((masks / object_id).glob("frame_*.png"))
+        hashes = record.get("frame_sha256", [])
+        if len(paths) != frame_count or len(hashes) != frame_count:
+            raise ValueError("mask manifest frame count differs")
+        for path, expected_hash in zip(paths, hashes):
+            verified_file(
+                path,
+                str(expected_hash),
+                f"{metadata['scene_id']} mask frame",
+            )
 
 
 def verify_view(output: Path) -> dict[str, Any]:
@@ -506,167 +523,148 @@ def verify_view(output: Path) -> dict[str, Any]:
     if (
         manifest.get("schema_version") != VIEW_SCHEMA
         or manifest.get("kind") != "base_only"
-        or manifest.get("storage_mode") != "absolute_symlink_view"
+        or manifest.get("sample_schema_version") != BASE_SAMPLE_SCHEMA
+        or manifest.get("trajectory_schema_version") != TRAJECTORY_SCHEMA
+        or manifest.get("mask_manifest_schema_version") != MASK_MANIFEST_SCHEMA
     ):
-        raise ValueError("not a PhysSweep base release view")
+        raise ValueError("not a canonical PhysSweep base release")
+    render_contract = manifest.get("render_contract")
+    if (
+        not isinstance(render_contract, dict)
+        or not render_contract.get("engine")
+        or int(render_contract.get("samples", 0)) <= 0
+        or not isinstance(render_contract.get("video_encoding"), dict)
+        or int(render_contract["video_encoding"].get("fps", 0)) <= 0
+    ):
+        raise ValueError("base render contract is incomplete")
     release_path = verified_file(
         Path(manifest["release_manifest"]),
         str(manifest["release_manifest_sha256"]),
-        "view release manifest",
+        "base release source manifest",
     )
     release = load_json(release_path)
-    base_reference = Path(str(release["base_manifest"]))
-    if base_reference.is_absolute():
-        release_root = release_path.parent
-    else:
-        candidates = [
-            parent
-            for parent in release_path.parents
-            if (parent / base_reference).is_file()
-        ]
-        if len(candidates) != 1:
-            raise ValueError("cannot identify the release project root")
-        release_root = candidates[0]
+    release_root = _release_root(release_path, release)
     for key in ("base_manifest", "metadata_manifest", "physics_manifest"):
-        verified_file(
-            project_path(release_root, str(release[key])),
-            str(manifest[f"{key}_sha256"]),
-            f"view {key}",
-        )
+        expected = manifest.get(f"{key}_sha256")
+        if expected is not None:
+            verified_file(
+                project_path(release_root, str(release[key])),
+                str(expected),
+                f"base release {key}",
+            )
     if (
         str(manifest["dataset_id"]) != str(release["dataset_id"])
         or int(manifest["sample_count"]) != int(release["base_count"])
     ):
-        raise ValueError("view and release identities differ")
+        raise ValueError("base and source release identities differ")
 
-    verified_count = 0
+    count = 0
     mask_count = 0
     scene_ids: set[str] = set()
-    logical_base_ids: set[str] = set()
-    source_metadata_paths: set[str] = set()
-    pipeline_names: set[str] = set()
-    for raw_name, pipeline in manifest["pipelines"].items():
-        name = safe_scene_id(raw_name)
-        pipeline_names.add(name)
-        expected_manifest = Path(name) / "manifest.json"
-        if Path(str(pipeline["manifest"])) != expected_manifest:
-            raise ValueError(f"pipeline manifest path is invalid: {name}")
+    group_ids: set[str] = set()
+    source_paths: set[str] = set()
+    expected_top = {"manifest.json", "README.txt"}
+    for family, binding in manifest["pipelines"].items():
+        family = safe_scene_id(family)
+        expected_top.add(family)
         pipeline_path = verified_file(
-            output / expected_manifest,
-            str(pipeline["manifest_sha256"]),
-            f"{name} pipeline manifest",
+            output / str(binding["manifest"]),
+            str(binding["manifest_sha256"]),
+            f"{family} pipeline manifest",
         )
         document = load_json(pipeline_path)
         if (
             document.get("schema_version") != PIPELINE_SCHEMA
-            or document.get("pipeline") != name
+            or document.get("pipeline") != family
             or document.get("source_schema_version")
-            != pipeline.get("source_schema_version")
-            or len(document.get("records", [])) != int(pipeline["sample_count"])
-            or int(document.get("mask_count", -1))
-            != int(pipeline.get("mask_count", -2))
+            != binding.get("source_schema_version")
+            or len(document.get("records", [])) != int(binding["sample_count"])
         ):
-            raise ValueError(f"pipeline manifest is inconsistent: {name}")
-        expected_directories: set[str] = set()
+            raise ValueError(f"pipeline manifest differs: {family}")
+        expected_samples = set()
+        family_masks = 0
         for record in document["records"]:
             scene_id = safe_scene_id(record["scene_id"])
-            logical_base_id = safe_scene_id(record["logical_base_id"])
-            sample_path = safe_scene_id(record["sample_path"])
-            source_metadata_path = str(record.get("source_metadata_path", ""))
-            if sample_path != scene_id or not source_metadata_path:
-                raise ValueError(f"base identity record is invalid: {scene_id}")
+            group_id = safe_scene_id(record["group_id"])
+            source_path = str(record.get("source_metadata_path", ""))
             if (
                 scene_id in scene_ids
-                or logical_base_id in logical_base_ids
-                or source_metadata_path in source_metadata_paths
+                or group_id in group_ids
+                or not source_path
+                or source_path in source_paths
             ):
-                raise ValueError(f"duplicate base identity in view: {scene_id}")
+                raise ValueError(f"duplicate base identity: {scene_id}")
             scene_ids.add(scene_id)
-            logical_base_ids.add(logical_base_id)
-            source_metadata_paths.add(source_metadata_path)
-            expected_directories.add(sample_path)
-            sample = pipeline_path.parent / sample_path
+            group_ids.add(group_id)
+            source_paths.add(source_path)
+            expected_samples.add(scene_id)
+            sample = output / family / scene_id
             if not sample.is_dir() or sample.is_symlink():
                 raise ValueError(f"base sample is not a real directory: {scene_id}")
-            for filename, hash_key in (
-                ("metadata.json", "metadata_sha256"),
-                ("trajectory.npz", "trajectory_sha256"),
-                ("trajectory_audit.json", "audit_sha256"),
-                ("resolved_scene.json", "resolved_scene_sha256"),
-                ("video.mp4", "video_sha256"),
-                ("render_record.json", "render_record_sha256"),
+            metadata_path = verified_file(
+                sample / "metadata.json",
+                str(record["metadata_sha256"]),
+                f"{scene_id} metadata",
+            )
+            if metadata_path.is_symlink():
+                raise ValueError(f"metadata must be materialized: {scene_id}")
+            metadata = load_json(metadata_path)
+            summary = validate_base_metadata(metadata)
+            if (
+                summary["scene_id"] != scene_id
+                or summary["group_id"] != group_id
+                or summary["family"] != family
+                or metadata["lineage"]["source_metadata_sha256"]
+                != record["source_metadata_sha256"]
             ):
-                path = sample / filename
-                if not path.is_symlink():
-                    raise ValueError(f"view file is not a symlink: {path}")
-                verified_file(path, str(record[hash_key]), f"{scene_id} {filename}")
-            render_metadata = sample / "render_metadata.json"
-            if "render_metadata_sha256" in record:
-                if not render_metadata.is_symlink():
-                    raise ValueError(
-                        f"view render metadata is not a symlink: {render_metadata}"
-                    )
-                verified_file(
-                    render_metadata,
-                    str(record["render_metadata_sha256"]),
-                    f"{scene_id} render_metadata.json",
-                )
-            elif render_metadata.exists() or render_metadata.is_symlink():
-                raise ValueError(f"unexpected render metadata link: {scene_id}")
-            render_record = load_json(sample / "render_record.json")
-            expected_frames = {
-                Path(value).name for value in render_record["inspection_frames"]
-            }
-            actual_frames = {
-                path.name for path in (sample / "frames").iterdir()
-            }
-            if actual_frames != expected_frames or any(
-                not (sample / "frames" / name).is_symlink()
-                or not (sample / "frames" / name).is_file()
-                for name in actual_frames
+                raise ValueError(f"metadata identity differs: {scene_id}")
+            if int(metadata["physics"]["time"]["output_fps"]) != int(
+                render_contract["video_encoding"]["fps"]
             ):
-                raise ValueError(f"inspection frame view differs: {scene_id}")
-            mask_path = sample / "masks"
-            if mask_path.exists() or mask_path.is_symlink():
-                if not mask_path.is_symlink() or not mask_path.is_dir():
-                    raise ValueError(f"mask link is broken: {scene_id}")
-                mask_count += 1
-            if not (sample / "frames").is_dir() or (sample / "frames").is_symlink():
-                raise ValueError(f"frame view is not a real directory: {scene_id}")
-            expected_entries = {
-                "metadata.json",
-                "trajectory.npz",
-                "trajectory_audit.json",
-                "resolved_scene.json",
-                "video.mp4",
-                "render_record.json",
-                "frames",
-            }
-            for optional in ("masks", "render_metadata.json"):
-                if (sample / optional).exists() or (sample / optional).is_symlink():
-                    expected_entries.add(optional)
+                raise ValueError(f"video and physics frame rates differ: {scene_id}")
+            trajectory_binding = metadata["artifacts"]["trajectory"]
+            trajectory = verified_file(
+                sample / str(trajectory_binding["path"]),
+                str(trajectory_binding["sha256"]),
+                f"{scene_id} trajectory",
+            )
+            if trajectory.is_symlink():
+                raise ValueError(f"trajectory must be materialized: {scene_id}")
+            _validate_trajectory(trajectory, metadata)
+            video_binding = metadata["artifacts"]["video"]
+            video = verified_file(
+                sample / str(video_binding["path"]),
+                str(video_binding["sha256"]),
+                f"{scene_id} video",
+            )
+            if not video.is_symlink():
+                raise ValueError(f"video must remain a source symlink: {scene_id}")
+            expected_entries = {"metadata.json", "trajectory.npz", "video.mp4"}
+            if "masks" in metadata["artifacts"]:
+                expected_entries.update({"masks", "mask_manifest.json"})
+                _validate_masks(sample, metadata)
+                family_masks += 1
+            elif (sample / "masks").exists() or (sample / "masks").is_symlink():
+                raise ValueError(f"unbound masks are present: {scene_id}")
             if {path.name for path in sample.iterdir()} != expected_entries:
-                raise ValueError(f"unexpected files in base view: {scene_id}")
-            verified_count += 1
-        if int(document["mask_count"]) != sum(
-            (pipeline_path.parent / record["sample_path"] / "masks").is_symlink()
-            for record in document["records"]
-        ):
-            raise ValueError(f"pipeline mask count differs: {name}")
-        actual_directories = {
-            path.name for path in pipeline_path.parent.iterdir() if path.is_dir()
+                raise ValueError(f"unexpected base sample files: {scene_id}")
+            count += 1
+        actual_samples = {
+            path.name for path in (output / family).iterdir() if path.is_dir()
         }
-        if actual_directories != expected_directories:
-            raise ValueError(f"pipeline sample directories differ: {name}")
-    if verified_count != int(manifest["sample_count"]):
-        raise ValueError("verified base count differs from the view manifest")
-    expected_top_entries = pipeline_names | {"manifest.json", "README.txt"}
-    if {path.name for path in output.iterdir()} != expected_top_entries:
-        raise ValueError("unexpected files in the base view root")
+        if actual_samples != expected_samples:
+            raise ValueError(f"pipeline sample directories differ: {family}")
+        if family_masks != int(binding["mask_count"]):
+            raise ValueError(f"pipeline mask count differs: {family}")
+        mask_count += family_masks
+    if {path.name for path in output.iterdir()} != expected_top:
+        raise ValueError("unexpected base root entries")
+    if count != int(manifest["sample_count"]) or mask_count != int(manifest["mask_count"]):
+        raise ValueError("base release totals differ")
     return {
-        "schema_version": "physweep_base_release_view_audit_v1",
+        "schema_version": AUDIT_SCHEMA,
         "view": str(output),
-        "sample_count": verified_count,
+        "sample_count": count,
         "mask_count": mask_count,
         "pipeline_count": len(manifest["pipelines"]),
         "passed": True,
@@ -696,8 +694,7 @@ def main() -> None:
     else:
         if args.release_project_root is None or args.release_manifest is None:
             raise SystemExit(
-                "--release-project-root and --release-manifest are required "
-                "when building a view"
+                "--release-project-root and --release-manifest are required when building"
             )
         specs = [
             PipelineSpec(name, schema, Path(root), Path(render_root))

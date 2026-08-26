@@ -258,10 +258,13 @@ global floor remains the only floor contact authority.
 
 ## Base Release View
 
-`build_base_release_view.py` creates an atomic, base-only symlink view without
-moving or copying release artifacts. The frozen release manifest remains the
-authority. Each `--pipeline` argument binds one source metadata schema to its
-project and render roots:
+`build_base_release_view.py` creates the atomic, base-only consumer release.
+Each sample contains one canonical `metadata.json`, one canonical object-axis
+`trajectory.npz`, the video, and optional masks plus their compact hash
+manifest. Video and mask payloads remain symlinked to immutable render output;
+generation diagnostics, inspection frames, adapter trajectory channels, and
+schema-specific metadata copies are excluded. Each `--pipeline` argument binds
+one source metadata schema to its project and render roots:
 
 ```bash
 .venv/bin/python tools/build_base_release_view.py \
@@ -274,8 +277,8 @@ project and render roots:
 Repeat `--pipeline` for every schema in the release. The command refuses to
 overwrite an existing view, validates the logical-base-to-generated-base
 mapping, physics audit records, render provenance, source hashes, videos, and
-inspection frames before publishing the directory. It deliberately excludes
-all derived sweep samples. Recheck an existing view with:
+mask frames before publishing the directory. It deliberately excludes all
+derived sweep samples. Recheck an existing release with:
 
 ```bash
 .venv/bin/python tools/build_base_release_view.py \
