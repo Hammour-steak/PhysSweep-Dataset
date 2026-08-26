@@ -6,7 +6,7 @@ The sweep pipeline is a separate derivation stage after base metadata is frozen.
 
 `tools/derive_physics_sweep.py` reads the exact records declared by the frozen
 base manifest and writes derived records. It supports the generic rigid,
-reviewed asset-proxy, billiards, and passive-pinball base schemas. It never
+reviewed asset-proxy, billiards, passive-pinball, and marble-run base schemas. It never
 calls the base sampler and never changes a base file. Sweep fields are bound to
 a dynamic object, not to the scene as a whole. Every dynamic object must already
 have a canonical `object_id`; array indexes and alternate ID fields are not
@@ -33,7 +33,7 @@ must not replace a derived sweep level.
 
 The sweep manifest pins the SHA-256 of the derivation implementation, sweep
 configuration, object-profile prior, asset registry, billiards backend,
-passive-pinball backend, specialized backend registry, and frozen base
+passive-pinball and marble-run backends, specialized backend registry, and frozen base
 manifest. If a prior that is also declared by the base manifest has changed,
 derivation stops before writing output.
 
@@ -189,8 +189,8 @@ Whole base collection:
 
 Derivation writes immutable metadata. `tools/run_pybullet_batch.py` sends every
 record through `tools/pybullet_backend_dispatcher.py`. The dispatcher compiles
-generic rigid, asset-proxy, billiards, and passive-pinball metadata into the same
-`physweep_resolved_simulation_scene_v1` contract, then invokes the matching
+generic rigid, asset-proxy, billiards, passive-pinball, and marble-run metadata
+into the same `physweep_resolved_simulation_scene_v1` contract, then invokes the
 reviewed PyBullet adapter. It writes normalized trajectories under a separate
 `<dataset>/physics` tree and never mutates metadata. No per-video repair or
 hidden force is allowed.
@@ -239,8 +239,8 @@ silently omitted, or replaced after rendering.
 
 The resolved scene format is object-count agnostic, but each active adapter
 declares its current capability: generic rigid, reviewed asset-proxy, and
-passive-pinball scenes support one dynamic object, while billiards supports one
-or three balls. Future
+passive-pinball and marble-run scenes support one dynamic object, while
+billiards supports one or three balls. Future
 two- and three-object adapters can reuse the same ordered object contract without
 silently routing unsupported scenes through a one-object solver.
 

@@ -10,6 +10,7 @@ from tools.render_pybullet_manifest import (
     result_manifest_name,
     select_release_records,
     select_sweep_kind,
+    validate_release_source_bindings,
 )
 
 
@@ -112,6 +113,66 @@ class RenderPybulletSweepKindTests(unittest.TestCase):
             select_release_records(
                 [{"scene_id": "scene", "kind": "base"}], selection, None
             )
+
+    def test_release_source_binding_is_exact_and_hash_verified(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            source_path = root / "source/metadata.json"
+            source_path.parent.mkdir(parents=True)
+            source_path.write_text(
+                '{"scene_id": "scene"}',
+                encoding="utf-8",
+            )
+            source_hash = sha256(source_path)
+            bound_path = root / "bound/metadata.json"
+            bound_path.parent.mkdir(parents=True)
+            bound_path.write_text(
+                json.dumps(
+                    {
+                        "scene_id": "scene",
+                        "source_metadata": {
+                            "path": source_path.relative_to(root).as_posix(),
+                            "sha256": source_hash,
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            sample = {
+                "scene_id": "scene",
+                "metadata_path": bound_path.relative_to(root).as_posix(),
+                "metadata_sha256": sha256(bound_path),
+            }
+            selection = {
+                "records": [
+                    {
+                        "scene_id": "scene",
+                        "path": source_path.relative_to(root).as_posix(),
+                        "metadata_sha256": source_hash,
+                        "source_schema_version": "generic",
+                    }
+                ]
+            }
+            validate_release_source_bindings(root, [sample], selection, "generic")
+
+            selection["records"][0]["path"] = "source/other.json"
+            with self.assertRaisesRegex(ValueError, "source differs from release"):
+                validate_release_source_bindings(
+                    root, [sample], selection, "generic"
+                )
+
+            selection["records"][0]["path"] = source_path.relative_to(root).as_posix()
+            source_path.write_text('{"scene_id": "other"}', encoding="utf-8")
+            source_hash = sha256(source_path)
+            selection["records"][0]["metadata_sha256"] = source_hash
+            bound = json.loads(bound_path.read_text(encoding="utf-8"))
+            bound["source_metadata"]["sha256"] = source_hash
+            bound_path.write_text(json.dumps(bound), encoding="utf-8")
+            sample["metadata_sha256"] = sha256(bound_path)
+            with self.assertRaisesRegex(ValueError, "source metadata scene id"):
+                validate_release_source_bindings(
+                    root, [sample], selection, "generic"
+                )
 
 
 if __name__ == "__main__":

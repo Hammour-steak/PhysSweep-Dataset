@@ -45,8 +45,8 @@ environment visual/collision pose.
 
 ## Decoupled Render Pipeline
 
-`sample_one_object_scene_matrix.py` may select generic, curated-asset,
-billiards, and passive-pinball scenes. Stage the selected records, render each
+`sample_one_object_scene_matrix.py` may select generic, curated-asset, billiards,
+passive-pinball, and marble-run scenes. Stage the selected records, render each
 required branch, then collect them with the staged outer manifest:
 
 ```bash
@@ -109,8 +109,9 @@ dynamic objects, and records its parent metadata hash in `sweep`. With no
 target filter, one-factor groups are generated for every dynamic object. See
 `configs/physics_sweep.json` and `docs/PHYSWEEP_SWEEP_PIPELINE.md`.
 
-`run_pybullet_batch.py` routes generic, asset-proxy, billiards, and
-passive-pinball schemas through their registered reviewed adapters. Unknown
+`run_pybullet_batch.py` routes generic, asset-proxy, billiards,
+passive-pinball, and marble-run schemas through their registered reviewed
+adapters. Unknown
 schemas and unsupported object counts are rejected instead of being sent
 through the generic simulator.
 
@@ -170,6 +171,45 @@ filter. Retained v3 videos are not restaged or rerendered.
   --pipeline passive_pinball --workers 4 --gpus 0,1,2,3 \
   --stage render_passive_pinball_sweeps
 ```
+
+
+## Marble-Run v5 Delta
+
+The v5 extension uses the declarative specialized-release path. It replaces 32
+complete v4 generic drop groups and keeps the 3200-group/41600-record contract.
+The v4 release must be read from its frozen source worktree.
+
+```bash
+.venv/bin/python tools/prepare_specialized_release_replacements.py \
+  --source-root /path/to/frozen-v4-worktree \
+  --source-release datasets/one_object_v4/release/manifest.json \
+  --spec configs/marble_run_v5_release_extension.json \
+  --output-root datasets/one_object_v5/marble_run_replacements
+
+.venv/bin/python tools/derive_physics_sweep.py \
+  --base-manifest datasets/one_object_v5/marble_run_replacements/manifest.json \
+  --output-dir datasets/one_object_v5/marble_run_sweep
+
+.venv/bin/python tools/run_pybullet_batch.py \
+  --manifest datasets/one_object_v5/marble_run_sweep/manifest.json \
+  --output-root datasets/one_object_v5/marble_run_sweep/physics
+
+.venv/bin/python tools/publish_specialized_release_extension.py \
+  --source-root /path/to/frozen-v4-worktree \
+  --source-release datasets/one_object_v4/release/manifest.json \
+  --replacement-manifest \
+    datasets/one_object_v5/marble_run_replacements/manifest.json \
+  --specialized-metadata-manifest \
+    datasets/one_object_v5/marble_run_sweep/manifest.json \
+  --specialized-physics-manifest \
+    datasets/one_object_v5/marble_run_sweep/physics/manifest.json \
+  --output-dir datasets/one_object_v5/release
+```
+
+The general publisher obtains the renderer from
+`configs/specialized_scene_backends.json`; it must not contain a family-specific
+renderer fallback. See `docs/PHYSWEEP_ONE_OBJECT_RELEASE_LINEAGE.md` for source
+root and immutable compatibility rules.
 
 ## Asset Ingestion Audit
 

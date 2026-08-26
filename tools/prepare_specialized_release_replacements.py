@@ -28,8 +28,6 @@ except ModuleNotFoundError:
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_SPEC = Path("configs/marble_run_v5_release_extension.json")
-DEFAULT_OUTPUT = Path("datasets/one_object_v5/marble_run_replacements")
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -111,8 +109,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--source-release", type=Path, required=True)
-    parser.add_argument("--spec", type=Path, default=DEFAULT_SPEC)
-    parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--spec", type=Path, required=True)
+    parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=20260826)
     parser.add_argument("--resume", action="store_true")
     return parser.parse_args()

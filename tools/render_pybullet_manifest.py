@@ -99,6 +99,56 @@ def select_release_records(
     return selected
 
 
+def validate_release_source_bindings(
+    root: Path,
+    samples: list[dict[str, Any]],
+    selection_manifest: dict[str, Any],
+    source_schema_version: str | None,
+) -> None:
+    """Verify each bound render input points to the selected release artifact."""
+    records = selection_manifest["records"]
+    if source_schema_version is not None:
+        records = [
+            record
+            for record in records
+            if str(record.get("source_schema_version")) == source_schema_version
+        ]
+    by_scene_id = {str(record["scene_id"]): record for record in records}
+    for sample in samples:
+        scene_id = str(sample["scene_id"])
+        record = by_scene_id.get(scene_id)
+        if record is None:
+            raise ValueError(f"selected release record is missing: {scene_id}")
+        metadata_path = project_path(root, str(sample["metadata_path"]))
+        metadata_path.relative_to(root)
+        if sha256(metadata_path) != str(sample["metadata_sha256"]):
+            raise ValueError(f"render metadata hash mismatch: {metadata_path}")
+        metadata = load_json(metadata_path)
+        if str(metadata.get("scene_id")) != scene_id:
+            raise ValueError(f"bound metadata scene id differs: {metadata_path}")
+        source = metadata.get("source_metadata")
+        if not isinstance(source, dict):
+            raise ValueError(f"bound metadata lacks source binding: {metadata_path}")
+        source_path = project_path(root, str(source.get("path", "")))
+        release_path = project_path(root, str(record.get("path", "")))
+        source_path.relative_to(root)
+        release_path.relative_to(root)
+        expected_hash = str(record.get("metadata_sha256", ""))
+        if (
+            source_path != release_path
+            or str(source.get("sha256", "")) != expected_hash
+            or not source_path.is_file()
+            or sha256(source_path) != expected_hash
+        ):
+            raise ValueError(
+                f"bound metadata source differs from release: {metadata_path}"
+            )
+        if str(load_json(source_path).get("scene_id")) != scene_id:
+            raise ValueError(
+                f"release source metadata scene id differs: {source_path}"
+            )
+
+
 def select_sweep_kind(
     root: Path,
     samples: list[dict[str, Any]],
@@ -395,6 +445,7 @@ def main() -> None:
     manifest = load_json(manifest_path)
     samples = list(manifest["samples"])
     selection_binding = None
+    selection_manifest = None
     if (args.selection_manifest is None) != (
         args.selection_manifest_sha256 is None
     ):
@@ -408,9 +459,10 @@ def main() -> None:
         expected_hash = str(args.selection_manifest_sha256)
         if not selection_path.is_file() or sha256(selection_path) != expected_hash:
             raise ValueError("render selection manifest hash mismatch")
+        selection_manifest = load_json(selection_path)
         samples = select_release_records(
             samples,
-            load_json(selection_path),
+            selection_manifest,
             args.selection_source_schema,
         )
         selection_binding = {
@@ -420,6 +472,14 @@ def main() -> None:
             "selected_sample_count": len(samples),
         }
     samples = select_sweep_kind(root, samples, args.sweep_kind)
+    if selection_manifest is not None:
+        validate_release_source_bindings(
+            root,
+            samples,
+            selection_manifest,
+            args.selection_source_schema,
+        )
+        selection_binding["verified_render_sample_count"] = len(samples)
     if args.profiles:
         requested_profiles = {str(value) for value in args.profiles}
         selected_samples = []

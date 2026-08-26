@@ -4,6 +4,9 @@ import unittest
 from collections import Counter
 from pathlib import Path
 
+from tools.publish_specialized_release_extension import (
+    specialized_renderer_binding,
+)
 from tools.specialized_release_extension import (
     index_replacements,
     load_extension_spec,
@@ -45,6 +48,18 @@ class SpecializedReleaseExtensionTests(unittest.TestCase):
             self.spec["group_contract"]["sample_count"],
             3200 * 13,
         )
+
+    def test_renderer_binding_comes_from_the_specialized_registry(self) -> None:
+        replacement = self.spec["replacement"]
+        binding = specialized_renderer_binding(ROOT, replacement)
+        self.assertEqual(binding["path"], "tools/render_marble_run_scene.py")
+
+        changed = {
+            **replacement,
+            "scene_schema_version": "unexpected_schema",
+        }
+        with self.assertRaisesRegex(ValueError, "renderer schema mismatch"):
+            specialized_renderer_binding(ROOT, changed)
 
     def test_slot_selection_is_order_independent_and_eligible(self) -> None:
         records = self.source_records()

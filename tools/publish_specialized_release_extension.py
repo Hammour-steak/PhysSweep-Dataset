@@ -20,6 +20,7 @@ try:
         validate_source_artifacts,
         write_json,
     )
+    from specialized_backend_registry import specialized_by_pipeline
     from specialized_release_extension import (
         index_replacements,
         load_extension_spec,
@@ -34,6 +35,7 @@ except ModuleNotFoundError:
         validate_source_artifacts,
         write_json,
     )
+    from tools.specialized_backend_registry import specialized_by_pipeline
     from tools.specialized_release_extension import (
         index_replacements,
         load_extension_spec,
@@ -80,6 +82,20 @@ def file_binding(root: Path, path: Path | str) -> dict[str, str]:
     if not resolved.is_file():
         raise FileNotFoundError(resolved)
     return {"path": root_relative(root, resolved), "sha256": sha256(resolved)}
+
+
+def specialized_renderer_binding(
+    root: Path, replacement: dict[str, Any]
+) -> dict[str, str]:
+    pipeline = str(replacement["pipeline"])
+    record = specialized_by_pipeline(root).get(pipeline)
+    if record is None:
+        raise ValueError(f"specialized registry lacks pipeline: {pipeline}")
+    if str(record["source_schema_version"]) != str(
+        replacement["scene_schema_version"]
+    ):
+        raise ValueError(f"specialized renderer schema mismatch: {pipeline}")
+    return file_binding(root, record["renderer_script"])
 
 
 def parse_args() -> argparse.Namespace:
@@ -301,6 +317,7 @@ def main() -> None:
             ]
         ),
         "extension_source": {
+            "source_project_root": str(source_root),
             "path": root_relative(source_root, source_generic_path),
             "sha256": sha256(source_generic_path),
             "removed_group_count": replacement_count,
@@ -315,6 +332,7 @@ def main() -> None:
             **source_asset,
             "dataset_id": f"{target_contract['dataset_id']}_asset_proxy",
             "extension_source": {
+                "source_project_root": str(source_root),
                 "path": root_relative(source_root, source_asset_path),
                 "sha256": sha256(source_asset_path),
                 "record_policy": "byte_equivalent_source_records",
@@ -331,7 +349,7 @@ def main() -> None:
         "release_publisher": file_binding(root, Path(__file__)),
         "backend_config": file_binding(root, replacement["backend_config"]),
         "generator": file_binding(root, replacement["generator_script"]),
-        "renderer": file_binding(root, "tools/render_marble_run_scene.py"),
+        "renderer": specialized_renderer_binding(root, replacement),
         "specialized_registry": file_binding(
             root, "configs/specialized_scene_backends.json"
         ),
@@ -391,6 +409,7 @@ def main() -> None:
         },
         {
             "kind": f"{replacement['pipeline']}_replacement_groups",
+            "source_project_root": str(root),
             "metadata_manifest": root_relative(root, specialized_metadata_path),
             "metadata_manifest_sha256": sha256(specialized_metadata_path),
             "physics_manifest": root_relative(root, specialized_physics_path),

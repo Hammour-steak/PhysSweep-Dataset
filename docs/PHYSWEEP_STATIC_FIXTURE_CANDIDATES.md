@@ -3,8 +3,10 @@
 Static fixture candidates are isolated from the active release until their
 source license, exact collision geometry, deterministic trajectory, one-factor
 sweep, camera, and rendered output have all passed review. Candidate metadata
-must keep `admission.release_enabled` false. The active release and backend
-capability registry do not consume these files.
+must keep `admission.release_enabled` false. Promotion creates a separate formal
+backend and schema; it never flips the candidate flag. A formal backend may keep
+the candidate contract and implementation hash-bound as reviewed source
+provenance, but release sampling is enabled only by the formal registries.
 
 ## Layout
 
@@ -15,6 +17,12 @@ capability registry do not consume these files.
 - Generated review artifacts: `outputs/specialized_scene_review/<candidate>`
 
 ## Marble run v1
+
+Marble run completed formal promotion in one-object release v5. The commands
+below reproduce its historical candidate audit; they do not publish or render the
+formal release. Formal generation uses `tools/generate_marble_run_scene.py`,
+formal rendering uses `tools/render_marble_run_scene.py`, and release extension
+uses the declarative path documented in `tools/README.md`.
 
 Fetch the pinned source without adding it to the project worktree:
 
