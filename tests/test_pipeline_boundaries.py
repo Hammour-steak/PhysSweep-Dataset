@@ -104,6 +104,23 @@ class PipelineBoundaryTest(unittest.TestCase):
         for forbidden in ("torch", "wan_training", "train_wan", "cache_wan"):
             self.assertNotIn(forbidden, dataset_imports)
 
+    def test_specialized_render_records_hash_the_bound_metadata(self):
+        for name in (
+            "render_asset_proxy_scene.py",
+            "render_billiards_scene.py",
+            "render_passive_pinball_scene.py",
+            "render_marble_run_scene.py",
+        ):
+            source = (ROOT / "tools" / name).read_text(encoding="utf-8")
+            self.assertIn(
+                '"metadata_sha256": sha256(metadata_path)',
+                source,
+            )
+            self.assertNotIn(
+                '"metadata_sha256": simulation_record["metadata"]["sha256"]',
+                source,
+            )
+
     def test_method_specific_trajectory_rasterization_is_absent(self):
         source = (
             ROOT / "tools/dataset_contract/point_trajectory.py"

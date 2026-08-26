@@ -375,7 +375,7 @@ def render(
         "schema_version": "physweep_marble_run_render_record_v1",
         "scene_id": metadata["scene_id"],
         "metadata_path": str(metadata_path),
-        "metadata_sha256": simulation_record["metadata"]["sha256"],
+        "metadata_sha256": sha256(metadata_path),
         "trajectory_path": str(trajectory_path),
         "trajectory_sha256": simulation_record["trajectory"]["sha256"],
         "render_output_overridden": bool(

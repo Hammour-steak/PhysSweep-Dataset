@@ -229,7 +229,7 @@ def render(
     record = {
         "schema_version": "physweep_billiards_render_record_v1",
         "scene_id": metadata["scene_id"],
-        "metadata_sha256": simulation_record["metadata"]["sha256"],
+        "metadata_sha256": sha256(metadata_path),
         "metadata_path": str(metadata_path),
         "render_output_overridden": bool(
             video_path_override is not None or frame_dir_override is not None
