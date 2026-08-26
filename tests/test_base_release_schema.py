@@ -174,6 +174,12 @@ class BaseReleaseSchemaTests(unittest.TestCase):
             self.assertEqual(obj["inertia_diagonal_kg_m2"], [0.001, 0.001, 0.001])
             self.assertNotIn("trajectory_key", json.dumps(metadata))
             self.assertNotIn("diagnostics", metadata["visual"]["camera"])
+            self.assertEqual(
+                set(metadata["visual"]["camera"]),
+                {"position_m", "target_m", "focal_length_mm", "sensor_width_mm"},
+            )
+            self.assertNotIn("resolution", metadata["visual"])
+            self.assertNotIn("frame_count", metadata["physics"]["time"])
             self.assertNotIn("dynamic_object_count", metadata["semantics"])
             metadata["artifacts"]["trajectory"]["path"] = "../trajectory.npz"
             with self.assertRaisesRegex(ValueError, "trajectory binding"):

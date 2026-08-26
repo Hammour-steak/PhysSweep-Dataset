@@ -263,7 +263,8 @@ Each sample contains one canonical `metadata.json`, one canonical object-axis
 `trajectory.npz`, the video, and optional masks plus their compact hash
 manifest. Video and mask payloads remain symlinked to immutable render output;
 generation diagnostics, inspection frames, adapter trajectory channels, and
-schema-specific metadata copies are excluded. Each `--pipeline` argument binds
+schema-specific metadata copies are excluded. The root manifest owns the shared
+render resolution and encoding contract. Each `--pipeline` argument binds
 one source metadata schema to its project and render roots:
 
 ```bash

@@ -21,7 +21,7 @@ except ModuleNotFoundError:
     from tools.audit_release_provenance import sha256
 
 
-BASE_SAMPLE_SCHEMA = "physweep_base_sample_v2"
+BASE_SAMPLE_SCHEMA = "physweep_base_sample_v3"
 TRAJECTORY_SCHEMA = "physweep_object_trajectory_v3"
 MASK_MANIFEST_SCHEMA = "physweep_instance_mask_manifest_v3"
 
@@ -221,14 +221,7 @@ def _compact_camera(
         "focal_length_mm": float(candidate["focal_length_mm"]),
         "sensor_width_mm": float(sensor_width),
     }
-    for key in (
-        "mode",
-        "profile",
-        "observation_intent",
-        "structure_context",
-        "clip_start_m",
-        "clip_end_m",
-    ):
+    for key in ("clip_start_m", "clip_end_m"):
         if candidate.get(key) is not None:
             result[key] = copy.deepcopy(candidate[key])
     if len(result["position_m"]) != 3 or len(result["target_m"]) != 3:
@@ -258,7 +251,6 @@ def _compact_semantics(source: Mapping[str, Any], family: str) -> dict[str, Any]
                         "object_type",
                         "semantic_category",
                         "shape",
-                        "visual_asset_id",
                         "scale_bin",
                         "uniform_scale",
                     )
@@ -379,8 +371,6 @@ def _compact_lighting(render_record: Mapping[str, Any]) -> dict[str, Any] | None
         return None
     return _without_none(
         {
-            "policy_version": adaptation.get("policy_version"),
-            "decision": adaptation.get("decision"),
             "exposure_ev": adaptation.get("result_exposure_ev"),
             "world_strength_scale": adaptation.get("world_strength_scale"),
             "fill_light_scale": adaptation.get("fill_light_scale"),
@@ -396,6 +386,27 @@ def _source_visual_by_id(source: Mapping[str, Any]) -> dict[str, Any]:
         if record.get("object_id") and record.get("visual"):
             result[str(record["object_id"])] = copy.deepcopy(record["visual"])
     return result
+
+
+def _compact_collision_proxy(raw: Mapping[str, Any]) -> dict[str, Any]:
+    proxy = copy.deepcopy(raw)
+    if "colliders" in proxy:
+        return {
+            "type": "compound",
+            "colliders": [
+                {
+                    key: copy.deepcopy(collider[key])
+                    for key in ("shape", "size_m", "position_m", "rotation_euler_degrees")
+                }
+                for collider in proxy["colliders"]
+            ],
+        }
+    if proxy.get("type") == "sphere" and "size_m" in proxy:
+        size = [float(value) for value in proxy["size_m"]]
+        if len(size) != 3 or max(size) - min(size) > 1.0e-9:
+            raise ValueError("sphere collision proxy is not isotropic")
+        return {"type": "sphere", "radius_m": size[0] / 2.0}
+    return proxy
 
 
 def _compact_objects(
@@ -431,6 +442,7 @@ def _compact_objects(
         if not np.allclose(runtime_material[array_index], expected_material, rtol=0.0, atol=1.0e-7):
             raise ValueError(f"runtime material differs for {object_id}")
         initial = _mapping(raw.get("initial_state"))
+        collision_proxy = _compact_collision_proxy(_mapping(raw["collision_proxy"]))
         compact = {
             "object_id": object_id,
             "array_index": array_index,
@@ -438,7 +450,7 @@ def _compact_objects(
             "role": str(record.get("role", "dynamic")),
             "semantic_label": str(record.get("semantic_label", object_id)),
             "mask_instance_id": int(record.get("mask_instance_id", array_index + 1)),
-            "collision_proxy": copy.deepcopy(raw["collision_proxy"]),
+            "collision_proxy": collision_proxy,
             "material": {
                 "mass_kg": float(expected_material[0]),
                 "contact_friction": float(expected_material[1]),
@@ -455,7 +467,13 @@ def _compact_objects(
         if record.get("asset_id") is not None:
             compact["asset_id"] = str(record["asset_id"])
         if object_id in visual_by_id:
-            compact["visual"] = visual_by_id[object_id]
+            visual = visual_by_id[object_id]
+            if visual.get("shape") == collision_proxy.get("type"):
+                visual.pop("shape")
+            if visual.get("radius_m") == collision_proxy.get("radius_m"):
+                visual.pop("radius_m")
+            if visual:
+                compact["visual"] = visual
         result.append(compact)
     return result
 
@@ -514,14 +532,7 @@ def build_base_metadata(
         raise ValueError("source, physics, and render scene ids differ")
     objects = _compact_objects(source, resolved_scene, trajectory_info)
     camera = _compact_camera(source, render_record, render_metadata)
-    render = _mapping(source.get("render_request")) or _mapping(source.get("render"))
-    resolution = render.get("resolution")
-    if not isinstance(resolution, list) or len(resolution) != 2:
-        raise ValueError("render resolution is absent from source metadata")
-    visual: dict[str, Any] = {
-        "camera": camera,
-        "resolution": [int(item) for item in resolution],
-    }
+    visual: dict[str, Any] = {"camera": camera}
     environment = _compact_environment(source)
     if environment:
         visual["environment"] = environment
@@ -540,7 +551,10 @@ def build_base_metadata(
         "backend": _without_none(
             {key: backend.get(key) for key in ("backend_id", "adapter_id")}
         ),
-        "time": copy.deepcopy(resolved_scene["time"]),
+        "time": {
+            key: copy.deepcopy(resolved_scene["time"][key])
+            for key in ("duration_s", "output_fps", "simulation_hz")
+        },
         "world": copy.deepcopy(resolved_scene["world"]),
         "objects": objects,
     }
@@ -716,9 +730,32 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
             "angular_velocity_rad_s",
         }:
             raise ValueError("canonical initial state is incomplete")
-    camera = _mapping(_mapping(metadata.get("visual")).get("camera"))
-    if any(key not in camera for key in ("position_m", "target_m", "focal_length_mm", "sensor_width_mm")):
+        proxy = _mapping(record.get("collision_proxy"))
+        proxy_fields = {
+            "sphere": {"type", "radius_m"},
+            "compound": {"type", "colliders"},
+        }.get(str(proxy.get("type")), {"type", "size_m"})
+        if set(proxy) != proxy_fields:
+            raise ValueError("canonical collision proxy is invalid")
+        if proxy.get("type") == "compound" and any(
+            set(collider)
+            != {"shape", "size_m", "position_m", "rotation_euler_degrees"}
+            for collider in proxy["colliders"]
+        ):
+            raise ValueError("canonical compound collider is invalid")
+    if set(physics.get("time", {})) != {"duration_s", "output_fps", "simulation_hz"}:
+        raise ValueError("canonical time contract is invalid")
+    semantics = _mapping(metadata.get("semantics"))
+    if "visual_asset_id" in _mapping(semantics.get("object")):
+        raise ValueError("canonical semantics duplicate object asset identity")
+    visual = _mapping(metadata.get("visual"))
+    camera = _mapping(visual.get("camera"))
+    required_camera = {"position_m", "target_m", "focal_length_mm", "sensor_width_mm"}
+    if not required_camera.issubset(camera) or set(camera) - required_camera - {"clip_start_m", "clip_end_m"}:
         raise ValueError("canonical final camera is incomplete")
+    lighting = _mapping(visual.get("lighting"))
+    if "resolution" in visual or (lighting and set(lighting) != {"exposure_ev", "world_strength_scale", "fill_light_scale"}):
+        raise ValueError("canonical visual contract is invalid")
     artifacts = _mapping(metadata.get("artifacts"))
     trajectory = _mapping(artifacts.get("trajectory"))
     if (

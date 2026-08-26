@@ -311,6 +311,7 @@ class BaseReleaseViewTests(unittest.TestCase):
                 set(root_manifest["pipelines"]["generic"]),
                 {"manifest", "manifest_sha256"},
             )
+            self.assertEqual(root_manifest["render_contract"]["resolution"], [1280, 720])
             generic_manifest = json.loads(
                 (output / "generic/manifest.json").read_text(encoding="utf-8")
             )

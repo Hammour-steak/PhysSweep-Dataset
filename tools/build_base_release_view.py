@@ -50,9 +50,9 @@ except ModuleNotFoundError:
     )
 
 
-VIEW_SCHEMA = "physweep_base_release_view_v3"
+VIEW_SCHEMA = "physweep_base_release_view_v4"
 PIPELINE_SCHEMA = "physweep_base_pipeline_view_v3"
-AUDIT_SCHEMA = "physweep_base_release_view_audit_v3"
+AUDIT_SCHEMA = "physweep_base_release_view_audit_v4"
 
 
 @dataclass(frozen=True)
@@ -278,15 +278,20 @@ def render_sources(
         "engine": render_record.get("render_engine") or render_config.get("engine"),
         "samples": render_record.get("render_samples")
         or render_config.get("samples"),
+        "resolution": render_config.get("resolution"),
         "video_encoding": render_record.get("video_encoding"),
     }
     if (
         not render_contract["engine"]
         or int(render_contract["samples"] or 0) <= 0
+        or not isinstance(render_contract["resolution"], list)
+        or len(render_contract["resolution"]) != 2
+        or any(int(value) <= 0 for value in render_contract["resolution"])
         or not isinstance(render_contract["video_encoding"], dict)
     ):
         raise ValueError(f"render contract is incomplete: {scene_id}")
     render_contract["samples"] = int(render_contract["samples"])
+    render_contract["resolution"] = [int(value) for value in render_contract["resolution"]]
     masks = spec.render_root / "masks" / scene_id
     return {
         "metadata": metadata,
@@ -472,11 +477,16 @@ def _validate_trajectory(path: Path, metadata: dict[str, Any]) -> None:
         if str(np.asarray(archive["schema_version"]).item()) != TRAJECTORY_SCHEMA:
             raise ValueError(f"trajectory schema differs: {path}")
         object_ids = [str(value) for value in np.asarray(archive["object_ids"]).tolist()]
+        frame_count = int(np.asarray(archive["time_s"]).shape[0])
         metadata_ids = [
             str(record["object_id"]) for record in metadata["physics"]["objects"]
         ]
         if object_ids != metadata_ids:
             raise ValueError(f"trajectory object axis differs: {path}")
+        time = metadata["physics"]["time"]
+        expected_frames = round(float(time["duration_s"]) * int(time["output_fps"])) + 1
+        if frame_count != expected_frames:
+            raise ValueError(f"trajectory frame count differs: {path}")
 
 
 def _validate_masks(sample: Path, metadata: dict[str, Any]) -> None:
@@ -536,6 +546,9 @@ def verify_view(output: Path) -> dict[str, Any]:
         not isinstance(render_contract, dict)
         or not render_contract.get("engine")
         or int(render_contract.get("samples", 0)) <= 0
+        or not isinstance(render_contract.get("resolution"), list)
+        or len(render_contract["resolution"]) != 2
+        or any(int(value) <= 0 for value in render_contract["resolution"])
         or not isinstance(render_contract.get("video_encoding"), dict)
         or int(render_contract["video_encoding"].get("fps", 0)) <= 0
     ):
