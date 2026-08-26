@@ -24,6 +24,7 @@ try:
     from specialized_release_extension import (
         index_replacements,
         load_extension_spec,
+        project_root_reference,
         sha256,
     )
 except ModuleNotFoundError:
@@ -39,6 +40,7 @@ except ModuleNotFoundError:
     from tools.specialized_release_extension import (
         index_replacements,
         load_extension_spec,
+        project_root_reference,
         sha256,
     )
 
@@ -194,7 +196,7 @@ def main() -> None:
         != source_base_path
         or str(replacement_manifest["source_base_manifest_sha256"])
         != sha256(source_base_path)
-        or Path(str(replacement_manifest["source_project_root"])).resolve()
+        or project_path(root, replacement_manifest["source_project_root"])
         != source_root
     ):
         raise ValueError("replacement source provenance differs from the release")
@@ -317,7 +319,7 @@ def main() -> None:
             ]
         ),
         "extension_source": {
-            "source_project_root": str(source_root),
+            "source_project_root": project_root_reference(root, source_root),
             "path": root_relative(source_root, source_generic_path),
             "sha256": sha256(source_generic_path),
             "removed_group_count": replacement_count,
@@ -332,7 +334,7 @@ def main() -> None:
             **source_asset,
             "dataset_id": f"{target_contract['dataset_id']}_asset_proxy",
             "extension_source": {
-                "source_project_root": str(source_root),
+                "source_project_root": project_root_reference(root, source_root),
                 "path": root_relative(source_root, source_asset_path),
                 "sha256": sha256(source_asset_path),
                 "record_policy": "byte_equivalent_source_records",
@@ -347,9 +349,15 @@ def main() -> None:
             root, "tools/prepare_specialized_release_replacements.py"
         ),
         "release_publisher": file_binding(root, Path(__file__)),
+        "extension_contract": file_binding(
+            root, "tools/specialized_release_extension.py"
+        ),
         "backend_config": file_binding(root, replacement["backend_config"]),
         "generator": file_binding(root, replacement["generator_script"]),
         "renderer": specialized_renderer_binding(root, replacement),
+        "render_evidence": file_binding(
+            root, "tools/specialized_render_evidence.py"
+        ),
         "specialized_registry": file_binding(
             root, "configs/specialized_scene_backends.json"
         ),
@@ -377,7 +385,7 @@ def main() -> None:
         "records": merged_base_records,
         f"{spec['extension_id']}_extension": {
             "mode": "deterministic_whole_group_replacement",
-            "source_project_root": str(source_root),
+            "source_project_root": project_root_reference(root, source_root),
             "source_base_manifest": root_relative(source_root, source_base_path),
             "source_base_manifest_sha256": sha256(source_base_path),
             "replacement_manifest": root_relative(root, replacement_path),
@@ -397,7 +405,7 @@ def main() -> None:
     sources = [
         {
             "kind": "retained_source_groups",
-            "source_project_root": str(source_root),
+            "source_project_root": project_root_reference(root, source_root),
             "release": root_relative(source_root, source_release_path),
             "release_sha256": sha256(source_release_path),
             "metadata_manifest": root_relative(source_root, source_metadata_path),
@@ -409,7 +417,7 @@ def main() -> None:
         },
         {
             "kind": f"{replacement['pipeline']}_replacement_groups",
-            "source_project_root": str(root),
+            "source_project_root": ".",
             "metadata_manifest": root_relative(root, specialized_metadata_path),
             "metadata_manifest_sha256": sha256(specialized_metadata_path),
             "physics_manifest": root_relative(root, specialized_physics_path),
@@ -469,7 +477,7 @@ def main() -> None:
         "metadata_manifest_sha256": sha256(metadata_output),
         "physics_manifest": published_relative(physics_output),
         "physics_manifest_sha256": sha256(physics_output),
-        "source_project_root": str(source_root),
+        "source_project_root": project_root_reference(root, source_root),
         "source_release": root_relative(source_root, source_release_path),
         "source_release_sha256": sha256(source_release_path),
         "extension_spec": root_relative(root, spec_path),

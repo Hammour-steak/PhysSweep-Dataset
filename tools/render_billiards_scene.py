@@ -38,6 +38,7 @@ from immutable_scene_contract import validate_simulation_record
 from render_asset_proxy_reviews import clear_scene, look_at  # pylint: disable=wrong-import-position
 from video_encoding import configure_h264_output
 from trajectory_contract import adapter_trajectory_view
+from specialized_render_evidence import render_instance_masks
 
 
 def blender_args() -> argparse.Namespace:
@@ -174,12 +175,14 @@ def render(
         str(record["object_id"])
         for record in metadata["physics"]["initial_states"]
     ]
-    add_balls(
+    balls = add_balls(
         ball_materials,
         trajectory,
         float(metadata["physics"]["ball_radius_m"]),
         roles,
     )
+    if len(balls) != len(roles):
+        raise ValueError("rendered ball count does not match the identity contract")
     camera = add_camera(metadata["camera"])
     add_environment(metadata["render"]["environment"], camera)
     add_lighting(
@@ -216,7 +219,13 @@ def render(
         fps=int(metadata["physics"]["output_fps"]),
         frame_count=int(metadata["physics"]["frame_count"]),
     )
+    render_samples = int(scene.eevee.taa_render_samples)
     bpy.ops.render.render(animation=True)
+    instance_mask_output = render_instance_masks(
+        root=PROJECT_ROOT,
+        metadata=metadata,
+        dynamic_objects={role: [ball] for role, ball in zip(roles, balls)},
+    )
     record = {
         "schema_version": "physweep_billiards_render_record_v1",
         "scene_id": metadata["scene_id"],
@@ -233,7 +242,9 @@ def render(
         "inspection_frames": [str(path) for path in inspection_paths],
         "camera": camera,
         "render_engine": scene.render.engine,
+        "render_samples": render_samples,
         "video_encoding": video_encoding,
+        "instance_mask_output": instance_mask_output,
         "wall_time_s": round(time.perf_counter() - started, 6),
     }
     write_json(frame_dir / "render_record.json", record)

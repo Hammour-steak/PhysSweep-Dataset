@@ -115,63 +115,19 @@ adapters. Unknown
 schemas and unsupported object counts are rejected instead of being sent
 through the generic simulator.
 
-## Passive-Pinball v4 Delta
+## Frozen Passive-Pinball v4
 
-The v4 extension replaces 32 complete generic drop groups. It retains the
-3200-group/41600-record release size and never rewrites retained v3 records.
+The v4-specific preparer and publisher are not active tools. They remain
+reproducible at
+`feature/passive-pinball-v4@29aa9c238542c03a9ddbeb34db16852fa7f39514`.
+Run them only inside that frozen source root. Forward development uses
+`prepare_specialized_release_replacements.py` and
+`publish_specialized_release_extension.py`.
 
-```bash
-.venv/bin/python tools/prepare_passive_pinball_v4_replacements.py \
-  --source-root /path/to/frozen-v3-worktree \
-  --source-release datasets/one_object_sweep/release/manifest.json \
-  --output-root datasets/one_object_v4/passive_pinball_replacements
-
-.venv/bin/python tools/derive_physics_sweep.py \
-  --base-manifest datasets/one_object_v4/passive_pinball_replacements/manifest.json \
-  --output-dir datasets/one_object_v4/passive_pinball_sweep
-
-.venv/bin/python tools/run_pybullet_batch.py \
-  --manifest datasets/one_object_v4/passive_pinball_sweep/manifest.json \
-  --output-root datasets/one_object_v4/passive_pinball_sweep/physics
-
-.venv/bin/python tools/publish_passive_pinball_v4_release.py \
-  --source-root /path/to/frozen-v3-worktree \
-  --source-release datasets/one_object_sweep/release/manifest.json \
-  --replacement-manifest \
-    datasets/one_object_v4/passive_pinball_replacements/manifest.json \
-  --pinball-metadata-manifest \
-    datasets/one_object_v4/passive_pinball_sweep/manifest.json \
-  --pinball-physics-manifest \
-    datasets/one_object_v4/passive_pinball_sweep/physics/manifest.json \
-  --output-dir datasets/one_object_v4/release
-```
-
-Omit `--source-root` only when the frozen v3 release is physically inside the
-current worktree. An isolated feature worktree must point it at the v3
-worktree; a symlink alone is intentionally rejected by the path-provenance
-check.
-
-Prepare and render only the new release branch with the explicit pipeline
-filter. Retained v3 videos are not restaged or rerendered.
-
-```bash
-.venv/bin/python tools/render_sweep_release.py \
-  --release-manifest datasets/one_object_v4/release/manifest.json \
-  --output-root outputs/one_object_sweep_release_v4 \
-  --pipeline passive_pinball --stage prepare_base_render_plan
-
-.venv/bin/python tools/render_sweep_release.py \
-  --release-manifest datasets/one_object_v4/release/manifest.json \
-  --output-root outputs/one_object_sweep_release_v4 \
-  --pipeline passive_pinball --stage prepare_sweep_render_plan
-
-.venv/bin/python tools/render_sweep_release.py \
-  --release-manifest datasets/one_object_v4/release/manifest.json \
-  --output-root outputs/one_object_sweep_release_v4 \
-  --pipeline passive_pinball --workers 4 --gpus 0,1,2,3 \
-  --stage render_passive_pinball_sweeps
-```
-
+Use `audit_release_provenance.py --release-project-root <frozen-root>` whenever
+the release manifest is inspected from a different checkout. A hash mismatch
+in the current checkout is evidence of the wrong source root, not permission to
+rewrite the historical release.
 
 ## Marble-Run v5 Delta
 

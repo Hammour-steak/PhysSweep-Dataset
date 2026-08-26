@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import unittest
+import tempfile
 from collections import Counter
 from pathlib import Path
 
-from tools.publish_specialized_release_extension import (
-    specialized_renderer_binding,
-)
+from tools.publish_specialized_release_extension import specialized_renderer_binding
 from tools.specialized_release_extension import (
     index_replacements,
     load_extension_spec,
+    project_root_reference,
     select_replacement_slots,
     stable_seed,
 )
@@ -36,6 +36,19 @@ class SpecializedReleaseExtensionTests(unittest.TestCase):
             }
             for index in range(1, 65)
         ]
+
+    def test_project_root_references_are_relative_only_inside_the_project(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            nested = root / "datasets/snapshot"
+            external = root.parent / "external-snapshot"
+            self.assertEqual(project_root_reference(root, root), ".")
+            self.assertEqual(
+                project_root_reference(root, nested), "datasets/snapshot"
+            )
+            self.assertEqual(
+                project_root_reference(root, external), str(external.resolve())
+            )
 
     def test_spec_preserves_exact_release_size_and_changes_one_category(self) -> None:
         source = Counter(self.spec["source_release"]["pipeline_group_counts"])

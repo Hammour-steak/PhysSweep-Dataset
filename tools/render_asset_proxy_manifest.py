@@ -29,6 +29,7 @@ except ModuleNotFoundError:
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+EVIDENCE_CONTRACT = "physweep_specialized_render_evidence_v2"
 
 
 def renderer_table(root: Path) -> dict[str, tuple[str, str, str, str]]:
@@ -92,10 +93,11 @@ def render_samples_are_reusable(
     metadata: dict[str, Any], render_record: dict[str, Any]
 ) -> bool:
     schema = str(metadata.get("schema_version", ""))
-    if schema not in {
+    required = schema in {
         "physweep_passive_pinball_scene_v1",
         "physweep_marble_run_scene_v1",
-    }:
+    } or metadata.get("render", {}).get("evidence_contract") == EVIDENCE_CONTRACT
+    if not required:
         return True
     declared = metadata.get("render", {}).get("samples")
     return declared is not None and int(
@@ -104,11 +106,20 @@ def render_samples_are_reusable(
 
 
 def instance_masks_are_reusable(
-    root: Path, render_record: dict[str, Any], frame_count: int
+    root: Path,
+    render_record: dict[str, Any],
+    frame_count: int,
+    *,
+    required: bool = False,
+    expected_objects: Mapping[str, Any] | None = None,
+    expected_directory: Path | None = None,
+    expected_render_samples: int | None = None,
 ) -> bool:
     binding = render_record.get("instance_mask_output")
     if binding is None:
-        return True
+        return not required
+    if not isinstance(binding, dict):
+        return False
     manifest_path = project_path(root, binding["manifest_path"])
     if (
         root.resolve() not in manifest_path.parents
@@ -117,31 +128,113 @@ def instance_masks_are_reusable(
     ):
         return False
     manifest = load_json(manifest_path)
-    records = manifest.get("records", [])
-    object_id = str(manifest.get("object_id", ""))
-    objects = binding.get("objects", {})
+    if str(manifest.get("scene_id")) != str(render_record.get("scene_id")):
+        return False
+    schema = str(manifest.get("schema_version", ""))
+    if schema == "physweep_instance_mask_manifest_v1":
+        object_id = str(manifest.get("object_id", ""))
+        binding_objects = binding.get("objects", {})
+        manifest_objects = {
+            object_id: {
+                "frame_count": manifest.get("frame_count"),
+                "records": manifest.get("records"),
+            }
+        }
+        if not isinstance(binding_objects, dict) or set(binding_objects) != {object_id}:
+            return False
+    elif schema == "physweep_instance_mask_manifest_v2":
+        manifest_objects = manifest.get("objects")
+        if (
+            expected_objects is None
+            or expected_directory is None
+            or expected_render_samples is None
+            or int(binding.get("render_samples", -1)) != expected_render_samples
+            or not isinstance(manifest_objects, dict)
+            or set(manifest_objects) != set(expected_objects)
+            or manifest_path.parent != expected_directory.resolve()
+        ):
+            return False
+    else:
+        return False
     if (
-        manifest.get("schema_version") != "physweep_instance_mask_manifest_v1"
-        or str(manifest.get("scene_id")) != str(render_record.get("scene_id"))
-        or set(objects) != {object_id}
+        not isinstance(manifest_objects, dict)
         or int(manifest.get("frame_count", -1)) != frame_count
-        or not isinstance(records, list)
-        or len(records) != frame_count
     ):
         return False
-    directory = (manifest_path.parent / object_id).resolve()
-    if project_path(root, objects[object_id]["directory"]) != directory:
+    for object_id, value in manifest_objects.items():
+        record = value if isinstance(value, dict) else {}
+        records = record.get("records")
+        if not isinstance(records, list) or len(records) != frame_count:
+            return False
+        directory = (manifest_path.parent / str(object_id)).resolve()
+        if schema == "physweep_instance_mask_manifest_v1" and (
+            project_path(root, binding_objects[object_id]["directory"]) != directory
+            or int(record.get("frame_count", -1)) != frame_count
+        ):
+            return False
+        if schema == "physweep_instance_mask_manifest_v2" and expected_objects is not None:
+            expected = expected_objects[object_id]
+            if not isinstance(expected, dict) or int(
+                expected.get("instance_id", -3)
+            ) != int(record.get("instance_id", -2)):
+                return False
+        if schema == "physweep_instance_mask_manifest_v2":
+            report = record.get("validation", {})
+            initial = float(report.get("initial_occupancy_fraction", -1.0))
+            soft_edge = float(report.get("initial_soft_edge_fraction", -1.0))
+            if (
+                not 0.0 < initial < 1.0
+                or not 0.0 < soft_edge <= 1.0
+            ):
+                return False
+        if any(not isinstance(item, dict) for item in records):
+            return False
+        filenames = [str(item.get("filename", "")) for item in records]
+        if len(filenames) != len(set(filenames)) or any(
+            not filename or Path(filename).name != filename for filename in filenames
+        ):
+            return False
+        if schema == "physweep_instance_mask_manifest_v2" and filenames != [
+            f"frame_{frame:04d}.png" for frame in range(1, frame_count + 1)
+        ]:
+            return False
+        if not all(
+            isinstance(item, dict)
+            and isinstance(item.get("sha256"), str)
+            and (directory / filename).is_file()
+            and sha256(directory / filename) == str(item["sha256"])
+            for filename, item in zip(filenames, records)
+        ):
+            return False
+    return True
+
+
+def implementation_is_reusable(
+    root: Path,
+    metadata: dict[str, Any],
+    script: Path,
+) -> bool:
+    if metadata.get("render", {}).get("evidence_contract") != EVIDENCE_CONTRACT:
+        return True
+    declared = metadata.get("implementation")
+    expected_paths = {
+        "renderer": script.resolve(),
+        "render_evidence": (root / "tools/specialized_render_evidence.py").resolve(),
+    }
+    if not isinstance(declared, dict):
         return False
-    filenames = [str(record.get("filename", "")) for record in records]
-    if len(filenames) != len(set(filenames)) or any(
-        not filename or Path(filename).name != filename for filename in filenames
-    ):
-        return False
-    return all(
-        (directory / filename).is_file()
-        and sha256(directory / filename) == str(record["sha256"])
-        for filename, record in zip(filenames, records)
-    )
+    for label, expected_path in expected_paths.items():
+        declared_binding = declared.get(label)
+        if not isinstance(declared_binding, dict):
+            return False
+        expected_hash = sha256(expected_path)
+        if (
+            project_path(root, str(declared_binding.get("path", "")))
+            != expected_path
+            or str(declared_binding.get("sha256")) != expected_hash
+        ):
+            return False
+    return True
 
 
 def reusable_render_record(
@@ -154,6 +247,7 @@ def reusable_render_record(
     video_path: Path,
     render_record: dict[str, Any],
     gpu: int,
+    script: Path | None = None,
 ) -> bool:
     inspection_frames = [
         project_path(root, value)
@@ -182,6 +276,49 @@ def reusable_render_record(
         frame_dir / f"frame_{frame:04d}.png"
         for frame in (1, (frame_count + 1) // 2, frame_count)
     ]
+    strict_evidence = (
+        metadata.get("render", {}).get("evidence_contract") == EVIDENCE_CONTRACT
+    )
+    expected_mask_objects = None
+    expected_mask_directory = None
+    expected_mask_samples = None
+    if strict_evidence:
+        identity = metadata.get("object_identity")
+        if not isinstance(identity, dict):
+            return False
+        identity_records = identity.get("objects")
+        mask_contract = identity.get("instance_masks")
+        if not isinstance(identity_records, list) or not isinstance(mask_contract, dict):
+            return False
+        identity_ids = [
+            str(record.get("object_id"))
+            for record in identity_records
+            if isinstance(record, dict) and record.get("object_id")
+        ]
+        expected_mask_objects = mask_contract.get("objects")
+        if (
+            not identity_ids
+            or len(identity_ids) != len(identity_records)
+            or len(identity_ids) != len(set(identity_ids))
+            or not isinstance(expected_mask_objects, dict)
+            or set(expected_mask_objects) != set(identity_ids)
+        ):
+            return False
+        if (
+            mask_contract.get("encoding")
+            != "rgba_alpha_antialiased_silhouette_mask"
+            or mask_contract.get("path_layout") != "object_id_subdirectories"
+            or mask_contract.get("filename_pattern") != "frame_{frame:04d}.png"
+            or not isinstance(mask_contract.get("path"), str)
+        ):
+            return False
+        expected_mask_directory = project_path(root, mask_contract["path"])
+        if root.resolve() not in expected_mask_directory.parents:
+            return False
+        expected_mask_samples = max(
+            8, min(int(metadata["render"]["samples"]), 16)
+        )
+    renderer_script = (script or Path(__file__)).resolve()
     return (
         str(render_record.get("scene_id")) == str(source_record["scene_id"])
         and project_path(root, str(render_record.get("metadata_path")))
@@ -198,7 +335,20 @@ def reusable_render_record(
             for frame in inspection_frames
         )
         and render_samples_are_reusable(metadata, render_record)
-        and instance_masks_are_reusable(root, render_record, frame_count)
+        and instance_masks_are_reusable(
+            root,
+            render_record,
+            frame_count,
+            required=strict_evidence,
+            expected_objects=expected_mask_objects,
+            expected_directory=expected_mask_directory,
+            expected_render_samples=expected_mask_samples,
+        )
+        and implementation_is_reusable(
+            root,
+            metadata,
+            renderer_script,
+        )
         and egl_verified
     )
 
@@ -271,6 +421,7 @@ def worker(
             video_path,
             render_record,
             gpu,
+            script,
         ):
             if not render_record.get("egl_device_verified"):
                 render_record["egl_device_verified"] = True
@@ -344,6 +495,7 @@ def worker(
             video_path,
             render_record,
             gpu,
+            script,
         )
     )
     return {

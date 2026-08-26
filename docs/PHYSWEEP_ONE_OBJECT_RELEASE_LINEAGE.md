@@ -23,11 +23,11 @@ v4 passive-pinball metadata binds the v4 specialized registry, while new v5
 marble-run metadata binds the v5 registry. Resolving both against whichever
 worktree happens to be current is invalid.
 
-The version-specific v4 preparation and publication entry points remain in
-Git as frozen compatibility code:
-
-- `tools/prepare_passive_pinball_v4_replacements.py`
-- `tools/publish_passive_pinball_v4_release.py`
+The version-specific v4 preparation and publication entry points are retained
+only in the frozen source history at
+`feature/passive-pinball-v4@29aa9c238542c03a9ddbeb34db16852fa7f39514`.
+They are deliberately absent from the forward development checkout, so an old
+publisher cannot be mistaken for the active extension path.
 
 New extensions use the declarative path:
 
@@ -36,8 +36,8 @@ New extensions use the declarative path:
 - `tools/publish_specialized_release_extension.py`
 
 The compatibility entry points must not be copied to create another family.
-They may be removed from a future checkout only after the v4 source commit and
-all file hashes remain permanently addressable.
+Reproduce v4 in its frozen source root; use the declarative tools for every new
+extension.
 
 ## Render order and provenance
 
@@ -54,3 +54,11 @@ registered source schema before writing a branch-specific render plan.
 
 Never overwrite a published release directory. Publish a replacement extension
 to a new directory, compare hashes and record sets, then promote it explicitly.
+Audit historical code bindings against their frozen owner rather than the
+current checkout:
+
+```bash
+python tools/audit_release_provenance.py \
+  --release-manifest datasets/one_object_v5/release/manifest.json \
+  --release-project-root /path/to/frozen-v5-worktree
+```

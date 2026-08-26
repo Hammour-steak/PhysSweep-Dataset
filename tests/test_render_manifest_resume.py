@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from render_asset_proxy_manifest import (  # noqa: E402
+    implementation_is_reusable,
     instance_masks_are_reusable,
     output_path,
     render_samples_are_reusable,
@@ -48,6 +49,17 @@ class RenderManifestResumeTests(unittest.TestCase):
             record["render_samples"] = 8
             self.assertFalse(render_samples_are_reusable(metadata, record))
             record.clear()
+
+        strict = {
+            "schema_version": "physweep_billiards_scene_v4",
+            "render": {
+                "samples": 16,
+                "evidence_contract": "physweep_specialized_render_evidence_v2",
+            },
+        }
+        self.assertFalse(render_samples_are_reusable(strict, record))
+        record["render_samples"] = 16
+        self.assertTrue(render_samples_are_reusable(strict, record))
 
     def test_specialized_mask_reuse_requires_matching_scene_and_object(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -90,6 +102,110 @@ class RenderManifestResumeTests(unittest.TestCase):
             self.assertFalse(
                 instance_masks_are_reusable(root, render_record, 2)
             )
+
+    def test_v2_mask_reuse_covers_every_identity_object(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            mask_root = root / "outputs/run/masks/scene"
+            objects = {}
+            manifest_objects = {}
+            for instance_id, object_id in enumerate(("cue_ball", "object_ball"), 1):
+                mask_dir = mask_root / object_id
+                paths = [mask_dir / f"frame_{index:04d}.png" for index in (1, 2)]
+                for path in paths:
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_bytes(object_id.encode("utf-8"))
+                objects[object_id] = {
+                    "instance_id": instance_id,
+                }
+                manifest_objects[object_id] = {
+                    **objects[object_id],
+                    "validation": {
+                        "initial_occupancy_fraction": 0.01,
+                        "initial_soft_edge_fraction": 0.001,
+                    },
+                    "records": [
+                        {"filename": path.name, "sha256": sha256(path)}
+                        for path in paths
+                    ],
+                }
+            manifest = {
+                "schema_version": "physweep_instance_mask_manifest_v2",
+                "scene_id": "scene",
+                "frame_count": 2,
+                "objects": manifest_objects,
+            }
+            manifest_path = mask_root / "mask_manifest.json"
+            write_json(manifest_path, manifest)
+            record = {
+                "scene_id": "scene",
+                "instance_mask_output": {
+                    "render_samples": 8,
+                    "manifest_path": str(manifest_path),
+                    "manifest_sha256": sha256(manifest_path),
+                },
+            }
+            self.assertTrue(
+                instance_masks_are_reusable(
+                    root,
+                    record,
+                    2,
+                    required=True,
+                    expected_objects={
+                        object_id: {"instance_id": value["instance_id"]}
+                        for object_id, value in objects.items()
+                    },
+                    expected_directory=mask_root,
+                    expected_render_samples=8,
+                )
+            )
+            del manifest["objects"]["object_ball"]
+            write_json(manifest_path, manifest)
+            record["instance_mask_output"]["manifest_sha256"] = sha256(
+                manifest_path
+            )
+            self.assertFalse(
+                instance_masks_are_reusable(
+                    root,
+                    record,
+                    2,
+                    required=True,
+                    expected_objects={
+                        "cue_ball": {"instance_id": 1},
+                        "object_ball": {"instance_id": 2},
+                    },
+                    expected_directory=mask_root,
+                    expected_render_samples=8,
+                )
+            )
+            self.assertFalse(instance_masks_are_reusable(root, {}, 2, required=True))
+
+    def test_v2_evidence_binds_the_exact_renderer(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            script = root / "tools/renderer.py"
+            evidence = root / "tools/specialized_render_evidence.py"
+            script.parent.mkdir(parents=True)
+            script.write_text("renderer", encoding="utf-8")
+            evidence.write_text("evidence", encoding="utf-8")
+            metadata = {
+                "render": {
+                    "evidence_contract": "physweep_specialized_render_evidence_v2"
+                },
+                "implementation": {
+                    "renderer": {
+                        "path": str(script),
+                        "sha256": sha256(script),
+                    },
+                    "render_evidence": {
+                        "path": str(evidence),
+                        "sha256": sha256(evidence),
+                    },
+                },
+            }
+            self.assertTrue(implementation_is_reusable(root, metadata, script))
+            metadata["implementation"]["render_evidence"]["sha256"] = "0" * 64
+            self.assertFalse(implementation_is_reusable(root, metadata, script))
 
     def test_billiards_legacy_paths_are_normalized(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

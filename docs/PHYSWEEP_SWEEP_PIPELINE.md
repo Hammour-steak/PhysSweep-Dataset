@@ -157,6 +157,20 @@ Young's modulus is rejected because the active backend is rigid PyBullet. The
 same applies to damping and rolling/spinning friction: they are backend
 defaults, not current research sweep axes.
 
+## Specialized render evidence
+
+New asset-proxy and billiards metadata declares
+`physweep_specialized_render_evidence_v2`. A reusable render must then bind the
+exact renderer and shared evidence implementation hashes, record the production
+sample count, and provide a hash-complete instance-mask manifest for every
+identity object. Missing evidence is a hard reuse failure. The v2 mask manifest
+supports multiple dynamic objects and validates antialiased, nonempty initial
+silhouettes without requiring an object to remain visible at every later probe.
+
+Historical records without the v2 declaration remain readable only through
+their frozen source release. Compatibility never upgrades an old record by
+inventing absent evidence.
+
 ## Commands
 
 Single base:

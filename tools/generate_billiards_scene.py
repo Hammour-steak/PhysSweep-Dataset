@@ -16,6 +16,7 @@ import pybullet as pb
 from sample_asset_proxy_scenes import (
     PROJECT_ROOT,
     choose_environment,
+    file_binding,
     load_json,
     project_path,
     sha256,
@@ -554,12 +555,20 @@ def main() -> None:
             ),
         },
         "render": {
+            "evidence_contract": "physweep_specialized_render_evidence_v2",
             "engine": "BLENDER_EEVEE",
             "resolution": args.resolution,
             "samples": args.samples,
             "environment": environment,
             "inspection_frame_dir": str((output / "inspection_frames").relative_to(root)),
             "video_path": str((output / f"{scene_id}.mp4").relative_to(root)),
+        },
+        "implementation": {
+            "generator": file_binding(root, Path(__file__)),
+            "renderer": file_binding(root, root / "tools/render_billiards_scene.py"),
+            "render_evidence": file_binding(
+                root, root / "tools/specialized_render_evidence.py"
+            ),
         },
     }
     attach_object_identity(

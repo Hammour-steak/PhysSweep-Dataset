@@ -21,6 +21,14 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def project_root_reference(root: Path, project_root: Path) -> str:
+    try:
+        relative = project_root.resolve().relative_to(root.resolve())
+    except ValueError:
+        return str(project_root.resolve())
+    return relative.as_posix() or "."
+
+
 def load_extension_spec(root: Path, path: Path) -> dict[str, Any]:
     root = root.resolve()
     declared = path if path.is_absolute() else root / path

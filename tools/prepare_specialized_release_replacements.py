@@ -14,6 +14,7 @@ from typing import Any
 try:
     from specialized_release_extension import (
         load_extension_spec,
+        project_root_reference,
         select_replacement_slots,
         sha256,
         stable_seed,
@@ -21,6 +22,7 @@ try:
 except ModuleNotFoundError:
     from tools.specialized_release_extension import (
         load_extension_spec,
+        project_root_reference,
         select_replacement_slots,
         sha256,
         stable_seed,
@@ -267,7 +269,7 @@ def main() -> None:
             "extension_id": spec["extension_id"],
         },
         "sample_count": len(records),
-        "source_project_root": str(source_root),
+        "source_project_root": project_root_reference(root, source_root),
         "source_release": root_relative(source_root, release_path),
         "source_release_sha256": sha256(release_path),
         "source_base_manifest": root_relative(source_root, base_path),

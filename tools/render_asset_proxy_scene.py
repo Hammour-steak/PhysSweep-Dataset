@@ -38,6 +38,7 @@ from video_encoding import configure_h264_output
 from trajectory_contract import adapter_trajectory_view
 from appearance_adaptation import apply_material_lightness_adaptation
 from camera_geometry import blocker_safe_seeded_view_order, seeded_view_order
+from specialized_render_evidence import render_instance_masks
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -875,7 +876,20 @@ def render(
         fps=int(metadata["physics"]["output_fps"]),
         frame_count=int(metadata["physics"]["frame_count"]),
     )
+    render_samples = int(scene.eevee.taa_render_samples)
     bpy.ops.render.render(animation=True)
+    dynamic_ids = [
+        str(record["object_id"])
+        for record in metadata["object_identity"]["objects"]
+        if str(record["role"]) == "dynamic"
+    ]
+    if len(dynamic_ids) != 1:
+        raise ValueError("asset proxy renderer requires exactly one dynamic identity")
+    instance_mask_output = render_instance_masks(
+        root=PROJECT_ROOT,
+        metadata=metadata,
+        dynamic_objects={dynamic_ids[0]: dynamic_objects},
+    )
     record = {
         "schema_version": "physweep_asset_proxy_render_record_v1",
         "scene_id": metadata["scene_id"],
@@ -893,7 +907,9 @@ def render(
         "camera": camera,
         "lighting_adaptation": lighting_adaptation,
         "render_engine": scene.render.engine,
+        "render_samples": render_samples,
         "video_encoding": video_encoding,
+        "instance_mask_output": instance_mask_output,
         "wall_time_s": round(time.perf_counter() - started, 6),
     }
     write_json(frame_dir / "render_record.json", record)

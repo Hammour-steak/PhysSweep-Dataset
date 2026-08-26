@@ -93,6 +93,14 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def file_binding(root: Path, path: Path) -> dict[str, str]:
+    resolved = path.resolve()
+    return {
+        "path": resolved.relative_to(root.resolve()).as_posix(),
+        "sha256": sha256(resolved),
+    }
+
+
 def asset_camera_observation(
     camera_rules: dict[str, Any], profile: str
 ) -> dict[str, Any]:
@@ -1860,11 +1868,21 @@ def main() -> None:
                 "observation": asset_camera_observation(camera_rules, profile)
             },
             "render": {
+                "evidence_contract": "physweep_specialized_render_evidence_v2",
                 "resolution": args.resolution,
                 "samples": args.samples,
                 "video_path": str((output / "videos" / f"{scene_id}.mp4").relative_to(root)),
                 "inspection_frame_dir": str((output / "frames" / scene_id).relative_to(root)),
                 "environment": environment,
+            },
+            "implementation": {
+                "generator": file_binding(root, Path(__file__)),
+                "renderer": file_binding(
+                    root, root / "tools/render_asset_proxy_scene.py"
+                ),
+                "render_evidence": file_binding(
+                    root, root / "tools/specialized_render_evidence.py"
+                ),
             },
         }
         attach_object_identity(
