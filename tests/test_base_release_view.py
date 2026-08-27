@@ -376,6 +376,11 @@ class BaseReleaseViewTests(unittest.TestCase):
                 root_manifest["coordinate_contract"]["camera_pose"]["world_up"],
                 [0.0, 0.0, 1.0],
             )
+            self.assertTrue(
+                root_manifest["coordinate_contract"]["units"][
+                    "explicit_field_suffix_overrides_default"
+                ]
+            )
             generic_manifest = json.loads(
                 (output / "generic/manifest.json").read_text(encoding="utf-8")
             )

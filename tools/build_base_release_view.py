@@ -55,7 +55,12 @@ PIPELINE_SCHEMA = "physweep_base_pipeline_view_v7"
 AUDIT_SCHEMA = "physweep_base_release_view_audit_v9"
 
 COORDINATE_CONTRACT = {
-    "units": {"length": "meter", "time": "second", "angle": "radian"},
+    "units": {
+        "length": "meter",
+        "time": "second",
+        "angle_default": "radian",
+        "explicit_field_suffix_overrides_default": True,
+    },
     "world_frame": {"handedness": "right_handed", "up_axis": "+Z"},
     "camera_pose": {
         "method": "look_at",
