@@ -125,10 +125,8 @@ SWEEP_INDEX_FIELDS = {
     "scene_id",
     "path",
     "metadata_sha256",
-    "target_object_id",
     "parameter",
     "level_index",
-    "value",
 }
 
 
@@ -392,7 +390,9 @@ def group_manifest(
                 "scene_id": scene_id,
                 "path": f"{output_name}/{family}/{scene_id}",
                 "metadata_sha256": str(compact["metadata_sha256"]),
-                **descriptor,
+                "target_object_id": descriptor["target_object_id"],
+                "parameter": descriptor["parameter"],
+                "level_index": descriptor["level_index"],
             }
         )
     records = []
@@ -402,10 +402,14 @@ def group_manifest(
             grouped[group_id],
             key=sweep_sort_key,
         )
+        targets = {record.pop("target_object_id") for record in sweeps}
+        if len(targets) != 1:
+            raise ValueError(f"sweep group target differs: {group_id}")
         records.append(
             {
                 "group_id": group_id,
                 "family": base["family"],
+                "target_object_id": targets.pop(),
                 "base": {
                     key: base[key]
                     for key in ("scene_id", "path", "metadata_sha256")
@@ -847,7 +851,8 @@ def verify_view(
         expected_base = base_groups[group_id]
         sweeps = group.get("sweeps", [])
         if (
-            set(group) != {"group_id", "family", "base", "sweeps"}
+            set(group)
+            != {"group_id", "family", "target_object_id", "base", "sweeps"}
             or group.get("family") != expected_base["family"]
             or group.get("base")
             != {
@@ -866,9 +871,9 @@ def verify_view(
                 for record in sweeps
             ]
             != expected_axis_level_order
-            or len({record.get("target_object_id") for record in sweeps}) != 1
         ):
             raise ValueError(f"sweep group record differs: {group_id}")
+        target_object_id = safe_scene_id(group["target_object_id"])
         for record in sweeps:
             scene_id = safe_scene_id(record["scene_id"])
             if record["path"] != (
@@ -878,7 +883,11 @@ def verify_view(
     if observed_groups != set(base_groups):
         raise ValueError("sweep group coverage differs")
     indexed = {
-        str(sweep["scene_id"]): (str(group["group_id"]), sweep)
+        str(sweep["scene_id"]): (
+            str(group["group_id"]),
+            str(group["target_object_id"]),
+            sweep,
+        )
         for group in groups["records"]
         for sweep in group["sweeps"]
     }
@@ -967,11 +976,13 @@ def verify_view(
                 raise ValueError(f"sweep metadata identity differs: {scene_id}")
             if metadata_path.is_symlink():
                 raise ValueError(f"sweep metadata must be materialized: {scene_id}")
-            indexed_group, indexed_record = indexed[scene_id]
+            indexed_group, indexed_target, indexed_record = indexed[scene_id]
             if (
                 indexed_group != summary["group_id"]
+                or indexed_target != metadata["sweep"]["target_object_id"]
                 or indexed_record["metadata_sha256"] != record["metadata_sha256"]
-                or any(indexed_record[key] != metadata["sweep"][key] for key in metadata["sweep"])
+                or indexed_record["parameter"] != metadata["sweep"]["parameter"]
+                or indexed_record["level_index"] != metadata["sweep"]["level_index"]
             ):
                 raise ValueError(f"sweep group index differs: {scene_id}")
             fixture_hash = str(metadata["physics"]["fixture"]["sha256"])

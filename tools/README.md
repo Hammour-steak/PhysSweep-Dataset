@@ -311,8 +311,9 @@ publishing. It excludes derived sweep samples. Verify an existing release with:
 `build_sweep_release_view.py` writes only derived samples beside the canonical
 base view; the base and sweep output roots must be siblings. It uses the same
 sample layout and adds `group_manifest.json` for the
-base-to-sweep mapping. Builds are resumable and become visible only after full
-verification:
+base-to-sweep mapping. The index stores navigation keys only; physical values
+remain authoritative in each `metadata.json`. Builds are resumable and become
+visible only after full verification:
 
 ```bash
 .venv/bin/python tools/build_sweep_release_view.py \
