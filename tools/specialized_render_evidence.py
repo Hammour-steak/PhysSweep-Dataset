@@ -13,17 +13,42 @@ from immutable_scene_contract import sha256, write_json
 
 
 MASK_MANIFEST_SCHEMA = "physweep_instance_mask_manifest_v2"
+MASK_RENDER_RECORD_SCHEMA = "physweep_specialized_mask_render_record_v1"
 
 
-def _mask_root(root: Path, metadata: Mapping[str, Any]) -> Path:
-    declared = metadata["object_identity"]["instance_masks"]["path"]
-    if not isinstance(declared, str) or not declared:
-        raise ValueError("specialized mask path must be a nonempty string")
-    relative = Path(declared)
-    if relative.is_absolute():
-        raise ValueError("specialized mask path must be project-relative")
-    result = (root / relative).resolve()
+def render_implementation(renderer_path: Path) -> dict[str, Any]:
+    renderer_path = renderer_path.resolve()
+    evidence_path = Path(__file__).resolve()
+    return {
+        "renderer": {
+            "path": str(renderer_path),
+            "sha256": sha256(renderer_path),
+        },
+        "render_evidence": {
+            "path": str(evidence_path),
+            "sha256": sha256(evidence_path),
+        },
+    }
+
+
+def _mask_root(
+    root: Path,
+    metadata: Mapping[str, Any],
+    override: Path | None,
+) -> Path:
+    if override is not None:
+        result = override.resolve()
+    else:
+        declared = metadata["object_identity"]["instance_masks"].get("path")
+        if not isinstance(declared, str) or not declared:
+            raise ValueError("specialized mask path is absent and no override was given")
+        relative = Path(declared)
+        if relative.is_absolute():
+            raise ValueError("specialized mask path must be project-relative")
+        result = (root / relative).resolve()
     result.relative_to(root.resolve())
+    if (root / "outputs").resolve() not in result.parents:
+        raise ValueError("specialized masks must remain below root/outputs")
     return result
 
 
@@ -72,6 +97,7 @@ def render_instance_masks(
     root: Path,
     metadata: Mapping[str, Any],
     dynamic_objects: Mapping[str, Sequence[Any]],
+    mask_root_override: Path | None = None,
 ) -> dict[str, Any]:
     """Render one unoccluded silhouette sequence per declared identity object."""
     identity_objects = {
@@ -87,7 +113,7 @@ def render_instance_masks(
 
     scene = bpy.context.scene
     frames = list(range(int(scene.frame_start), int(scene.frame_end) + 1))
-    mask_root = _mask_root(root, metadata)
+    mask_root = _mask_root(root, metadata, mask_root_override)
     renderables = [
         obj
         for obj in scene.objects
@@ -148,4 +174,33 @@ def render_instance_masks(
         "render_samples": mask_samples,
         "manifest_path": str(manifest_path),
         "manifest_sha256": sha256(manifest_path),
+    }
+
+
+def render_instance_mask_record(
+    *,
+    root: Path,
+    metadata_path: Path,
+    metadata: Mapping[str, Any],
+    camera: Mapping[str, Any],
+    dynamic_objects: Mapping[str, Sequence[Any]],
+    mask_root: Path,
+    renderer_path: Path,
+) -> dict[str, Any]:
+    return {
+        "schema_version": MASK_RENDER_RECORD_SCHEMA,
+        "scene_id": str(metadata["scene_id"]),
+        "metadata_sha256": sha256(metadata_path),
+        "metadata_path": str(metadata_path),
+        "render_scope": "instance_masks_only",
+        "camera": dict(camera),
+        "render_engine": bpy.context.scene.render.engine,
+        "mask_resolution": [int(value) for value in metadata["render"]["resolution"]],
+        "instance_mask_output": render_instance_masks(
+            root=root,
+            metadata=metadata,
+            dynamic_objects=dynamic_objects,
+            mask_root_override=mask_root,
+        ),
+        "implementation": render_implementation(renderer_path),
     }

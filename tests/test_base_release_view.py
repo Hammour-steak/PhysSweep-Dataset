@@ -30,10 +30,10 @@ class BaseReleaseViewTests(unittest.TestCase):
             base_records = []
             videos = []
             audits = []
-            for index, (name, schema, has_masks) in enumerate(
+            for index, (name, schema) in enumerate(
                 (
-                    ("generic", "schema_generic", True),
-                    ("asset", "schema_asset", False),
+                    ("generic", "schema_generic"),
+                    ("asset", "schema_asset"),
                 )
             ):
                 project = root / f"source-{name}"
@@ -158,11 +158,10 @@ class BaseReleaseViewTests(unittest.TestCase):
                 video.parent.mkdir(parents=True)
                 video.write_bytes(f"video:{scene_id}".encode("utf-8"))
                 videos.append(video)
-                if has_masks:
-                    mask = render_root / "masks" / scene_id / "ball"
-                    mask.mkdir(parents=True)
-                    (mask / "frame_0001.png").write_bytes(b"mask-1")
-                    (mask / "frame_0002.png").write_bytes(b"mask-2")
+                mask = render_root / "masks" / scene_id / "ball"
+                mask.mkdir(parents=True)
+                (mask / "frame_0001.png").write_bytes(b"mask-1")
+                (mask / "frame_0002.png").write_bytes(b"mask-2")
                 camera = {
                     "mode": "front",
                     "position_m": [2.0, -2.0, 1.5],
@@ -189,6 +188,35 @@ class BaseReleaseViewTests(unittest.TestCase):
                         },
                     )
                     render_record_camera = None
+                else:
+                    simulation_record = trajectory.parent / "simulation_record.json"
+                    write_json(
+                        simulation_record,
+                        {
+                            "scene_id": scene_id,
+                            "metadata_path": str(metadata),
+                            "metadata_sha256": sha256(metadata),
+                            "trajectory_path": str(trajectory),
+                            "trajectory_sha256": sha256(trajectory),
+                            "resolved_scene_path": str(resolved),
+                            "resolved_scene_sha256": sha256(resolved),
+                            "audit_path": str(audit),
+                            "audit_sha256": sha256(audit),
+                            "audit_passed": True,
+                            "failed_checks": [],
+                        },
+                    )
+                    render_metadata = render_root / "metadata" / f"{scene_id}.json"
+                    bound_metadata = json.loads(metadata.read_text(encoding="utf-8"))
+                    bound_metadata["source_metadata"] = {
+                        "path": str(metadata),
+                        "sha256": sha256(metadata),
+                    }
+                    bound_metadata["physics"] = {
+                        "trajectory_path": str(trajectory),
+                        "simulation_record_path": str(simulation_record),
+                    }
+                    write_json(render_metadata, bound_metadata)
                 render_record = {
                     "scene_id": scene_id,
                     "metadata_path": str(render_metadata),
@@ -233,7 +261,15 @@ class BaseReleaseViewTests(unittest.TestCase):
                 base_records.append(
                     {"scene_id": group_id, "metadata_path": source_metadata_path}
                 )
-                specs.append(PipelineSpec(name, schema, project, render_root))
+                specs.append(
+                    PipelineSpec(
+                        name,
+                        schema,
+                        project,
+                        render_root,
+                        render_root / "masks",
+                    )
+                )
 
             metadata_records.append(
                 {
@@ -280,7 +316,6 @@ class BaseReleaseViewTests(unittest.TestCase):
             )
             self.assertEqual(result["sample_count"], 2)
             self.assertEqual(result["pipeline_count"], 2)
-            self.assertEqual(result["mask_count"], 1)
             sample = output / "generic/scene_0__base"
             self.assertFalse((sample / "metadata.json").is_symlink())
             self.assertFalse((sample / "trajectory.npz").is_symlink())
@@ -308,6 +343,7 @@ class BaseReleaseViewTests(unittest.TestCase):
                 (output / "manifest.json").read_text(encoding="utf-8")
             )
             self.assertNotIn("kind", root_manifest)
+            self.assertNotIn("mask_count", root_manifest)
             for key in ("base_manifest", "metadata_manifest", "physics_manifest"):
                 self.assertNotIn(f"{key}_sha256", root_manifest)
             self.assertEqual(
@@ -315,12 +351,25 @@ class BaseReleaseViewTests(unittest.TestCase):
                 {"manifest", "manifest_sha256"},
             )
             self.assertEqual(root_manifest["render_contract"]["resolution"], [1280, 720])
+            self.assertNotIn("samples", root_manifest["render_contract"])
             generic_manifest = json.loads(
                 (output / "generic/manifest.json").read_text(encoding="utf-8")
             )
             self.assertEqual(
                 set(generic_manifest["records"][0]),
                 {"scene_id", "group_id", "metadata_sha256"},
+            )
+            self.assertNotIn("mask_count", generic_manifest)
+            asset_sample = output / "asset/scene_1__base"
+            self.assertEqual(
+                {path.name for path in asset_sample.iterdir()},
+                {
+                    "metadata.json",
+                    "trajectory.npz",
+                    "video.mp4",
+                    "masks",
+                    "mask_manifest.json",
+                },
             )
             self.assertEqual(verify_view(output), result)
             root_manifest["storage_mode"] = "unexpected"

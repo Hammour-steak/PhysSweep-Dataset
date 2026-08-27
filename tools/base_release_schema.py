@@ -21,7 +21,7 @@ except ModuleNotFoundError:
     from tools.audit_release_provenance import sha256
 
 
-BASE_SAMPLE_SCHEMA = "physweep_base_sample_v4"
+BASE_SAMPLE_SCHEMA = "physweep_base_sample_v5"
 TRAJECTORY_SCHEMA = "physweep_object_trajectory_v3"
 MASK_MANIFEST_SCHEMA = "physweep_instance_mask_manifest_v3"
 
@@ -530,7 +530,18 @@ def build_base_metadata(
         raise ValueError("source, physics, and render scene ids differ")
     objects = _compact_objects(source, resolved_scene, trajectory_info)
     camera = _compact_camera(source, render_record, render_metadata)
-    visual: dict[str, Any] = {"camera": camera}
+    render_config = source.get("render_request") or source.get("render")
+    if not isinstance(render_config, Mapping):
+        raise ValueError("source render configuration is absent")
+    render_samples = render_record.get("render_samples")
+    if render_samples is None:
+        render_samples = render_config.get("samples")
+    if render_samples is None or int(render_samples) <= 0:
+        raise ValueError("render sample count is invalid")
+    visual: dict[str, Any] = {
+        "camera": camera,
+        "render_samples": int(render_samples),
+    }
     environment = _compact_environment(source)
     if environment:
         visual["environment"] = environment
@@ -600,7 +611,7 @@ def materialize_base_sample(
     trajectory_source_sha256: str,
     video_source_path: Path,
     video_sha256: str,
-    masks_source_path: Path | None,
+    masks_source_path: Path,
     render_metadata_path: Path | None = None,
     render_metadata_sha256: str | None = None,
 ) -> dict[str, Any]:
@@ -667,22 +678,21 @@ def materialize_base_sample(
         trajectory_sha256=trajectory_hash,
         video_sha256=video_sha256,
     )
-    mask_hash = None
-    if masks_source_path is not None:
-        if not masks_source_path.is_dir():
-            raise FileNotFoundError(f"{scene_id} masks: {masks_source_path}")
-        linked_file(target / "masks", masks_source_path)
-        mask_manifest = build_mask_manifest(
-            scene_id=scene_id,
-            mask_root=masks_source_path,
-            objects=metadata["physics"]["objects"],
-        )
-        mask_manifest_path = target / "mask_manifest.json"
-        write_json(mask_manifest_path, mask_manifest)
-        mask_hash = sha256(mask_manifest_path)
-        metadata["artifacts"]["masks"] = {
-            "manifest_sha256": mask_hash,
-        }
+    if not masks_source_path.is_dir():
+        raise FileNotFoundError(f"{scene_id} masks: {masks_source_path}")
+    linked_file(target / "masks", masks_source_path)
+    mask_manifest = build_mask_manifest(
+        scene_id=scene_id,
+        mask_root=masks_source_path,
+        objects=metadata["physics"]["objects"],
+    )
+    if int(mask_manifest["frame_count"]) != int(trajectory_info["frame_count"]):
+        raise ValueError(f"mask and trajectory frame counts differ for {scene_id}")
+    mask_manifest_path = target / "mask_manifest.json"
+    write_json(mask_manifest_path, mask_manifest)
+    metadata["artifacts"]["masks"] = {
+        "manifest_sha256": sha256(mask_manifest_path),
+    }
     validate_base_metadata(metadata)
     metadata_path = target / "metadata.json"
     write_json(metadata_path, metadata)
@@ -690,7 +700,6 @@ def materialize_base_sample(
         "scene_id": scene_id,
         "group_id": group_id,
         "metadata_sha256": sha256(metadata_path),
-        "has_masks": mask_hash is not None,
     }
 
 
@@ -753,7 +762,17 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
     if not required_camera.issubset(camera) or set(camera) - required_camera - {"clip_start_m", "clip_end_m"}:
         raise ValueError("canonical final camera is incomplete")
     lighting = _mapping(visual.get("lighting"))
-    if "resolution" in visual or (lighting and set(lighting) != {"exposure_ev", "world_strength_scale", "fill_light_scale"}):
+    if (
+        set(visual) - {"camera", "render_samples", "environment", "materials", "assets", "lighting"}
+        or isinstance(visual.get("render_samples"), bool)
+        or int(visual.get("render_samples", 0)) <= 0
+        or "resolution" in visual
+        or (
+            lighting
+            and set(lighting)
+            != {"exposure_ev", "world_strength_scale", "fill_light_scale"}
+        )
+    ):
         raise ValueError("canonical visual contract is invalid")
     artifacts = _mapping(metadata.get("artifacts"))
     trajectory = _mapping(artifacts.get("trajectory"))
@@ -769,12 +788,12 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
     ):
         raise ValueError("canonical video binding is invalid")
     masks = _mapping(artifacts.get("masks"))
-    if masks and (
+    if (
         set(masks) != {"manifest_sha256"}
         or len(str(masks.get("manifest_sha256", ""))) != 64
     ):
         raise ValueError("canonical mask binding is invalid")
-    if set(artifacts) != ({"trajectory", "video", "masks"} if masks else {"trajectory", "video"}):
+    if set(artifacts) != {"trajectory", "video", "masks"}:
         raise ValueError("canonical artifact set is invalid")
     lineage = _mapping(metadata.get("lineage"))
     if (
@@ -789,5 +808,4 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
         "group_id": group_id,
         "family": family,
         "object_ids": ids,
-        "mask_bound": "masks" in artifacts,
     }

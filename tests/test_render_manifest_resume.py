@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 from render_asset_proxy_manifest import (  # noqa: E402
     implementation_is_reusable,
     instance_masks_are_reusable,
+    mask_record_is_reusable,
     output_path,
     render_samples_are_reusable,
     result_manifest_path,
@@ -207,6 +208,111 @@ class RenderManifestResumeTests(unittest.TestCase):
             metadata["implementation"]["render_evidence"]["sha256"] = "0" * 64
             self.assertFalse(implementation_is_reusable(root, metadata, script))
 
+    def test_mask_only_resume_binds_metadata_objects_code_and_egl(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            script = root / "tools/render_asset_proxy_scene.py"
+            evidence = root / "tools/specialized_render_evidence.py"
+            script.parent.mkdir(parents=True)
+            script.write_text("renderer", encoding="utf-8")
+            evidence.write_text("evidence", encoding="utf-8")
+            metadata_path = root / "datasets/scene.json"
+            metadata = {
+                "scene_id": "scene",
+                "physics": {"frame_count": 2},
+                "render": {"resolution": [320, 180], "samples": 16},
+                "object_identity": {
+                    "objects": [{"object_id": "object", "role": "dynamic"}],
+                    "instance_masks": {
+                        "objects": {"object": {"instance_id": 1}}
+                    },
+                },
+            }
+            write_json(metadata_path, metadata)
+            mask_root = root / "outputs/run/masks/scene"
+            object_root = mask_root / "object"
+            paths = [object_root / f"frame_{frame:04d}.png" for frame in (1, 2)]
+            for path in paths:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(path.name.encode("utf-8"))
+            mask_manifest = {
+                "schema_version": "physweep_instance_mask_manifest_v2",
+                "scene_id": "scene",
+                "frame_count": 2,
+                "objects": {
+                    "object": {
+                        "instance_id": 1,
+                        "validation": {
+                            "initial_occupancy_fraction": 0.01,
+                            "initial_soft_edge_fraction": 0.001,
+                        },
+                        "records": [
+                            {"filename": path.name, "sha256": sha256(path)}
+                            for path in paths
+                        ],
+                    }
+                },
+            }
+            mask_manifest_path = mask_root / "mask_manifest.json"
+            write_json(mask_manifest_path, mask_manifest)
+            render_record = {
+                "schema_version": "physweep_specialized_mask_render_record_v1",
+                "scene_id": "scene",
+                "metadata_path": str(metadata_path),
+                "metadata_sha256": sha256(metadata_path),
+                "render_scope": "instance_masks_only",
+                "mask_resolution": [320, 180],
+                "egl_device_verified": True,
+                "instance_mask_output": {
+                    "render_samples": 16,
+                    "manifest_path": str(mask_manifest_path),
+                    "manifest_sha256": sha256(mask_manifest_path),
+                },
+                "implementation": {
+                    "renderer": {
+                        "path": str(script),
+                        "sha256": sha256(script),
+                    },
+                    "render_evidence": {
+                        "path": str(evidence),
+                        "sha256": sha256(evidence),
+                    },
+                },
+            }
+            self.assertTrue(
+                mask_record_is_reusable(
+                    root,
+                    metadata_path,
+                    metadata,
+                    render_record,
+                    mask_root,
+                    script,
+                )
+            )
+            render_record["egl_device_verified"] = False
+            self.assertFalse(
+                mask_record_is_reusable(
+                    root,
+                    metadata_path,
+                    metadata,
+                    render_record,
+                    mask_root,
+                    script,
+                )
+            )
+            render_record["egl_device_verified"] = True
+            render_record["implementation"]["renderer"]["sha256"] = "0" * 64
+            self.assertFalse(
+                mask_record_is_reusable(
+                    root,
+                    metadata_path,
+                    metadata,
+                    render_record,
+                    mask_root,
+                    script,
+                )
+            )
+
     def test_billiards_legacy_paths_are_normalized(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -240,6 +346,22 @@ class RenderManifestResumeTests(unittest.TestCase):
                     {"records": [{"metadata_path": str(metadata)}]},
                     "asset",
                     {"asset": ("", "", "", "physweep_asset_proxy_scene_v3")},
+                )
+
+    def test_renderer_rejects_a_scene_id_path(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            metadata = root / "datasets/scene.json"
+            write_json(
+                metadata,
+                {"schema_version": "schema", "scene_id": "../scene"},
+            )
+            with self.assertRaisesRegex(ValueError, "invalid scene id"):
+                render_source_records(
+                    root,
+                    {"records": [{"metadata_path": str(metadata)}]},
+                    "asset",
+                    {"asset": ("", "", "", "schema")},
                 )
 
     def test_output_path_rejects_non_output_targets(self) -> None:

@@ -78,6 +78,22 @@ required branch, then collect them with the staged outer manifest:
   --output outputs/<batch>/collected
 ```
 
+Asset and billiards renders write deterministic per-object instance masks beside
+their videos. To add those masks to an existing immutable RGB render without
+rerendering the video, use the same frozen source manifest with a separate output
+root:
+
+```bash
+.venv/bin/python tools/render_asset_proxy_manifest.py --renderer asset \
+  --manifest outputs/<batch>/asset/asset_render_manifest.json \
+  --mask-only --mask-output-root outputs/<batch>/asset_mask_backfill \
+  --workers 8 --resume
+```
+
+Mask-only mode reuses the frozen metadata, trajectory, scene construction, and
+camera solver. Its output is accepted on resume only when every identity object,
+frame, file hash, renderer hash, and verified EGL device binding matches.
+
 The collector loads only pipelines present in `staged_manifest.json`. A
 versioned delta therefore supplies only its specialized render result; it does
 not require empty or synthetic render-result manifests for retained branches.
@@ -260,14 +276,15 @@ global floor remains the only floor contact authority.
 
 `build_base_release_view.py` creates the atomic, base-only consumer release.
 Each sample contains one canonical `metadata.json`, one canonical object-axis
-`trajectory.npz`, the video, and optional masks plus their compact hash
+`trajectory.npz`, the video, and required per-object masks plus their compact hash
 manifest. Video and mask payloads remain symlinked to immutable render output;
 generation diagnostics, inspection frames, adapter trajectory channels, and
 schema-specific metadata copies are excluded. The root manifest owns the shared
 render resolution and encoding contract, while its hash-bound source release
 manifest remains the sole owner of base, metadata, and physics manifest hashes.
-Each `--pipeline` argument binds
-one source metadata schema to its project and render roots. Per-sample lineage
+Each `--pipeline` argument binds one source metadata schema to its project,
+render, and mask roots. The mask root is explicit so an audited backfill can be
+kept separate from immutable RGB render logs. Per-sample lineage
 stays in `metadata.json`; pipeline index records contain only the sample and
 group identities plus the canonical metadata hash:
 
@@ -276,7 +293,7 @@ group identities plus the canonical metadata hash:
   --release-project-root <frozen-project> \
   --release-manifest datasets/<dataset>/release/manifest.json \
   --output outputs/<release>/base \
-  --pipeline <name> <source-schema> <source-project> <render-root>
+  --pipeline <name> <source-schema> <source-project> <render-root> <mask-root>
 ```
 
 Repeat `--pipeline` for every schema in the release. The command refuses to

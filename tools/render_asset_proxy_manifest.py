@@ -10,7 +10,7 @@ import json
 import subprocess
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 try:
     from blender_worker_environment import (
@@ -30,6 +30,7 @@ except ModuleNotFoundError:
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE_CONTRACT = "physweep_specialized_render_evidence_v2"
+MASK_RESULT_SCHEMA = "physweep_specialized_mask_render_manifest_v1"
 
 
 def renderer_table(root: Path) -> dict[str, tuple[str, str, str, str]]:
@@ -75,6 +76,13 @@ def output_path(root: Path, value: str | Path) -> Path:
     if (root / "outputs").resolve() not in path.parents:
         raise ValueError(f"render output must be below root/outputs: {path}")
     return path
+
+
+def safe_scene_id(value: Any) -> str:
+    scene_id = str(value)
+    if not scene_id or Path(scene_id).name != scene_id or scene_id in {".", ".."}:
+        raise ValueError(f"invalid scene id: {scene_id!r}")
+    return scene_id
 
 
 def result_manifest_path(
@@ -237,6 +245,85 @@ def implementation_is_reusable(
     return True
 
 
+def render_record_implementation_is_reusable(
+    root: Path,
+    render_record: Mapping[str, Any],
+    script: Path,
+) -> bool:
+    implementation = render_record.get("implementation")
+    expected = {
+        "renderer": script.resolve(),
+        "render_evidence": (script.parent / "specialized_render_evidence.py").resolve(),
+    }
+    if not isinstance(implementation, dict):
+        return False
+    return all(
+        isinstance(implementation.get(name), dict)
+        and project_path(root, str(implementation[name].get("path", ""))) == path
+        and str(implementation[name].get("sha256", "")) == sha256(path)
+        for name, path in expected.items()
+    )
+
+
+def mask_record_is_reusable(
+    root: Path,
+    metadata_path: Path,
+    metadata: dict[str, Any],
+    render_record: dict[str, Any],
+    mask_directory: Path,
+    script: Path,
+) -> bool:
+    identity = metadata.get("object_identity")
+    if not isinstance(identity, dict):
+        return False
+    identity_records = identity.get("objects")
+    mask_contract = identity.get("instance_masks")
+    if not isinstance(identity_records, list) or not isinstance(mask_contract, dict):
+        return False
+    object_ids = [
+        str(record.get("object_id"))
+        for record in identity_records
+        if isinstance(record, dict) and record.get("object_id")
+    ]
+    expected_objects = mask_contract.get("objects")
+    if (
+        not object_ids
+        or len(object_ids) != len(identity_records)
+        or len(object_ids) != len(set(object_ids))
+        or not isinstance(expected_objects, dict)
+        or set(expected_objects) != set(object_ids)
+    ):
+        return False
+    frame_count = int(
+        metadata.get("simulation", {}).get("time", {}).get(
+            "frame_count", metadata["physics"].get("frame_count")
+        )
+    )
+    expected_samples = max(8, min(int(metadata["render"]["samples"]), 16))
+    return (
+        render_record.get("schema_version")
+        == "physweep_specialized_mask_render_record_v1"
+        and str(render_record.get("scene_id")) == str(metadata["scene_id"])
+        and project_path(root, str(render_record.get("metadata_path", "")))
+        == metadata_path
+        and str(render_record.get("metadata_sha256", "")) == sha256(metadata_path)
+        and render_record.get("render_scope") == "instance_masks_only"
+        and render_record.get("mask_resolution")
+        == [int(value) for value in metadata["render"]["resolution"]]
+        and render_record.get("egl_device_verified") is True
+        and render_record_implementation_is_reusable(root, render_record, script)
+        and instance_masks_are_reusable(
+            root,
+            render_record,
+            frame_count,
+            required=True,
+            expected_objects=expected_objects,
+            expected_directory=mask_directory,
+            expected_render_samples=expected_samples,
+        )
+    )
+
+
 def reusable_render_record(
     root: Path,
     output: Path,
@@ -279,10 +366,15 @@ def reusable_render_record(
     strict_evidence = (
         metadata.get("render", {}).get("evidence_contract") == EVIDENCE_CONTRACT
     )
+    renderer_requires_masks = str(metadata.get("schema_version", "")) in {
+        "physweep_asset_proxy_scene_v3",
+        "physweep_billiards_scene_v4",
+    }
+    require_instance_masks = strict_evidence or renderer_requires_masks
     expected_mask_objects = None
     expected_mask_directory = None
     expected_mask_samples = None
-    if strict_evidence:
+    if require_instance_masks:
         identity = metadata.get("object_identity")
         if not isinstance(identity, dict):
             return False
@@ -309,10 +401,15 @@ def reusable_render_record(
             != "rgba_alpha_antialiased_silhouette_mask"
             or mask_contract.get("path_layout") != "object_id_subdirectories"
             or mask_contract.get("filename_pattern") != "frame_{frame:04d}.png"
-            or not isinstance(mask_contract.get("path"), str)
         ):
             return False
-        expected_mask_directory = project_path(root, mask_contract["path"])
+        declared_mask_path = mask_contract.get("path")
+        if isinstance(declared_mask_path, str) and declared_mask_path:
+            expected_mask_directory = project_path(root, declared_mask_path)
+        elif renderer_requires_masks:
+            expected_mask_directory = output / "masks" / str(source_record["scene_id"])
+        else:
+            return False
         if root.resolve() not in expected_mask_directory.parents:
             return False
         expected_mask_samples = max(
@@ -339,7 +436,7 @@ def reusable_render_record(
             root,
             render_record,
             frame_count,
-            required=strict_evidence,
+            required=require_instance_masks,
             expected_objects=expected_mask_objects,
             expected_directory=expected_mask_directory,
             expected_render_samples=expected_mask_samples,
@@ -348,6 +445,14 @@ def reusable_render_record(
             root,
             metadata,
             renderer_script,
+        )
+        and (
+            not renderer_requires_masks
+            or render_record_implementation_is_reusable(
+                root,
+                render_record,
+                renderer_script,
+            )
         )
         and egl_verified
     )
@@ -379,9 +484,10 @@ def render_source_records(
         metadata = load_json(metadata_path)
         if str(metadata["schema_version"]) != expected_schema:
             raise ValueError("render manifest contains the wrong scene schema")
+        metadata_scene_id = safe_scene_id(metadata["scene_id"])
         if "scene_id" not in record:
-            record["scene_id"] = str(metadata["scene_id"])
-        elif str(record["scene_id"]) != str(metadata["scene_id"]):
+            record["scene_id"] = metadata_scene_id
+        elif safe_scene_id(record["scene_id"]) != metadata_scene_id:
             raise ValueError("render manifest scene id does not match metadata")
     return records
 
@@ -406,7 +512,12 @@ def worker(
     render_output = record.get("render_output", metadata["render"])
     frame_dir = output_path(root, render_output["inspection_frame_dir"])
     video_path = output_path(root, render_output["video_path"])
-    if output not in frame_dir.parents or output not in video_path.parents:
+    mask_directory = output / "masks" / str(record["scene_id"])
+    if (
+        output not in frame_dir.parents
+        or output not in video_path.parents
+        or output not in mask_directory.parents
+    ):
         raise ValueError("render paths must remain below the manifest output root")
     render_record_path = frame_dir / "render_record.json"
     if resume and render_record_path.is_file() and video_path.is_file():
@@ -454,6 +565,8 @@ def worker(
         "--inspection-frame-dir",
         str(frame_dir),
     ]
+    if script.name in {"render_asset_proxy_scene.py", "render_billiards_scene.py"}:
+        command.extend(("--instance-mask-dir", str(mask_directory)))
     started = time.perf_counter()
     with isolated_blender_environment(gpu, selector_path) as (
         environment,
@@ -511,6 +624,119 @@ def worker(
     }
 
 
+def mask_worker(
+    root: Path,
+    blender: Path,
+    script: Path,
+    record: dict[str, Any],
+    output: Path,
+    gpu: int,
+    selector_path: Path,
+    resume: bool,
+) -> dict[str, Any]:
+    metadata_path = project_path(root, record["metadata_path"])
+    metadata_path.relative_to(root)
+    if record.get("metadata_sha256") and sha256(metadata_path) != str(
+        record["metadata_sha256"]
+    ):
+        raise ValueError(f"render metadata hash mismatch: {metadata_path}")
+    metadata = load_json(metadata_path)
+    scene_id = str(record["scene_id"])
+    frame_dir = output / "records" / scene_id
+    mask_directory = output / "masks" / scene_id
+    render_record_path = frame_dir / "render_record.json"
+    log_path = output / "logs" / f"{scene_id}.log"
+    if resume and render_record_path.is_file():
+        render_record = load_json(render_record_path)
+        if mask_record_is_reusable(
+            root,
+            metadata_path,
+            metadata,
+            render_record,
+            mask_directory,
+            script,
+        ):
+            return {
+                "scene_id": scene_id,
+                "ok": True,
+                "returncode": 0,
+                "gpu": None,
+                "egl_device_verified": bool(render_record.get("egl_device_verified")),
+                "wall_time_s": 0.0,
+                "log_path": None,
+                "render_record": render_record,
+                "reused": True,
+            }
+    render_record_path.unlink(missing_ok=True)
+    command = [
+        str(blender),
+        "-b",
+        "--python-exit-code",
+        "1",
+        "--python",
+        str(script),
+        "--",
+        "--metadata",
+        str(metadata_path),
+        "--root",
+        str(root),
+        "--inspection-frame-dir",
+        str(frame_dir),
+        "--mask-only",
+        "--instance-mask-dir",
+        str(mask_directory),
+    ]
+    started = time.perf_counter()
+    with isolated_blender_environment(gpu, selector_path) as (
+        environment,
+        selector_marker,
+    ):
+        completed = subprocess.run(
+            command,
+            cwd=root,
+            env=environment,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            check=False,
+        )
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    log_path.write_text(completed.stdout, encoding="utf-8")
+    render_record = (
+        load_json(render_record_path)
+        if completed.returncode == 0 and render_record_path.is_file()
+        else None
+    )
+    selector_verified = selector_marker in completed.stdout
+    if render_record is not None:
+        render_record["egl_device_verified"] = selector_verified
+        write_json(render_record_path, render_record)
+    ok = (
+        completed.returncode == 0
+        and render_record is not None
+        and selector_verified
+        and mask_record_is_reusable(
+            root,
+            metadata_path,
+            metadata,
+            render_record,
+            mask_directory,
+            script,
+        )
+    )
+    return {
+        "scene_id": scene_id,
+        "ok": ok,
+        "returncode": completed.returncode,
+        "gpu": gpu,
+        "egl_device_verified": selector_verified,
+        "wall_time_s": round(time.perf_counter() - started, 6),
+        "log_path": str(log_path),
+        "render_record": render_record,
+        "reused": False,
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
@@ -519,6 +745,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--gpus", default="0,1,2,3,4,5,6,7")
     parser.add_argument("--renderer", default="asset")
+    parser.add_argument("--mask-only", action="store_true")
+    parser.add_argument(
+        "--mask-output-root",
+        type=Path,
+        help="Dedicated output root for mask-only records and masks.",
+    )
     parser.add_argument(
         "--resume",
         action="store_true",
@@ -540,15 +772,27 @@ def main() -> None:
     manifest_path = project_path(root, args.manifest)
     manifest_path.relative_to(root)
     manifest = load_json(manifest_path)
-    output = output_path(root, manifest.get("output_root", manifest_path.parent))
+    if args.mask_only:
+        if args.mask_output_root is None:
+            raise ValueError("--mask-only requires --mask-output-root")
+        output = output_path(root, args.mask_output_root)
+    else:
+        output = output_path(root, manifest.get("output_root", manifest_path.parent))
     gpus = [int(value) for value in args.gpus.split(",") if value.strip()]
     if not gpus:
         raise SystemExit("--gpus must contain at least one id")
-    renderers = renderer_table(root)
+    code_root = Path(__file__).resolve().parents[1]
+    renderers = renderer_table(code_root if args.mask_only else root)
     if args.renderer not in renderers:
         raise ValueError(f"unknown specialized renderer: {args.renderer}")
+    if args.mask_only and args.renderer not in {"asset", "billiards"}:
+        raise ValueError("mask-only backfill supports asset and billiards renderers")
     script_name, schema_version, result_name = renderers[args.renderer][:3]
-    script = root / script_name
+    script_root = code_root if args.mask_only else root
+    script = (script_root / script_name).resolve()
+    script.relative_to(script_root)
+    if not script.is_file():
+        raise FileNotFoundError(script)
     declared_blender = Path(args.blender)
     if not declared_blender.is_absolute():
         declared_blender = root / declared_blender
@@ -575,11 +819,12 @@ def main() -> None:
         )
         for index, record in enumerate(source_records)
     ]
+    selected_worker = mask_worker if args.mask_only else worker
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.workers) as executor:
-        records = list(executor.map(lambda values: worker(*values), jobs))
+        records = list(executor.map(lambda values: selected_worker(*values), jobs))
     failures = [record for record in records if not record["ok"]]
     summary = {
-        "schema_version": schema_version,
+        "schema_version": MASK_RESULT_SCHEMA if args.mask_only else schema_version,
         "source_manifest": str(manifest_path.relative_to(root)),
         "source_manifest_sha256": sha256(manifest_path),
         "sample_count": len(records),
@@ -594,7 +839,7 @@ def main() -> None:
         root,
         output,
         args.result_manifest,
-        result_name,
+        "mask_render_manifest.json" if args.mask_only else result_name,
     )
     write_json(result_manifest, summary)
     print(json.dumps({key: value for key, value in summary.items() if key != "records"}, indent=2))

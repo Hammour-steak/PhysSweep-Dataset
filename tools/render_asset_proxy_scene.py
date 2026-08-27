@@ -38,18 +38,31 @@ from video_encoding import configure_h264_output
 from trajectory_contract import adapter_trajectory_view
 from appearance_adaptation import apply_material_lightness_adaptation
 from camera_geometry import blocker_safe_seeded_view_order, seeded_view_order
-from specialized_render_evidence import render_instance_masks
+from specialized_render_evidence import (
+    render_instance_mask_record,
+    render_instance_masks,
+    render_implementation,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def configure_project_root(root: Path) -> Path:
+    global PROJECT_ROOT
+    PROJECT_ROOT = root.resolve()
+    return PROJECT_ROOT
 
 
 def blender_args() -> argparse.Namespace:
     values = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--metadata", type=Path, required=True)
+    parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--video-path", type=Path)
     parser.add_argument("--inspection-frame-dir", type=Path)
+    parser.add_argument("--mask-only", action="store_true")
+    parser.add_argument("--instance-mask-dir", type=Path)
     return parser.parse_args(values)
 
 
@@ -789,6 +802,9 @@ def render(
     metadata_path: Path,
     video_path_override: Path | None = None,
     frame_dir_override: Path | None = None,
+    *,
+    mask_only: bool = False,
+    instance_mask_dir: Path | None = None,
 ) -> dict[str, Any]:
     started = time.perf_counter()
     metadata = load_json(metadata_path)
@@ -822,7 +838,8 @@ def render(
     prop_id = metadata["assets"]["static_prop_asset_id"]
     clear_scene()
     setup_scene(metadata)
-    apply_hdri(metadata["render"]["environment"])
+    if not mask_only:
+        apply_hdri(metadata["render"]["environment"])
     support_objects = add_support(metadata["physics"]["static_support_binding"])
     prop_objects = []
     if prop_id:
@@ -837,6 +854,32 @@ def render(
         dynamic_record,
         visual_rules["specialized_camera_views"],
     )
+    dynamic_ids = [
+        str(record["object_id"])
+        for record in metadata["object_identity"]["objects"]
+        if str(record["role"]) == "dynamic"
+    ]
+    if len(dynamic_ids) != 1:
+        raise ValueError("asset proxy renderer requires exactly one dynamic identity")
+    if mask_only:
+        if frame_dir_override is None or instance_mask_dir is None:
+            raise ValueError(
+                "mask-only rendering requires an inspection record directory and mask directory"
+            )
+        frame_dir = frame_dir_override.resolve()
+        frame_dir.mkdir(parents=True, exist_ok=True)
+        record = render_instance_mask_record(
+            root=PROJECT_ROOT,
+            metadata_path=metadata_path,
+            metadata=metadata,
+            camera=camera,
+            dynamic_objects={dynamic_ids[0]: dynamic_objects},
+            mask_root=instance_mask_dir,
+            renderer_path=Path(__file__),
+        )
+        write_json(frame_dir / "render_record.json", record)
+        print(json.dumps(record, indent=2))
+        return record
     add_environment(metadata["render"]["environment"], camera)
     add_lighting(
         mathutils.Vector(camera["target_m"]),
@@ -878,18 +921,17 @@ def render(
     )
     render_samples = int(scene.eevee.taa_render_samples)
     bpy.ops.render.render(animation=True)
-    dynamic_ids = [
-        str(record["object_id"])
-        for record in metadata["object_identity"]["objects"]
-        if str(record["role"]) == "dynamic"
-    ]
-    if len(dynamic_ids) != 1:
-        raise ValueError("asset proxy renderer requires exactly one dynamic identity")
-    instance_mask_output = render_instance_masks(
-        root=PROJECT_ROOT,
-        metadata=metadata,
-        dynamic_objects={dynamic_ids[0]: dynamic_objects},
-    )
+    mask_path = metadata["object_identity"]["instance_masks"].get("path")
+    instance_mask_output = None
+    if instance_mask_dir is not None or (
+        isinstance(mask_path, str) and bool(mask_path)
+    ):
+        instance_mask_output = render_instance_masks(
+            root=PROJECT_ROOT,
+            metadata=metadata,
+            dynamic_objects={dynamic_ids[0]: dynamic_objects},
+            mask_root_override=instance_mask_dir,
+        )
     record = {
         "schema_version": "physweep_asset_proxy_render_record_v1",
         "scene_id": metadata["scene_id"],
@@ -910,6 +952,7 @@ def render(
         "render_samples": render_samples,
         "video_encoding": video_encoding,
         "instance_mask_output": instance_mask_output,
+        "implementation": render_implementation(Path(__file__)),
         "wall_time_s": round(time.perf_counter() - started, 6),
     }
     write_json(frame_dir / "render_record.json", record)
@@ -919,8 +962,11 @@ def render(
 
 if __name__ == "__main__":
     args = blender_args()
+    configure_project_root(args.root)
     render(
         args.metadata.resolve(),
         args.video_path,
         args.inspection_frame_dir,
+        mask_only=args.mask_only,
+        instance_mask_dir=args.instance_mask_dir,
     )

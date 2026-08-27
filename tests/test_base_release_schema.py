@@ -159,8 +159,15 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                 trajectory_sha256="b" * 64,
                 video_sha256="c" * 64,
             )
+            metadata["artifacts"]["masks"] = {
+                "manifest_sha256": "d" * 64,
+            }
             summary = validate_base_metadata(metadata)
             self.assertEqual(metadata["schema_version"], BASE_SAMPLE_SCHEMA)
+            mask_binding = metadata["artifacts"].pop("masks")
+            with self.assertRaisesRegex(ValueError, "mask binding"):
+                validate_base_metadata(metadata)
+            metadata["artifacts"]["masks"] = mask_binding
             self.assertNotIn("kind", metadata)
             metadata["kind"] = "base"
             with self.assertRaisesRegex(ValueError, "base fields"):
@@ -179,6 +186,7 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                 {"position_m", "target_m", "focal_length_mm", "sensor_width_mm"},
             )
             self.assertNotIn("resolution", metadata["visual"])
+            self.assertEqual(metadata["visual"]["render_samples"], 16)
             self.assertNotIn("frame_count", metadata["physics"]["time"])
             self.assertNotIn("dynamic_object_count", metadata["semantics"])
             self.assertNotIn("scene_family", metadata["semantics"])

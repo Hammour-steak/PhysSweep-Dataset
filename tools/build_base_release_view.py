@@ -50,9 +50,9 @@ except ModuleNotFoundError:
     )
 
 
-VIEW_SCHEMA = "physweep_base_release_view_v6"
-PIPELINE_SCHEMA = "physweep_base_pipeline_view_v4"
-AUDIT_SCHEMA = "physweep_base_release_view_audit_v6"
+VIEW_SCHEMA = "physweep_base_release_view_v7"
+PIPELINE_SCHEMA = "physweep_base_pipeline_view_v5"
+AUDIT_SCHEMA = "physweep_base_release_view_audit_v7"
 
 
 @dataclass(frozen=True)
@@ -61,6 +61,7 @@ class PipelineSpec:
     source_schema_version: str
     project_root: Path
     render_root: Path
+    mask_root: Path
 
 
 def safe_scene_id(value: Any) -> str:
@@ -161,6 +162,11 @@ def validate_pipeline_specs(
                 if raw.render_root.is_absolute()
                 else (raw.project_root / raw.render_root).resolve()
             ),
+            mask_root=(
+                raw.mask_root.resolve()
+                if raw.mask_root.is_absolute()
+                else (raw.project_root / raw.mask_root).resolve()
+            ),
         )
         if spec.source_schema_version in by_schema:
             raise ValueError(f"duplicate pipeline schema: {spec.source_schema_version}")
@@ -168,6 +174,8 @@ def validate_pipeline_specs(
             raise ValueError(f"duplicate pipeline name: {spec.name}")
         if not spec.render_root.is_dir():
             raise FileNotFoundError(f"render root: {spec.render_root}")
+        if not spec.mask_root.is_dir():
+            raise FileNotFoundError(f"mask root: {spec.mask_root}")
         by_schema[spec.source_schema_version] = spec
         names.add(spec.name)
     if not by_schema:
@@ -245,18 +253,77 @@ def render_sources(
         bound = load_json(render_metadata)
         source_binding = bound.get("source_metadata", {})
         trajectory_binding = bound.get("trajectory", {})
-        if (
+        source_matches = (
             str(source_binding.get("sha256"))
-            != str(physics_record["metadata_sha256"])
-            or str(trajectory_binding.get("sha256"))
-            != str(physics_record["trajectory_sha256"])
-            or project_path(spec.project_root, str(source_binding.get("path", ""))).resolve()
-            != metadata
-            or project_path(
+            == str(physics_record["metadata_sha256"])
+            and project_path(
+                spec.project_root, str(source_binding.get("path", ""))
+            ).resolve()
+            == metadata
+        )
+        trajectory_matches = (
+            isinstance(trajectory_binding, dict)
+            and str(trajectory_binding.get("sha256"))
+            == str(physics_record["trajectory_sha256"])
+            and project_path(
                 spec.project_root, str(trajectory_binding.get("path", ""))
             ).resolve()
-            != trajectory
-        ):
+            == trajectory
+        )
+        if not trajectory_matches:
+            bound_physics = bound.get("physics", {})
+            if not isinstance(bound_physics, dict):
+                bound_physics = {}
+            simulation_record_path = project_path(
+                spec.project_root,
+                str(bound_physics.get("simulation_record_path", "")),
+            )
+            simulation_record = (
+                load_json(simulation_record_path)
+                if simulation_record_path.is_file()
+                else {}
+            )
+            path_fields = (
+                "metadata_path",
+                "trajectory_path",
+                "resolved_scene_path",
+                "audit_path",
+            )
+            value_fields = (
+                "scene_id",
+                "source_schema_version",
+                "adapter_id",
+                "metadata_sha256",
+                "trajectory_sha256",
+                "resolved_scene_sha256",
+                "audit_sha256",
+                "audit_passed",
+                "adapter_audit_passed",
+                "failed_checks",
+            )
+            trajectory_matches = (
+                project_path(
+                    spec.project_root,
+                    str(bound_physics.get("trajectory_path", "")),
+                ).resolve()
+                == trajectory
+                and all(
+                    project_path(
+                        spec.project_root,
+                        str(simulation_record.get(key, "")),
+                    ).resolve()
+                    == project_path(
+                        spec.project_root,
+                        str(physics_record.get(key, "")),
+                    ).resolve()
+                    for key in path_fields
+                )
+                and all(
+                    simulation_record.get(key) == physics_record.get(key)
+                    for key in value_fields
+                )
+            )
+        if not source_matches or not trajectory_matches:
             raise ValueError(f"render metadata is not bound to release physics: {scene_id}")
     if render_record.get("trajectory_sha256") not in (
         None,
@@ -276,23 +343,21 @@ def render_sources(
         raise ValueError(f"render configuration is missing: {scene_id}")
     render_contract = {
         "engine": render_record.get("render_engine") or render_config.get("engine"),
-        "samples": render_record.get("render_samples")
-        or render_config.get("samples"),
         "resolution": render_config.get("resolution"),
         "video_encoding": render_record.get("video_encoding"),
     }
     if (
         not render_contract["engine"]
-        or int(render_contract["samples"] or 0) <= 0
         or not isinstance(render_contract["resolution"], list)
         or len(render_contract["resolution"]) != 2
         or any(int(value) <= 0 for value in render_contract["resolution"])
         or not isinstance(render_contract["video_encoding"], dict)
     ):
         raise ValueError(f"render contract is incomplete: {scene_id}")
-    render_contract["samples"] = int(render_contract["samples"])
     render_contract["resolution"] = [int(value) for value in render_contract["resolution"]]
-    masks = spec.render_root / "masks" / scene_id
+    masks = spec.mask_root / scene_id
+    if not masks.is_dir():
+        raise FileNotFoundError(f"{scene_id} mask directory: {masks}")
     return {
         "metadata": metadata,
         "trajectory": trajectory,
@@ -304,7 +369,7 @@ def render_sources(
             render_metadata_hash if render_metadata is not None else None
         ),
         "video": video,
-        "masks": masks.resolve() if masks.is_dir() else None,
+        "masks": masks.resolve(),
         "render_contract": render_contract,
         "hashes": {
             "metadata_sha256": str(physics_record["metadata_sha256"]),
@@ -365,7 +430,6 @@ def build_view(
         grouped: dict[str, list[dict[str, Any]]] = {
             spec.name: [] for spec in specs.values()
         }
-        mask_counts = {spec.name: 0 for spec in specs.values()}
         render_contract: dict[str, Any] | None = None
         for metadata_record in sorted(base_records, key=lambda item: item["scene_id"]):
             scene_id = safe_scene_id(metadata_record["scene_id"])
@@ -402,11 +466,9 @@ def build_view(
                 render_metadata_path=sources["render_metadata"],
                 render_metadata_sha256=sources["render_metadata_sha256"],
             )
-            mask_counts[spec.name] += int(compact.pop("has_masks"))
             grouped[spec.name].append(compact)
 
         pipeline_bindings: dict[str, Any] = {}
-        total_masks = 0
         for spec in sorted(specs.values(), key=lambda value: value.name):
             records = grouped[spec.name]
             pipeline_path = work / spec.name / "manifest.json"
@@ -415,7 +477,6 @@ def build_view(
                 "pipeline": spec.name,
                 "source_schema_version": spec.source_schema_version,
                 "sample_count": len(records),
-                "mask_count": mask_counts[spec.name],
                 "records": records,
             }
             write_json(pipeline_path, pipeline_manifest)
@@ -423,14 +484,12 @@ def build_view(
                 "manifest": f"{spec.name}/manifest.json",
                 "manifest_sha256": sha256(pipeline_path),
             }
-            total_masks += mask_counts[spec.name]
 
         manifest = {
             "schema_version": VIEW_SCHEMA,
             "dataset_id": str(release["dataset_id"]),
             "storage_mode": "compact_metadata_with_absolute_artifact_symlinks",
             "sample_count": expected_count,
-            "mask_count": total_masks,
             "release_manifest": str(release_path),
             "release_manifest_sha256": sha256(release_path),
             "render_contract": render_contract,
@@ -443,6 +502,8 @@ def build_view(
         (work / "README.txt").write_text(
             "Canonical PhysSweep base release.\n"
             "metadata.json is the sample authority; trajectory arrays use one object axis.\n"
+            "Every sample contains exactly metadata.json, trajectory.npz, video.mp4, "
+            "masks/, and mask_manifest.json.\n"
             "Generation diagnostics and inspection frames are not release artifacts.\n",
             encoding="utf-8",
         )
@@ -508,6 +569,12 @@ def _validate_masks(sample: Path, metadata: dict[str, Any]) -> None:
     if [(record["object_id"], int(record["instance_id"])) for record in records] != expected_objects:
         raise ValueError("mask manifest object axis differs")
     frame_count = int(manifest["frame_count"])
+    time = metadata["physics"]["time"]
+    expected_frame_count = (
+        round(float(time["duration_s"]) * int(time["output_fps"])) + 1
+    )
+    if frame_count != expected_frame_count:
+        raise ValueError("mask and trajectory frame counts differ")
     for record in records:
         object_id = safe_scene_id(record["object_id"])
         paths = sorted((masks / object_id).glob("frame_*.png"))
@@ -531,7 +598,6 @@ def verify_view(output: Path) -> dict[str, Any]:
         "dataset_id",
         "storage_mode",
         "sample_count",
-        "mask_count",
         "release_manifest",
         "release_manifest_sha256",
         "render_contract",
@@ -553,8 +619,8 @@ def verify_view(output: Path) -> dict[str, Any]:
     render_contract = manifest.get("render_contract")
     if (
         not isinstance(render_contract, dict)
+        or set(render_contract) != {"engine", "resolution", "video_encoding"}
         or not render_contract.get("engine")
-        or int(render_contract.get("samples", 0)) <= 0
         or not isinstance(render_contract.get("resolution"), list)
         or len(render_contract["resolution"]) != 2
         or any(int(value) <= 0 for value in render_contract["resolution"])
@@ -582,7 +648,6 @@ def verify_view(output: Path) -> dict[str, Any]:
         raise ValueError("base and source release identities differ")
 
     count = 0
-    mask_count = 0
     scene_ids: set[str] = set()
     group_ids: set[str] = set()
     expected_top = {"manifest.json", "README.txt"}
@@ -605,7 +670,7 @@ def verify_view(output: Path) -> dict[str, Any]:
         if (
             document.get("schema_version") != PIPELINE_SCHEMA
             or set(document)
-            != {"schema_version", "pipeline", "source_schema_version", "sample_count", "mask_count", "records"}
+            != {"schema_version", "pipeline", "source_schema_version", "sample_count", "records"}
             or document.get("pipeline") != family
             or not document.get("source_schema_version")
             or not isinstance(records, list)
@@ -613,7 +678,6 @@ def verify_view(output: Path) -> dict[str, Any]:
         ):
             raise ValueError(f"pipeline manifest differs: {family}")
         expected_samples = set()
-        family_masks = 0
         for record in records:
             if set(record) != {
                 "scene_id", "group_id", "metadata_sha256",
@@ -670,13 +734,14 @@ def verify_view(output: Path) -> dict[str, Any]:
             )
             if not video.is_symlink():
                 raise ValueError(f"video must remain a source symlink: {scene_id}")
-            expected_entries = {"metadata.json", "trajectory.npz", "video.mp4"}
-            if "masks" in metadata["artifacts"]:
-                expected_entries.update({"masks", "mask_manifest.json"})
-                _validate_masks(sample, metadata)
-                family_masks += 1
-            elif (sample / "masks").exists() or (sample / "masks").is_symlink():
-                raise ValueError(f"unbound masks are present: {scene_id}")
+            expected_entries = {
+                "metadata.json",
+                "trajectory.npz",
+                "video.mp4",
+                "masks",
+                "mask_manifest.json",
+            }
+            _validate_masks(sample, metadata)
             if {path.name for path in sample.iterdir()} != expected_entries:
                 raise ValueError(f"unexpected base sample files: {scene_id}")
             count += 1
@@ -685,18 +750,14 @@ def verify_view(output: Path) -> dict[str, Any]:
         }
         if actual_samples != expected_samples:
             raise ValueError(f"pipeline sample directories differ: {family}")
-        if family_masks != int(document.get("mask_count", -1)):
-            raise ValueError(f"pipeline mask count differs: {family}")
-        mask_count += family_masks
     if {path.name for path in output.iterdir()} != expected_top:
         raise ValueError("unexpected base root entries")
-    if count != int(manifest["sample_count"]) or mask_count != int(manifest["mask_count"]):
+    if count != int(manifest["sample_count"]):
         raise ValueError("base release totals differ")
     return {
         "schema_version": AUDIT_SCHEMA,
         "view": str(output),
         "sample_count": count,
-        "mask_count": mask_count,
         "pipeline_count": len(manifest["pipelines"]),
         "passed": True,
     }
@@ -709,9 +770,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
         "--pipeline",
-        nargs=4,
+        nargs=5,
         action="append",
-        metavar=("NAME", "SOURCE_SCHEMA", "PROJECT_ROOT", "RENDER_ROOT"),
+        metavar=("NAME", "SOURCE_SCHEMA", "PROJECT_ROOT", "RENDER_ROOT", "MASK_ROOT"),
         help="Repeat once per release pipeline.",
     )
     parser.add_argument("--verify-only", action="store_true")
@@ -728,8 +789,14 @@ def main() -> None:
                 "--release-project-root and --release-manifest are required when building"
             )
         specs = [
-            PipelineSpec(name, schema, Path(root), Path(render_root))
-            for name, schema, root, render_root in (args.pipeline or [])
+            PipelineSpec(
+                name,
+                schema,
+                Path(root),
+                Path(render_root),
+                Path(mask_root),
+            )
+            for name, schema, root, render_root, mask_root in (args.pipeline or [])
         ]
         result = build_view(
             release_project_root=args.release_project_root,
