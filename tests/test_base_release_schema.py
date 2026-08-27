@@ -15,6 +15,7 @@ from tools.base_release_schema import (
     build_base_metadata,
     build_mask_manifest,
     canonical_trajectory,
+    _dynamic_material_extras,
     sha256,
     validate_base_metadata,
     write_deterministic_npz,
@@ -22,6 +23,36 @@ from tools.base_release_schema import (
 
 
 class BaseReleaseSchemaTests(unittest.TestCase):
+    def test_adapter_specific_material_defaults_do_not_cross_pipelines(self) -> None:
+        backend = {
+            "asset_proxy_rules": {
+                "contact": {
+                    "dynamic_defaults": {
+                        "rolling_friction": 0.0008,
+                        "spinning_friction": 0.0003,
+                        "linear_damping": 0.025,
+                        "angular_damping": 0.035,
+                    }
+                }
+            },
+            "billiards_rules": {
+                "ball_dynamics": {
+                    "rolling_friction": 0.0025,
+                    "spinning_friction": 0.0006,
+                    "linear_damping": 0.025,
+                    "angular_damping": 0.01,
+                }
+            },
+        }
+        resolved = {
+            "backend_binding": {"adapter_id": "billiards_v4"},
+            "adapter_payload": {"backend": backend},
+        }
+        self.assertEqual(
+            _dynamic_material_extras({}, resolved, "cue_ball"),
+            backend["billiards_rules"]["ball_dynamics"],
+        )
+
     def source_trajectory(self, path: Path) -> None:
         time_s = np.asarray([0.0, 1.0], dtype=np.float64)
         position = np.zeros((2, 1, 3), dtype=np.float64)

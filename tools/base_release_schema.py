@@ -278,18 +278,21 @@ def _dynamic_material_extras(
 
     adapter_payload = _mapping(resolved_scene.get("adapter_payload"))
     backend = _mapping(adapter_payload.get("backend"))
-    asset_defaults = _mapping(
-        _mapping(
-            _mapping(backend.get("asset_proxy_rules")).get("contact")
-        ).get("dynamic_defaults")
-    )
-    if asset_defaults:
-        candidates.append(asset_defaults)
-    billiards_defaults = _mapping(
-        _mapping(backend.get("billiards_rules")).get("ball_dynamics")
-    )
-    if billiards_defaults:
-        candidates.append(billiards_defaults)
+    adapter_id = str(_mapping(resolved_scene.get("backend_binding")).get("adapter_id"))
+    if adapter_id == "asset_proxy_v3":
+        candidates.append(
+            _mapping(
+                _mapping(
+                    _mapping(backend.get("asset_proxy_rules")).get("contact")
+                ).get("dynamic_defaults")
+            )
+        )
+    elif adapter_id == "billiards_v4":
+        candidates.append(
+            _mapping(
+                _mapping(backend.get("billiards_rules")).get("ball_dynamics")
+            )
+        )
 
     result: dict[str, float] = {}
     for key in DYNAMIC_MATERIAL_FIELDS[3:]:
