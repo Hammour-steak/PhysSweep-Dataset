@@ -50,9 +50,9 @@ except ModuleNotFoundError:
     )
 
 
-VIEW_SCHEMA = "physweep_base_release_view_v4"
-PIPELINE_SCHEMA = "physweep_base_pipeline_view_v3"
-AUDIT_SCHEMA = "physweep_base_release_view_audit_v4"
+VIEW_SCHEMA = "physweep_base_release_view_v6"
+PIPELINE_SCHEMA = "physweep_base_pipeline_view_v4"
+AUDIT_SCHEMA = "physweep_base_release_view_audit_v6"
 
 
 @dataclass(frozen=True)
@@ -403,7 +403,6 @@ def build_view(
                 render_metadata_sha256=sources["render_metadata_sha256"],
             )
             mask_counts[spec.name] += int(compact.pop("has_masks"))
-            compact["source_metadata_path"] = source_metadata_path
             grouped[spec.name].append(compact)
 
         pipeline_bindings: dict[str, Any] = {}
@@ -429,15 +428,11 @@ def build_view(
         manifest = {
             "schema_version": VIEW_SCHEMA,
             "dataset_id": str(release["dataset_id"]),
-            "kind": "base_only",
             "storage_mode": "compact_metadata_with_absolute_artifact_symlinks",
             "sample_count": expected_count,
             "mask_count": total_masks,
             "release_manifest": str(release_path),
             "release_manifest_sha256": sha256(release_path),
-            "base_manifest_sha256": sha256(base_path),
-            "metadata_manifest_sha256": sha256(metadata_path),
-            "physics_manifest_sha256": sha256(physics_path),
             "render_contract": render_contract,
             "sample_schema_version": BASE_SAMPLE_SCHEMA,
             "trajectory_schema_version": TRAJECTORY_SCHEMA,
@@ -531,9 +526,23 @@ def _validate_masks(sample: Path, metadata: dict[str, Any]) -> None:
 def verify_view(output: Path) -> dict[str, Any]:
     output = output.resolve()
     manifest = load_json(output / "manifest.json")
+    expected_manifest_fields = {
+        "schema_version",
+        "dataset_id",
+        "storage_mode",
+        "sample_count",
+        "mask_count",
+        "release_manifest",
+        "release_manifest_sha256",
+        "render_contract",
+        "sample_schema_version",
+        "trajectory_schema_version",
+        "mask_manifest_schema_version",
+        "pipelines",
+    }
     if (
-        manifest.get("schema_version") != VIEW_SCHEMA
-        or manifest.get("kind") != "base_only"
+        set(manifest) != expected_manifest_fields
+        or manifest.get("schema_version") != VIEW_SCHEMA
         or manifest.get("storage_mode")
         != "compact_metadata_with_absolute_artifact_symlinks"
         or manifest.get("sample_schema_version") != BASE_SAMPLE_SCHEMA
@@ -563,7 +572,7 @@ def verify_view(output: Path) -> dict[str, Any]:
     for key in ("base_manifest", "metadata_manifest", "physics_manifest"):
         verified_file(
             project_path(release_root, str(release[key])),
-            str(manifest[f"{key}_sha256"]),
+            str(release[f"{key}_sha256"]),
             f"base release {key}",
         )
     if (
@@ -576,7 +585,6 @@ def verify_view(output: Path) -> dict[str, Any]:
     mask_count = 0
     scene_ids: set[str] = set()
     group_ids: set[str] = set()
-    source_paths: set[str] = set()
     expected_top = {"manifest.json", "README.txt"}
     for family, binding in manifest["pipelines"].items():
         family = safe_scene_id(family)
@@ -609,22 +617,17 @@ def verify_view(output: Path) -> dict[str, Any]:
         for record in records:
             if set(record) != {
                 "scene_id", "group_id", "metadata_sha256",
-                "source_metadata_sha256", "source_metadata_path",
             }:
                 raise ValueError(f"pipeline record fields differ: {family}")
             scene_id = safe_scene_id(record["scene_id"])
             group_id = safe_scene_id(record["group_id"])
-            source_path = str(record.get("source_metadata_path", ""))
             if (
                 scene_id in scene_ids
                 or group_id in group_ids
-                or not source_path
-                or source_path in source_paths
             ):
                 raise ValueError(f"duplicate base identity: {scene_id}")
             scene_ids.add(scene_id)
             group_ids.add(group_id)
-            source_paths.add(source_path)
             expected_samples.add(scene_id)
             sample = output / family / scene_id
             if not sample.is_dir() or sample.is_symlink():
@@ -642,8 +645,8 @@ def verify_view(output: Path) -> dict[str, Any]:
                 summary["scene_id"] != scene_id
                 or summary["group_id"] != group_id
                 or summary["family"] != family
-                or metadata["lineage"]["source_metadata_sha256"]
-                != record["source_metadata_sha256"]
+                or metadata["lineage"]["source_schema_version"]
+                != document["source_schema_version"]
             ):
                 raise ValueError(f"metadata identity differs: {scene_id}")
             if int(metadata["physics"]["time"]["output_fps"]) != int(

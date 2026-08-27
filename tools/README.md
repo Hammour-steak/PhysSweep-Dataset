@@ -264,8 +264,12 @@ Each sample contains one canonical `metadata.json`, one canonical object-axis
 manifest. Video and mask payloads remain symlinked to immutable render output;
 generation diagnostics, inspection frames, adapter trajectory channels, and
 schema-specific metadata copies are excluded. The root manifest owns the shared
-render resolution and encoding contract. Each `--pipeline` argument binds
-one source metadata schema to its project and render roots:
+render resolution and encoding contract, while its hash-bound source release
+manifest remains the sole owner of base, metadata, and physics manifest hashes.
+Each `--pipeline` argument binds
+one source metadata schema to its project and render roots. Per-sample lineage
+stays in `metadata.json`; pipeline index records contain only the sample and
+group identities plus the canonical metadata hash:
 
 ```bash
 .venv/bin/python tools/build_base_release_view.py \

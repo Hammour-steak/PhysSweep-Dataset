@@ -307,6 +307,9 @@ class BaseReleaseViewTests(unittest.TestCase):
             root_manifest = json.loads(
                 (output / "manifest.json").read_text(encoding="utf-8")
             )
+            self.assertNotIn("kind", root_manifest)
+            for key in ("base_manifest", "metadata_manifest", "physics_manifest"):
+                self.assertNotIn(f"{key}_sha256", root_manifest)
             self.assertEqual(
                 set(root_manifest["pipelines"]["generic"]),
                 {"manifest", "manifest_sha256"},
@@ -315,7 +318,10 @@ class BaseReleaseViewTests(unittest.TestCase):
             generic_manifest = json.loads(
                 (output / "generic/manifest.json").read_text(encoding="utf-8")
             )
-            self.assertNotIn("sample_path", generic_manifest["records"][0])
+            self.assertEqual(
+                set(generic_manifest["records"][0]),
+                {"scene_id", "group_id", "metadata_sha256"},
+            )
             self.assertEqual(verify_view(output), result)
             root_manifest["storage_mode"] = "unexpected"
             write_json(output / "manifest.json", root_manifest)

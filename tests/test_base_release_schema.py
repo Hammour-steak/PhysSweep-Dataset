@@ -181,6 +181,7 @@ class BaseReleaseSchemaTests(unittest.TestCase):
             self.assertNotIn("resolution", metadata["visual"])
             self.assertNotIn("frame_count", metadata["physics"]["time"])
             self.assertNotIn("dynamic_object_count", metadata["semantics"])
+            self.assertNotIn("scene_family", metadata["semantics"])
             metadata["artifacts"]["trajectory"]["path"] = "../trajectory.npz"
             with self.assertRaisesRegex(ValueError, "trajectory binding"):
                 validate_base_metadata(metadata)

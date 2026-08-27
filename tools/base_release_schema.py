@@ -21,7 +21,7 @@ except ModuleNotFoundError:
     from tools.audit_release_provenance import sha256
 
 
-BASE_SAMPLE_SCHEMA = "physweep_base_sample_v3"
+BASE_SAMPLE_SCHEMA = "physweep_base_sample_v4"
 TRAJECTORY_SCHEMA = "physweep_object_trajectory_v3"
 MASK_MANIFEST_SCHEMA = "physweep_instance_mask_manifest_v3"
 
@@ -231,7 +231,7 @@ def _compact_camera(
     return result
 
 
-def _compact_semantics(source: Mapping[str, Any], family: str) -> dict[str, Any]:
+def _compact_semantics(source: Mapping[str, Any]) -> dict[str, Any]:
     semantic_sampling = _mapping(source.get("semantic_sampling"))
     dimensions = _mapping(semantic_sampling.get("five_dimensions"))
     if dimensions:
@@ -284,7 +284,6 @@ def _compact_semantics(source: Mapping[str, Any], family: str) -> dict[str, Any]
     if semantics:
         return _without_none(
             {
-                "scene_family": semantics.get("scene_family", family),
                 "profile": semantics.get("profile"),
                 "description": semantics.get("description"),
             }
@@ -292,7 +291,6 @@ def _compact_semantics(source: Mapping[str, Any], family: str) -> dict[str, Any]
     physics = _mapping(source.get("physics"))
     return _without_none(
         {
-            "scene_family": family,
             "profile": physics.get("motion_profile") or physics.get("profile"),
             "description": source.get("dynamic_asset_name"),
         }
@@ -573,7 +571,7 @@ def build_base_metadata(
         "group_id": group_id,
         "family": family,
         "seed": int(source["seed"]),
-        "semantics": _compact_semantics(source, family),
+        "semantics": _compact_semantics(source),
         "physics": physics,
         "visual": visual,
         "artifacts": artifacts,
@@ -692,7 +690,6 @@ def materialize_base_sample(
         "scene_id": scene_id,
         "group_id": group_id,
         "metadata_sha256": sha256(metadata_path),
-        "source_metadata_sha256": source_metadata_sha256,
         "has_masks": mask_hash is not None,
     }
 
@@ -746,6 +743,8 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
     if set(physics.get("time", {})) != {"duration_s", "output_fps", "simulation_hz"}:
         raise ValueError("canonical time contract is invalid")
     semantics = _mapping(metadata.get("semantics"))
+    if "scene_family" in semantics:
+        raise ValueError("canonical semantics duplicate top-level family")
     if "visual_asset_id" in _mapping(semantics.get("object")):
         raise ValueError("canonical semantics duplicate object asset identity")
     visual = _mapping(metadata.get("visual"))
@@ -777,6 +776,13 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
         raise ValueError("canonical mask binding is invalid")
     if set(artifacts) != ({"trajectory", "video", "masks"} if masks else {"trajectory", "video"}):
         raise ValueError("canonical artifact set is invalid")
+    lineage = _mapping(metadata.get("lineage"))
+    if (
+        set(lineage) != {"source_schema_version", "source_metadata_sha256"}
+        or not str(lineage.get("source_schema_version", ""))
+        or len(str(lineage.get("source_metadata_sha256", ""))) != 64
+    ):
+        raise ValueError("canonical lineage is invalid")
     return {
         "schema_version": BASE_SAMPLE_SCHEMA,
         "scene_id": scene_id,
