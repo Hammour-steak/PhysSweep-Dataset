@@ -4,16 +4,20 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import io
 import json
 import math
 import os
+import re
+import shutil
 import time
 import zipfile
 from pathlib import Path
 from typing import Any, Mapping
 
 import numpy as np
+from PIL import Image
 
 try:
     from audit_release_provenance import sha256
@@ -21,9 +25,10 @@ except ModuleNotFoundError:
     from tools.audit_release_provenance import sha256
 
 
-BASE_SAMPLE_SCHEMA = "physweep_base_sample_v6"
-TRAJECTORY_SCHEMA = "physweep_object_trajectory_v3"
-MASK_MANIFEST_SCHEMA = "physweep_instance_mask_manifest_v3"
+BASE_SAMPLE_SCHEMA = "physweep_base_sample_v11"
+TRAJECTORY_SCHEMA = "physweep_object_trajectory_v4"
+MASK_MANIFEST_SCHEMA = "physweep_instance_mask_manifest_v4"
+FIXTURE_SCHEMA = "physweep_static_fixture_v1"
 
 DYNAMIC_MATERIAL_FIELDS = (
     "mass_kg",
@@ -33,7 +38,27 @@ DYNAMIC_MATERIAL_FIELDS = (
     "spinning_friction",
     "linear_damping",
     "angular_damping",
+    "contact_processing_threshold_m",
 )
+
+ASSET_LABELS = {
+    "decorated dinner plate": "decorated dinner plate",
+    "plastic cup": "plastic cup",
+    "toy car": "toy car",
+    "glass bottle": "glass bottle",
+    "a wooden crate": "wooden crate",
+    "rubber band ball": "rubber band ball",
+    "gas cylinder": "gas cylinder",
+    "remote control": "remote control",
+    "ceramic bowl": "ceramic bowl",
+    "modern generic smartphone": "smartphone",
+    "tin can": "tin can",
+    "baluster vase, from a five piece garniture": "baluster vase",
+    "ceramic mug": "ceramic mug",
+    "closed magazine": "closed magazine",
+    "tools / 4 way lug wrench": "four-way lug wrench",
+    "cardboard box": "cardboard box",
+}
 
 TRAJECTORY_FIELDS = (
     "schema_version",
@@ -57,10 +82,16 @@ def verified_file(path: Path, expected_hash: str, label: str) -> Path:
     return path
 
 
-def linked_file(path: Path, source: Path) -> None:
+def materialized_file(path: Path, source: Path) -> None:
     if path.exists() or path.is_symlink():
         raise FileExistsError(path)
-    path.symlink_to(source.resolve(), target_is_directory=source.is_dir())
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        os.link(source.resolve(), path)
+    except OSError:
+        if path.exists():
+            raise
+        shutil.copy2(source, path)
 
 
 def safe_path_component(value: Any, label: str) -> str:
@@ -94,6 +125,32 @@ def write_json(path: Path, value: Any) -> None:
         os.replace(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def write_content_addressed_json(root: Path, directory: str, value: Any) -> tuple[str, str]:
+    payload = (
+        json.dumps(value, indent=2, ensure_ascii=True, sort_keys=True) + "\n"
+    ).encode("utf-8")
+    digest = hashlib.sha256(payload).hexdigest()
+    relative = Path(directory) / f"{digest}.json"
+    target = root / relative
+    if target.exists():
+        if sha256(target) != digest:
+            raise ValueError(f"content-address collision: {target}")
+    else:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temporary = target.with_name(f".{target.name}.tmp-{os.getpid()}-{time.time_ns()}")
+        try:
+            temporary.write_bytes(payload)
+            try:
+                os.link(temporary, target)
+            except FileExistsError:
+                pass
+        finally:
+            temporary.unlink(missing_ok=True)
+        if sha256(target) != digest:
+            raise ValueError(f"content-addressed write failed: {target}")
+    return digest, relative.as_posix()
 
 
 def write_deterministic_npz(path: Path, arrays: Mapping[str, np.ndarray]) -> None:
@@ -130,12 +187,26 @@ def _without_none(value: Mapping[str, Any]) -> dict[str, Any]:
     return {str(key): copy.deepcopy(item) for key, item in value.items() if item is not None}
 
 
-def _string_array(value: np.ndarray) -> list[str]:
-    return [str(item) for item in np.asarray(value).reshape(-1).tolist()]
+def canonical_quaternion_sign(value: Any) -> list[float]:
+    quaternion = np.asarray(value, dtype=np.float64)
+    if quaternion.shape != (4,) or not np.isfinite(quaternion).all():
+        raise ValueError("invalid initial quaternion")
+    norm = float(np.linalg.norm(quaternion))
+    if abs(norm - 1.0) > 1.0e-6:
+        raise ValueError("initial quaternion is not normalized")
+    for component in quaternion:
+        if abs(float(component)) > 1.0e-12:
+            if component < 0.0:
+                quaternion = -quaternion
+            break
+    return [float(item) for item in quaternion]
 
 
-def canonical_trajectory(source: Path) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
-    """Strip adapter/render channels while returning invariant object properties."""
+def canonical_trajectory(
+    source: Path,
+    initial_quaternions: list[list[float]] | None = None,
+) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+    """Strip adapter channels and normalize the public trajectory contract."""
     with np.load(source, allow_pickle=False) as archive:
         missing = sorted(set(TRAJECTORY_FIELDS[1:]) - set(archive.files))
         for required in ("runtime_material", "inertia_diagonal_kg_m2"):
@@ -143,24 +214,27 @@ def canonical_trajectory(source: Path) -> tuple[dict[str, np.ndarray], dict[str,
                 missing.append(required)
         if missing:
             raise ValueError(f"trajectory lacks canonical fields: {', '.join(missing)}")
-        arrays = {
-            "schema_version": np.asarray(TRAJECTORY_SCHEMA),
-            **{
+        arrays = {"schema_version": np.asarray(TRAJECTORY_SCHEMA)}
+        arrays.update(
+            {
                 key: np.array(archive[key], copy=True)
                 for key in TRAJECTORY_FIELDS
                 if key != "schema_version"
-            },
-        }
+            }
+        )
         runtime_material = np.asarray(archive["runtime_material"], dtype=np.float64)
         inertia = np.asarray(archive["inertia_diagonal_kg_m2"], dtype=np.float64)
 
-    object_ids = _string_array(arrays["object_ids"])
+    object_ids = [
+        str(item)
+        for item in np.asarray(arrays["object_ids"]).reshape(-1).tolist()
+    ]
     time_s = np.asarray(arrays["time_s"], dtype=np.float64)
     position = np.asarray(arrays["position_m"], dtype=np.float64)
     quaternion = np.asarray(arrays["quaternion_wxyz"], dtype=np.float64)
     linear = np.asarray(arrays["linear_velocity_m_s"], dtype=np.float64)
     angular = np.asarray(arrays["angular_velocity_rad_s"], dtype=np.float64)
-    contact = np.asarray(arrays["contact_count"])
+    contact = np.asarray(arrays["contact_count"], dtype=np.int32)
     frame_count = int(time_s.shape[0])
     object_count = len(object_ids)
     expected = {
@@ -194,6 +268,33 @@ def canonical_trajectory(source: Path) -> tuple[dict[str, np.ndarray], dict[str,
         raise ValueError("trajectory runtime_material is invalid")
     if inertia.shape != (object_count, 3) or not np.isfinite(inertia).all() or np.any(inertia <= 0.0):
         raise ValueError("trajectory inertia is invalid")
+    if initial_quaternions is not None:
+        initial = np.asarray(initial_quaternions, dtype=np.float64)
+        if initial.shape != (object_count, 4):
+            raise ValueError("initial quaternion/object shape differs")
+        for object_index in range(object_count):
+            if float(np.dot(quaternion[0, object_index], initial[object_index])) < 0.0:
+                quaternion[0, object_index] *= -1.0
+            for frame in range(1, frame_count):
+                if float(
+                    np.dot(
+                        quaternion[frame - 1, object_index],
+                        quaternion[frame, object_index],
+                    )
+                ) < 0.0:
+                    quaternion[frame, object_index] *= -1.0
+    if np.any(np.sum(quaternion[1:] * quaternion[:-1], axis=2) < -1.0e-12):
+        raise ValueError("trajectory quaternion sign continuity failed")
+    arrays.update(
+        {
+            "time_s": time_s,
+            "position_m": position,
+            "quaternion_wxyz": quaternion,
+            "linear_velocity_m_s": linear,
+            "angular_velocity_rad_s": angular,
+            "contact_count": contact,
+        }
+    )
     return arrays, {
         "object_ids": object_ids,
         "frame_count": frame_count,
@@ -213,7 +314,7 @@ def _orientation_wxyz(initial: Mapping[str, Any]) -> list[float]:
     norm = math.sqrt(sum(item * item for item in value))
     if len(value) != 4 or abs(norm - 1.0) > 1.0e-6:
         raise ValueError("initial orientation is not a unit quaternion")
-    return value
+    return canonical_quaternion_sign(value)
 
 
 def _compact_camera(
@@ -295,7 +396,12 @@ def _dynamic_material_extras(
         )
 
     result: dict[str, float] = {}
-    for key in DYNAMIC_MATERIAL_FIELDS[3:]:
+    for key in (
+        "rolling_friction",
+        "spinning_friction",
+        "linear_damping",
+        "angular_damping",
+    ):
         for candidate in candidates:
             if candidate.get(key) is not None:
                 result[key] = float(candidate[key])
@@ -305,6 +411,130 @@ def _dynamic_material_extras(
         if not math.isfinite(result[key]) or result[key] < 0.0:
             raise ValueError(f"invalid {key} for {object_id}")
     return result
+
+
+def _solver_contract(
+    adapter_id: str,
+    source: Mapping[str, Any],
+    resolved_scene: Mapping[str, Any],
+) -> dict[str, Any]:
+    if adapter_id == "generic_rigid_v1":
+        result = copy.deepcopy(_mapping(source.get("simulation")).get("solver"))
+        result.setdefault("enable_cone_friction", True)
+        result.setdefault("use_split_impulse", True)
+    else:
+        payload = _mapping(resolved_scene.get("adapter_payload"))
+        backend = _mapping(payload.get("backend"))
+        if adapter_id == "asset_proxy_v3":
+            engine = _mapping(_mapping(backend.get("asset_proxy_rules")).get("engine"))
+            result = {
+                "solver_iterations": int(_mapping(backend.get("engine"))["solver_iterations"]),
+                "deterministic_overlapping_pairs": True,
+                "restitution_velocity_threshold_m_s": float(
+                    engine["restitution_velocity_threshold_m_s"]
+                ),
+                "enable_cone_friction": bool(engine["enable_cone_friction"]),
+                "use_split_impulse": bool(engine["use_split_impulse"]),
+            }
+        elif adapter_id == "billiards_v4":
+            engine = _mapping(_mapping(backend.get("billiards_rules")).get("engine"))
+            result = {
+                "solver_iterations": int(engine["solver_iterations"]),
+                "deterministic_overlapping_pairs": True,
+                "restitution_velocity_threshold_m_s": float(
+                    engine["restitution_velocity_threshold_m_s"]
+                ),
+                "enable_cone_friction": bool(engine["enable_cone_friction"]),
+                "use_split_impulse": bool(engine["use_split_impulse"]),
+            }
+        else:
+            result = copy.deepcopy(
+                _mapping(_mapping(source.get("physics")).get("engine"))
+            )
+    if "iterations" in result:
+        if "solver_iterations" in result:
+            raise ValueError("both solver iteration field names are present")
+        result["solver_iterations"] = result.pop("iterations")
+    required = {
+        "solver_iterations",
+        "deterministic_overlapping_pairs",
+        "restitution_velocity_threshold_m_s",
+        "enable_cone_friction",
+        "use_split_impulse",
+    }
+    if not required.issubset(result):
+        raise ValueError(f"resolved solver contract is incomplete for {adapter_id}")
+    allowed = required | {"contact_breaking_threshold_m"}
+    return {
+        key: copy.deepcopy(value)
+        for key, value in result.items()
+        if key in allowed
+    }
+
+
+def _normalized_label(family: str, value: str) -> str:
+    label = value.strip().lower()
+    if family == "generic":
+        match = re.fullmatch(r"physassets\s+\d+\s+(.+)", label)
+        if match is not None:
+            return match.group(1)
+    elif family == "asset":
+        if label in ASSET_LABELS:
+            return ASSET_LABELS[label]
+    elif family == "billiards" and label == "object 1":
+        return "cue ball"
+    if not label or re.search(r"physassets\s+\d+|object\s+\d+", label):
+        raise ValueError(f"unreviewed semantic label: {value!r}")
+    return label
+
+
+def _normalized_text(value: Any) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", str(value).lower()).strip()
+
+
+def _clean_text(
+    family: str,
+    source: Mapping[str, Any],
+    labels: Mapping[str, str],
+) -> dict[str, Any]:
+    identity_text = _mapping(_mapping(source.get("object_identity")).get("text"))
+    caption = str(identity_text.get("caption", ""))
+    raw_mentions = identity_text.get("object_mentions", [])
+    if not caption or not isinstance(raw_mentions, list) or not raw_mentions:
+        raise ValueError("source object text is incomplete")
+    for raw in raw_mentions:
+        mention = _mapping(raw)
+        object_id = str(mention.get("object_id", ""))
+        old_surface = str(mention.get("text", ""))
+        if object_id not in labels or not old_surface or caption.count(old_surface) != 1:
+            raise ValueError("source caption mention is not unique")
+        caption = caption.replace(old_surface, f"the {labels[object_id]}", 1)
+    if family == "generic":
+        caption = caption.replace(" 1obj scenario", " scenario")
+    if family in {"asset", "billiards"}:
+        caption = re.sub(r" on the sketchfab bg [0-9a-f]{32}(?=\.)", "", caption)
+        caption = re.sub(
+            r" on the support [a-z0-9 ]+ [0-9a-f]{8}(?=\.)",
+            " on the support",
+            caption,
+        )
+    caption = re.sub(r"\s+", " ", caption).strip()
+    if not caption.endswith(".") or re.search(
+        r"physassets\s+\d+|sketchfab\s+bg\s+[0-9a-f]{16,}|object\s+\d+|\b1obj\b",
+        caption,
+    ):
+        raise ValueError(f"internal identifier remains in caption: {caption!r}")
+    mentions = []
+    for raw in raw_mentions:
+        object_id = str(_mapping(raw)["object_id"])
+        surface = f"the {labels[object_id]}"
+        if caption.count(surface) != 1:
+            raise ValueError("normalized caption mention is not unique")
+        start = caption.index(surface)
+        mentions.append(
+            {"object_id": object_id, "char_span": [start, start + len(surface)]}
+        )
+    return {"caption": caption, "object_mentions": mentions}
 
 
 def _compact_semantics(source: Mapping[str, Any]) -> dict[str, Any]:
@@ -406,9 +636,9 @@ def _compact_material_bindings(source: Mapping[str, Any]) -> dict[str, Any]:
     return result
 
 
-def _compact_fixture(
+def _fixture_descriptor(
     source: Mapping[str, Any], render_record: Mapping[str, Any]
-) -> dict[str, Any] | None:
+) -> tuple[dict[str, Any], str]:
     physics = _mapping(source.get("physics"))
     support_binding = _mapping(physics.get("static_support_binding"))
     environment_binding = _mapping(source.get("environment_binding"))
@@ -433,10 +663,122 @@ def _compact_fixture(
                 or support_binding.get("representation")
                 or simulation_support.get("collision_authority")
             ),
-            "binding_sha256": binding_hash,
         }
     )
-    return fixture or None
+    if set(fixture) != {"id", "representation"}:
+        raise ValueError("fixture identity/representation is incomplete")
+    if not isinstance(binding_hash, str) or len(binding_hash) != 64:
+        raise ValueError("fixture source binding hash is incomplete")
+    return fixture, binding_hash
+
+
+def _strip_visual_fields(value: Any) -> Any:
+    if isinstance(value, list):
+        return [_strip_visual_fields(item) for item in value]
+    if not isinstance(value, dict):
+        return copy.deepcopy(value)
+    result = {}
+    for key, item in value.items():
+        if key in {
+            "visual",
+            "color_rgba",
+            "source_path",
+            "source_sha256",
+            "review",
+            "admission",
+            "diagnostics",
+        }:
+            continue
+        result[key] = _strip_visual_fields(item)
+    return result
+
+
+def build_fixture_payload(
+    adapter_id: str,
+    source: Mapping[str, Any],
+    resolved_scene: Mapping[str, Any],
+) -> dict[str, Any]:
+    payload = _mapping(resolved_scene.get("adapter_payload"))
+    if adapter_id == "generic_rigid_v1":
+        physical = {
+            "support": copy.deepcopy(_mapping(source.get("simulation"))["support"])
+        }
+    elif adapter_id == "asset_proxy_v3":
+        backend = _mapping(payload.get("backend"))
+        contact = _mapping(_mapping(backend.get("asset_proxy_rules")).get("contact"))
+        physical = {
+            "static_support_binding": copy.deepcopy(payload["static_support_binding"]),
+            "static_prop_record": copy.deepcopy(payload.get("static_prop_record")),
+            "static_prop_binding": copy.deepcopy(payload.get("static_prop_binding")),
+            "static_dynamics": {
+                "ground": copy.deepcopy(contact["ground"]),
+                "support": copy.deepcopy(contact["support"]),
+                "static_prop": copy.deepcopy(contact["static_prop"]),
+            },
+        }
+    elif adapter_id == "billiards_v4":
+        rules = _mapping(_mapping(payload.get("backend")).get("billiards_rules"))
+        physical = {
+            "static_support_binding": copy.deepcopy(payload["static_support_binding"]),
+            "support_dynamics": copy.deepcopy(rules["support_dynamics"]),
+        }
+    else:
+        physical = {"fixture": copy.deepcopy(payload["fixture"])}
+    return {
+        "schema_version": FIXTURE_SCHEMA,
+        "adapter_id": adapter_id,
+        "physical": _strip_visual_fields(physical),
+    }
+
+
+def localize_fixture_assets(
+    value: Any,
+    *,
+    project_root: Path,
+    release_root: Path,
+    context: tuple[str, ...] = (),
+) -> Any:
+    if isinstance(value, list):
+        return [
+            localize_fixture_assets(
+                item,
+                project_root=project_root,
+                release_root=release_root,
+                context=context + (str(index),),
+            )
+            for index, item in enumerate(value)
+        ]
+    if not isinstance(value, dict):
+        return copy.deepcopy(value)
+    result = {
+        str(key): localize_fixture_assets(
+            item,
+            project_root=project_root,
+            release_root=release_root,
+            context=context + (str(key),),
+        )
+        for key, item in value.items()
+    }
+    is_collision_asset = (
+        isinstance(result.get("path"), str)
+        and isinstance(result.get("sha256"), str)
+        and any(part in {"mesh", "collision"} for part in context)
+        and "visual" not in context
+    )
+    if is_collision_asset:
+        source = Path(result["path"])
+        if not source.is_absolute():
+            source = project_root / source
+        expected = str(result["sha256"])
+        verified_file(source, expected, "fixture collision asset")
+        suffix = source.suffix.lower() or ".bin"
+        relative = Path("fixture_assets") / f"{expected}{suffix}"
+        target = release_root / relative
+        if not target.exists():
+            materialized_file(target, source)
+        verified_file(target, expected, "localized fixture collision asset")
+        result["path"] = relative.as_posix()
+    return result
 
 
 def _compact_lighting(render_record: Mapping[str, Any]) -> dict[str, Any] | None:
@@ -452,13 +794,14 @@ def _compact_lighting(render_record: Mapping[str, Any]) -> dict[str, Any] | None
     )
 
 
-def _source_visual_by_id(source: Mapping[str, Any]) -> dict[str, Any]:
+def _source_base_color_by_id(source: Mapping[str, Any]) -> dict[str, Any]:
     result = {}
     simulation = _mapping(source.get("simulation"))
     for raw in simulation.get("objects", []):
         record = _mapping(raw)
-        if record.get("object_id") and record.get("visual"):
-            result[str(record["object_id"])] = copy.deepcopy(record["visual"])
+        visual = _mapping(record.get("visual"))
+        if record.get("object_id") and visual.get("color_rgba") is not None:
+            result[str(record["object_id"])] = copy.deepcopy(visual["color_rgba"])
     return result
 
 
@@ -484,10 +827,13 @@ def _compact_collision_proxy(raw: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _compact_objects(
+    family: str,
     source: Mapping[str, Any],
     resolved_scene: Mapping[str, Any],
     trajectory_info: Mapping[str, Any],
-) -> list[dict[str, Any]]:
+    fixture_id: str,
+    billiards_templates: Mapping[str, Mapping[str, str]] | None,
+) -> tuple[list[dict[str, Any]], dict[str, str]]:
     identity = _mapping(source.get("object_identity"))
     identities = {
         str(record["object_id"]): _mapping(record)
@@ -499,12 +845,20 @@ def _compact_objects(
         raise ValueError("resolved scene object order differs from trajectory")
     if set(identities) != set(object_ids):
         raise ValueError("object identity differs from canonical trajectory")
-    visual_by_id = _source_visual_by_id(source)
+    base_color_by_id = _source_base_color_by_id(source)
     runtime_material = np.asarray(trajectory_info["runtime_material"], dtype=np.float64)
     inertia = np.asarray(trajectory_info["inertia_diagonal_kg_m2"], dtype=np.float64)
+    source_objects = {
+        str(_mapping(value).get("object_id")): _mapping(value)
+        for value in _mapping(source.get("simulation")).get("objects", [])
+    }
     result = []
+    labels: dict[str, str] = {}
     for array_index, (object_id, raw) in enumerate(zip(object_ids, resolved_objects)):
         record = identities[object_id]
+        labels[object_id] = _normalized_label(
+            family, str(record.get("semantic_label", object_id))
+        )
         material = _mapping(raw.get("material"))
         expected_material = np.asarray(
             [
@@ -520,17 +874,14 @@ def _compact_objects(
         collision_proxy = _compact_collision_proxy(_mapping(raw["collision_proxy"]))
         compact = {
             "object_id": object_id,
-            "array_index": array_index,
             "object_valid": True,
-            "role": str(record.get("role", "dynamic")),
-            "semantic_label": str(record.get("semantic_label", object_id)),
-            "mask_instance_id": int(record.get("mask_instance_id", array_index + 1)),
             "collision_proxy": collision_proxy,
             "material": {
                 "mass_kg": float(expected_material[0]),
                 "contact_friction": float(expected_material[1]),
                 "contact_restitution": float(expected_material[2]),
                 **extra_material,
+                "contact_processing_threshold_m": 0.0,
             },
             "inertia_diagonal_kg_m2": [float(item) for item in inertia[array_index]],
             "initial_state": {
@@ -542,16 +893,35 @@ def _compact_objects(
         }
         if record.get("asset_id") is not None:
             compact["asset_id"] = str(record["asset_id"])
-        if object_id in visual_by_id:
-            visual = visual_by_id[object_id]
-            if visual.get("shape") == collision_proxy.get("type"):
-                visual.pop("shape")
-            if visual.get("radius_m") == collision_proxy.get("radius_m"):
-                visual.pop("radius_m")
-            if visual:
-                compact["visual"] = visual
+        adapter_id = str(_mapping(resolved_scene.get("backend_binding")).get("adapter_id"))
+        if adapter_id == "generic_rigid_v1":
+            geometry = _mapping(source_objects.get(object_id, {}).get("geometry"))
+            size_m = [float(value) for value in geometry.get("size_m", [])]
+            if len(size_m) != 3 or min(size_m) <= 0.0:
+                raise ValueError(f"invalid generic source geometry for {object_id}")
+            compact["ccd_swept_sphere_radius_m"] = 0.22 * min(size_m)
+        if object_id in base_color_by_id:
+            compact["visual"] = {
+                "base_color_srgb_rgba": base_color_by_id[object_id]
+            }
+        if family == "billiards":
+            templates = _mapping((billiards_templates or {}).get(fixture_id))
+            if object_id not in templates or "asset_id" in compact or "visual" in compact:
+                raise ValueError(f"billiards appearance template is incomplete: {object_id}")
+            compact["visual"] = {
+                "material_template": {
+                    "source_fixture_asset_id": fixture_id,
+                    "source_object_name": str(templates[object_id]),
+                }
+            }
+        appearance_sources = int("asset_id" in compact)
+        visual = _mapping(compact.get("visual"))
+        appearance_sources += int("base_color_srgb_rgba" in visual)
+        appearance_sources += int("material_template" in visual)
+        if appearance_sources != 1:
+            raise ValueError(f"object has no unique appearance source: {object_id}")
         result.append(compact)
-    return result
+    return result, labels
 
 
 def build_mask_manifest(
@@ -581,7 +951,6 @@ def build_mask_manifest(
         records.append(
             {
                 "object_id": object_id,
-                "instance_id": int(record["mask_instance_id"]),
                 "frame_sha256": [sha256(path) for path in paths],
             }
         )
@@ -605,11 +974,23 @@ def build_base_metadata(
     trajectory_info: Mapping[str, Any],
     trajectory_sha256: str,
     video_sha256: str,
+    fixture_sha256: str,
+    billiards_templates: Mapping[str, Mapping[str, str]] | None = None,
 ) -> dict[str, Any]:
     scene_id = str(source["scene_id"])
     if scene_id != str(resolved_scene.get("scene_id")) or scene_id != str(render_record.get("scene_id")):
         raise ValueError("source, physics, and render scene ids differ")
-    objects = _compact_objects(source, resolved_scene, trajectory_info)
+    fixture_identity, source_fixture_binding_sha256 = _fixture_descriptor(
+        source, render_record
+    )
+    objects, labels = _compact_objects(
+        family,
+        source,
+        resolved_scene,
+        trajectory_info,
+        str(fixture_identity["id"]),
+        billiards_templates,
+    )
     camera = _compact_camera(source, render_record, render_metadata)
     render_config = source.get("render_request") or source.get("render")
     if not isinstance(render_config, Mapping):
@@ -627,6 +1008,7 @@ def build_base_metadata(
     if environment:
         visual["environment"] = environment
     materials = _compact_material_bindings(source)
+    materials.pop("dynamic_object", None)
     if materials:
         visual["materials"] = materials
     static_prop = _mapping(source.get("assets")).get("static_prop_asset_id")
@@ -635,6 +1017,50 @@ def build_base_metadata(
     lighting = _compact_lighting(render_record)
     if lighting:
         visual["lighting"] = lighting
+
+    semantics = _compact_semantics(source)
+    annotations = semantics.pop("object", None)
+    if family == "generic":
+        if not isinstance(annotations, dict):
+            raise ValueError("generic semantic annotations are missing")
+        annotations.pop("object_type", None)
+        annotations.pop("shape", None)
+        if set(annotations) != {"semantic_category", "scale_bin", "uniform_scale"}:
+            raise ValueError("generic semantic annotations differ")
+    elif annotations is not None:
+        raise ValueError("non-generic sample has singular semantic annotations")
+    semantic_objects = []
+    for physics_object in objects:
+        object_id = str(physics_object["object_id"])
+        semantic_object = {
+            "object_id": object_id,
+            "semantic_label": labels[object_id],
+        }
+        if annotations is not None:
+            semantic_object.update(copy.deepcopy(annotations))
+        semantic_objects.append(semantic_object)
+    semantics["objects"] = semantic_objects
+    appearance = semantics.get("appearance")
+    if not isinstance(appearance, dict):
+        appearance = {}
+    environment = _mapping(visual.get("environment"))
+    if appearance.get("hdri_role") == environment.get("role"):
+        appearance.pop("hdri_role", None)
+    support = semantics.get("support")
+    if not isinstance(support, dict):
+        support = {}
+    if support.get("support_type") == fixture_identity.get("id"):
+        support.pop("support_type", None)
+    if len(semantic_objects) == 1 and "description" in semantics:
+        identity_objects = _mapping(source.get("object_identity")).get("objects", [])
+        redundant_labels = {_normalized_text(semantic_objects[0]["semantic_label"])}
+        redundant_labels.update(
+            _normalized_text(_mapping(value).get("semantic_label", ""))
+            for value in identity_objects
+        )
+        if _normalized_text(semantics["description"]) in redundant_labels:
+            semantics.pop("description")
+    text = _clean_text(family, source, labels)
 
     backend = _mapping(resolved_scene.get("backend_binding"))
     physics: dict[str, Any] = {
@@ -645,35 +1071,40 @@ def build_base_metadata(
             key: copy.deepcopy(resolved_scene["time"][key])
             for key in ("duration_s", "output_fps", "simulation_hz")
         },
-        "world": copy.deepcopy(resolved_scene["world"]),
+        "world": {
+            "gravity_m_s2": [
+                float(item) for item in resolved_scene["world"]["gravity_m_s2"]
+            ]
+        },
         "objects": objects,
+        "solver": _solver_contract(str(backend["adapter_id"]), source, resolved_scene),
+        "fixture": {
+            **fixture_identity,
+            "sha256": fixture_sha256,
+        },
     }
-    fixture = _compact_fixture(source, render_record)
-    if fixture:
-        physics["fixture"] = fixture
 
     artifacts: dict[str, Any] = {
         "trajectory": {"sha256": trajectory_sha256},
         "video": {"sha256": video_sha256},
     }
-    caption = _mapping(_mapping(source.get("object_identity")).get("text")).get("caption")
     metadata = {
         "schema_version": BASE_SAMPLE_SCHEMA,
         "scene_id": scene_id,
         "group_id": group_id,
         "family": family,
+        "sample_kind": "base",
         "seed": int(source["seed"]),
-        "semantics": _compact_semantics(source),
+        "semantics": semantics,
         "physics": physics,
         "visual": visual,
+        "text": text,
         "artifacts": artifacts,
         "lineage": {
-            "source_schema_version": str(source["schema_version"]),
-            "source_metadata_sha256": source_metadata_sha256,
+            "source_generation_metadata_sha256": source_metadata_sha256,
+            "source_fixture_binding_sha256": source_fixture_binding_sha256,
         },
     }
-    if caption:
-        metadata["caption"] = str(caption)
     return metadata
 
 
@@ -682,70 +1113,51 @@ def materialize_base_sample(
     target: Path,
     family: str,
     group_id: str,
-    source_metadata_path: Path,
+    source: Mapping[str, Any],
     source_metadata_sha256: str,
-    resolved_scene_path: Path,
-    resolved_scene_sha256: str,
-    render_record_path: Path,
-    render_record_sha256: str,
+    resolved_scene: Mapping[str, Any],
+    render_record: Mapping[str, Any],
     trajectory_source_path: Path,
-    trajectory_source_sha256: str,
     video_source_path: Path,
     video_sha256: str,
     masks_source_path: Path,
-    render_metadata_path: Path | None = None,
-    render_metadata_sha256: str | None = None,
-) -> dict[str, Any]:
+    release_root: Path,
+    source_project_root: Path,
+    billiards_templates: Mapping[str, Mapping[str, str]] | None = None,
+    render_metadata: Mapping[str, Any] | None = None,
+) -> tuple[dict[str, str], str]:
     """Materialize one compact sample from verified generation artifacts."""
-    source_metadata_path = verified_file(
-        source_metadata_path,
-        source_metadata_sha256,
-        f"{group_id} source metadata",
-    )
-    resolved_scene_path = verified_file(
-        resolved_scene_path,
-        resolved_scene_sha256,
-        f"{group_id} resolved scene",
-    )
-    render_record_path = verified_file(
-        render_record_path,
-        render_record_sha256,
-        f"{group_id} render record",
-    )
-    trajectory_source_path = verified_file(
-        trajectory_source_path,
-        trajectory_source_sha256,
-        f"{group_id} source trajectory",
-    )
-    video_source_path = verified_file(
-        video_source_path,
-        video_sha256,
-        f"{group_id} video",
-    )
-    render_metadata = None
-    if render_metadata_path is not None:
-        if render_metadata_sha256 is None:
-            raise ValueError("render metadata path has no hash")
-        render_metadata = json.loads(
-            verified_file(
-                render_metadata_path,
-                render_metadata_sha256,
-                f"{group_id} render metadata",
-            ).read_text(encoding="utf-8")
-        )
-
-    source = json.loads(source_metadata_path.read_text(encoding="utf-8"))
-    resolved_scene = json.loads(resolved_scene_path.read_text(encoding="utf-8"))
-    render_record = json.loads(render_record_path.read_text(encoding="utf-8"))
+    source = dict(source)
+    resolved_scene = dict(resolved_scene)
+    render_record = dict(render_record)
+    render_metadata = dict(render_metadata) if render_metadata is not None else None
     scene_id = str(source.get("scene_id", ""))
     if not scene_id:
         raise ValueError("source metadata has no scene_id")
-    arrays, trajectory_info = canonical_trajectory(trajectory_source_path)
+    resolved_objects = [_mapping(value) for value in resolved_scene.get("objects", [])]
+    initial_quaternions = [
+        _orientation_wxyz(_mapping(value.get("initial_state")))
+        for value in resolved_objects
+    ]
+    arrays, trajectory_info = canonical_trajectory(
+        trajectory_source_path, initial_quaternions
+    )
+    adapter_id = str(_mapping(resolved_scene.get("backend_binding")).get("adapter_id"))
+    fixture_payload = localize_fixture_assets(
+        build_fixture_payload(adapter_id, source, resolved_scene),
+        project_root=source_project_root.resolve(),
+        release_root=release_root.resolve(),
+    )
+    fixture_sha256, fixture_path = write_content_addressed_json(
+        release_root.resolve(), "fixtures", fixture_payload
+    )
+    if fixture_path != f"fixtures/{fixture_sha256}.json":
+        raise ValueError("fixture path is not derived from its hash")
     target.mkdir(parents=True)
     trajectory_path = target / "trajectory.npz"
     write_deterministic_npz(trajectory_path, arrays)
     trajectory_hash = sha256(trajectory_path)
-    linked_file(target / "video.mp4", video_source_path)
+    materialized_file(target / "video.mp4", video_source_path)
 
     metadata = build_base_metadata(
         family=family,
@@ -758,21 +1170,46 @@ def materialize_base_sample(
         trajectory_info=trajectory_info,
         trajectory_sha256=trajectory_hash,
         video_sha256=video_sha256,
+        fixture_sha256=fixture_sha256,
+        billiards_templates=billiards_templates,
     )
     if not masks_source_path.is_dir():
         raise FileNotFoundError(f"{scene_id} masks: {masks_source_path}")
+    masks_target = target / "masks"
+    masks_target.mkdir()
+    for physics_object in metadata["physics"]["objects"]:
+        object_id = safe_path_component(physics_object["object_id"], "mask object id")
+        source_directory = masks_source_path / object_id
+        source_frames = sorted(source_directory.glob("frame_*.png"))
+        if not source_frames:
+            raise ValueError(f"mask frames are missing for {scene_id}/{object_id}")
+        target_directory = masks_target / object_id
+        target_directory.mkdir()
+        for index, source_frame in enumerate(source_frames, start=1):
+            expected_name = f"frame_{index:04d}.png"
+            if source_frame.name != expected_name:
+                raise ValueError(f"mask frame sequence differs for {scene_id}/{object_id}")
+            target_frame = target_directory / expected_name
+            with Image.open(source_frame) as image:
+                if image.mode == "RGBA":
+                    alpha = image.getchannel("A")
+                elif image.mode == "L":
+                    alpha = image.copy()
+                else:
+                    raise ValueError(f"unsupported source mask mode: {source_frame}")
+                alpha.save(
+                    target_frame,
+                    format="PNG",
+                    compress_level=9,
+                    optimize=False,
+                )
     mask_manifest = build_mask_manifest(
         scene_id=scene_id,
-        mask_root=masks_source_path,
+        mask_root=masks_target,
         objects=metadata["physics"]["objects"],
     )
     if int(mask_manifest["frame_count"]) != int(trajectory_info["frame_count"]):
         raise ValueError(f"mask and trajectory frame counts differ for {scene_id}")
-    masks_target = target / "masks"
-    masks_target.mkdir()
-    for record in mask_manifest["objects"]:
-        object_id = safe_path_component(record["object_id"], "mask object id")
-        linked_file(masks_target / object_id, masks_source_path / object_id)
     mask_manifest_path = target / "mask_manifest.json"
     write_json(mask_manifest_path, mask_manifest)
     metadata["artifacts"]["masks"] = {
@@ -781,20 +1218,23 @@ def materialize_base_sample(
     validate_base_metadata(metadata)
     metadata_path = target / "metadata.json"
     write_json(metadata_path, metadata)
-    return {
-        "scene_id": scene_id,
-        "metadata_sha256": sha256(metadata_path),
-    }
+    return (
+        {
+            "scene_id": scene_id,
+            "metadata_sha256": sha256(metadata_path),
+        },
+        fixture_sha256,
+    )
 
 
 def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
     if metadata.get("schema_version") != BASE_SAMPLE_SCHEMA:
         raise ValueError("not canonical PhysSweep base metadata")
     required = {
-        "schema_version", "scene_id", "group_id", "family", "seed",
-        "semantics", "physics", "visual", "artifacts", "lineage",
+        "schema_version", "scene_id", "group_id", "family", "sample_kind",
+        "seed", "semantics", "physics", "visual", "text", "artifacts", "lineage",
     }
-    if not required.issubset(metadata) or set(metadata) - required - {"caption"}:
+    if set(metadata) != required or metadata.get("sample_kind") != "base":
         raise ValueError("canonical base fields are invalid")
     scene_id = str(metadata.get("scene_id", ""))
     group_id = str(metadata.get("group_id", ""))
@@ -802,17 +1242,67 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
     if not scene_id or not group_id or not family:
         raise ValueError("base identity is incomplete")
     physics = _mapping(metadata.get("physics"))
+    if set(physics) != {"backend", "time", "world", "objects", "solver", "fixture"}:
+        raise ValueError("canonical physics fields are invalid")
+    if set(_mapping(physics.get("backend"))) != {"backend_id", "adapter_id"}:
+        raise ValueError("canonical backend binding is invalid")
+    world = _mapping(physics.get("world"))
+    gravity = np.asarray(world.get("gravity_m_s2"), dtype=np.float64)
+    if (
+        set(world) != {"gravity_m_s2"}
+        or gravity.shape != (3,)
+        or not np.isfinite(gravity).all()
+    ):
+        raise ValueError("canonical world fields are invalid")
+    solver = _mapping(physics.get("solver"))
+    solver_required = {
+        "solver_iterations",
+        "deterministic_overlapping_pairs",
+        "restitution_velocity_threshold_m_s",
+        "enable_cone_friction",
+        "use_split_impulse",
+    }
+    if set(solver) not in (
+        solver_required,
+        solver_required | {"contact_breaking_threshold_m"},
+    ):
+        raise ValueError("canonical solver fields are invalid")
+    fixture = _mapping(physics.get("fixture"))
+    if set(fixture) != {"id", "representation", "sha256"}:
+        raise ValueError("canonical fixture binding is invalid")
     objects = physics.get("objects", [])
     ids = [
         safe_path_component(record.get("object_id", ""), "object id")
         for record in objects
     ]
-    indices = [record.get("array_index") for record in objects]
-    if not ids or len(ids) != len(set(ids)):
+    if not 1 <= len(ids) <= 3 or len(ids) != len(set(ids)):
         raise ValueError("canonical objects have invalid object ids")
-    if indices != list(range(len(objects))) or not all(record.get("object_valid") is True for record in objects):
+    if not all(
+        record.get("object_valid") is True
+        and not {"array_index", "role", "mask_instance_id", "semantic_label"}.intersection(record)
+        for record in objects
+    ):
         raise ValueError("canonical object axis is invalid")
     for record in objects:
+        common_object_fields = {
+            "object_id",
+            "object_valid",
+            "collision_proxy",
+            "material",
+            "inertia_diagonal_kg_m2",
+            "initial_state",
+        }
+        if set(record) - common_object_fields - {
+            "asset_id",
+            "visual",
+            "ccd_swept_sphere_radius_m",
+        }:
+            raise ValueError("canonical object fields are invalid")
+        if "ccd_swept_sphere_radius_m" in record and (
+            not math.isfinite(float(record["ccd_swept_sphere_radius_m"]))
+            or float(record["ccd_swept_sphere_radius_m"]) <= 0.0
+        ):
+            raise ValueError("canonical object CCD radius is invalid")
         material = _mapping(record.get("material"))
         if set(material) != set(DYNAMIC_MATERIAL_FIELDS):
             raise ValueError("canonical dynamic material is incomplete")
@@ -823,6 +1313,7 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
             or values["contact_friction"] < 0.0
             or not 0.0 <= values["contact_restitution"] <= 1.0
             or any(values[key] < 0.0 for key in DYNAMIC_MATERIAL_FIELDS[3:])
+            or values["contact_processing_threshold_m"] != 0.0
         ):
             raise ValueError("canonical dynamic material is invalid")
         inertia = np.asarray(record.get("inertia_diagonal_kg_m2"), dtype=np.float64)
@@ -848,13 +1339,81 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
             for collider in proxy["colliders"]
         ):
             raise ValueError("canonical compound collider is invalid")
+        visual_object = _mapping(record.get("visual"))
+        appearance_sources = int("asset_id" in record)
+        appearance_sources += int("base_color_srgb_rgba" in visual_object)
+        appearance_sources += int("material_template" in visual_object)
+        if (
+            appearance_sources != 1
+            or "color_rgba" in visual_object
+            or ("asset_id" in record and "visual" in record)
+            or (
+                "base_color_srgb_rgba" in visual_object
+                and set(visual_object) != {"base_color_srgb_rgba"}
+            )
+            or (
+                "material_template" in visual_object
+                and (
+                    set(visual_object) != {"material_template"}
+                    or set(_mapping(visual_object["material_template"]))
+                    != {"source_fixture_asset_id", "source_object_name"}
+                )
+            )
+        ):
+            raise ValueError("canonical object appearance is invalid")
     if set(physics.get("time", {})) != {"duration_s", "output_fps", "simulation_hz"}:
         raise ValueError("canonical time contract is invalid")
     semantics = _mapping(metadata.get("semantics"))
-    if "scene_family" in semantics:
+    if set(semantics) - {
+        "objects",
+        "profile",
+        "description",
+        "motion",
+        "observation",
+        "support",
+        "appearance",
+    }:
+        raise ValueError("canonical semantic fields are invalid")
+    semantic_objects = semantics.get("objects", [])
+    semantic_ids = [
+        safe_path_component(record.get("object_id", ""), "semantic object id")
+        for record in semantic_objects
+    ]
+    if (
+        "scene_family" in semantics
+        or "object" in semantics
+        or semantic_ids != ids
+        or any(
+            not str(record.get("semantic_label", "")).strip()
+            for record in semantic_objects
+        )
+    ):
         raise ValueError("canonical semantics duplicate top-level family")
-    if "visual_asset_id" in _mapping(semantics.get("object")):
-        raise ValueError("canonical semantics duplicate object asset identity")
+    labels = {
+        str(record["object_id"]): str(record["semantic_label"])
+        for record in semantic_objects
+    }
+    text = _mapping(metadata.get("text"))
+    if set(text) != {"caption", "object_mentions"}:
+        raise ValueError("canonical text fields are invalid")
+    caption = str(text["caption"])
+    mentioned = set()
+    for mention in text["object_mentions"]:
+        object_id = str(mention.get("object_id", ""))
+        span = mention.get("char_span")
+        if (
+            set(mention) != {"object_id", "char_span"}
+            or object_id not in labels
+            or not isinstance(span, list)
+            or len(span) != 2
+            or not all(isinstance(value, int) for value in span)
+            or not 0 <= span[0] < span[1] <= len(caption)
+            or caption[span[0] : span[1]] != f"the {labels[object_id]}"
+        ):
+            raise ValueError("canonical text mention is invalid")
+        mentioned.add(object_id)
+    if not set(ids).issubset(mentioned):
+        raise ValueError("canonical text does not mention every object")
     visual = _mapping(metadata.get("visual"))
     camera = _mapping(visual.get("camera"))
     required_camera = {
@@ -908,9 +1467,9 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
         raise ValueError("canonical artifact set is invalid")
     lineage = _mapping(metadata.get("lineage"))
     if (
-        set(lineage) != {"source_schema_version", "source_metadata_sha256"}
-        or not str(lineage.get("source_schema_version", ""))
-        or len(str(lineage.get("source_metadata_sha256", ""))) != 64
+        set(lineage)
+        != {"source_generation_metadata_sha256", "source_fixture_binding_sha256"}
+        or any(len(str(value)) != 64 for value in lineage.values())
     ):
         raise ValueError("canonical lineage is invalid")
     return {

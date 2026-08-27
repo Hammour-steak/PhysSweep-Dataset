@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 import numpy as np
+from PIL import Image
 
 try:
     from audit_release_provenance import (
@@ -21,6 +22,7 @@ try:
     )
     from base_release_schema import (
         BASE_SAMPLE_SCHEMA,
+        FIXTURE_SCHEMA,
         MASK_MANIFEST_SCHEMA,
         TRAJECTORY_FIELDS,
         TRAJECTORY_SCHEMA,
@@ -29,6 +31,11 @@ try:
         validate_base_metadata,
         verified_file,
         write_json,
+    )
+    from base_release_attribution import (
+        build_attribution,
+        collect_asset_ids,
+        load_billiards_templates,
     )
 except ModuleNotFoundError:
     from tools.audit_release_provenance import (
@@ -39,6 +46,7 @@ except ModuleNotFoundError:
     )
     from tools.base_release_schema import (
         BASE_SAMPLE_SCHEMA,
+        FIXTURE_SCHEMA,
         MASK_MANIFEST_SCHEMA,
         TRAJECTORY_FIELDS,
         TRAJECTORY_SCHEMA,
@@ -48,11 +56,26 @@ except ModuleNotFoundError:
         verified_file,
         write_json,
     )
+    from tools.base_release_attribution import (
+        build_attribution,
+        collect_asset_ids,
+        load_billiards_templates,
+    )
 
 
-VIEW_SCHEMA = "physweep_base_release_view_v9"
-PIPELINE_SCHEMA = "physweep_base_pipeline_view_v7"
-AUDIT_SCHEMA = "physweep_base_release_view_audit_v9"
+VIEW_SCHEMA = "physweep_base_release_view_v14"
+PIPELINE_SCHEMA = "physweep_base_pipeline_view_v12"
+AUDIT_SCHEMA = "physweep_base_release_view_audit_v14"
+FIXTURE_CATALOG_SCHEMA = "physweep_static_fixture_catalog_v2"
+VIDEO_ENCODING_FIELDS = (
+    "codec",
+    "constant_rate_factor",
+    "container",
+    "fps",
+    "gop_size_frames",
+    "preset",
+    "profile_version",
+)
 
 COORDINATE_CONTRACT = {
     "units": {
@@ -66,13 +89,172 @@ COORDINATE_CONTRACT = {
         "method": "look_at",
         "world_up": [0.0, 0.0, 1.0],
     },
-    "camera_frame": "camera_right_up_forward",
+    "camera_frame": {
+        "right_axis": "+X",
+        "up_axis": "+Y",
+        "view_axis": "-Z",
+    },
     "image": {
         "origin": "top_left",
         "horizontal_axis": "right",
         "vertical_axis": "down",
         "pixel_center": "integer_plus_half",
     },
+}
+
+CAMERA_PROJECTION_CONTRACT = {
+    "model": "perspective_pinhole",
+    "focal_length_source": "metadata.visual.camera.focal_length_mm",
+    "sensor_width_source": "metadata.visual.camera.sensor_width_mm",
+    "blender_sensor_fit": "AUTO",
+    "effective_sensor_fit": "HORIZONTAL",
+    "principal_point": "image_center",
+    "camera_shift_xy": [0.0, 0.0],
+    "pixel_aspect_xy": [1.0, 1.0],
+}
+
+TEMPORAL_CONTRACT = {
+    "interval": "closed_[0,duration_s]",
+    "frame_count_rule": "round(duration_s*output_fps)+1",
+    "trajectory_time_rule": "time_s[k]=k/output_fps",
+    "trajectory_video_alignment": "trajectory_index_k_equals_zero_based_video_frame_k",
+    "mask_alignment": "trajectory_index_k_equals_mask_frame_{k+1:04d}.png",
+}
+
+TRAJECTORY_CONTRACT = {
+    "frame_axis": 0,
+    "object_axis": 1,
+    "object_axis_ids": "trajectory.npz:object_ids",
+    "object_metadata_binding": "metadata.physics.objects[].object_id",
+    "reference_frame": "world",
+    "float_dtype": "float64",
+    "contact_count_dtype": "int32",
+    "contact_count": "adapter_normalized_total_contact_points_involving_the_object",
+    "quaternion": {
+        "component_order": "wxyz",
+        "equivalence": "q_and_neg_q_represent_the_same_rotation",
+        "stored_sign": "frame_zero_matches_canonical_initial_sign_then_adjacent_dot_nonnegative",
+    },
+}
+
+MASK_CONTRACT = {
+    "encoding": "grayscale_png_uint8",
+    "value_range": [0, 255],
+    "signal": "antialiased_coverage_alpha",
+    "occlusion_policy": "unoccluded_dynamic_silhouette",
+    "static_scene_visibility": "hidden",
+    "nonselected_dynamic_object_visibility": "hidden",
+    "resolution_source": "render_contract.resolution",
+    "path_layout": "masks/{object_id}/frame_{one_based_frame:04d}.png",
+    "cross_modal_key": "object_id",
+}
+
+SAMPLE_LAYOUT_CONTRACT = {
+    "sample_directory": "{family}/{scene_id}",
+    "metadata": "metadata.json",
+    "trajectory": "trajectory.npz",
+    "video": "video.mp4",
+    "mask_manifest": "mask_manifest.json",
+    "masks": "masks/{object_id}/frame_{one_based_frame:04d}.png",
+    "fixture": "fixtures/{metadata.physics.fixture.sha256}.json",
+}
+
+TEXT_CONTRACT = {
+    "language": "en",
+    "caption": "metadata.text.caption",
+    "object_mentions": "metadata.text.object_mentions",
+    "mention_identity": "object_id",
+    "span_field": "char_span",
+    "span_indexing": "zero_based_unicode_code_point_offsets",
+    "span_interval": "half_open_[start,end)",
+    "surface_text_rule": "caption[char_span[0]:char_span[1]]",
+    "internal_asset_ids_in_caption": "forbidden",
+    "valid_object_mention_coverage": "at_least_one_mention_per_object_valid_true_object",
+    "mention_surface_label_binding": (
+        "caption[char_span[0]:char_span[1]]_equals_the_plus_"
+        "metadata.semantics.objects[object_id].semantic_label"
+    ),
+}
+
+COLLISION_PROXY_CONTRACT = {
+    "tag_field": "type",
+    "sphere": {"radius_m": "radius"},
+    "cuboid": {"size_m": "full_edge_lengths_xyz"},
+    "cylinder": {
+        "size_m": "diameter_x_diameter_y_height",
+        "radius_rule": "max(size_m[0],size_m[1])/2",
+    },
+    "compound": {
+        "colliders": "ordered_local_colliders",
+        "collider_tag_field": "shape",
+        "size_m": "full_local_dimensions_xyz",
+        "box_size_m": "full_edge_lengths_xyz",
+        "sphere_size_m": "repeated_diameter_xyz",
+        "cylinder_size_m": "diameter_x_diameter_y_height",
+        "position_m": "object_local_translation",
+        "rotation_euler_degrees": {
+            "input_order": "xyz",
+            "active_rotation_matrix": "Rz@Ry@Rx",
+        },
+    },
+    "inertia_diagonal_kg_m2": {
+        "frame": "object_body_frame",
+        "center_of_mass": "object_body_origin",
+    },
+}
+
+OBJECT_VISUAL_CONTRACT = {
+    "path": "metadata.physics.objects[].visual",
+    "optional": True,
+    "appearance_source_union": {
+        "embedded_asset": "metadata.physics.objects[].asset_id",
+        "explicit_base_color": "metadata.physics.objects[].visual.base_color_srgb_rgba",
+        "fixture_material_template": "metadata.physics.objects[].visual.material_template",
+    },
+    "base_color_field": "base_color_srgb_rgba",
+    "material_template_fields": ["source_fixture_asset_id", "source_object_name"],
+    "one_effective_source_required": True,
+    "top_level_dynamic_object_material": "forbidden",
+}
+
+OBJECT_DYNAMICS_CONTRACT = {
+    "contact_processing_threshold": "metadata.physics.objects[].material.contact_processing_threshold_m",
+    "ccd_swept_sphere_radius": "metadata.physics.objects[].ccd_swept_sphere_radius_m",
+    "ccd_optional": True,
+    "generic_rigid_ccd_rule": "0.22*min(source_generation_metadata.simulation.objects[].geometry.size_m)",
+}
+
+FIXTURE_BINDING_CONTRACT = {
+    "content_hash": "metadata.physics.fixture.sha256",
+    "path_template": "fixtures/{sha256}.json",
+    "catalog_path_in_sample_metadata": "forbidden",
+}
+
+OBJECT_SEMANTICS_CONTRACT = {
+    "path": "metadata.semantics.objects[]",
+    "canonical_key": "object_id",
+    "required_fields": ["object_id", "semantic_label"],
+    "coverage": "exactly_one_semantic_record_per_metadata.physics.objects[]_object_id",
+    "order": "same_as_metadata.physics.objects[]",
+    "family_specific_annotations": "optional_fields_on_the_corresponding_semantic_object",
+    "physics_object_semantic_label": "forbidden",
+}
+
+OBJECT_IDENTITY_CONTRACT = {
+    "canonical_key": "object_id",
+    "array_position": "not_a_cross_modal_identity",
+    "numeric_instance_ids": "not_used",
+    "trajectory_binding": "trajectory.npz:object_ids",
+    "mask_binding": "masks/{object_id}",
+    "semantics_binding": "metadata.semantics.objects[].object_id",
+    "text_binding": "metadata.text.object_mentions[].object_id_and_char_span",
+    "validity_binding": "metadata.physics.objects[].object_valid",
+    "validity_semantics": "true_means_the_object_slot_is_present_and_all_cross_modal_bindings_are_defined",
+    "dataset_object_axis": "variable_length_O_of_present_objects",
+    "dataset_object_count": "1_to_3",
+    "release_object_valid_policy": "every_listed_object_is_true",
+    "training_object_axis": "fixed_length_3_created_by_downstream_compiler",
+    "training_padding_policy": "missing_slots_have_object_valid_false",
 }
 
 
@@ -124,11 +306,9 @@ def release_documents(
 ) -> tuple[
     Path,
     dict[str, Any],
-    Path,
     dict[str, Any],
     Path,
     dict[str, Any],
-    Path,
     dict[str, Any],
 ]:
     release_project_root = release_project_root.resolve()
@@ -159,11 +339,9 @@ def release_documents(
     return (
         release_path,
         release,
-        base_path,
         load_json(base_path),
         metadata_path,
         load_json(metadata_path),
-        physics_path,
         load_json(physics_path),
     )
 
@@ -250,7 +428,7 @@ def render_sources(
         "audit_sha256",
         f"{scene_id} trajectory audit",
     )
-    resolved_scene = resolved_record_path(
+    resolved_scene_path = resolved_record_path(
         spec.project_root,
         physics_record,
         "resolved_scene_path",
@@ -261,17 +439,16 @@ def render_sources(
     render_record = load_json(render_record_path)
     if str(render_record.get("scene_id")) != scene_id:
         raise ValueError(f"render record scene id mismatch: {scene_id}")
-    render_record_hash = sha256(render_record_path)
     render_metadata_hash = str(render_record["metadata_sha256"])
     if render_metadata_hash == str(physics_record["metadata_sha256"]):
         render_metadata = None
     else:
-        render_metadata = verified_file(
+        render_metadata_path = verified_file(
             project_path(spec.project_root, str(render_record["metadata_path"])),
             render_metadata_hash,
             f"{scene_id} render metadata",
         )
-        bound = load_json(render_metadata)
+        bound = load_json(render_metadata_path)
         source_binding = bound.get("source_metadata", {})
         trajectory_binding = bound.get("trajectory", {})
         source_matches = (
@@ -346,6 +523,7 @@ def render_sources(
             )
         if not source_matches or not trajectory_matches:
             raise ValueError(f"render metadata is not bound to release physics: {scene_id}")
+        render_metadata = bound
     if render_record.get("trajectory_sha256") not in (
         None,
         physics_record["trajectory_sha256"],
@@ -357,15 +535,23 @@ def render_sources(
         f"{scene_id} video",
     )
     source_metadata = load_json(metadata)
+    resolved_scene = load_json(resolved_scene_path)
     render_config = source_metadata.get("render_request") or source_metadata.get(
         "render"
     )
     if not isinstance(render_config, dict):
         raise ValueError(f"render configuration is missing: {scene_id}")
+    video_encoding = render_record.get("video_encoding")
+    if not isinstance(video_encoding, dict) or set(video_encoding) != set(
+        VIDEO_ENCODING_FIELDS
+    ):
+        raise ValueError(f"video encoding contract differs: {scene_id}")
     render_contract = {
         "engine": render_record.get("render_engine") or render_config.get("engine"),
         "resolution": render_config.get("resolution"),
-        "video_encoding": render_record.get("video_encoding"),
+        "video_encoding": {
+            key: video_encoding[key] for key in VIDEO_ENCODING_FIELDS
+        },
     }
     if (
         not render_contract["engine"]
@@ -380,22 +566,16 @@ def render_sources(
     if not masks.is_dir():
         raise FileNotFoundError(f"{scene_id} mask directory: {masks}")
     return {
-        "metadata": metadata,
+        "source_metadata": source_metadata,
         "trajectory": trajectory,
         "resolved_scene": resolved_scene,
-        "render_record": render_record_path.resolve(),
-        "render_record_sha256": render_record_hash,
+        "render_record": render_record,
         "render_metadata": render_metadata,
-        "render_metadata_sha256": (
-            render_metadata_hash if render_metadata is not None else None
-        ),
         "video": video,
         "masks": masks.resolve(),
         "render_contract": render_contract,
         "hashes": {
             "metadata_sha256": str(physics_record["metadata_sha256"]),
-            "trajectory_sha256": str(physics_record["trajectory_sha256"]),
-            "resolved_scene_sha256": str(physics_record["resolved_scene_sha256"]),
             "video_sha256": str(render_record["video_sha256"]),
         },
     }
@@ -415,11 +595,9 @@ def build_view(
     (
         release_path,
         release,
-        base_path,
         base,
         metadata_path,
         metadata,
-        physics_path,
         physics,
     ) = release_documents(release_project_root, release_manifest)
     base_records = [
@@ -448,9 +626,21 @@ def build_view(
     with tempfile.TemporaryDirectory(prefix=f".{output.name}.", dir=output.parent) as temporary:
         work = Path(temporary) / output.name
         work.mkdir()
+        (work / "assets").mkdir()
+        (work / "fixtures").mkdir()
+        (work / "fixture_assets").mkdir()
         grouped: dict[str, list[dict[str, Any]]] = {
             spec.name: [] for spec in specs.values()
         }
+        fixture_usage: dict[str, int] = {}
+        used_asset_ids: set[str] = set()
+        used_hdri: dict[str, str] = {}
+        contract_project_root = Path(__file__).resolve().parents[1]
+        billiards_templates = (
+            load_billiards_templates(contract_project_root)
+            if any(spec.name == "billiards" for spec in specs.values())
+            else {}
+        )
         render_contract: dict[str, Any] | None = None
         for metadata_record in sorted(base_records, key=lambda item: item["scene_id"]):
             scene_id = safe_scene_id(metadata_record["scene_id"])
@@ -469,25 +659,34 @@ def build_view(
                 render_contract = sources["render_contract"]
             elif render_contract != sources["render_contract"]:
                 raise ValueError(f"release render contract differs: {scene_id}")
-            compact = materialize_base_sample(
+            compact, fixture_hash = materialize_base_sample(
                 target=work / spec.name / scene_id,
                 family=spec.name,
                 group_id=group_id,
-                source_metadata_path=sources["metadata"],
+                source=sources["source_metadata"],
                 source_metadata_sha256=sources["hashes"]["metadata_sha256"],
-                resolved_scene_path=sources["resolved_scene"],
-                resolved_scene_sha256=sources["hashes"]["resolved_scene_sha256"],
-                render_record_path=sources["render_record"],
-                render_record_sha256=sources["render_record_sha256"],
+                resolved_scene=sources["resolved_scene"],
+                render_record=sources["render_record"],
                 trajectory_source_path=sources["trajectory"],
-                trajectory_source_sha256=sources["hashes"]["trajectory_sha256"],
                 video_source_path=sources["video"],
                 video_sha256=sources["hashes"]["video_sha256"],
                 masks_source_path=sources["masks"],
-                render_metadata_path=sources["render_metadata"],
-                render_metadata_sha256=sources["render_metadata_sha256"],
+                release_root=work,
+                source_project_root=spec.project_root,
+                billiards_templates=billiards_templates,
+                render_metadata=sources["render_metadata"],
             )
             grouped[spec.name].append(compact)
+            fixture_usage[fixture_hash] = fixture_usage.get(fixture_hash, 0) + 1
+            compact_metadata = load_json(work / spec.name / scene_id / "metadata.json")
+            collect_asset_ids(compact_metadata, used_asset_ids)
+            environment = compact_metadata.get("visual", {}).get("environment")
+            if isinstance(environment, dict):
+                name = str(environment["name"])
+                digest = str(environment["sha256"])
+                previous = used_hdri.setdefault(name, digest)
+                if previous != digest:
+                    raise ValueError(f"two hashes for HDRI {name}")
 
         pipeline_bindings: dict[str, Any] = {}
         for spec in sorted(specs.values(), key=lambda value: value.name):
@@ -497,6 +696,7 @@ def build_view(
                 "schema_version": PIPELINE_SCHEMA,
                 "pipeline": spec.name,
                 "source_schema_version": spec.source_schema_version,
+                "sample_schema_version": BASE_SAMPLE_SCHEMA,
                 "sample_count": len(records),
                 "records": records,
             }
@@ -506,30 +706,89 @@ def build_view(
                 "manifest_sha256": sha256(pipeline_path),
             }
 
+        fixture_records = [
+            {"sha256": digest, "usage_count": usage_count}
+            for digest, usage_count in sorted(fixture_usage.items())
+        ]
+        fixture_manifest = {
+            "schema_version": FIXTURE_CATALOG_SCHEMA,
+            "entry_count": len(fixture_records),
+            "records": fixture_records,
+        }
+        fixture_manifest_path = work / "fixtures" / "manifest.json"
+        write_json(fixture_manifest_path, fixture_manifest)
+        for fixture_path in (work / "fixtures").glob("*.json"):
+            if fixture_path.name != "manifest.json":
+                collect_asset_ids(load_json(fixture_path), used_asset_ids)
+        attribution = build_attribution(
+            contract_project_root, used_asset_ids, used_hdri
+        )
+        attribution_path = work / "assets" / "attribution_manifest.json"
+        write_json(attribution_path, attribution)
+
         manifest = {
             "schema_version": VIEW_SCHEMA,
             "dataset_id": str(release["dataset_id"]),
-            "storage_mode": "compact_metadata_with_absolute_artifact_symlinks",
+            "storage_mode": "materialized_compact_portable_release_with_content_addressed_fixtures",
             "sample_count": expected_count,
-            "release_manifest": str(release_path),
-            "release_manifest_sha256": sha256(release_path),
             "render_contract": render_contract,
             "coordinate_contract": COORDINATE_CONTRACT,
+            "camera_projection_contract": CAMERA_PROJECTION_CONTRACT,
+            "temporal_contract": TEMPORAL_CONTRACT,
+            "trajectory_contract": TRAJECTORY_CONTRACT,
+            "mask_contract": MASK_CONTRACT,
+            "sample_layout_contract": SAMPLE_LAYOUT_CONTRACT,
+            "text_contract": TEXT_CONTRACT,
+            "collision_proxy_contract": COLLISION_PROXY_CONTRACT,
+            "object_visual_contract": OBJECT_VISUAL_CONTRACT,
+            "object_dynamics_contract": OBJECT_DYNAMICS_CONTRACT,
+            "fixture_binding_contract": FIXTURE_BINDING_CONTRACT,
+            "object_identity_contract": OBJECT_IDENTITY_CONTRACT,
+            "object_semantics_contract": OBJECT_SEMANTICS_CONTRACT,
             "sample_schema_version": BASE_SAMPLE_SCHEMA,
             "trajectory_schema_version": TRAJECTORY_SCHEMA,
             "mask_manifest_schema_version": MASK_MANIFEST_SCHEMA,
+            "fixture_schema_version": FIXTURE_SCHEMA,
+            "fixture_catalog": {
+                "schema_version": FIXTURE_CATALOG_SCHEMA,
+                "manifest": "fixtures/manifest.json",
+                "manifest_sha256": sha256(fixture_manifest_path),
+                "entry_count": len(fixture_records),
+            },
+            "asset_attribution": {
+                "manifest": "assets/attribution_manifest.json",
+                "manifest_sha256": sha256(attribution_path),
+                "record_count": int(attribution["record_count"]),
+            },
+            "provenance": {
+                "sample_lineage_fields": {
+                    "source_fixture_binding_sha256": "original_static_fixture_binding",
+                    "source_generation_metadata_sha256": "original_generation_metadata",
+                },
+                "source_generation_release_metadata": {
+                    "schema_version": str(metadata["schema_version"]),
+                    "manifest_sha256": sha256(metadata_path),
+                },
+                "source_sweep_release": {
+                    "manifest_sha256": sha256(release_path),
+                },
+            },
             "pipelines": pipeline_bindings,
         }
         write_json(work / "manifest.json", manifest)
         (work / "README.txt").write_text(
-            "Canonical PhysSweep base release.\n"
-            "metadata.json is the sample authority; trajectory arrays use one object axis.\n"
-            "The root manifest fixes SI units and world/camera/image coordinates.\n"
-            "Every sample contains exactly metadata.json, trajectory.npz, video.mp4, "
-            "masks/, and mask_manifest.json.\n"
-            "masks/ contains only object-id directory symlinks; source render manifests "
-            "are not release artifacts.\n"
-            "Generation diagnostics and inspection frames are not release artifacts.\n",
+            "Canonical PhysSweep base release v14.\n"
+            "metadata.json is the sample authority; object_id is the only cross-modal identity.\n"
+            "physics.objects[] stores physical and appearance state; semantics.objects[] stores object labels and annotations.\n"
+            "Both object arrays bind by object_id and use the same present-object order.\n"
+            "The release stores variable-length O=1..3 present objects; fixed three-slot padding belongs to downstream training compilation.\n"
+            "Every listed release object has object_valid=true; downstream padding slots use false.\n"
+            "All families share one sample layout and one sample schema.\n"
+            "Sample lineage retains generation metadata and original fixture-binding hashes.\n"
+            "trajectory.npz uses [frame, object, ...] arrays with sign-continuous wxyz quaternions.\n"
+            "masks/ contains single-channel antialiased unoccluded silhouettes.\n"
+            "fixtures/ contains content-addressed static collision context.\n"
+            "assets/attribution_manifest.json records source and content provenance.\n",
             encoding="utf-8",
         )
         verify_view(work)
@@ -537,18 +796,6 @@ def build_view(
             raise FileExistsError(f"base release appeared during build: {output}")
         work.replace(output)
     return verify_view(output)
-
-
-def _release_root(release_path: Path, release: dict[str, Any]) -> Path:
-    base_reference = Path(str(release["base_manifest"]))
-    if base_reference.is_absolute():
-        return release_path.parent
-    candidates = [
-        parent for parent in release_path.parents if (parent / base_reference).is_file()
-    ]
-    if len(candidates) != 1:
-        raise ValueError("cannot identify the release project root")
-    return candidates[0]
 
 
 def _validate_trajectory(path: Path, metadata: dict[str, Any]) -> None:
@@ -587,11 +834,13 @@ def _validate_masks(sample: Path, metadata: dict[str, Any]) -> None:
     if not masks.is_dir() or masks.is_symlink():
         raise ValueError("mask projection is not a materialized directory")
     expected_objects = [
-        (record["object_id"], int(record["mask_instance_id"]))
-        for record in metadata["physics"]["objects"]
+        str(record["object_id"]) for record in metadata["physics"]["objects"]
     ]
     records = manifest.get("objects", [])
-    if [(record["object_id"], int(record["instance_id"])) for record in records] != expected_objects:
+    if (
+        [str(record.get("object_id")) for record in records] != expected_objects
+        or any(set(record) != {"object_id", "frame_sha256"} for record in records)
+    ):
         raise ValueError("mask manifest object axis differs")
     expected_entries = {safe_scene_id(record["object_id"]) for record in records}
     if {path.name for path in masks.iterdir()} != expected_entries:
@@ -605,8 +854,8 @@ def _validate_masks(sample: Path, metadata: dict[str, Any]) -> None:
         raise ValueError("mask and trajectory frame counts differ")
     for record in records:
         object_id = safe_scene_id(record["object_id"])
-        if not (masks / object_id).is_symlink() or not (masks / object_id).is_dir():
-            raise ValueError("mask object artifact is not a valid symlink")
+        if (masks / object_id).is_symlink() or not (masks / object_id).is_dir():
+            raise ValueError("mask object artifact is not materialized")
         paths = sorted((masks / object_id).glob("frame_*.png"))
         hashes = record.get("frame_sha256", [])
         expected_names = [f"frame_{index:04d}.png" for index in range(1, frame_count + 1)]
@@ -618,6 +867,11 @@ def _validate_masks(sample: Path, metadata: dict[str, Any]) -> None:
                 str(expected_hash),
                 f"{metadata['scene_id']} mask frame",
             )
+            if path.is_symlink():
+                raise ValueError("mask frame must be materialized")
+            with Image.open(path) as image:
+                if image.mode != "L":
+                    raise ValueError("mask frame must be grayscale")
 
 
 def verify_view(output: Path) -> dict[str, Any]:
@@ -628,24 +882,51 @@ def verify_view(output: Path) -> dict[str, Any]:
         "dataset_id",
         "storage_mode",
         "sample_count",
-        "release_manifest",
-        "release_manifest_sha256",
         "render_contract",
         "coordinate_contract",
+        "camera_projection_contract",
+        "temporal_contract",
+        "trajectory_contract",
+        "mask_contract",
+        "sample_layout_contract",
+        "text_contract",
+        "collision_proxy_contract",
+        "object_visual_contract",
+        "object_dynamics_contract",
+        "fixture_binding_contract",
+        "object_identity_contract",
+        "object_semantics_contract",
         "sample_schema_version",
         "trajectory_schema_version",
         "mask_manifest_schema_version",
+        "fixture_schema_version",
+        "fixture_catalog",
+        "asset_attribution",
+        "provenance",
         "pipelines",
     }
     if (
         set(manifest) != expected_manifest_fields
         or manifest.get("schema_version") != VIEW_SCHEMA
         or manifest.get("storage_mode")
-        != "compact_metadata_with_absolute_artifact_symlinks"
+        != "materialized_compact_portable_release_with_content_addressed_fixtures"
         or manifest.get("sample_schema_version") != BASE_SAMPLE_SCHEMA
         or manifest.get("trajectory_schema_version") != TRAJECTORY_SCHEMA
         or manifest.get("mask_manifest_schema_version") != MASK_MANIFEST_SCHEMA
+        or manifest.get("fixture_schema_version") != FIXTURE_SCHEMA
         or manifest.get("coordinate_contract") != COORDINATE_CONTRACT
+        or manifest.get("camera_projection_contract") != CAMERA_PROJECTION_CONTRACT
+        or manifest.get("temporal_contract") != TEMPORAL_CONTRACT
+        or manifest.get("trajectory_contract") != TRAJECTORY_CONTRACT
+        or manifest.get("mask_contract") != MASK_CONTRACT
+        or manifest.get("sample_layout_contract") != SAMPLE_LAYOUT_CONTRACT
+        or manifest.get("text_contract") != TEXT_CONTRACT
+        or manifest.get("collision_proxy_contract") != COLLISION_PROXY_CONTRACT
+        or manifest.get("object_visual_contract") != OBJECT_VISUAL_CONTRACT
+        or manifest.get("object_dynamics_contract") != OBJECT_DYNAMICS_CONTRACT
+        or manifest.get("fixture_binding_contract") != FIXTURE_BINDING_CONTRACT
+        or manifest.get("object_identity_contract") != OBJECT_IDENTITY_CONTRACT
+        or manifest.get("object_semantics_contract") != OBJECT_SEMANTICS_CONTRACT
     ):
         raise ValueError("not a canonical PhysSweep base release")
     render_contract = manifest.get("render_contract")
@@ -657,32 +938,67 @@ def verify_view(output: Path) -> dict[str, Any]:
         or len(render_contract["resolution"]) != 2
         or any(int(value) <= 0 for value in render_contract["resolution"])
         or not isinstance(render_contract.get("video_encoding"), dict)
+        or set(render_contract["video_encoding"]) != set(VIDEO_ENCODING_FIELDS)
         or int(render_contract["video_encoding"].get("fps", 0)) <= 0
     ):
         raise ValueError("base render contract is incomplete")
-    release_path = verified_file(
-        Path(manifest["release_manifest"]),
-        str(manifest["release_manifest_sha256"]),
-        "base release source manifest",
-    )
-    release = load_json(release_path)
-    release_root = _release_root(release_path, release)
-    for key in ("base_manifest", "metadata_manifest", "physics_manifest"):
-        verified_file(
-            project_path(release_root, str(release[key])),
-            str(release[f"{key}_sha256"]),
-            f"base release {key}",
-        )
+    provenance = manifest.get("provenance", {})
     if (
-        str(manifest["dataset_id"]) != str(release["dataset_id"])
-        or int(manifest["sample_count"]) != int(release["base_count"])
+        provenance.get("sample_lineage_fields")
+        != {
+            "source_fixture_binding_sha256": "original_static_fixture_binding",
+            "source_generation_metadata_sha256": "original_generation_metadata",
+        }
+        or len(str(provenance.get("source_generation_release_metadata", {}).get("manifest_sha256", ""))) != 64
+        or len(str(provenance.get("source_sweep_release", {}).get("manifest_sha256", ""))) != 64
     ):
-        raise ValueError("base and source release identities differ")
+        raise ValueError("base provenance contract is incomplete")
+
+    fixture_binding = manifest.get("fixture_catalog", {})
+    fixture_manifest_path = verified_file(
+        output / "fixtures" / "manifest.json",
+        str(fixture_binding.get("manifest_sha256", "")),
+        "fixture catalog",
+    )
+    fixture_manifest = load_json(fixture_manifest_path)
+    if (
+        fixture_binding.get("schema_version") != FIXTURE_CATALOG_SCHEMA
+        or fixture_binding.get("manifest") != "fixtures/manifest.json"
+        or fixture_manifest.get("schema_version") != FIXTURE_CATALOG_SCHEMA
+        or int(fixture_binding.get("entry_count", -1))
+        != int(fixture_manifest.get("entry_count", -2))
+        or int(fixture_manifest.get("entry_count", -1))
+        != len(fixture_manifest.get("records", []))
+    ):
+        raise ValueError("fixture catalog contract differs")
+    fixture_hashes = set()
+    for record in fixture_manifest["records"]:
+        if set(record) != {"sha256", "usage_count"} or int(record["usage_count"]) <= 0:
+            raise ValueError("fixture catalog record differs")
+        digest = str(record["sha256"])
+        verified_file(output / "fixtures" / f"{digest}.json", digest, "fixture")
+        fixture_hashes.add(digest)
+    attribution_binding = manifest.get("asset_attribution", {})
+    attribution_path = verified_file(
+        output / "assets" / "attribution_manifest.json",
+        str(attribution_binding.get("manifest_sha256", "")),
+        "asset attribution",
+    )
+    attribution = load_json(attribution_path)
+    if (
+        attribution_binding.get("manifest") != "assets/attribution_manifest.json"
+        or int(attribution_binding.get("record_count", -1))
+        != int(attribution.get("record_count", -2))
+    ):
+        raise ValueError("asset attribution contract differs")
 
     count = 0
     scene_ids: set[str] = set()
     group_ids: set[str] = set()
-    expected_top = {"manifest.json", "README.txt"}
+    observed_fixture_usage: dict[str, int] = {}
+    expected_top = {
+        "manifest.json", "README.txt", "assets", "fixtures", "fixture_assets"
+    }
     for family, binding in manifest["pipelines"].items():
         family = safe_scene_id(family)
         expected_top.add(family)
@@ -702,9 +1018,13 @@ def verify_view(output: Path) -> dict[str, Any]:
         if (
             document.get("schema_version") != PIPELINE_SCHEMA
             or set(document)
-            != {"schema_version", "pipeline", "source_schema_version", "sample_count", "records"}
+            != {
+                "schema_version", "pipeline", "source_schema_version",
+                "sample_schema_version", "sample_count", "records",
+            }
             or document.get("pipeline") != family
             or not document.get("source_schema_version")
+            or document.get("sample_schema_version") != BASE_SAMPLE_SCHEMA
             or not isinstance(records, list)
             or int(document.get("sample_count", -1)) != len(records)
         ):
@@ -736,13 +1056,17 @@ def verify_view(output: Path) -> dict[str, Any]:
             if (
                 summary["scene_id"] != scene_id
                 or summary["family"] != family
-                or metadata["lineage"]["source_schema_version"]
-                != document["source_schema_version"]
             ):
                 raise ValueError(f"metadata identity differs: {scene_id}")
             if group_id in group_ids:
                 raise ValueError(f"duplicate base group identity: {group_id}")
             group_ids.add(group_id)
+            fixture_hash = str(metadata["physics"]["fixture"]["sha256"])
+            if fixture_hash not in fixture_hashes:
+                raise ValueError(f"sample fixture is absent from catalog: {scene_id}")
+            observed_fixture_usage[fixture_hash] = (
+                observed_fixture_usage.get(fixture_hash, 0) + 1
+            )
             if int(metadata["physics"]["time"]["output_fps"]) != int(
                 render_contract["video_encoding"]["fps"]
             ):
@@ -762,8 +1086,8 @@ def verify_view(output: Path) -> dict[str, Any]:
                 str(video_binding["sha256"]),
                 f"{scene_id} video",
             )
-            if not video.is_symlink():
-                raise ValueError(f"video must remain a source symlink: {scene_id}")
+            if video.is_symlink():
+                raise ValueError(f"video must be materialized: {scene_id}")
             expected_entries = {
                 "metadata.json",
                 "trajectory.npz",
@@ -784,6 +1108,15 @@ def verify_view(output: Path) -> dict[str, Any]:
         raise ValueError("unexpected base root entries")
     if count != int(manifest["sample_count"]):
         raise ValueError("base release totals differ")
+    expected_fixture_usage = {
+        str(record["sha256"]): int(record["usage_count"])
+        for record in fixture_manifest["records"]
+    }
+    if observed_fixture_usage != expected_fixture_usage:
+        raise ValueError("fixture usage counts differ")
+    symlinks = [path for path in output.rglob("*") if path.is_symlink()]
+    if symlinks:
+        raise ValueError(f"base release contains symlinks: {symlinks[:3]}")
     return {
         "schema_version": AUDIT_SCHEMA,
         "view": str(output),

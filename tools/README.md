@@ -274,21 +274,22 @@ global floor remains the only floor contact authority.
 
 ## Base Release View
 
-`build_base_release_view.py` creates the atomic, base-only consumer release.
-Each sample contains one canonical `metadata.json`, one canonical object-axis
-`trajectory.npz`, the video, and required per-object masks plus their compact hash
-manifest. Video payloads and the object directories inside `masks/` remain
-symlinked to immutable render output. The materialized `masks/` projection exposes
-only metadata-declared object ids, so render-stage manifests are not duplicated in
-the consumer view. Generation diagnostics, inspection frames, adapter trajectory
-channels, and schema-specific metadata copies are excluded. The root manifest
-owns the shared render resolution and encoding contract, while its hash-bound source release
-manifest remains the sole owner of base, metadata, and physics manifest hashes.
-Each `--pipeline` argument binds one source metadata schema to its project,
-render, and mask roots. The mask root is explicit so an audited backfill can be
-kept separate from immutable RGB render logs. Per-sample lineage
-stays in `metadata.json`; pipeline index records contain only the sample identity
-and canonical metadata hash:
+`build_base_release_view.py` packages audited base records without recomputing
+physics or rendering. Every pipeline uses the same sample layout:
+
+```text
+<family>/<scene_id>/
+  metadata.json
+  trajectory.npz
+  video.mp4
+  mask_manifest.json
+  masks/<object_id>/frame_*.png
+```
+
+Shared fixtures and collision assets live in `fixtures/` and `fixture_assets/`.
+The release contains no symlinks, debug frames, adapter-only trajectory fields,
+or source metadata copies. Root manifests bind the format contracts, source
+release, fixtures, and attribution catalog.
 
 ```bash
 .venv/bin/python tools/build_base_release_view.py \
@@ -298,11 +299,9 @@ and canonical metadata hash:
   --pipeline <name> <source-schema> <source-project> <render-root> <mask-root>
 ```
 
-Repeat `--pipeline` for every schema in the release. The command refuses to
-overwrite an existing view, validates the logical-base-to-generated-base
-mapping, physics audit records, render provenance, source hashes, videos, and
-mask frames before publishing the directory. It deliberately excludes all
-derived sweep samples. Recheck an existing release with:
+Repeat `--pipeline` for every source schema. The command refuses to overwrite an
+existing view and validates hashes, provenance, video, and masks before
+publishing. It excludes derived sweep samples. Verify an existing release with:
 
 ```bash
 .venv/bin/python tools/build_base_release_view.py \

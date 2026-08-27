@@ -114,7 +114,12 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                     "objects": [
                         {
                             "object_id": "ball",
-                            "visual": {"shape": "sphere", "radius_m": 0.1},
+                            "visual": {
+                                "shape": "sphere",
+                                "radius_m": 0.1,
+                                "color_rgba": [0.8, 0.2, 0.1, 1.0],
+                                "unused_generation_field": "drop-me",
+                            },
                             "material": {
                                 "rolling_friction": 0.01,
                                 "spinning_friction": 0.02,
@@ -125,6 +130,17 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                     ]
                 },
                 "render": {"resolution": [1280, 720], "samples": 16},
+                "physics": {
+                    "fixture": {"representation": "analytic"},
+                    "engine": {
+                        "solver_iterations": 50,
+                        "deterministic_overlapping_pairs": True,
+                        "restitution_velocity_threshold_m_s": 0.02,
+                        "enable_cone_friction": True,
+                        "use_split_impulse": True,
+                        "unused_generation_field": "drop-me",
+                    },
+                },
                 "object_identity": {
                     "objects": [
                         {
@@ -137,7 +153,12 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                             "mask_key": "ball",
                         }
                     ],
-                    "text": {"caption": "The ball drops."},
+                    "text": {
+                        "caption": "The ball drops.",
+                        "object_mentions": [
+                            {"object_id": "ball", "text": "The ball"}
+                        ],
+                    },
                 },
             }
             resolved = {
@@ -152,7 +173,10 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                     "simulation_hz": 10,
                     "frame_count": 2,
                 },
-                "world": {"gravity_m_s2": [0.0, 0.0, -9.81]},
+                "world": {
+                    "gravity_m_s2": [0.0, 0.0, -9.81],
+                    "unused_generation_field": "drop-me",
+                },
                 "objects": [
                     {
                         "object_id": "ball",
@@ -174,6 +198,7 @@ class BaseReleaseSchemaTests(unittest.TestCase):
             }
             render_record = {
                 "scene_id": "scene__base",
+                "fixture_sha256": "e" * 64,
                 "camera": {
                     "seed": 7,
                     "mode": "front",
@@ -195,6 +220,7 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                 trajectory_info=trajectory,
                 trajectory_sha256="b" * 64,
                 video_sha256="c" * 64,
+                fixture_sha256="f" * 64,
             )
             metadata["artifacts"]["masks"] = {
                 "manifest_sha256": "d" * 64,
@@ -205,15 +231,38 @@ class BaseReleaseSchemaTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "mask binding"):
                 validate_base_metadata(metadata)
             metadata["artifacts"]["masks"] = mask_binding
-            self.assertNotIn("kind", metadata)
+            self.assertEqual(metadata["sample_kind"], "base")
             metadata["kind"] = "base"
             with self.assertRaisesRegex(ValueError, "base fields"):
                 validate_base_metadata(metadata)
             del metadata["kind"]
             self.assertEqual(summary["object_ids"], ["ball"])
             obj = metadata["physics"]["objects"][0]
-            self.assertEqual(obj["array_index"], 0)
+            self.assertNotIn("array_index", obj)
+            self.assertNotIn("semantic_label", obj)
+            self.assertEqual(
+                metadata["semantics"]["objects"],
+                [{"object_id": "ball", "semantic_label": "ball"}],
+            )
             self.assertTrue(obj["object_valid"])
+            self.assertEqual(
+                obj["visual"],
+                {"base_color_srgb_rgba": [0.8, 0.2, 0.1, 1.0]},
+            )
+            self.assertEqual(
+                metadata["physics"]["world"],
+                {"gravity_m_s2": [0.0, 0.0, -9.81]},
+            )
+            self.assertEqual(
+                set(metadata["physics"]["solver"]),
+                {
+                    "solver_iterations",
+                    "deterministic_overlapping_pairs",
+                    "restitution_velocity_threshold_m_s",
+                    "enable_cone_friction",
+                    "use_split_impulse",
+                },
+            )
             self.assertEqual(obj["initial_state"]["quaternion_wxyz"], [1.0, 0.0, 0.0, 0.0])
             self.assertEqual(obj["inertia_diagonal_kg_m2"], [0.001, 0.001, 0.001])
             self.assertEqual(
@@ -226,12 +275,17 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                     "spinning_friction": 0.02,
                     "linear_damping": 0.03,
                     "angular_damping": 0.04,
+                    "contact_processing_threshold_m": 0.0,
                 },
             )
             linear_damping = obj["material"].pop("linear_damping")
             with self.assertRaisesRegex(ValueError, "dynamic material"):
                 validate_base_metadata(metadata)
             obj["material"]["linear_damping"] = linear_damping
+            obj["unused_generation_field"] = "must-not-pass"
+            with self.assertRaisesRegex(ValueError, "object fields"):
+                validate_base_metadata(metadata)
+            del obj["unused_generation_field"]
             self.assertNotIn("trajectory_key", json.dumps(metadata))
             self.assertNotIn("diagnostics", metadata["visual"]["camera"])
             self.assertEqual(
@@ -274,6 +328,7 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                     trajectory_info=trajectory,
                     trajectory_sha256="b" * 64,
                     video_sha256="c" * 64,
+                    fixture_sha256="f" * 64,
                 )
 
     def test_mask_manifest_uses_object_axis_and_ordered_hashes(self) -> None:
@@ -288,7 +343,7 @@ class BaseReleaseSchemaTests(unittest.TestCase):
             manifest = build_mask_manifest(
                 scene_id="scene__base",
                 mask_root=root,
-                objects=[{"object_id": "ball", "mask_instance_id": 1}],
+                objects=[{"object_id": "ball"}],
             )
             self.assertEqual(manifest["schema_version"], MASK_MANIFEST_SCHEMA)
             self.assertEqual(manifest["frame_count"], 2)
@@ -298,13 +353,13 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                 build_mask_manifest(
                     scene_id="scene__base",
                     mask_root=root,
-                    objects=[{"object_id": "../ball", "mask_instance_id": 1}],
+                    objects=[{"object_id": "../ball"}],
                 )
             with self.assertRaisesRegex(ValueError, "invalid mask object id"):
                 build_mask_manifest(
                     scene_id="scene__base",
                     mask_root=root,
-                    objects=[{"object_id": None, "mask_instance_id": 1}],
+                    objects=[{"object_id": None}],
                 )
 
 

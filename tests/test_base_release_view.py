@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import json
-import os
 import tempfile
 import unittest
 from pathlib import Path
 
 import numpy as np
+from PIL import Image
 
 from tools.audit_release_provenance import sha256
 from tools.base_release_schema import BASE_SAMPLE_SCHEMA, TRAJECTORY_FIELDS
@@ -19,7 +19,6 @@ def write_json(path: Path, value: object) -> None:
 
 
 class BaseReleaseViewTests(unittest.TestCase):
-    @unittest.skipIf(os.name == "nt", "release view requires symlink support")
     def test_base_release_is_canonical_hash_checked_and_non_overwriting(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -32,8 +31,8 @@ class BaseReleaseViewTests(unittest.TestCase):
             audits = []
             for index, (name, schema) in enumerate(
                 (
-                    ("generic", "schema_generic"),
-                    ("asset", "schema_asset"),
+                    ("test_generic", "schema_generic"),
+                    ("test_asset", "schema_asset"),
                 )
             ):
                 project = root / f"source-{name}"
@@ -63,6 +62,7 @@ class BaseReleaseViewTests(unittest.TestCase):
                                     "visual": {
                                         "shape": "sphere",
                                         "radius_m": 0.1,
+                                        "color_rgba": [0.8, 0.2, 0.1, 1.0],
                                     },
                                     "material": {
                                         "rolling_friction": 0.01,
@@ -78,6 +78,16 @@ class BaseReleaseViewTests(unittest.TestCase):
                             "resolution": [1280, 720],
                             "samples": 16,
                         },
+                        "physics": {
+                            "fixture": {"representation": "analytic"},
+                            "engine": {
+                                "solver_iterations": 50,
+                                "deterministic_overlapping_pairs": True,
+                                "restitution_velocity_threshold_m_s": 0.02,
+                                "enable_cone_friction": True,
+                                "use_split_impulse": True,
+                            },
+                        },
                         "object_identity": {
                             "objects": [
                                 {
@@ -88,7 +98,12 @@ class BaseReleaseViewTests(unittest.TestCase):
                                     "mask_instance_id": 1,
                                 }
                             ],
-                            "text": {"caption": "The ball drops."},
+                            "text": {
+                                "caption": "The ball drops.",
+                                "object_mentions": [
+                                    {"object_id": "ball", "text": "The ball"}
+                                ],
+                            },
                         },
                     },
                 )
@@ -128,6 +143,9 @@ class BaseReleaseViewTests(unittest.TestCase):
                             "frame_count": 2,
                         },
                         "world": {"gravity_m_s2": [0.0, 0.0, -9.81]},
+                        "adapter_payload": {
+                            "fixture": {"type": "analytic_floor"}
+                        },
                         "objects": [
                             {
                                 "object_id": "ball",
@@ -166,8 +184,10 @@ class BaseReleaseViewTests(unittest.TestCase):
                 videos.append(video)
                 mask = render_root / "masks" / scene_id / "ball"
                 mask.mkdir(parents=True)
-                (mask / "frame_0001.png").write_bytes(b"mask-1")
-                (mask / "frame_0002.png").write_bytes(b"mask-2")
+                for frame_index in (1, 2):
+                    image = Image.new("RGBA", (1280, 720), (0, 0, 0, 0))
+                    image.putpixel((frame_index, frame_index), (255, 255, 255, 255))
+                    image.save(mask / f"frame_{frame_index:04d}.png")
                 (mask.parent / "mask_manifest.json").write_text(
                     "render-stage provenance", encoding="utf-8"
                 )
@@ -228,14 +248,19 @@ class BaseReleaseViewTests(unittest.TestCase):
                     write_json(render_metadata, bound_metadata)
                 render_record = {
                     "scene_id": scene_id,
+                    "fixture_sha256": ("e" if index == 0 else "f") * 64,
                     "metadata_path": str(render_metadata),
                     "metadata_sha256": sha256(render_metadata),
                     "video_path": str(video),
                     "video_sha256": sha256(video),
                     "video_encoding": {
                         "codec": "H264",
+                        "constant_rate_factor": "PERC_LOSSLESS",
                         "container": "MPEG4",
                         "fps": 1,
+                        "gop_size_frames": 2,
+                        "preset": "GOOD",
+                        "profile_version": "test_h264_v1",
                     },
                 }
                 if render_record_camera is not None:
@@ -295,7 +320,12 @@ class BaseReleaseViewTests(unittest.TestCase):
             write_json(base_path, {"sample_count": 2, "records": base_records})
             write_json(
                 metadata_path,
-                {"sample_count": 3, "records": metadata_records, "sources": []},
+                {
+                    "schema_version": "physweep_release_metadata_manifest_v2",
+                    "sample_count": 3,
+                    "records": metadata_records,
+                    "sources": [],
+                },
             )
             write_json(
                 physics_path,
@@ -325,17 +355,19 @@ class BaseReleaseViewTests(unittest.TestCase):
             )
             self.assertEqual(result["sample_count"], 2)
             self.assertEqual(result["pipeline_count"], 2)
-            sample = output / "generic/scene_0__base"
+            sample = output / "test_generic/scene_0__base"
             self.assertFalse((sample / "metadata.json").is_symlink())
             self.assertFalse((sample / "trajectory.npz").is_symlink())
-            self.assertTrue((sample / "video.mp4").is_symlink())
+            self.assertFalse((sample / "video.mp4").is_symlink())
             self.assertFalse((sample / "masks").is_symlink())
             self.assertTrue((sample / "masks").is_dir())
             self.assertEqual(
                 {path.name for path in (sample / "masks").iterdir()},
                 {"ball"},
             )
-            self.assertTrue((sample / "masks/ball").is_symlink())
+            self.assertFalse((sample / "masks/ball").is_symlink())
+            with Image.open(sample / "masks/ball/frame_0001.png") as mask_image:
+                self.assertEqual(mask_image.mode, "L")
             self.assertFalse((sample / "masks/mask_manifest.json").exists())
             self.assertEqual(
                 {path.name for path in sample.iterdir()},
@@ -363,14 +395,14 @@ class BaseReleaseViewTests(unittest.TestCase):
             for key in ("base_manifest", "metadata_manifest", "physics_manifest"):
                 self.assertNotIn(f"{key}_sha256", root_manifest)
             self.assertEqual(
-                set(root_manifest["pipelines"]["generic"]),
+                set(root_manifest["pipelines"]["test_generic"]),
                 {"manifest", "manifest_sha256"},
             )
             self.assertEqual(root_manifest["render_contract"]["resolution"], [1280, 720])
             self.assertNotIn("samples", root_manifest["render_contract"])
             self.assertEqual(
                 root_manifest["coordinate_contract"]["camera_frame"],
-                "camera_right_up_forward",
+                {"right_axis": "+X", "up_axis": "+Y", "view_axis": "-Z"},
             )
             self.assertEqual(
                 root_manifest["coordinate_contract"]["camera_pose"]["world_up"],
@@ -382,14 +414,14 @@ class BaseReleaseViewTests(unittest.TestCase):
                 ]
             )
             generic_manifest = json.loads(
-                (output / "generic/manifest.json").read_text(encoding="utf-8")
+                (output / "test_generic/manifest.json").read_text(encoding="utf-8")
             )
             self.assertEqual(
                 set(generic_manifest["records"][0]),
                 {"scene_id", "metadata_sha256"},
             )
             self.assertNotIn("mask_count", generic_manifest)
-            asset_sample = output / "asset/scene_1__base"
+            asset_sample = output / "test_asset/scene_1__base"
             self.assertEqual(
                 {path.name for path in asset_sample.iterdir()},
                 {
@@ -406,7 +438,7 @@ class BaseReleaseViewTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "canonical PhysSweep"):
                 verify_view(output)
             root_manifest["storage_mode"] = (
-                "compact_metadata_with_absolute_artifact_symlinks"
+                "materialized_compact_portable_release_with_content_addressed_fixtures"
             )
             write_json(output / "manifest.json", root_manifest)
             with self.assertRaises(FileExistsError):
