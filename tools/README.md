@@ -308,6 +308,21 @@ publishing. It excludes derived sweep samples. Verify an existing release with:
   --verify-only --output outputs/<release>/base
 ```
 
+`build_sweep_release_view.py` writes only derived samples beside the canonical
+base view. It uses the same sample layout and adds `group_manifest.json` for the
+base-to-sweep mapping. Builds are resumable and become visible only after full
+verification:
+
+```bash
+.venv/bin/python tools/build_sweep_release_view.py \
+  --release-project-root <frozen-project> \
+  --release-manifest datasets/<dataset>/release/manifest.json \
+  --base-root outputs/<release>/base \
+  --output outputs/<release>/sweep \
+  --workers 64 --resume \
+  --pipeline <name> <source-schema> <source-project> <render-root> <mask-root>
+```
+
 ## Audits
 
 ```bash

@@ -10,14 +10,17 @@ import numpy as np
 from tools.base_release_schema import (
     BASE_SAMPLE_SCHEMA,
     MASK_MANIFEST_SCHEMA,
+    SWEEP_SAMPLE_SCHEMA,
     TRAJECTORY_FIELDS,
     TRAJECTORY_SCHEMA,
     build_base_metadata,
+    build_sweep_metadata,
     build_mask_manifest,
     canonical_trajectory,
     _dynamic_material_extras,
     sha256,
     validate_base_metadata,
+    validate_sweep_metadata,
     write_deterministic_npz,
 )
 
@@ -227,6 +230,35 @@ class BaseReleaseSchemaTests(unittest.TestCase):
             }
             summary = validate_base_metadata(metadata)
             self.assertEqual(metadata["schema_version"], BASE_SAMPLE_SCHEMA)
+            sweep_metadata = build_sweep_metadata(
+                sweep={
+                    "target_object_id": "ball",
+                    "parameter": "mass_kg",
+                    "level_index": 0,
+                    "value": 0.2,
+                },
+                family="test",
+                group_id="logical_scene",
+                source=source,
+                source_metadata_sha256="a" * 64,
+                resolved_scene=resolved,
+                render_record=render_record,
+                render_metadata=None,
+                trajectory_info=trajectory,
+                trajectory_sha256="b" * 64,
+                video_sha256="c" * 64,
+                fixture_sha256="f" * 64,
+            )
+            sweep_metadata["artifacts"]["masks"] = {
+                "manifest_sha256": "d" * 64,
+            }
+            sweep_summary = validate_sweep_metadata(sweep_metadata)
+            self.assertEqual(sweep_metadata["schema_version"], SWEEP_SAMPLE_SCHEMA)
+            self.assertEqual(sweep_metadata["sample_kind"], "sweep")
+            self.assertEqual(sweep_summary["group_id"], "logical_scene")
+            sweep_metadata["sweep"]["value"] = 0.3
+            with self.assertRaisesRegex(ValueError, "differs from object material"):
+                validate_sweep_metadata(sweep_metadata)
             mask_binding = metadata["artifacts"].pop("masks")
             with self.assertRaisesRegex(ValueError, "mask binding"):
                 validate_base_metadata(metadata)

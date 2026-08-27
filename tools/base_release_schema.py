@@ -26,6 +26,7 @@ except ModuleNotFoundError:
 
 
 BASE_SAMPLE_SCHEMA = "physweep_base_sample_v11"
+SWEEP_SAMPLE_SCHEMA = "physweep_sweep_sample_v1"
 TRAJECTORY_SCHEMA = "physweep_object_trajectory_v4"
 MASK_MANIFEST_SCHEMA = "physweep_instance_mask_manifest_v4"
 FIXTURE_SCHEMA = "physweep_static_fixture_v1"
@@ -40,6 +41,8 @@ DYNAMIC_MATERIAL_FIELDS = (
     "angular_damping",
     "contact_processing_threshold_m",
 )
+SWEEP_PARAMETER_FIELDS = DYNAMIC_MATERIAL_FIELDS[:3]
+SWEEP_DERIVED_LEVELS = (0, 1, 3, 4)
 
 ASSET_LABELS = {
     "decorated dinner plate": "decorated dinner plate",
@@ -775,7 +778,10 @@ def localize_fixture_assets(
         relative = Path("fixture_assets") / f"{expected}{suffix}"
         target = release_root / relative
         if not target.exists():
-            materialized_file(target, source)
+            try:
+                materialized_file(target, source)
+            except FileExistsError:
+                pass
         verified_file(target, expected, "localized fixture collision asset")
         result["path"] = relative.as_posix()
     return result
@@ -962,8 +968,10 @@ def build_mask_manifest(
     }
 
 
-def build_base_metadata(
+def _build_sample_metadata(
     *,
+    sample_kind: str,
+    sweep: Mapping[str, Any] | None,
     family: str,
     group_id: str,
     source: Mapping[str, Any],
@@ -1088,12 +1096,17 @@ def build_base_metadata(
         "trajectory": {"sha256": trajectory_sha256},
         "video": {"sha256": video_sha256},
     }
+    if sample_kind not in {"base", "sweep"} or (sample_kind == "base") != (sweep is None):
+        raise ValueError("sample kind and sweep descriptor disagree")
     metadata = {
-        "schema_version": BASE_SAMPLE_SCHEMA,
+        "schema_version": (
+            BASE_SAMPLE_SCHEMA if sample_kind == "base" else SWEEP_SAMPLE_SCHEMA
+        ),
         "scene_id": scene_id,
         "group_id": group_id,
         "family": family,
-        "sample_kind": "base",
+        "sample_kind": sample_kind,
+        "sweep": copy.deepcopy(dict(sweep)) if sweep is not None else None,
         "seed": int(source["seed"]),
         "semantics": semantics,
         "physics": physics,
@@ -1105,11 +1118,82 @@ def build_base_metadata(
             "source_fixture_binding_sha256": source_fixture_binding_sha256,
         },
     }
+    if sweep is None:
+        metadata.pop("sweep")
     return metadata
 
 
-def materialize_base_sample(
+def build_base_metadata(
     *,
+    family: str,
+    group_id: str,
+    source: Mapping[str, Any],
+    source_metadata_sha256: str,
+    resolved_scene: Mapping[str, Any],
+    render_record: Mapping[str, Any],
+    render_metadata: Mapping[str, Any] | None,
+    trajectory_info: Mapping[str, Any],
+    trajectory_sha256: str,
+    video_sha256: str,
+    fixture_sha256: str,
+    billiards_templates: Mapping[str, Mapping[str, str]] | None = None,
+) -> dict[str, Any]:
+    return _build_sample_metadata(
+        sample_kind="base",
+        sweep=None,
+        family=family,
+        group_id=group_id,
+        source=source,
+        source_metadata_sha256=source_metadata_sha256,
+        resolved_scene=resolved_scene,
+        render_record=render_record,
+        render_metadata=render_metadata,
+        trajectory_info=trajectory_info,
+        trajectory_sha256=trajectory_sha256,
+        video_sha256=video_sha256,
+        fixture_sha256=fixture_sha256,
+        billiards_templates=billiards_templates,
+    )
+
+
+def build_sweep_metadata(
+    *,
+    sweep: Mapping[str, Any],
+    family: str,
+    group_id: str,
+    source: Mapping[str, Any],
+    source_metadata_sha256: str,
+    resolved_scene: Mapping[str, Any],
+    render_record: Mapping[str, Any],
+    render_metadata: Mapping[str, Any] | None,
+    trajectory_info: Mapping[str, Any],
+    trajectory_sha256: str,
+    video_sha256: str,
+    fixture_sha256: str,
+    billiards_templates: Mapping[str, Mapping[str, str]] | None = None,
+) -> dict[str, Any]:
+    return _build_sample_metadata(
+        sample_kind="sweep",
+        sweep=sweep,
+        family=family,
+        group_id=group_id,
+        source=source,
+        source_metadata_sha256=source_metadata_sha256,
+        resolved_scene=resolved_scene,
+        render_record=render_record,
+        render_metadata=render_metadata,
+        trajectory_info=trajectory_info,
+        trajectory_sha256=trajectory_sha256,
+        video_sha256=video_sha256,
+        fixture_sha256=fixture_sha256,
+        billiards_templates=billiards_templates,
+    )
+
+
+def _materialize_sample(
+    *,
+    sample_kind: str,
+    sweep: Mapping[str, Any] | None,
     target: Path,
     family: str,
     group_id: str,
@@ -1159,7 +1243,9 @@ def materialize_base_sample(
     trajectory_hash = sha256(trajectory_path)
     materialized_file(target / "video.mp4", video_source_path)
 
-    metadata = build_base_metadata(
+    metadata = _build_sample_metadata(
+        sample_kind=sample_kind,
+        sweep=sweep,
         family=family,
         group_id=group_id,
         source=source,
@@ -1215,7 +1301,10 @@ def materialize_base_sample(
     metadata["artifacts"]["masks"] = {
         "manifest_sha256": sha256(mask_manifest_path),
     }
-    validate_base_metadata(metadata)
+    if sample_kind == "base":
+        validate_base_metadata(metadata)
+    else:
+        validate_sweep_metadata(metadata)
     metadata_path = target / "metadata.json"
     write_json(metadata_path, metadata)
     return (
@@ -1227,20 +1316,106 @@ def materialize_base_sample(
     )
 
 
-def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
-    if metadata.get("schema_version") != BASE_SAMPLE_SCHEMA:
-        raise ValueError("not canonical PhysSweep base metadata")
+def materialize_base_sample(
+    *,
+    target: Path,
+    family: str,
+    group_id: str,
+    source: Mapping[str, Any],
+    source_metadata_sha256: str,
+    resolved_scene: Mapping[str, Any],
+    render_record: Mapping[str, Any],
+    trajectory_source_path: Path,
+    video_source_path: Path,
+    video_sha256: str,
+    masks_source_path: Path,
+    release_root: Path,
+    source_project_root: Path,
+    billiards_templates: Mapping[str, Mapping[str, str]] | None = None,
+    render_metadata: Mapping[str, Any] | None = None,
+) -> tuple[dict[str, str], str]:
+    return _materialize_sample(
+        sample_kind="base",
+        sweep=None,
+        target=target,
+        family=family,
+        group_id=group_id,
+        source=source,
+        source_metadata_sha256=source_metadata_sha256,
+        resolved_scene=resolved_scene,
+        render_record=render_record,
+        trajectory_source_path=trajectory_source_path,
+        video_source_path=video_source_path,
+        video_sha256=video_sha256,
+        masks_source_path=masks_source_path,
+        release_root=release_root,
+        source_project_root=source_project_root,
+        billiards_templates=billiards_templates,
+        render_metadata=render_metadata,
+    )
+
+
+def materialize_sweep_sample(
+    *,
+    sweep: Mapping[str, Any],
+    target: Path,
+    family: str,
+    group_id: str,
+    source: Mapping[str, Any],
+    source_metadata_sha256: str,
+    resolved_scene: Mapping[str, Any],
+    render_record: Mapping[str, Any],
+    trajectory_source_path: Path,
+    video_source_path: Path,
+    video_sha256: str,
+    masks_source_path: Path,
+    release_root: Path,
+    source_project_root: Path,
+    billiards_templates: Mapping[str, Mapping[str, str]] | None = None,
+    render_metadata: Mapping[str, Any] | None = None,
+) -> tuple[dict[str, str], str]:
+    return _materialize_sample(
+        sample_kind="sweep",
+        sweep=sweep,
+        target=target,
+        family=family,
+        group_id=group_id,
+        source=source,
+        source_metadata_sha256=source_metadata_sha256,
+        resolved_scene=resolved_scene,
+        render_record=render_record,
+        trajectory_source_path=trajectory_source_path,
+        video_source_path=video_source_path,
+        video_sha256=video_sha256,
+        masks_source_path=masks_source_path,
+        release_root=release_root,
+        source_project_root=source_project_root,
+        billiards_templates=billiards_templates,
+        render_metadata=render_metadata,
+    )
+
+
+def _validate_sample_metadata(
+    metadata: Mapping[str, Any],
+    *,
+    sample_kind: str,
+    schema_version: str,
+) -> dict[str, Any]:
+    if metadata.get("schema_version") != schema_version:
+        raise ValueError(f"not canonical PhysSweep {sample_kind} metadata")
     required = {
         "schema_version", "scene_id", "group_id", "family", "sample_kind",
         "seed", "semantics", "physics", "visual", "text", "artifacts", "lineage",
     }
-    if set(metadata) != required or metadata.get("sample_kind") != "base":
-        raise ValueError("canonical base fields are invalid")
+    if sample_kind == "sweep":
+        required.add("sweep")
+    if set(metadata) != required or metadata.get("sample_kind") != sample_kind:
+        raise ValueError(f"canonical {sample_kind} fields are invalid")
     scene_id = str(metadata.get("scene_id", ""))
     group_id = str(metadata.get("group_id", ""))
     family = str(metadata.get("family", ""))
     if not scene_id or not group_id or not family:
-        raise ValueError("base identity is incomplete")
+        raise ValueError(f"{sample_kind} identity is incomplete")
     physics = _mapping(metadata.get("physics"))
     if set(physics) != {"backend", "time", "world", "objects", "solver", "fixture"}:
         raise ValueError("canonical physics fields are invalid")
@@ -1473,9 +1648,63 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
     ):
         raise ValueError("canonical lineage is invalid")
     return {
-        "schema_version": BASE_SAMPLE_SCHEMA,
+        "schema_version": schema_version,
         "scene_id": scene_id,
         "group_id": group_id,
         "family": family,
         "object_ids": ids,
     }
+
+
+def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
+    return _validate_sample_metadata(
+        metadata,
+        sample_kind="base",
+        schema_version=BASE_SAMPLE_SCHEMA,
+    )
+
+
+def validate_sweep_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
+    summary = _validate_sample_metadata(
+        metadata,
+        sample_kind="sweep",
+        schema_version=SWEEP_SAMPLE_SCHEMA,
+    )
+    sweep = _mapping(metadata.get("sweep"))
+    if set(sweep) != {
+        "target_object_id",
+        "parameter",
+        "level_index",
+        "value",
+    }:
+        raise ValueError("canonical sweep descriptor fields are invalid")
+    target_object_id = safe_path_component(
+        sweep.get("target_object_id", ""), "sweep target object id"
+    )
+    parameter = str(sweep.get("parameter", ""))
+    level_index = sweep.get("level_index")
+    value = sweep.get("value")
+    if (
+        target_object_id not in summary["object_ids"]
+        or parameter not in SWEEP_PARAMETER_FIELDS
+        or isinstance(level_index, bool)
+        or not isinstance(level_index, int)
+        or level_index not in SWEEP_DERIVED_LEVELS
+        or isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(float(value))
+    ):
+        raise ValueError("canonical sweep descriptor is invalid")
+    target = next(
+        record
+        for record in metadata["physics"]["objects"]
+        if record["object_id"] == target_object_id
+    )
+    if not math.isclose(
+        float(target["material"][parameter]),
+        float(value),
+        rel_tol=0.0,
+        abs_tol=1.0e-12,
+    ):
+        raise ValueError("sweep descriptor value differs from object material")
+    return summary

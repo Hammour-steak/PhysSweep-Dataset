@@ -798,7 +798,7 @@ def build_view(
     return verify_view(output)
 
 
-def _validate_trajectory(path: Path, metadata: dict[str, Any]) -> None:
+def validate_trajectory_artifact(path: Path, metadata: dict[str, Any]) -> None:
     with np.load(path, allow_pickle=False) as archive:
         if tuple(archive.files) != TRAJECTORY_FIELDS:
             raise ValueError(f"non-canonical trajectory fields: {path}")
@@ -817,7 +817,7 @@ def _validate_trajectory(path: Path, metadata: dict[str, Any]) -> None:
             raise ValueError(f"trajectory frame count differs: {path}")
 
 
-def _validate_masks(sample: Path, metadata: dict[str, Any]) -> None:
+def validate_mask_artifacts(sample: Path, metadata: dict[str, Any]) -> None:
     binding = metadata["artifacts"]["masks"]
     manifest_path = verified_file(
         sample / "mask_manifest.json",
@@ -1079,7 +1079,7 @@ def verify_view(output: Path) -> dict[str, Any]:
             )
             if trajectory.is_symlink():
                 raise ValueError(f"trajectory must be materialized: {scene_id}")
-            _validate_trajectory(trajectory, metadata)
+            validate_trajectory_artifact(trajectory, metadata)
             video_binding = metadata["artifacts"]["video"]
             video = verified_file(
                 sample / "video.mp4",
@@ -1095,7 +1095,7 @@ def verify_view(output: Path) -> dict[str, Any]:
                 "masks",
                 "mask_manifest.json",
             }
-            _validate_masks(sample, metadata)
+            validate_mask_artifacts(sample, metadata)
             if {path.name for path in sample.iterdir()} != expected_entries:
                 raise ValueError(f"unexpected base sample files: {scene_id}")
             count += 1
