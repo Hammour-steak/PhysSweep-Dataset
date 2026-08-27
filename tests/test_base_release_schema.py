@@ -232,6 +232,18 @@ class BaseReleaseSchemaTests(unittest.TestCase):
             self.assertEqual(manifest["frame_count"], 2)
             self.assertEqual(len(manifest["objects"][0]["frame_sha256"]), 2)
             self.assertNotIn("filename", json.dumps(manifest))
+            with self.assertRaisesRegex(ValueError, "invalid mask object id"):
+                build_mask_manifest(
+                    scene_id="scene__base",
+                    mask_root=root,
+                    objects=[{"object_id": "../ball", "mask_instance_id": 1}],
+                )
+            with self.assertRaisesRegex(ValueError, "invalid mask object id"):
+                build_mask_manifest(
+                    scene_id="scene__base",
+                    mask_root=root,
+                    objects=[{"object_id": None, "mask_instance_id": 1}],
+                )
 
 
 if __name__ == "__main__":

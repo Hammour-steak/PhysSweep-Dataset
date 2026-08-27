@@ -53,6 +53,19 @@ def linked_file(path: Path, source: Path) -> None:
     path.symlink_to(source.resolve(), target_is_directory=source.is_dir())
 
 
+def safe_path_component(value: Any, label: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"invalid {label}: {value!r}")
+    component = value
+    if (
+        not component
+        or Path(component).name != component
+        or component in {".", ".."}
+    ):
+        raise ValueError(f"invalid {label}: {component!r}")
+    return component
+
+
 def write_json(path: Path, value: Any) -> None:
     """Write deterministic JSON atomically."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -479,14 +492,17 @@ def _compact_objects(
 def build_mask_manifest(
     *, scene_id: str, mask_root: Path, objects: list[dict[str, Any]]
 ) -> dict[str, Any]:
-    expected_ids = [str(record["object_id"]) for record in objects]
+    expected_ids = [
+        safe_path_component(record["object_id"], "mask object id")
+        for record in objects
+    ]
     actual_ids = sorted(path.name for path in mask_root.iterdir() if path.is_dir())
     if sorted(expected_ids) != actual_ids:
         raise ValueError(f"mask object ids differ for {scene_id}")
     records = []
     frame_count: int | None = None
     for record in objects:
-        object_id = str(record["object_id"])
+        object_id = safe_path_component(record["object_id"], "mask object id")
         paths = sorted((mask_root / object_id).glob("frame_*.png"))
         if not paths:
             raise ValueError(f"mask frames are missing for {scene_id}/{object_id}")
@@ -680,7 +696,6 @@ def materialize_base_sample(
     )
     if not masks_source_path.is_dir():
         raise FileNotFoundError(f"{scene_id} masks: {masks_source_path}")
-    linked_file(target / "masks", masks_source_path)
     mask_manifest = build_mask_manifest(
         scene_id=scene_id,
         mask_root=masks_source_path,
@@ -688,6 +703,11 @@ def materialize_base_sample(
     )
     if int(mask_manifest["frame_count"]) != int(trajectory_info["frame_count"]):
         raise ValueError(f"mask and trajectory frame counts differ for {scene_id}")
+    masks_target = target / "masks"
+    masks_target.mkdir()
+    for record in mask_manifest["objects"]:
+        object_id = safe_path_component(record["object_id"], "mask object id")
+        linked_file(masks_target / object_id, masks_source_path / object_id)
     mask_manifest_path = target / "mask_manifest.json"
     write_json(mask_manifest_path, mask_manifest)
     metadata["artifacts"]["masks"] = {
@@ -698,7 +718,6 @@ def materialize_base_sample(
     write_json(metadata_path, metadata)
     return {
         "scene_id": scene_id,
-        "group_id": group_id,
         "metadata_sha256": sha256(metadata_path),
     }
 
@@ -719,9 +738,12 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
         raise ValueError("base identity is incomplete")
     physics = _mapping(metadata.get("physics"))
     objects = physics.get("objects", [])
-    ids = [str(record.get("object_id", "")) for record in objects]
+    ids = [
+        safe_path_component(record.get("object_id", ""), "object id")
+        for record in objects
+    ]
     indices = [record.get("array_index") for record in objects]
-    if not ids or any(not value for value in ids) or len(ids) != len(set(ids)):
+    if not ids or len(ids) != len(set(ids)):
         raise ValueError("canonical objects have invalid object ids")
     if indices != list(range(len(objects))) or not all(record.get("object_valid") is True for record in objects):
         raise ValueError("canonical object axis is invalid")

@@ -50,9 +50,9 @@ except ModuleNotFoundError:
     )
 
 
-VIEW_SCHEMA = "physweep_base_release_view_v7"
-PIPELINE_SCHEMA = "physweep_base_pipeline_view_v5"
-AUDIT_SCHEMA = "physweep_base_release_view_audit_v7"
+VIEW_SCHEMA = "physweep_base_release_view_v8"
+PIPELINE_SCHEMA = "physweep_base_pipeline_view_v6"
+AUDIT_SCHEMA = "physweep_base_release_view_audit_v8"
 
 
 @dataclass(frozen=True)
@@ -504,6 +504,8 @@ def build_view(
             "metadata.json is the sample authority; trajectory arrays use one object axis.\n"
             "Every sample contains exactly metadata.json, trajectory.npz, video.mp4, "
             "masks/, and mask_manifest.json.\n"
+            "masks/ contains only object-id directory symlinks; source render manifests "
+            "are not release artifacts.\n"
             "Generation diagnostics and inspection frames are not release artifacts.\n",
             encoding="utf-8",
         )
@@ -559,8 +561,8 @@ def _validate_masks(sample: Path, metadata: dict[str, Any]) -> None:
     ):
         raise ValueError("mask manifest identity differs")
     masks = sample / "masks"
-    if not masks.is_symlink() or not masks.is_dir():
-        raise ValueError("mask artifact is not a valid symlink")
+    if not masks.is_dir() or masks.is_symlink():
+        raise ValueError("mask projection is not a materialized directory")
     expected_objects = [
         (record["object_id"], int(record["mask_instance_id"]))
         for record in metadata["physics"]["objects"]
@@ -568,6 +570,9 @@ def _validate_masks(sample: Path, metadata: dict[str, Any]) -> None:
     records = manifest.get("objects", [])
     if [(record["object_id"], int(record["instance_id"])) for record in records] != expected_objects:
         raise ValueError("mask manifest object axis differs")
+    expected_entries = {safe_scene_id(record["object_id"]) for record in records}
+    if {path.name for path in masks.iterdir()} != expected_entries:
+        raise ValueError("mask projection object directories differ")
     frame_count = int(manifest["frame_count"])
     time = metadata["physics"]["time"]
     expected_frame_count = (
@@ -577,6 +582,8 @@ def _validate_masks(sample: Path, metadata: dict[str, Any]) -> None:
         raise ValueError("mask and trajectory frame counts differ")
     for record in records:
         object_id = safe_scene_id(record["object_id"])
+        if not (masks / object_id).is_symlink() or not (masks / object_id).is_dir():
+            raise ValueError("mask object artifact is not a valid symlink")
         paths = sorted((masks / object_id).glob("frame_*.png"))
         hashes = record.get("frame_sha256", [])
         expected_names = [f"frame_{index:04d}.png" for index in range(1, frame_count + 1)]
@@ -680,18 +687,13 @@ def verify_view(output: Path) -> dict[str, Any]:
         expected_samples = set()
         for record in records:
             if set(record) != {
-                "scene_id", "group_id", "metadata_sha256",
+                "scene_id", "metadata_sha256",
             }:
                 raise ValueError(f"pipeline record fields differ: {family}")
             scene_id = safe_scene_id(record["scene_id"])
-            group_id = safe_scene_id(record["group_id"])
-            if (
-                scene_id in scene_ids
-                or group_id in group_ids
-            ):
+            if scene_id in scene_ids:
                 raise ValueError(f"duplicate base identity: {scene_id}")
             scene_ids.add(scene_id)
-            group_ids.add(group_id)
             expected_samples.add(scene_id)
             sample = output / family / scene_id
             if not sample.is_dir() or sample.is_symlink():
@@ -705,14 +707,17 @@ def verify_view(output: Path) -> dict[str, Any]:
                 raise ValueError(f"metadata must be materialized: {scene_id}")
             metadata = load_json(metadata_path)
             summary = validate_base_metadata(metadata)
+            group_id = safe_scene_id(summary["group_id"])
             if (
                 summary["scene_id"] != scene_id
-                or summary["group_id"] != group_id
                 or summary["family"] != family
                 or metadata["lineage"]["source_schema_version"]
                 != document["source_schema_version"]
             ):
                 raise ValueError(f"metadata identity differs: {scene_id}")
+            if group_id in group_ids:
+                raise ValueError(f"duplicate base group identity: {group_id}")
+            group_ids.add(group_id)
             if int(metadata["physics"]["time"]["output_fps"]) != int(
                 render_contract["video_encoding"]["fps"]
             ):

@@ -277,16 +277,18 @@ global floor remains the only floor contact authority.
 `build_base_release_view.py` creates the atomic, base-only consumer release.
 Each sample contains one canonical `metadata.json`, one canonical object-axis
 `trajectory.npz`, the video, and required per-object masks plus their compact hash
-manifest. Video and mask payloads remain symlinked to immutable render output;
-generation diagnostics, inspection frames, adapter trajectory channels, and
-schema-specific metadata copies are excluded. The root manifest owns the shared
-render resolution and encoding contract, while its hash-bound source release
+manifest. Video payloads and the object directories inside `masks/` remain
+symlinked to immutable render output. The materialized `masks/` projection exposes
+only metadata-declared object ids, so render-stage manifests are not duplicated in
+the consumer view. Generation diagnostics, inspection frames, adapter trajectory
+channels, and schema-specific metadata copies are excluded. The root manifest
+owns the shared render resolution and encoding contract, while its hash-bound source release
 manifest remains the sole owner of base, metadata, and physics manifest hashes.
 Each `--pipeline` argument binds one source metadata schema to its project,
 render, and mask roots. The mask root is explicit so an audited backfill can be
 kept separate from immutable RGB render logs. Per-sample lineage
-stays in `metadata.json`; pipeline index records contain only the sample and
-group identities plus the canonical metadata hash:
+stays in `metadata.json`; pipeline index records contain only the sample identity
+and canonical metadata hash:
 
 ```bash
 .venv/bin/python tools/build_base_release_view.py \

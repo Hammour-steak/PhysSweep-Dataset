@@ -162,6 +162,9 @@ class BaseReleaseViewTests(unittest.TestCase):
                 mask.mkdir(parents=True)
                 (mask / "frame_0001.png").write_bytes(b"mask-1")
                 (mask / "frame_0002.png").write_bytes(b"mask-2")
+                (mask.parent / "mask_manifest.json").write_text(
+                    "render-stage provenance", encoding="utf-8"
+                )
                 camera = {
                     "mode": "front",
                     "position_m": [2.0, -2.0, 1.5],
@@ -320,7 +323,14 @@ class BaseReleaseViewTests(unittest.TestCase):
             self.assertFalse((sample / "metadata.json").is_symlink())
             self.assertFalse((sample / "trajectory.npz").is_symlink())
             self.assertTrue((sample / "video.mp4").is_symlink())
-            self.assertTrue((sample / "masks").is_symlink())
+            self.assertFalse((sample / "masks").is_symlink())
+            self.assertTrue((sample / "masks").is_dir())
+            self.assertEqual(
+                {path.name for path in (sample / "masks").iterdir()},
+                {"ball"},
+            )
+            self.assertTrue((sample / "masks/ball").is_symlink())
+            self.assertFalse((sample / "masks/mask_manifest.json").exists())
             self.assertEqual(
                 {path.name for path in sample.iterdir()},
                 {
@@ -357,7 +367,7 @@ class BaseReleaseViewTests(unittest.TestCase):
             )
             self.assertEqual(
                 set(generic_manifest["records"][0]),
-                {"scene_id", "group_id", "metadata_sha256"},
+                {"scene_id", "metadata_sha256"},
             )
             self.assertNotIn("mask_count", generic_manifest)
             asset_sample = output / "asset/scene_1__base"
