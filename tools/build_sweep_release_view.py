@@ -155,6 +155,14 @@ def relative_path(path: Path, start: Path) -> str:
     return Path(os.path.relpath(path.resolve(), start.resolve())).as_posix()
 
 
+def sibling_release_roots(base_root: Path, sweep_root: Path) -> tuple[Path, Path]:
+    base_root = base_root.resolve()
+    sweep_root = sweep_root.resolve()
+    if base_root == sweep_root or base_root.parent != sweep_root.parent:
+        raise ValueError("base and sweep releases must be distinct siblings")
+    return base_root, sweep_root
+
+
 def release_directory_name(output: Path, allow_staging_markers: bool) -> str:
     name = output.name
     if allow_staging_markers and name.startswith(".") and name.endswith(".building"):
@@ -175,6 +183,10 @@ def fixture_asset_bindings(value: Any) -> list[tuple[str, str]]:
         for item in value.values():
             bindings.extend(fixture_asset_bindings(item))
     return bindings
+
+
+def sweep_sort_key(record: dict[str, Any]) -> tuple[int, int]:
+    return SWEEP_AXES.index(str(record["parameter"])), int(record["level_index"])
 
 
 def load_base_groups(base_root: Path, release_parent: Path) -> dict[str, dict[str, Any]]:
@@ -388,7 +400,7 @@ def group_manifest(
         base = base_groups[group_id]
         sweeps = sorted(
             grouped[group_id],
-            key=lambda record: (record["parameter"], record["level_index"]),
+            key=sweep_sort_key,
         )
         records.append(
             {
@@ -422,7 +434,7 @@ def build_view(
 ) -> dict[str, Any]:
     if workers < 1:
         raise ValueError("workers must be positive")
-    output = output.resolve()
+    base_root, output = sibling_release_roots(base_root, output)
     work = output.with_name(f".{output.name}.building")
     if output.exists() or output.is_symlink():
         raise FileExistsError(f"sweep release already exists: {output}")
@@ -645,7 +657,7 @@ def verify_view(
     base_root: Path,
     allow_staging_markers: bool = False,
 ) -> dict[str, Any]:
-    output = output.resolve()
+    base_root, output = sibling_release_roots(base_root, output)
     manifest = load_json(output / "manifest.json")
     expected_manifest_fields = {
         "schema_version",
@@ -822,6 +834,9 @@ def verify_view(
     expected_axis_levels = {
         (axis, level) for axis in SWEEP_AXES for level in DERIVED_LEVELS
     }
+    expected_axis_level_order = [
+        (axis, level) for axis in SWEEP_AXES for level in DERIVED_LEVELS
+    ]
     canonical_output_name = release_directory_name(output, allow_staging_markers)
     observed_groups = set()
     for group in groups["records"]:
@@ -846,6 +861,11 @@ def verify_view(
                 for record in sweeps
             }
             != expected_axis_levels
+            or [
+                (record.get("parameter"), record.get("level_index"))
+                for record in sweeps
+            ]
+            != expected_axis_level_order
             or len({record.get("target_object_id") for record in sweeps}) != 1
         ):
             raise ValueError(f"sweep group record differs: {group_id}")

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 
 from tools.build_sweep_release_view import (
     DERIVED_LEVELS,
     SWEEP_AXES,
+    sibling_release_roots,
     sweep_descriptor,
+    sweep_sort_key,
     validate_groups,
 )
 
@@ -46,6 +49,21 @@ class SweepReleaseViewTests(unittest.TestCase):
         record["level_index"] = 2
         with self.assertRaisesRegex(ValueError, "invalid sweep descriptor"):
             sweep_descriptor(record)
+
+    def test_release_roots_are_siblings_and_axis_order_is_canonical(self) -> None:
+        base, sweep = sibling_release_roots(Path("release/base"), Path("release/sweep"))
+        self.assertEqual(base.parent, sweep.parent)
+        with self.assertRaisesRegex(ValueError, "distinct siblings"):
+            sibling_release_roots(Path("release/base"), Path("other/sweep"))
+        indexed = [
+            {"parameter": record["axis"], "level_index": record["level_index"]}
+            for record in reversed(self.records())
+        ]
+        ordered = sorted(indexed, key=sweep_sort_key)
+        self.assertEqual(
+            [(record["parameter"], record["level_index"]) for record in ordered],
+            [(axis, level) for axis in SWEEP_AXES for level in DERIVED_LEVELS],
+        )
 
 
 if __name__ == "__main__":
