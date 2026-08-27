@@ -33,6 +33,9 @@ class SweepReleaseViewTests(unittest.TestCase):
         self.assertEqual(set(mapping.values()), {"group_a"})
         with self.assertRaisesRegex(ValueError, "one-factor group"):
             validate_groups(records[:-1], base_by_source, base_groups)
+        records[1]["scene_id"] = records[0]["scene_id"]
+        with self.assertRaisesRegex(ValueError, "duplicate sweep scene id"):
+            validate_groups(records, base_by_source, base_groups)
 
     def test_sweep_descriptor_rejects_base_level(self) -> None:
         record = self.records()[0]

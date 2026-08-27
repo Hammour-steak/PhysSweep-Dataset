@@ -220,6 +220,8 @@ def validate_groups(
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for record in sweep_records:
         scene_id = safe_scene_id(record["scene_id"])
+        if scene_id in group_by_scene:
+            raise ValueError(f"duplicate sweep scene id: {scene_id}")
         parent = str(record["parent"])
         if parent not in base_by_source:
             raise ValueError(f"sweep parent is absent from base manifest: {scene_id}")
@@ -446,6 +448,11 @@ def build_view(
     )
     base_groups = load_base_groups(base_root, output.parent)
     group_by_scene = validate_groups(sweep_records, base_by_source, base_groups)
+    for record in sweep_records:
+        scene_id = safe_scene_id(record["scene_id"])
+        family = specs[str(record["source_schema_version"])].name
+        if base_groups[group_by_scene[scene_id]]["family"] != family:
+            raise ValueError(f"base and sweep families differ: {scene_id}")
     physics_by_id = index_unique(physics["records"], "physics")
 
     output.parent.mkdir(parents=True, exist_ok=True)
