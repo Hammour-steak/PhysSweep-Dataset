@@ -50,9 +50,25 @@ except ModuleNotFoundError:
     )
 
 
-VIEW_SCHEMA = "physweep_base_release_view_v8"
-PIPELINE_SCHEMA = "physweep_base_pipeline_view_v6"
-AUDIT_SCHEMA = "physweep_base_release_view_audit_v8"
+VIEW_SCHEMA = "physweep_base_release_view_v9"
+PIPELINE_SCHEMA = "physweep_base_pipeline_view_v7"
+AUDIT_SCHEMA = "physweep_base_release_view_audit_v9"
+
+COORDINATE_CONTRACT = {
+    "units": {"length": "meter", "time": "second", "angle": "radian"},
+    "world_frame": {"handedness": "right_handed", "up_axis": "+Z"},
+    "camera_pose": {
+        "method": "look_at",
+        "world_up": [0.0, 0.0, 1.0],
+    },
+    "camera_frame": "camera_right_up_forward",
+    "image": {
+        "origin": "top_left",
+        "horizontal_axis": "right",
+        "vertical_axis": "down",
+        "pixel_center": "integer_plus_half",
+    },
+}
 
 
 @dataclass(frozen=True)
@@ -493,6 +509,7 @@ def build_view(
             "release_manifest": str(release_path),
             "release_manifest_sha256": sha256(release_path),
             "render_contract": render_contract,
+            "coordinate_contract": COORDINATE_CONTRACT,
             "sample_schema_version": BASE_SAMPLE_SCHEMA,
             "trajectory_schema_version": TRAJECTORY_SCHEMA,
             "mask_manifest_schema_version": MASK_MANIFEST_SCHEMA,
@@ -502,6 +519,7 @@ def build_view(
         (work / "README.txt").write_text(
             "Canonical PhysSweep base release.\n"
             "metadata.json is the sample authority; trajectory arrays use one object axis.\n"
+            "The root manifest fixes SI units and world/camera/image coordinates.\n"
             "Every sample contains exactly metadata.json, trajectory.npz, video.mp4, "
             "masks/, and mask_manifest.json.\n"
             "masks/ contains only object-id directory symlinks; source render manifests "
@@ -608,6 +626,7 @@ def verify_view(output: Path) -> dict[str, Any]:
         "release_manifest",
         "release_manifest_sha256",
         "render_contract",
+        "coordinate_contract",
         "sample_schema_version",
         "trajectory_schema_version",
         "mask_manifest_schema_version",
@@ -621,6 +640,7 @@ def verify_view(output: Path) -> dict[str, Any]:
         or manifest.get("sample_schema_version") != BASE_SAMPLE_SCHEMA
         or manifest.get("trajectory_schema_version") != TRAJECTORY_SCHEMA
         or manifest.get("mask_manifest_schema_version") != MASK_MANIFEST_SCHEMA
+        or manifest.get("coordinate_contract") != COORDINATE_CONTRACT
     ):
         raise ValueError("not a canonical PhysSweep base release")
     render_contract = manifest.get("render_contract")

@@ -21,9 +21,19 @@ except ModuleNotFoundError:
     from tools.audit_release_provenance import sha256
 
 
-BASE_SAMPLE_SCHEMA = "physweep_base_sample_v5"
+BASE_SAMPLE_SCHEMA = "physweep_base_sample_v6"
 TRAJECTORY_SCHEMA = "physweep_object_trajectory_v3"
 MASK_MANIFEST_SCHEMA = "physweep_instance_mask_manifest_v3"
+
+DYNAMIC_MATERIAL_FIELDS = (
+    "mass_kg",
+    "contact_friction",
+    "contact_restitution",
+    "rolling_friction",
+    "spinning_friction",
+    "linear_damping",
+    "angular_damping",
+)
 
 TRAJECTORY_FIELDS = (
     "schema_version",
@@ -234,13 +244,63 @@ def _compact_camera(
         "focal_length_mm": float(candidate["focal_length_mm"]),
         "sensor_width_mm": float(sensor_width),
     }
-    for key in ("clip_start_m", "clip_end_m"):
-        if candidate.get(key) is not None:
-            result[key] = copy.deepcopy(candidate[key])
+    source_camera = _mapping(source.get("camera"))
+    clip_start = candidate.get("clip_start_m", source_camera.get("clip_start_m"))
+    clip_end = candidate.get("clip_end_m", source_camera.get("clip_end_m"))
+    if clip_start is None or clip_end is None:
+        # Asset and specialized renderers use this explicit fixed camera range.
+        # Generic renders carry their per-sample values in the camera binding.
+        if str(source.get("schema_version")) == "physweep_pybullet_rigid_metadata_v1":
+            raise ValueError("final generic camera has no clipping range")
+        clip_start = 0.03
+        clip_end = 100.0
+    result["clip_start_m"] = float(clip_start)
+    result["clip_end_m"] = float(clip_end)
     if len(result["position_m"]) != 3 or len(result["target_m"]) != 3:
         raise ValueError("final camera vectors must be three-dimensional")
     if not all(math.isfinite(float(item)) for item in (*result["position_m"], *result["target_m"])):
         raise ValueError("final camera contains non-finite coordinates")
+    return result
+
+
+def _dynamic_material_extras(
+    source: Mapping[str, Any],
+    resolved_scene: Mapping[str, Any],
+    object_id: str,
+) -> dict[str, float]:
+    """Recover non-swept dynamics that were applied by the simulator."""
+    candidates: list[Mapping[str, Any]] = []
+    simulation = _mapping(source.get("simulation"))
+    for raw in simulation.get("objects", []):
+        record = _mapping(raw)
+        if str(record.get("object_id")) == object_id:
+            candidates.append(_mapping(record.get("material")))
+
+    adapter_payload = _mapping(resolved_scene.get("adapter_payload"))
+    backend = _mapping(adapter_payload.get("backend"))
+    asset_defaults = _mapping(
+        _mapping(
+            _mapping(backend.get("asset_proxy_rules")).get("contact")
+        ).get("dynamic_defaults")
+    )
+    if asset_defaults:
+        candidates.append(asset_defaults)
+    billiards_defaults = _mapping(
+        _mapping(backend.get("billiards_rules")).get("ball_dynamics")
+    )
+    if billiards_defaults:
+        candidates.append(billiards_defaults)
+
+    result: dict[str, float] = {}
+    for key in DYNAMIC_MATERIAL_FIELDS[3:]:
+        for candidate in candidates:
+            if candidate.get(key) is not None:
+                result[key] = float(candidate[key])
+                break
+        if key not in result:
+            raise ValueError(f"resolved dynamic material lacks {key} for {object_id}")
+        if not math.isfinite(result[key]) or result[key] < 0.0:
+            raise ValueError(f"invalid {key} for {object_id}")
     return result
 
 
@@ -452,6 +512,7 @@ def _compact_objects(
         )
         if not np.allclose(runtime_material[array_index], expected_material, rtol=0.0, atol=1.0e-7):
             raise ValueError(f"runtime material differs for {object_id}")
+        extra_material = _dynamic_material_extras(source, resolved_scene, object_id)
         initial = _mapping(raw.get("initial_state"))
         collision_proxy = _compact_collision_proxy(_mapping(raw["collision_proxy"]))
         compact = {
@@ -466,6 +527,7 @@ def _compact_objects(
                 "mass_kg": float(expected_material[0]),
                 "contact_friction": float(expected_material[1]),
                 "contact_restitution": float(expected_material[2]),
+                **extra_material,
             },
             "inertia_diagonal_kg_m2": [float(item) for item in inertia[array_index]],
             "initial_state": {
@@ -748,6 +810,18 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
     if indices != list(range(len(objects))) or not all(record.get("object_valid") is True for record in objects):
         raise ValueError("canonical object axis is invalid")
     for record in objects:
+        material = _mapping(record.get("material"))
+        if set(material) != set(DYNAMIC_MATERIAL_FIELDS):
+            raise ValueError("canonical dynamic material is incomplete")
+        values = {key: float(material[key]) for key in DYNAMIC_MATERIAL_FIELDS}
+        if (
+            not all(math.isfinite(value) for value in values.values())
+            or values["mass_kg"] <= 0.0
+            or values["contact_friction"] < 0.0
+            or not 0.0 <= values["contact_restitution"] <= 1.0
+            or any(values[key] < 0.0 for key in DYNAMIC_MATERIAL_FIELDS[3:])
+        ):
+            raise ValueError("canonical dynamic material is invalid")
         inertia = np.asarray(record.get("inertia_diagonal_kg_m2"), dtype=np.float64)
         if inertia.shape != (3,) or not np.isfinite(inertia).all() or np.any(inertia <= 0.0):
             raise ValueError("canonical object inertia is invalid")
@@ -780,9 +854,21 @@ def validate_base_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
         raise ValueError("canonical semantics duplicate object asset identity")
     visual = _mapping(metadata.get("visual"))
     camera = _mapping(visual.get("camera"))
-    required_camera = {"position_m", "target_m", "focal_length_mm", "sensor_width_mm"}
-    if not required_camera.issubset(camera) or set(camera) - required_camera - {"clip_start_m", "clip_end_m"}:
+    required_camera = {
+        "position_m",
+        "target_m",
+        "focal_length_mm",
+        "sensor_width_mm",
+        "clip_start_m",
+        "clip_end_m",
+    }
+    if set(camera) != required_camera:
         raise ValueError("canonical final camera is incomplete")
+    if (
+        float(camera["clip_start_m"]) <= 0.0
+        or float(camera["clip_end_m"]) <= float(camera["clip_start_m"])
+    ):
+        raise ValueError("canonical final camera clipping range is invalid")
     lighting = _mapping(visual.get("lighting"))
     if (
         set(visual) - {"camera", "render_samples", "environment", "materials", "assets", "lighting"}

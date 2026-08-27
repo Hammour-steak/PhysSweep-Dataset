@@ -84,6 +84,12 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                         {
                             "object_id": "ball",
                             "visual": {"shape": "sphere", "radius_m": 0.1},
+                            "material": {
+                                "rolling_friction": 0.01,
+                                "spinning_friction": 0.02,
+                                "linear_damping": 0.03,
+                                "angular_damping": 0.04,
+                            },
                         }
                     ]
                 },
@@ -179,12 +185,37 @@ class BaseReleaseSchemaTests(unittest.TestCase):
             self.assertTrue(obj["object_valid"])
             self.assertEqual(obj["initial_state"]["quaternion_wxyz"], [1.0, 0.0, 0.0, 0.0])
             self.assertEqual(obj["inertia_diagonal_kg_m2"], [0.001, 0.001, 0.001])
+            self.assertEqual(
+                obj["material"],
+                {
+                    "mass_kg": 0.2,
+                    "contact_friction": 0.3,
+                    "contact_restitution": 0.4,
+                    "rolling_friction": 0.01,
+                    "spinning_friction": 0.02,
+                    "linear_damping": 0.03,
+                    "angular_damping": 0.04,
+                },
+            )
+            linear_damping = obj["material"].pop("linear_damping")
+            with self.assertRaisesRegex(ValueError, "dynamic material"):
+                validate_base_metadata(metadata)
+            obj["material"]["linear_damping"] = linear_damping
             self.assertNotIn("trajectory_key", json.dumps(metadata))
             self.assertNotIn("diagnostics", metadata["visual"]["camera"])
             self.assertEqual(
                 set(metadata["visual"]["camera"]),
-                {"position_m", "target_m", "focal_length_mm", "sensor_width_mm"},
+                {
+                    "position_m",
+                    "target_m",
+                    "focal_length_mm",
+                    "sensor_width_mm",
+                    "clip_start_m",
+                    "clip_end_m",
+                },
             )
+            self.assertEqual(metadata["visual"]["camera"]["clip_start_m"], 0.03)
+            self.assertEqual(metadata["visual"]["camera"]["clip_end_m"], 100.0)
             self.assertNotIn("resolution", metadata["visual"])
             self.assertEqual(metadata["visual"]["render_samples"], 16)
             self.assertNotIn("frame_count", metadata["physics"]["time"])

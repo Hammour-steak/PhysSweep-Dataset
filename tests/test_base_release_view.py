@@ -64,6 +64,12 @@ class BaseReleaseViewTests(unittest.TestCase):
                                         "shape": "sphere",
                                         "radius_m": 0.1,
                                     },
+                                    "material": {
+                                        "rolling_friction": 0.01,
+                                        "spinning_friction": 0.02,
+                                        "linear_damping": 0.03,
+                                        "angular_damping": 0.04,
+                                    },
                                 }
                             ]
                         },
@@ -362,6 +368,14 @@ class BaseReleaseViewTests(unittest.TestCase):
             )
             self.assertEqual(root_manifest["render_contract"]["resolution"], [1280, 720])
             self.assertNotIn("samples", root_manifest["render_contract"])
+            self.assertEqual(
+                root_manifest["coordinate_contract"]["camera_frame"],
+                "camera_right_up_forward",
+            )
+            self.assertEqual(
+                root_manifest["coordinate_contract"]["camera_pose"]["world_up"],
+                [0.0, 0.0, 1.0],
+            )
             generic_manifest = json.loads(
                 (output / "generic/manifest.json").read_text(encoding="utf-8")
             )
