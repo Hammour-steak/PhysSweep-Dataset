@@ -8,110 +8,50 @@ import concurrent.futures
 import json
 import os
 import shutil
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any, Iterable
 
-try:
-    from base_release_attribution import (
-        build_attribution,
-        collect_asset_ids,
-        load_billiards_templates,
-    )
-    from base_release_schema import (
-        FIXTURE_SCHEMA,
-        MASK_MANIFEST_SCHEMA,
-        SAMPLE_ENTRIES,
-        SAMPLE_LAYOUT_CONTRACT,
-        SWEEP_DERIVED_LEVELS,
-        SWEEP_PARAMETER_FIELDS,
-        SWEEP_SAMPLE_SCHEMA,
-        TRAJECTORY_SCHEMA,
-        materialize_sweep_sample,
-        sha256,
-        validate_base_metadata,
-        validate_sweep_metadata,
-        verified_file,
-        write_json,
-    )
-    from build_base_release_view import (
-        CAMERA_PROJECTION_CONTRACT,
-        COLLISION_PROXY_CONTRACT,
-        COORDINATE_CONTRACT,
-        DEFAULT_RELEASE_ROOT,
-        FIXTURE_BINDING_CONTRACT,
-        FIXTURE_CATALOG_SCHEMA,
-        MASK_CONTRACT,
-        OBJECT_DYNAMICS_CONTRACT,
-        OBJECT_IDENTITY_CONTRACT,
-        OBJECT_SEMANTICS_CONTRACT,
-        OBJECT_VISUAL_CONTRACT,
-        TEMPORAL_CONTRACT,
-        TEXT_CONTRACT,
-        TRAJECTORY_CONTRACT,
-        VIDEO_ENCODING_FIELDS,
-        PipelineSpec,
-        index_unique,
-        index_unique_string,
-        load_json,
-        one_object_release_roots,
-        release_documents,
-        render_sources,
-        safe_scene_id,
-        validate_mask_artifacts,
-        validate_pipeline_specs,
-        validate_trajectory_artifact,
-    )
-except ModuleNotFoundError:
-    from tools.base_release_attribution import (
-        build_attribution,
-        collect_asset_ids,
-        load_billiards_templates,
-    )
-    from tools.base_release_schema import (
-        FIXTURE_SCHEMA,
-        MASK_MANIFEST_SCHEMA,
-        SAMPLE_ENTRIES,
-        SAMPLE_LAYOUT_CONTRACT,
-        SWEEP_DERIVED_LEVELS,
-        SWEEP_PARAMETER_FIELDS,
-        SWEEP_SAMPLE_SCHEMA,
-        TRAJECTORY_SCHEMA,
-        materialize_sweep_sample,
-        sha256,
-        validate_base_metadata,
-        validate_sweep_metadata,
-        verified_file,
-        write_json,
-    )
-    from tools.build_base_release_view import (
-        CAMERA_PROJECTION_CONTRACT,
-        COLLISION_PROXY_CONTRACT,
-        COORDINATE_CONTRACT,
-        DEFAULT_RELEASE_ROOT,
-        FIXTURE_BINDING_CONTRACT,
-        FIXTURE_CATALOG_SCHEMA,
-        MASK_CONTRACT,
-        OBJECT_DYNAMICS_CONTRACT,
-        OBJECT_IDENTITY_CONTRACT,
-        OBJECT_SEMANTICS_CONTRACT,
-        OBJECT_VISUAL_CONTRACT,
-        TEMPORAL_CONTRACT,
-        TEXT_CONTRACT,
-        TRAJECTORY_CONTRACT,
-        VIDEO_ENCODING_FIELDS,
-        PipelineSpec,
-        index_unique,
-        index_unique_string,
-        load_json,
-        one_object_release_roots,
-        release_documents,
-        render_sources,
-        safe_scene_id,
-        validate_mask_artifacts,
-        validate_pipeline_specs,
-        validate_trajectory_artifact,
-    )
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if not __package__ and str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from tools.base_release_attribution import load_billiards_templates
+from tools.base_release_schema import (
+    FIXTURE_SCHEMA,
+    SAMPLE_ENTRIES,
+    SWEEP_DERIVED_LEVELS,
+    SWEEP_PARAMETER_FIELDS,
+    SWEEP_SAMPLE_SCHEMA,
+    materialize_sweep_sample,
+    sha256,
+    validate_base_metadata,
+    validate_sweep_metadata,
+    verified_file,
+    write_json,
+)
+from tools.build_base_release_view import (
+    DEFAULT_RELEASE_ROOT,
+    FIXTURE_CATALOG_SCHEMA,
+    PipelineSpec,
+    collect_sample_attribution,
+    index_unique,
+    index_unique_string,
+    load_json,
+    load_pipeline_records,
+    one_object_release_roots,
+    release_contract_fields,
+    release_documents,
+    render_sources,
+    safe_scene_id,
+    validate_mask_artifacts,
+    validate_pipeline_specs,
+    validate_release_manifest_contract,
+    validate_trajectory_artifact,
+    write_pipeline_manifests,
+    write_release_catalogs,
+)
 
 
 VIEW_SCHEMA = "physweep_sweep_release_view_v1"
@@ -501,9 +441,8 @@ def build_view(
     for spec in specs.values():
         (work / spec.name).mkdir(exist_ok=True)
         (work / ".completed" / spec.name).mkdir(exist_ok=True)
-    contract_project_root = Path(__file__).resolve().parents[1]
     billiards_templates = (
-        load_billiards_templates(contract_project_root)
+        load_billiards_templates(PROJECT_ROOT)
         if any(spec.name == "billiards" for spec in specs.values())
         else {}
     )
@@ -535,55 +474,25 @@ def build_view(
         family = str(result["family"])
         compact = result["record"]
         grouped[family].append(compact)
-        metadata_document = load_json(
-            work / family / str(compact["scene_id"]) / "metadata.json"
+        collect_sample_attribution(
+            load_json(work / family / str(compact["scene_id"]) / "metadata.json"),
+            used_asset_ids,
+            used_hdri,
         )
-        collect_asset_ids(metadata_document, used_asset_ids)
-        environment = metadata_document.get("visual", {}).get("environment")
-        if isinstance(environment, dict):
-            name = str(environment["name"])
-            digest = str(environment["sha256"])
-            previous = used_hdri.setdefault(name, digest)
-            if previous != digest:
-                raise ValueError(f"two hashes for HDRI {name}")
 
-    pipeline_bindings = {}
-    for spec in sorted(specs.values(), key=lambda item: item.name):
-        records = sorted(grouped[spec.name], key=lambda record: record["scene_id"])
-        pipeline = {
-            "schema_version": PIPELINE_SCHEMA,
-            "pipeline": spec.name,
-            "source_schema_version": spec.source_schema_version,
-            "sample_schema_version": SWEEP_SAMPLE_SCHEMA,
-            "sample_count": len(records),
-            "records": records,
-        }
-        path = work / spec.name / "manifest.json"
-        write_json(path, pipeline)
-        pipeline_bindings[spec.name] = {
-            "manifest": f"{spec.name}/manifest.json",
-            "manifest_sha256": sha256(path),
-        }
-
-    fixture_records = [
-        {"sha256": digest, "usage_count": count}
-        for digest, count in sorted(fixture_usage.items())
-    ]
-    fixture_manifest = {
-        "schema_version": FIXTURE_CATALOG_SCHEMA,
-        "entry_count": len(fixture_records),
-        "records": fixture_records,
-    }
-    fixture_manifest_path = work / "fixtures" / "manifest.json"
-    write_json(fixture_manifest_path, fixture_manifest)
-    for fixture_path in (work / "fixtures").glob("*.json"):
-        if fixture_path.name != "manifest.json":
-            collect_asset_ids(load_json(fixture_path), used_asset_ids)
-    attribution = build_attribution(
-        contract_project_root, used_asset_ids, used_hdri
+    pipeline_bindings = write_pipeline_manifests(
+        work=work,
+        specs=specs,
+        grouped=grouped,
+        pipeline_schema=PIPELINE_SCHEMA,
+        sample_schema=SWEEP_SAMPLE_SCHEMA,
     )
-    attribution_path = work / "assets" / "attribution_manifest.json"
-    write_json(attribution_path, attribution)
+    catalogs = write_release_catalogs(
+        work=work,
+        fixture_usage=fixture_usage,
+        used_asset_ids=used_asset_ids,
+        used_hdri=used_hdri,
+    )
     groups = group_manifest(
         output_name=output.name,
         results=results,
@@ -597,27 +506,12 @@ def build_view(
         "schema_version": VIEW_SCHEMA,
         "dataset_id": str(release["dataset_id"]),
         "sample_kind": "sweep",
-        "storage_mode": "materialized_compact_portable_release_with_content_addressed_fixtures",
         "sample_count": expected_count,
         "group_count": len(base_groups),
-        "render_contract": render_contract,
-        "coordinate_contract": COORDINATE_CONTRACT,
-        "camera_projection_contract": CAMERA_PROJECTION_CONTRACT,
-        "temporal_contract": TEMPORAL_CONTRACT,
-        "trajectory_contract": TRAJECTORY_CONTRACT,
-        "mask_contract": MASK_CONTRACT,
-        "sample_layout_contract": SAMPLE_LAYOUT_CONTRACT,
-        "text_contract": TEXT_CONTRACT,
-        "collision_proxy_contract": COLLISION_PROXY_CONTRACT,
-        "object_visual_contract": OBJECT_VISUAL_CONTRACT,
-        "object_dynamics_contract": OBJECT_DYNAMICS_CONTRACT,
-        "fixture_binding_contract": FIXTURE_BINDING_CONTRACT,
-        "object_identity_contract": OBJECT_IDENTITY_CONTRACT,
-        "object_semantics_contract": OBJECT_SEMANTICS_CONTRACT,
-        "sample_schema_version": SWEEP_SAMPLE_SCHEMA,
-        "trajectory_schema_version": TRAJECTORY_SCHEMA,
-        "mask_manifest_schema_version": MASK_MANIFEST_SCHEMA,
-        "fixture_schema_version": FIXTURE_SCHEMA,
+        **release_contract_fields(
+            render_contract=render_contract,
+            sample_schema=SWEEP_SAMPLE_SCHEMA,
+        ),
         "base_release": {
             "manifest": f"{relative_path(base_root, output.parent)}/manifest.json",
             "manifest_sha256": sha256(base_manifest_path),
@@ -628,17 +522,7 @@ def build_view(
             "manifest_sha256": sha256(group_path),
             "group_count": len(base_groups),
         },
-        "fixture_catalog": {
-            "schema_version": FIXTURE_CATALOG_SCHEMA,
-            "manifest": "fixtures/manifest.json",
-            "manifest_sha256": sha256(fixture_manifest_path),
-            "entry_count": len(fixture_records),
-        },
-        "asset_attribution": {
-            "manifest": "assets/attribution_manifest.json",
-            "manifest_sha256": sha256(attribution_path),
-            "record_count": int(attribution["record_count"]),
-        },
+        **catalogs,
         "provenance": {
             "source_generation_release_metadata_sha256": sha256(metadata_path),
             "source_sweep_release_manifest_sha256": sha256(release_path),
@@ -683,76 +567,20 @@ def verify_view(
         allow_staging_markers=allow_staging_markers,
     )
     manifest = load_json(output / "manifest.json")
-    expected_manifest_fields = {
-        "schema_version",
-        "dataset_id",
-        "sample_kind",
-        "storage_mode",
-        "sample_count",
-        "group_count",
-        "render_contract",
-        "coordinate_contract",
-        "camera_projection_contract",
-        "temporal_contract",
-        "trajectory_contract",
-        "mask_contract",
-        "sample_layout_contract",
-        "text_contract",
-        "collision_proxy_contract",
-        "object_visual_contract",
-        "object_dynamics_contract",
-        "fixture_binding_contract",
-        "object_identity_contract",
-        "object_semantics_contract",
-        "sample_schema_version",
-        "trajectory_schema_version",
-        "mask_manifest_schema_version",
-        "fixture_schema_version",
-        "base_release",
-        "group_index",
-        "fixture_catalog",
-        "asset_attribution",
-        "provenance",
-        "pipelines",
-    }
-    if (
-        set(manifest) != expected_manifest_fields
-        or manifest.get("schema_version") != VIEW_SCHEMA
-        or manifest.get("sample_kind") != "sweep"
-        or manifest.get("storage_mode")
-        != "materialized_compact_portable_release_with_content_addressed_fixtures"
-        or manifest.get("sample_schema_version") != SWEEP_SAMPLE_SCHEMA
-        or manifest.get("trajectory_schema_version") != TRAJECTORY_SCHEMA
-        or manifest.get("mask_manifest_schema_version") != MASK_MANIFEST_SCHEMA
-        or manifest.get("fixture_schema_version") != FIXTURE_SCHEMA
-        or manifest.get("coordinate_contract") != COORDINATE_CONTRACT
-        or manifest.get("camera_projection_contract") != CAMERA_PROJECTION_CONTRACT
-        or manifest.get("temporal_contract") != TEMPORAL_CONTRACT
-        or manifest.get("trajectory_contract") != TRAJECTORY_CONTRACT
-        or manifest.get("mask_contract") != MASK_CONTRACT
-        or manifest.get("sample_layout_contract") != SAMPLE_LAYOUT_CONTRACT
-        or manifest.get("text_contract") != TEXT_CONTRACT
-        or manifest.get("collision_proxy_contract") != COLLISION_PROXY_CONTRACT
-        or manifest.get("object_visual_contract") != OBJECT_VISUAL_CONTRACT
-        or manifest.get("object_dynamics_contract") != OBJECT_DYNAMICS_CONTRACT
-        or manifest.get("fixture_binding_contract") != FIXTURE_BINDING_CONTRACT
-        or manifest.get("object_identity_contract") != OBJECT_IDENTITY_CONTRACT
-        or manifest.get("object_semantics_contract") != OBJECT_SEMANTICS_CONTRACT
-    ):
+    render_contract = validate_release_manifest_contract(
+        manifest,
+        view_schema=VIEW_SCHEMA,
+        sample_schema=SWEEP_SAMPLE_SCHEMA,
+        label="sweep",
+        extra_fields={
+            "sample_kind",
+            "group_count",
+            "base_release",
+            "group_index",
+        },
+    )
+    if manifest.get("sample_kind") != "sweep":
         raise ValueError("not a canonical PhysSweep sweep release")
-    render_contract = manifest.get("render_contract")
-    if (
-        not isinstance(render_contract, dict)
-        or set(render_contract) != {"engine", "resolution", "video_encoding"}
-        or not render_contract.get("engine")
-        or not isinstance(render_contract.get("resolution"), list)
-        or len(render_contract["resolution"]) != 2
-        or any(int(value) <= 0 for value in render_contract["resolution"])
-        or not isinstance(render_contract.get("video_encoding"), dict)
-        or set(render_contract["video_encoding"]) != set(VIDEO_ENCODING_FIELDS)
-        or int(render_contract["video_encoding"].get("fps", 0)) <= 0
-    ):
-        raise ValueError("sweep render contract is incomplete")
     provenance = manifest.get("provenance", {})
     if (
         set(provenance)
@@ -944,37 +772,16 @@ def verify_view(
     for family, binding in manifest["pipelines"].items():
         family = safe_scene_id(family)
         expected_top.add(family)
-        relative_manifest = Path(family) / "manifest.json"
-        if (
-            set(binding) != {"manifest", "manifest_sha256"}
-            or Path(str(binding.get("manifest", ""))) != relative_manifest
-        ):
-            raise ValueError(f"sweep pipeline binding differs: {family}")
-        pipeline_path = verified_file(
-            output / relative_manifest,
-            str(binding["manifest_sha256"]),
-            f"{family} sweep pipeline manifest",
+        records = load_pipeline_records(
+            output=output,
+            family=family,
+            binding=binding,
+            pipeline_schema=PIPELINE_SCHEMA,
+            sample_schema=SWEEP_SAMPLE_SCHEMA,
+            label="sweep",
         )
-        pipeline = load_json(pipeline_path)
-        if (
-            set(pipeline)
-            != {
-                "schema_version",
-                "pipeline",
-                "source_schema_version",
-                "sample_schema_version",
-                "sample_count",
-                "records",
-            }
-            or pipeline.get("schema_version") != PIPELINE_SCHEMA
-            or pipeline.get("pipeline") != family
-            or not pipeline.get("source_schema_version")
-            or pipeline.get("sample_schema_version") != SWEEP_SAMPLE_SCHEMA
-            or int(pipeline.get("sample_count", -1)) != len(pipeline.get("records", []))
-        ):
-            raise ValueError(f"sweep pipeline manifest differs: {family}")
         expected_samples = set()
-        for record in pipeline["records"]:
+        for record in records:
             if set(record) != {"scene_id", "metadata_sha256"}:
                 raise ValueError(f"sweep pipeline record differs: {family}")
             scene_id = safe_scene_id(record["scene_id"])

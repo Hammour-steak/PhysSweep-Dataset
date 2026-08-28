@@ -7,14 +7,19 @@ from pathlib import Path
 
 from tools.build_sweep_release_view import (
     DERIVED_LEVELS,
+    SWEEP_SAMPLE_SCHEMA,
     SWEEP_AXES,
     SWEEP_INDEX_FIELDS,
+    PipelineSpec,
     group_manifest,
     one_object_release_roots,
+    release_contract_fields,
+    sha256,
     sibling_release_roots,
     sweep_descriptor,
     sweep_sort_key,
     validate_groups,
+    write_pipeline_manifests,
 )
 
 
@@ -56,6 +61,38 @@ class SweepReleaseViewTests(unittest.TestCase):
             sweep_descriptor(record)
         self.assertNotIn("value", SWEEP_INDEX_FIELDS)
         self.assertNotIn("target_object_id", SWEEP_INDEX_FIELDS)
+
+    def test_sweep_uses_shared_release_manifest_writers(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory)
+            (work / "generic").mkdir()
+            spec = PipelineSpec("generic", "source_schema", work, work, work)
+            bindings = write_pipeline_manifests(
+                work=work,
+                specs={spec.source_schema_version: spec},
+                grouped={
+                    "generic": [
+                        {"scene_id": "scene_b", "metadata_sha256": "b" * 64},
+                        {"scene_id": "scene_a", "metadata_sha256": "a" * 64},
+                    ]
+                },
+                pipeline_schema="sweep_pipeline_schema",
+                sample_schema=SWEEP_SAMPLE_SCHEMA,
+            )
+            path = work / "generic/manifest.json"
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                [record["scene_id"] for record in manifest["records"]],
+                ["scene_a", "scene_b"],
+            )
+            self.assertEqual(manifest["sample_schema_version"], SWEEP_SAMPLE_SCHEMA)
+            self.assertEqual(bindings["generic"]["manifest_sha256"], sha256(path))
+        contracts = release_contract_fields(
+            render_contract={"engine": "test"},
+            sample_schema=SWEEP_SAMPLE_SCHEMA,
+        )
+        self.assertEqual(contracts["render_contract"], {"engine": "test"})
+        self.assertEqual(contracts["sample_schema_version"], SWEEP_SAMPLE_SCHEMA)
 
     def test_release_roots_are_siblings_and_axis_order_is_canonical(self) -> None:
         base, sweep = one_object_release_roots(Path("outputs/one_object"))
