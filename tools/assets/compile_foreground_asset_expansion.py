@@ -13,6 +13,7 @@ from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json
 from tools.core.json_io import read_jsonl
 from tools.core.json_io import write_json_sorted as write_json
+from tools.core.paths import join_project_path as resolved
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -24,11 +25,6 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
         "".join(json.dumps(row, ensure_ascii=True, sort_keys=True) + "\n" for row in rows),
         encoding="utf-8",
     )
-
-
-def resolved(root: Path, value: str) -> Path:
-    path = Path(value)
-    return path if path.is_absolute() else root / path
 
 
 def main() -> None:

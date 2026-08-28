@@ -2,30 +2,20 @@
 
 from __future__ import annotations
 
-import copy
-import hashlib
-import json
 import math
 from pathlib import Path
 from typing import Any
 
 from tools.core.hashing import sha256_file as sha256
+from tools.core.hashing import sha256_json as record_sha256
+from tools.core.hashing import sha256_json_without_field
 
 
 BINDING_VERSION = "physweep_environment_binding_v3"
 
 
-def record_sha256(value: dict[str, Any]) -> str:
-    encoded = json.dumps(
-        value, ensure_ascii=True, sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
-    return hashlib.sha256(encoded).hexdigest()
-
-
 def binding_sha256(binding: dict[str, Any]) -> str:
-    value = copy.deepcopy(binding)
-    value.pop("binding_sha256", None)
-    return record_sha256(value)
+    return sha256_json_without_field(binding, "binding_sha256")
 
 
 def camera_azimuth_degrees(

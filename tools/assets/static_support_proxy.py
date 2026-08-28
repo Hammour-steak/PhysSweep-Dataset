@@ -3,30 +3,20 @@
 
 from __future__ import annotations
 
-import copy
-import hashlib
-import json
 import math
 from pathlib import Path
 from typing import Any
 
 from tools.core.hashing import sha256_file as sha256
+from tools.core.hashing import sha256_json as record_sha256
+from tools.core.hashing import sha256_json_without_field
 
 
 BINDING_VERSION = "physweep_static_support_binding_v1"
 
 
-def record_sha256(record: dict[str, Any]) -> str:
-    encoded = json.dumps(
-        record, ensure_ascii=True, sort_keys=True, separators=(",", ":")
-    ).encode("utf-8")
-    return hashlib.sha256(encoded).hexdigest()
-
-
 def _binding_sha256(binding: dict[str, Any]) -> str:
-    value = copy.deepcopy(binding)
-    value.pop("binding_sha256", None)
-    return record_sha256(value)
+    return sha256_json_without_field(binding, "binding_sha256")
 
 
 def _vector(value: Any, length: int, label: str, positive: bool = False) -> list[float]:

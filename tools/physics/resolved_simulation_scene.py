@@ -10,6 +10,7 @@ from typing import Any
 
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
+from tools.core.paths import join_project_path as _project_path
 from tools.core.rigid_geometry import finite_vector as _finite_vector
 
 
@@ -26,11 +27,6 @@ SUPPORTED_SCHEMAS = {
     PASSIVE_PINBALL_SCHEMA,
     MARBLE_RUN_SCHEMA,
 }
-
-
-def _project_path(root: Path, value: str) -> Path:
-    path = Path(value)
-    return path if path.is_absolute() else root / path
 
 
 def _load_pinned_json(root: Path, binding: dict[str, Any], label: str) -> dict[str, Any]:

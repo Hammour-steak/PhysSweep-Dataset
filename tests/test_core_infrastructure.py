@@ -9,7 +9,12 @@ from pathlib import Path
 from unittest import mock
 
 from tools.core.blender_runtime import blender_argv
-from tools.core.hashing import relative_file_binding, sha256_file
+from tools.core.hashing import (
+    relative_file_binding,
+    sha256_file,
+    sha256_json,
+    sha256_json_without_field,
+)
 from tools.core.json_io import (
     read_json,
     read_jsonl,
@@ -31,6 +36,22 @@ from tools.rendering.blender_scene import parse_scene_render_args
 
 
 class CoreInfrastructureTest(unittest.TestCase):
+    def test_canonical_json_hash_is_stable_and_non_mutating(self) -> None:
+        record = {"z": 2, "a": {"value": 1}, "binding_sha256": "old"}
+        expected = hashlib.sha256(
+            json.dumps(
+                {"a": {"value": 1}, "z": 2},
+                ensure_ascii=True,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        self.assertEqual(
+            sha256_json_without_field(record, "binding_sha256"), expected
+        )
+        self.assertEqual(record["binding_sha256"], "old")
+        self.assertEqual(sha256_json({"z": 2, "a": {"value": 1}}), expected)
+
     def test_blender_argv_respects_separator(self) -> None:
         with mock.patch.object(
             sys,
