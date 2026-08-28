@@ -18,7 +18,7 @@ from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic_sorted as write_json
 from tools.core.paths import resolve_project_path as project_path
 from tools.core.rigid_geometry import finite_vector as _finite_vector
-from tools.core.sweep_values import SWEEP_GROUP_SIZE, round_sweep_value, sweep_values
+from tools.core.sweep_values import round_sweep_value, sweep_group_size, sweep_values
 from tools.physics.physics_invariants import quaternion_matrix_wxyz
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -792,9 +792,9 @@ def derive_sweep_metadata(
                 "endpoint_policy": copy.deepcopy(rules["endpoint_policy"]),
             }
             variants.append(derived)
-    if len(variants) != SWEEP_GROUP_SIZE:
+    if len(variants) != sweep_group_size(1):
         raise RuntimeError(
-            f"candidate sweep must contain {SWEEP_GROUP_SIZE} records, "
+            f"candidate sweep must contain {sweep_group_size(1)} records, "
             f"got {len(variants)}"
         )
     return variants

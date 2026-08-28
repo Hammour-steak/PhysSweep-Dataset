@@ -12,8 +12,8 @@ Asset download, conversion, and proxy-building tools additionally require
 - `assets`: acquisition, curation, proxies, and static scene assets.
 - `core`: object-count-neutral I/O, hashing, path, rigid, and camera geometry.
 - `sampling`: base selection, sweep derivation, and deterministic resampling.
-- `motion_rules/one_object`: 1obj rule contracts and dispatch; a future 2obj
-  registry belongs in a parallel `motion_rules/two_object` package.
+- `motion_rules/one_object`: 1obj motion, audit, and support-geometry policy;
+  2obj rules belong in a parallel `motion_rules/two_object` package.
 - `physics`: simulation, geometry, trajectory audits, and specialized backends.
 - `rendering`: visual binding, Blender rendering, video encoding, and visual QA.
 - `dataset_contract`: published sample schemas and object/trajectory contracts.
@@ -22,15 +22,14 @@ Asset download, conversion, and proxy-building tools additionally require
 - `training_export`: derived training views; never an input to dataset generation.
 - `native`: small compiled runtime helpers used by render workers.
 
-The `tools` root contains no executable modules. Core utilities, dataset
-contracts, backend dispatch, and normalized trajectories are object-count
-neutral. The current generic PyBullet simulator, trajectory auditor, visual
-binder, Blender renderer, and sweep publisher are explicitly 1obj adapters;
-their established file paths remain stable for provenance. A future 2obj path
-must add parallel `motion_rules/two_object` rules and multi-object adapters while
-reusing the shared identity and object-axis contracts. Sampling may call physics
-backends, but physics and release modules never import samplers. Training exports
-consume published dataset records and never feed generation.
+The `tools` root contains no executable modules. Core geometry has no motion-name
+branches. Object identity, dense trajectories, source release validation,
+release layout, and per-target sweep grouping are object-count aware: a base has
+`1 + 12 * object_count` source records. The active generic simulator, trajectory
+auditor, environment binder, camera solver, Blender renderer, and GT exporter
+still declare `(1,)`; 2obj development must add real adapters rather than route
+two objects through them. Sampling may call physics backends, but physics and
+release modules never import samplers. Training exports consume releases only.
 
 ## Entry Points
 

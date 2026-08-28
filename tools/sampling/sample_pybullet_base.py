@@ -32,7 +32,12 @@ from tools.physics.physics_time_step import simulation_hz_for_geometry
 from tools.assets.static_support_proxy import compile_static_support_binding
 from tools.assets.environment_collision import compile_environment_binding
 from tools.core.camera_geometry import camera_corridor_admits_inclined_surface
-from tools.motion_rules.one_object import MotionDerivationContext, MotionPlan, derive_motion
+from tools.motion_rules.one_object import (
+    MotionDerivationContext,
+    MotionPlan,
+    derive_motion,
+    support_geometry_policy,
+)
 from tools.motion_rules.one_object.ballistic import (
     bounce_observation_contract as grouped_bounce_observation_contract,
 )
@@ -1160,7 +1165,7 @@ def build_scene(
         effective_direction = {"label": "downhill", "angle_degrees": -90.0}
     motion_direction = direction_unit(float(effective_direction["angle_degrees"]))
     support_geometry = build_support_geometry(
-        support, motion, subtype, motion_direction
+        support, support_geometry_policy(motion), subtype, motion_direction
     )
     support_geometry["geometry_variant_id"] = str(
         support.get("geometry_variant_id", "default")

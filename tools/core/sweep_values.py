@@ -12,8 +12,17 @@ SWEEP_BASE_LEVEL_INDEX = SWEEP_LEVEL_COUNT // 2
 SWEEP_DERIVED_LEVELS = tuple(
     index for index in range(SWEEP_LEVEL_COUNT) if index != SWEEP_BASE_LEVEL_INDEX
 )
-SWEEP_DERIVED_COUNT = len(SWEEP_AXES) * len(SWEEP_DERIVED_LEVELS)
-SWEEP_GROUP_SIZE = 1 + SWEEP_DERIVED_COUNT
+SWEEP_VARIANTS_PER_TARGET = len(SWEEP_AXES) * len(SWEEP_DERIVED_LEVELS)
+
+
+def sweep_group_size(target_count: int) -> int:
+    """Return one canonical base plus one-factor variants for every target."""
+
+    if isinstance(target_count, bool) or not isinstance(target_count, int):
+        raise TypeError("sweep target count must be an integer")
+    if target_count < 1:
+        raise ValueError("sweep target count must be positive")
+    return 1 + target_count * SWEEP_VARIANTS_PER_TARGET
 
 
 def round_sweep_value(value: float) -> float:

@@ -61,6 +61,7 @@ class ObjectIdentityContractTests(unittest.TestCase):
             },
         )
         self.assertEqual(result["object_ids"], ["object_a"])
+        self.assertEqual(result["dynamic_object_ids"], ["object_a"])
         self.assertEqual(
             metadata["object_identity"]["instance_masks"]["objects"]["object_a"][
                 "instance_id"

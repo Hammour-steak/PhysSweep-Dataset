@@ -243,19 +243,22 @@ support transition; those motion-completion checks are advisory for sweep
 records only. Penetration, bounds, energy, collision-proxy, and runtime-parameter
 checks remain hard failures.
 
-Release admission is group-atomic. The active one-object source publisher joins
-the immutable sweep metadata and batch simulation manifests and admits a group
-only when its canonical base and all twelve derived endpoint records pass their
-hard audits. One failed record rejects the complete thirteen-record group;
-individual videos are never repaired, silently omitted, or replaced after
-rendering.
+Release admission is group-atomic. The shared source publisher joins immutable
+sweep metadata and simulation manifests and requires one canonical base plus all
+twelve variants for every target object. Thus 1obj/2obj/3obj groups contain
+13/25/37 records. One failed record rejects the complete base group; individual
+videos are never repaired, silently omitted, or replaced after rendering.
 
-The resolved scene format is object-count agnostic, but each active adapter
-declares its current capability: generic rigid, reviewed asset-proxy, and
-passive-pinball and marble-run scenes support one dynamic object, while
-billiards supports one or three balls. Future
-two- and three-object adapters can reuse the same ordered object contract without
-silently routing unsupported scenes through a one-object solver.
+The consumer group index preserves the published one-target v1 shape for 1obj.
+For multiple objects, v2 keeps one base record and nests one ordered 12-variant
+grid under each `{target_object_id, target_object_index}` pair. Verification
+binds that index back to `physics.objects` order in every sample.
+
+The resolved scene format and release grouping are object-count aware, but each
+runtime adapter declares its current capability: generic rigid, reviewed
+asset-proxy, passive-pinball, and marble-run support one dynamic object, while
+billiards supports one or three balls. Two- and three-object runtime adapters
+must reuse the ordered object contract without falling back to a 1obj solver.
 
 Raw angular-speed limits remain useful diagnostics, but sweep records use the
 shape-scaled rotational surface speed as the hard rotational bound. This avoids

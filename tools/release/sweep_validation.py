@@ -1,8 +1,9 @@
-"""Shared validation for immutable one-object sweep releases."""
+"""Shared validation for immutable one-factor sweep source releases."""
 
 from __future__ import annotations
 
-from collections import Counter, defaultdict
+from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -11,50 +12,111 @@ from tools.core.paths import resolve_project_path
 from tools.core.sweep_values import (
     SWEEP_AXES,
     SWEEP_DERIVED_LEVELS,
-    SWEEP_GROUP_SIZE,
+    SWEEP_VARIANTS_PER_TARGET,
+    sweep_group_size,
 )
 
-AXES = SWEEP_AXES
-SUPPORTED_TARGET_OBJECT_INDICES = (0,)
+
+@dataclass(frozen=True)
+class SweepGroupSummary:
+    """Counts established by validating complete base/target sweep groups."""
+
+    base_count: int
+    target_groups_per_base: int
+    derived_count: int
 
 
-def validate_groups(records: list[dict[str, Any]]) -> int:
-    """Validate the frozen one-object sweep group contract."""
+def validate_target_sweep_grid(
+    records: list[dict[str, Any]], *, label: str
+) -> None:
+    """Require the exact 12 unique axis/level coordinates for one target."""
+
+    expected = {
+        (axis, level_index)
+        for axis in SWEEP_AXES
+        for level_index in SWEEP_DERIVED_LEVELS
+    }
+    observed = []
+    for record in records:
+        axis = record.get("axis")
+        level_index = record.get("level_index")
+        if (
+            not isinstance(axis, str)
+            or axis not in SWEEP_AXES
+            or isinstance(level_index, bool)
+            or not isinstance(level_index, int)
+        ):
+            raise ValueError(f"target sweep coordinate is invalid: {label}")
+        observed.append((axis, level_index))
+    if len(records) != SWEEP_VARIANTS_PER_TARGET or set(observed) != expected:
+        raise ValueError(f"target sweep grid differs: {label}")
+    if len(observed) != len(set(observed)):
+        raise ValueError(f"target sweep grid contains duplicates: {label}")
+
+
+def validate_groups(
+    records: list[dict[str, Any]],
+    *,
+    expected_target_indices: tuple[int, ...],
+) -> SweepGroupSummary:
+    """Validate one base and one complete 12-variant group per target object."""
+
+    if (
+        not expected_target_indices
+        or len(set(expected_target_indices)) != len(expected_target_indices)
+        or any(
+            isinstance(index, bool) or not isinstance(index, int) or index < 0
+            for index in expected_target_indices
+        )
+    ):
+        raise ValueError("expected sweep target indices must be unique and nonnegative")
+    expected_targets = set(expected_target_indices)
 
     groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for record in records:
         groups[str(record["parent"])].append(record)
     for parent, group in groups.items():
-        if len(group) != SWEEP_GROUP_SIZE:
+        if len(group) != sweep_group_size(len(expected_target_indices)):
             raise ValueError(
-                f"group does not contain {SWEEP_GROUP_SIZE} records: {parent}"
+                "group does not contain one base plus complete target sweeps: "
+                f"{parent}"
             )
         if sum(record["kind"] == "base" for record in group) != 1:
             raise ValueError(f"group does not contain one canonical base: {parent}")
-        axis_counts = Counter(
-            record.get("axis") for record in group if record["kind"] == "sweep"
-        )
-        if axis_counts != Counter({axis: len(SWEEP_DERIVED_LEVELS) for axis in AXES}):
-            raise ValueError(f"group has an invalid axis layout: {parent}")
         derived = [record for record in group if record["kind"] == "sweep"]
-        for axis in AXES:
-            levels = {
-                int(record["level_index"])
-                for record in derived
-                if record["axis"] == axis
-            }
-            if levels != set(SWEEP_DERIVED_LEVELS):
-                raise ValueError(f"group has invalid sweep levels: {parent}/{axis}")
-        targets = {
-            (str(record["target_object_id"]), int(record["target_object_index"]))
-            for record in derived
-        }
-        if (
-            len(targets) != 1
-            or next(iter(targets))[1] not in SUPPORTED_TARGET_OBJECT_INDICES
-        ):
-            raise ValueError(f"group does not target one object: {parent}")
-    return len(groups)
+        target_ids_by_index: dict[int, str] = {}
+        by_target: dict[int, list[dict[str, Any]]] = defaultdict(list)
+        for record in derived:
+            raw_target_index = record.get("target_object_index")
+            if isinstance(raw_target_index, bool) or not isinstance(
+                raw_target_index, int
+            ):
+                raise ValueError(f"target object index is invalid: {parent}")
+            target_index = raw_target_index
+            target_id = record.get("target_object_id")
+            if not isinstance(target_id, str) or not target_id:
+                raise ValueError(f"target object id is invalid: {parent}")
+            previous = target_ids_by_index.setdefault(target_index, target_id)
+            if previous != target_id:
+                raise ValueError(
+                    f"target object identity differs within group: {parent}/{target_index}"
+                )
+            by_target[target_index].append(record)
+        if set(by_target) != expected_targets:
+            raise ValueError(f"group target coverage differs: {parent}")
+        if len(set(target_ids_by_index.values())) != len(target_ids_by_index):
+            raise ValueError(f"group target object ids are not unique: {parent}")
+        for target_index, target_records in by_target.items():
+            validate_target_sweep_grid(
+                target_records, label=f"{parent}/{target_index}"
+            )
+    return SweepGroupSummary(
+        base_count=len(groups),
+        target_groups_per_base=len(expected_target_indices),
+        derived_count=len(groups)
+        * len(expected_target_indices)
+        * SWEEP_VARIANTS_PER_TARGET,
+    )
 
 
 def validate_source_artifacts(

@@ -13,9 +13,9 @@ from tools.core.paths import resolve_project_path_within_root
 from tools.release.base_release_view import (
     PipelineSpec,
     build_view as build_base_view,
-    one_object_release_roots,
     verify_view as verify_base_view,
 )
+from tools.release.layout import release_roots
 from tools.release.sweep_release_view import (
     build_view as build_sweep_view,
     verify_view as verify_sweep_view,
@@ -109,7 +109,9 @@ def publish_dataset(
     workers: int,
     resume: bool,
 ) -> dict[str, Any]:
-    base_root, sweep_root = one_object_release_roots(release_root)
+    base_root, sweep_root = release_roots(
+        release_root, object_count=EXPECTED_OBJECT_COUNT
+    )
     base_exists = base_root.exists() or base_root.is_symlink()
     sweep_exists = sweep_root.exists() or sweep_root.is_symlink()
     if sweep_exists and not base_exists:
@@ -152,7 +154,9 @@ def publish_dataset(
 
 
 def verify_dataset(release_root: Path) -> dict[str, Any]:
-    base_root, sweep_root = one_object_release_roots(release_root)
+    base_root, sweep_root = release_roots(
+        release_root, object_count=EXPECTED_OBJECT_COUNT
+    )
     return {
         "release_root": str(release_root),
         "base": verify_base_view(

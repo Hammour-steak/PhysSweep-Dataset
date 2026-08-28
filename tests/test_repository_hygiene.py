@@ -279,7 +279,7 @@ class RepositoryHygieneTest(unittest.TestCase):
         )
         self.assertTrue((motion_rules / "one_object" / "registry.py").is_file())
 
-    def test_current_single_object_adapters_declare_their_capability(self) -> None:
+    def test_object_count_boundaries_are_explicit(self) -> None:
         adapters = (
             "tools/physics/rigid_trajectory.py",
             "tools/physics/simulate_pybullet_rigid.py",
@@ -309,17 +309,16 @@ class RepositoryHygieneTest(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        target_declarations = [
-            ast.literal_eval(node.value)
+        validate_groups = next(
+            node
             for node in validation.body
-            if isinstance(node, ast.Assign)
-            and any(
-                isinstance(target, ast.Name)
-                and target.id == "SUPPORTED_TARGET_OBJECT_INDICES"
-                for target in node.targets
-            )
-        ]
-        self.assertEqual(target_declarations, [(0,)])
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+            and node.name == "validate_groups"
+        )
+        self.assertIn(
+            "expected_target_indices",
+            [argument.arg for argument in validate_groups.args.kwonlyargs],
+        )
 
 
 if __name__ == "__main__":

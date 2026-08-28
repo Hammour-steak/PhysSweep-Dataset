@@ -15,7 +15,7 @@ from tools.cli.build_one_object_dataset import publish_dataset
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic_sorted as write_json
 from tools.core.paths import safe_scene_id
-from tools.core.sweep_values import SWEEP_DERIVED_COUNT, SWEEP_GROUP_SIZE
+from tools.core.sweep_values import SWEEP_VARIANTS_PER_TARGET, sweep_group_size
 from tools.physics.specialized_backend_registry import load_specialized_backends
 from tools.release.base_release_view import PipelineSpec
 from tools.release.one_object_source_release import publish_source_release
@@ -250,7 +250,7 @@ def render_sweep(
             root,
         )
     if counts.get("generic", 0):
-        if counts["generic"] % SWEEP_GROUP_SIZE:
+        if counts["generic"] % sweep_group_size(1):
             raise ValueError("generic sweep branch is not composed of complete groups")
         bound_root = layout.sweep_render / "generic" / "bound"
         bound = bound_root / "bound_manifest.json"
@@ -272,8 +272,10 @@ def render_sweep(
             completion=bound,
             resume=resume,
         )
-        expected = counts["generic"] // SWEEP_GROUP_SIZE * SWEEP_DERIVED_COUNT
-        base_expected = counts["generic"] // SWEEP_GROUP_SIZE
+        expected = (
+            counts["generic"] // sweep_group_size(1) * SWEEP_VARIANTS_PER_TARGET
+        )
+        base_expected = counts["generic"] // sweep_group_size(1)
         base_result = bound_root / "base_render_manifest.json"
         base_command = [
             sys.executable,
@@ -324,10 +326,10 @@ def render_sweep(
         count = counts.get(branch, 0)
         if not count:
             continue
-        if count % SWEEP_GROUP_SIZE:
+        if count % sweep_group_size(1):
             raise ValueError(f"{branch} sweep branch is not composed of complete groups")
-        expected = count // SWEEP_GROUP_SIZE * SWEEP_DERIVED_COUNT
-        base_expected = count // SWEEP_GROUP_SIZE
+        expected = count // sweep_group_size(1) * SWEEP_VARIANTS_PER_TARGET
+        base_expected = count // sweep_group_size(1)
         base_result = layout.sweep_render / branch / "base_render_manifest.json"
         base_command = [
             sys.executable,

@@ -40,6 +40,7 @@ from tools.release.base_release_schema import (
     verified_file,
     write_json,
 )
+from tools.release.layout import dataset_directory_name
 
 
 VIEW_SCHEMA = "physweep_base_release_view_v14"
@@ -96,15 +97,6 @@ PIPELINE_MANIFEST_FIELDS = frozenset(
     }
 )
 
-
-def one_object_release_roots(release_root: Path) -> tuple[Path, Path]:
-    release_root = Path(release_root)
-    if not release_root.is_absolute():
-        release_root = PROJECT_ROOT / release_root
-    release_root = release_root.resolve(strict=False)
-    if release_root.name != "one_object":
-        raise ValueError("release root must be named one_object")
-    return release_root / "base", release_root / "sweep"
 
 COORDINATE_CONTRACT = {
     "units": {
@@ -777,11 +769,12 @@ def build_view(
     release_manifest: Path,
     output: Path,
     pipeline_specs: Iterable[PipelineSpec],
-    expected_object_count: int | None = None,
+    expected_object_count: int,
 ) -> dict[str, Any]:
     output = output.resolve()
-    if output.name != "base" or output.parent.name != "one_object":
-        raise ValueError("base output must be one_object/base")
+    dataset_name = dataset_directory_name(expected_object_count)
+    if output.name != "base" or output.parent.name != dataset_name:
+        raise ValueError(f"base output must be {dataset_name}/base")
     if output.exists() or output.is_symlink():
         raise FileExistsError(f"base release already exists: {output}")
     specs = validate_pipeline_specs(pipeline_specs)
@@ -816,9 +809,11 @@ def build_view(
         )
 
     output.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=f".{output.name}.", dir=output.parent) as temporary:
-        work = Path(temporary) / output.name
-        work.mkdir()
+    with tempfile.TemporaryDirectory(
+        prefix=f".{dataset_name}.", dir=output.parent.parent
+    ) as temporary:
+        work = Path(temporary) / dataset_name / output.name
+        work.mkdir(parents=True)
         (work / "assets").mkdir()
         (work / "fixtures").mkdir()
         (work / "fixture_assets").mkdir()
@@ -1016,11 +1011,13 @@ def validate_mask_artifacts(sample: Path, metadata: dict[str, Any]) -> None:
 def enforce_object_count(
     summary: Mapping[str, Any],
     *,
-    expected_object_count: int | None,
+    expected_object_count: int,
     scene_id: str,
 ) -> None:
-    if expected_object_count is None:
-        return
+    if isinstance(expected_object_count, bool) or not isinstance(
+        expected_object_count, int
+    ):
+        raise TypeError("expected_object_count must be an integer")
     if expected_object_count < 1:
         raise ValueError("expected_object_count must be positive")
     actual = len(summary["object_ids"])
@@ -1034,9 +1031,12 @@ def enforce_object_count(
 def verify_view(
     output: Path,
     *,
-    expected_object_count: int | None = None,
+    expected_object_count: int,
 ) -> dict[str, Any]:
     output = output.resolve()
+    dataset_name = dataset_directory_name(expected_object_count)
+    if output.name != "base" or output.parent.name != dataset_name:
+        raise ValueError(f"base output must be {dataset_name}/base")
     manifest = load_json(output / "manifest.json")
     render_contract = validate_release_manifest_contract(
         manifest,

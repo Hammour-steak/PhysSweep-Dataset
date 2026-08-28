@@ -11,7 +11,7 @@ from typing import Any
 
 from tools.core.json_io import read_json as load_json
 from tools.core.paths import resolve_project_path as project_path
-from tools.core.sweep_values import SWEEP_DERIVED_COUNT, SWEEP_GROUP_SIZE
+from tools.core.sweep_values import SWEEP_VARIANTS_PER_TARGET, sweep_group_size
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -180,11 +180,12 @@ def freeze_cameras(
         new_hashes[scene_id] = sha256_bytes(json_bytes(metadata))
 
     if set(counts) != set(cameras) or any(
-        value != {"base": 1, "sweep": SWEEP_DERIVED_COUNT}
+        value != {"base": 1, "sweep": SWEEP_VARIANTS_PER_TARGET}
         for value in counts.values()
     ):
         raise ValueError(
-            f"camera binding requires complete {SWEEP_GROUP_SIZE}-sample asset groups"
+            "camera binding requires complete "
+            f"{sweep_group_size(1)}-sample asset groups"
         )
     for scene_id, record in records.items():
         record["metadata_sha256"] = new_hashes[scene_id]

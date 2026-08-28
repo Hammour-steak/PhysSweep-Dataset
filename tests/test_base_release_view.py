@@ -14,9 +14,9 @@ from tools.release.base_release_view import (
     PipelineSpec,
     build_view,
     enforce_object_count,
-    one_object_release_roots,
     verify_view,
 )
+from tools.release.layout import release_roots
 
 
 def write_json(path: Path, value: object) -> None:
@@ -40,11 +40,20 @@ class BaseReleaseViewTests(unittest.TestCase):
 
     def test_one_object_release_root_has_fixed_children(self) -> None:
         project_root = Path(__file__).resolve().parents[1]
-        base, sweep = one_object_release_roots(Path("outputs/one_object"))
+        base, sweep = release_roots(Path("outputs/one_object"), object_count=1)
         self.assertEqual(base, project_root / "outputs/one_object/base")
         self.assertEqual(sweep, project_root / "outputs/one_object/sweep")
         with self.assertRaisesRegex(ValueError, "named one_object"):
-            one_object_release_roots(Path("outputs/versioned_release"))
+            release_roots(Path("outputs/versioned_release"), object_count=1)
+
+    def test_release_root_name_is_derived_from_object_count(self) -> None:
+        project_root = Path(__file__).resolve().parents[1]
+        for object_count, name in ((2, "two_object"), (3, "three_object")):
+            base, sweep = release_roots(
+                Path("outputs") / name, object_count=object_count
+            )
+            self.assertEqual(base, project_root / "outputs" / name / "base")
+            self.assertEqual(sweep, project_root / "outputs" / name / "sweep")
 
     def test_base_release_is_canonical_hash_checked_and_non_overwriting(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -372,12 +381,13 @@ class BaseReleaseViewTests(unittest.TestCase):
                 },
             )
 
-            output, _ = one_object_release_roots(root / "outputs/one_object")
+            output, _ = release_roots(root / "outputs/one_object", object_count=1)
             result = build_view(
                 release_project_root=root,
                 release_manifest=release_path,
                 output=output,
                 pipeline_specs=specs,
+                expected_object_count=1,
             )
             self.assertEqual(result["sample_count"], 2)
             self.assertEqual(result["pipeline_count"], 2)
@@ -458,11 +468,13 @@ class BaseReleaseViewTests(unittest.TestCase):
                     "mask_manifest.json",
                 },
             )
-            self.assertEqual(verify_view(output), result)
+            self.assertEqual(
+                verify_view(output, expected_object_count=1), result
+            )
             root_manifest["storage_mode"] = "unexpected"
             write_json(output / "manifest.json", root_manifest)
             with self.assertRaisesRegex(ValueError, "canonical PhysSweep"):
-                verify_view(output)
+                verify_view(output, expected_object_count=1)
             root_manifest["storage_mode"] = (
                 "materialized_compact_portable_release_with_content_addressed_fixtures"
             )
@@ -473,6 +485,7 @@ class BaseReleaseViewTests(unittest.TestCase):
                     release_manifest=release_path,
                     output=output,
                     pipeline_specs=specs,
+                    expected_object_count=1,
                 )
             with self.assertRaisesRegex(ValueError, "one_object/base"):
                 build_view(
@@ -480,6 +493,7 @@ class BaseReleaseViewTests(unittest.TestCase):
                     release_manifest=release_path,
                     output=root / "outputs/versioned/base",
                     pipeline_specs=specs,
+                    expected_object_count=1,
                 )
             original_audit = audits[0].read_bytes()
             audits[0].write_bytes(b"tampered")
@@ -489,11 +503,12 @@ class BaseReleaseViewTests(unittest.TestCase):
                     release_manifest=release_path,
                     output=root / "tampered/one_object/base",
                     pipeline_specs=specs,
+                    expected_object_count=1,
                 )
             audits[0].write_bytes(original_audit)
             videos[0].write_bytes(b"tampered")
             with self.assertRaisesRegex(ValueError, "video hash mismatch"):
-                verify_view(output)
+                verify_view(output, expected_object_count=1)
 
 
 if __name__ == "__main__":

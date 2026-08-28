@@ -50,7 +50,10 @@ python -m tools.cli.build_one_object_dataset --verify-only
 - `assets/`: asset manifests, curation records, and proxy indexes.
 - `configs/`: sampling, physics, visual, and release rules.
 - `tools/`: responsibility-based Python packages; invoke commands with `python -m`.
-- `tools/motion_rules/one_object/`: the isolated 1obj rule registry; future object-count rules get parallel packages.
+- `tools/motion_rules/one_object/`: isolated 1obj motion and support policy;
+  future object-count rules get parallel packages.
+- `tools/release/`: object-count-aware layout, source validation, and per-target
+  sweep grouping; active runtime adapters remain explicitly 1obj.
 - `docs/`: dataset contracts and methodology.
 - `tests/`: physics, rendering, pipeline, and repository checks.
 

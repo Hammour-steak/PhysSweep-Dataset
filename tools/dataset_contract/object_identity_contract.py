@@ -408,5 +408,6 @@ def validate_object_identity(
         "object_count": len(ids),
         "dynamic_object_count": len(dynamic_ids),
         "object_ids": ids,
+        "dynamic_object_ids": dynamic_ids,
         "trajectory_validated": trajectory_keys is not None,
     }

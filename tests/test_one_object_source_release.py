@@ -91,10 +91,15 @@ class OneObjectSourceReleaseTests(unittest.TestCase):
             )
             output = root / "datasets/run/release"
             with patch(
-                "tools.release.one_object_source_release.validate_object_identity",
-                return_value={"dynamic_object_count": 1},
+                "tools.release.source_release.validate_object_identity",
+                return_value={
+                    "dynamic_object_count": 1,
+                    "dynamic_object_ids": ["object_0"],
+                },
             ), patch(
-                "tools.release.one_object_source_release.validate_source_artifacts"
+                "tools.release.source_release._validate_sweep_record_bindings"
+            ), patch(
+                "tools.release.source_release.validate_source_artifacts"
             ):
                 release = publish_source_release(
                     root=root,

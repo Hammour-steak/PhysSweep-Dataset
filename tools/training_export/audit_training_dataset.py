@@ -7,15 +7,12 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 from tools.core.hashing import sha256_file as _sha256
-from tools.core.sweep_values import SWEEP_AXES, SWEEP_GROUP_SIZE
+from tools.core.sweep_values import SWEEP_AXES, sweep_group_size
 from tools.dataset_contract.gt_scene_input import (
     MODEL_SCENE_SCHEMA,
     inspect_model_scene_condition,
 )
 from tools.dataset_contract.schema import iter_jsonl, validate_manifest
-
-
-AXES = SWEEP_AXES
 
 
 def _controls(record: dict) -> dict[str, float]:
@@ -73,7 +70,7 @@ def _audit_groups(
     errors = []
     bindings = {}
     target_videos = set()
-    base_level_counts = {axis: defaultdict(int) for axis in AXES}
+    base_level_counts = {axis: defaultdict(int) for axis in SWEEP_AXES}
     common_fields = (
         "first_frame",
         "scene",
@@ -85,9 +82,10 @@ def _audit_groups(
             errors.append(f"base group does not contain one center sample: {scene_id}")
             continue
         base = bases[0]
-        if len(items) != SWEEP_GROUP_SIZE:
+        if len(items) != sweep_group_size(1):
             errors.append(
-                f"base group does not contain {SWEEP_GROUP_SIZE} samples: {scene_id}"
+                "base group does not contain "
+                f"{sweep_group_size(1)} samples: {scene_id}"
             )
         reference = base["conditioning"]
         reference_state = _initial_state(base)
@@ -114,7 +112,7 @@ def _audit_groups(
                 errors.append(f"target video is reused: {video}")
             target_videos.add(video)
         base_controls = _controls(base)
-        for axis in AXES:
+        for axis in SWEEP_AXES:
             base_level = int(base["sweep"]["base_level_indices"][axis])
             base_level_counts[axis][str(base_level)] += 1
             if base_level != 2:
@@ -149,7 +147,7 @@ def _audit_groups(
                 )
             for variant in variants:
                 controls = _controls(variant)
-                for fixed_axis in AXES:
+                for fixed_axis in SWEEP_AXES:
                     if fixed_axis == axis:
                         continue
                     if not math.isclose(
@@ -231,7 +229,7 @@ def audit(dataset_root: Path, project_root: Path, forbid_approximations: bool) -
         **validation,
         "scene_count": len(indexed_scenes),
         "group_contract": {
-            "samples_per_base": SWEEP_GROUP_SIZE,
+            "samples_per_base": sweep_group_size(1),
             "base_samples": 1,
             "nonbase_samples_per_axis": 4,
             "shared_first_frame_and_scene": True,

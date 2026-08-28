@@ -76,8 +76,6 @@ DYNAMIC_MATERIAL_FIELDS = (
     "angular_damping",
     "contact_processing_threshold_m",
 )
-SWEEP_PARAMETER_FIELDS = SWEEP_AXES
-
 ASSET_LABELS = {
     "decorated dinner plate": "decorated dinner plate",
     "plastic cup": "plastic cup",
@@ -1697,7 +1695,7 @@ def validate_sweep_metadata(metadata: Mapping[str, Any]) -> dict[str, Any]:
     value = sweep.get("value")
     if (
         target_object_id not in summary["object_ids"]
-        or parameter not in SWEEP_PARAMETER_FIELDS
+        or parameter not in SWEEP_AXES
         or isinstance(level_index, bool)
         or not isinstance(level_index, int)
         or level_index not in SWEEP_DERIVED_LEVELS

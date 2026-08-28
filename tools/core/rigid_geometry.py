@@ -4,7 +4,40 @@
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 from typing import Any
+
+
+@dataclass(frozen=True)
+class SupportGeometryPolicy:
+    """Object-count-neutral scene features requested by a motion rule."""
+
+    layout_hint: str | None = None
+    transition_type: str | None = None
+    add_landing_surface: bool = False
+    add_impact_wall: bool = False
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.add_landing_surface, bool) or not isinstance(
+            self.add_impact_wall, bool
+        ):
+            raise TypeError("support geometry feature flags must be booleans")
+        if self.layout_hint not in {None, "wide_flat"}:
+            raise ValueError(f"unsupported support layout hint: {self.layout_hint}")
+        if self.transition_type not in {
+            None,
+            "raised_edge_to_floor",
+            "incline_to_horizontal",
+        }:
+            raise ValueError(
+                f"unsupported support transition type: {self.transition_type}"
+            )
+        if self.add_landing_surface != (
+            self.transition_type == "incline_to_horizontal"
+        ):
+            raise ValueError(
+                "landing surfaces require an incline-to-horizontal transition"
+            )
 
 
 def finite_vector(value: Any, length: int, label: str) -> list[float]:
@@ -138,7 +171,11 @@ def object_contact_offset_m(shape: str, size_m: list[float]) -> float:
     raise ValueError(f"unsupported rigid shape: {shape}")
 
 
-def _layout_for_support(support: dict[str, Any], motion: str, subtype: dict[str, Any]) -> str:
+def _layout_for_support(
+    support: dict[str, Any],
+    policy: SupportGeometryPolicy,
+    subtype: dict[str, Any],
+) -> str:
     placement = support.get("overrides", {}).get("placement", {})
     support_shape = str(placement.get("support_shape", "rectangular_slab"))
     subtype_label = str(subtype["label"])
@@ -150,13 +187,8 @@ def _layout_for_support(support: dict[str, Any], motion: str, subtype: dict[str,
         return "raised_platform"
     if bool(placement.get("ground_surface", False)):
         return "floor_patch"
-    if motion in {
-        "drop_fall_1obj",
-        "projectile_1obj",
-        "arc_projectile_1obj",
-        "edge_fall_1obj",
-    }:
-        return "wide_flat"
+    if policy.layout_hint is not None:
+        return policy.layout_hint
     if "short" in subtype_label:
         return "narrow_flat"
     if "long" in subtype_label or "fast" in subtype_label:
@@ -197,13 +229,13 @@ def _static_box(
 
 
 def _support_transition_contract(
-    motion: str,
+    transition_type: str | None,
     support_size_m: list[float],
     surface_top_z_m: float,
     colliders: list[dict[str, Any]],
     motion_direction: list[float],
 ) -> dict[str, Any] | None:
-    if motion not in {"edge_fall_1obj", "ramp_to_flat_1obj"}:
+    if transition_type is None:
         return None
     source = next(
         (collider for collider in colliders if collider["role"] == "primary_support"),
@@ -213,7 +245,7 @@ def _support_transition_contract(
         raise ValueError("support transition has no primary support collider")
     destination_role_order = (
         ["environment_floor"]
-        if motion == "edge_fall_1obj"
+        if transition_type == "raised_edge_to_floor"
         else ["landing_surface", "environment_floor"]
     )
     destination = next(
@@ -235,10 +267,9 @@ def _support_transition_contract(
     if norm <= 1.0e-8:
         raise ValueError("support transition direction must be nonzero")
     direction = [value / norm for value in direction]
-    if motion == "ramp_to_flat_1obj":
+    if transition_type == "incline_to_horizontal":
         boundary_xy = [0.0, -support_size_m[1] / 2.0]
         boundary_z = destination_top_z
-        transition_type = "incline_to_horizontal"
         intermediate_phase = "continuous_contact"
     else:
         half_size = [float(value) / 2.0 for value in support_size_m[:2]]
@@ -252,7 +283,6 @@ def _support_transition_contract(
         distance = min(distances)
         boundary_xy = [value * distance for value in direction]
         boundary_z = float(surface_top_z_m)
-        transition_type = "raised_edge_to_floor"
         intermediate_phase = "airborne"
     return {
         "version": "physweep_support_transition_v1",
@@ -281,7 +311,7 @@ def _support_transition_contract(
 
 def _compile_support_geometry(
     support: dict[str, Any],
-    motion: str,
+    policy: SupportGeometryPolicy,
     subtype: dict[str, Any],
     motion_direction: list[float] | None = None,
 ) -> dict[str, Any]:
@@ -292,7 +322,7 @@ def _compile_support_geometry(
     scene_class = str(support["scene_class"])
     ground_surface = bool(placement.get("ground_surface", False))
     structure_style = str(placement.get("structure_style", "none"))
-    layout = _layout_for_support(support, motion, subtype)
+    layout = _layout_for_support(support, policy, subtype)
     size = [float(value) for value in support["size"]]
     direction = normalize(motion_direction or [0.0, 1.0, 0.0])
     direction = normalize([direction[0], direction[1], 0.0])
@@ -478,7 +508,7 @@ def _compile_support_geometry(
                 )
         elif structure_family == "channel_medium":
             raise ValueError("channel structures require inclined side rails")
-        if motion == "ramp_to_flat_1obj":
+        if policy.add_landing_surface:
             landing_length = float(placement["landing_length_m"])
             landing_top = (
                 center_z
@@ -533,7 +563,7 @@ def _compile_support_geometry(
                         occludes_camera=True,
                     )
                 )
-        if motion == "wall_impact_1obj":
+        if policy.add_impact_wall:
             wall_offset = 0.46
             wall_height = 0.48
             wall_yaw = math.degrees(math.atan2(direction[1], direction[0]))
@@ -661,7 +691,7 @@ def _compile_support_geometry(
         "colliders": colliders,
     }
     transition_contract = _support_transition_contract(
-        motion,
+        policy.transition_type,
         size,
         top_z,
         colliders,
@@ -704,11 +734,11 @@ def _compile_support_geometry(
 
 def _unsupported_pocketed_table(
     support: dict[str, Any],
-    motion: str,
+    policy: SupportGeometryPolicy,
     subtype: dict[str, Any],
     motion_direction: list[float] | None = None,
 ) -> dict[str, Any]:
-    del support, motion, subtype, motion_direction
+    del support, policy, subtype, motion_direction
     raise ValueError(
         "pocketed_table is catalogued but not active until its segmented collision "
         "and visual transform are calibrated"
@@ -734,7 +764,7 @@ SUPPORT_SHAPE_TO_TOPOLOGY = {
 
 def build_support_geometry(
     support: dict[str, Any],
-    motion: str,
+    policy: SupportGeometryPolicy,
     subtype: dict[str, Any],
     motion_direction: list[float] | None = None,
 ) -> dict[str, Any]:
@@ -747,7 +777,7 @@ def build_support_geometry(
         builder = SUPPORT_BUILDERS[topology]
     except KeyError as exc:
         raise ValueError(f"unsupported support topology: {topology or support_shape}") from exc
-    geometry = builder(support, motion, subtype, motion_direction)
+    geometry = builder(support, policy, subtype, motion_direction)
     geometry["topology"] = topology
     return geometry
 

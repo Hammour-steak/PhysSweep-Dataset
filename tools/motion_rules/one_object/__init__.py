@@ -9,6 +9,7 @@ from .registry import (
     registered_asset_motion_profiles,
     registered_motion_families,
 )
+from .support_geometry import support_geometry_policy
 
 __all__ = [
     "MotionAuditContext",
@@ -20,4 +21,5 @@ __all__ = [
     "motion_group",
     "registered_asset_motion_profiles",
     "registered_motion_families",
+    "support_geometry_policy",
 ]

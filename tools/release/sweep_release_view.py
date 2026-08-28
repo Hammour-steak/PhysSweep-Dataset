@@ -14,12 +14,14 @@ from typing import Any, Iterable
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 from tools.release.base_release_attribution import load_billiards_templates
-from tools.core.sweep_values import SWEEP_DERIVED_COUNT
+from tools.core.sweep_values import (
+    SWEEP_AXES,
+    SWEEP_DERIVED_LEVELS,
+    SWEEP_VARIANTS_PER_TARGET,
+)
 from tools.release.base_release_schema import (
     FIXTURE_SCHEMA,
     SAMPLE_ENTRIES,
-    SWEEP_DERIVED_LEVELS,
-    SWEEP_PARAMETER_FIELDS,
     SWEEP_SAMPLE_SCHEMA,
     materialize_sweep_sample,
     sha256,
@@ -48,14 +50,17 @@ from tools.release.base_release_view import (
     write_pipeline_manifests,
     write_release_catalogs,
 )
+from tools.release.layout import dataset_directory_name
+from tools.release.sweep_validation import validate_target_sweep_grid
 
 
 VIEW_SCHEMA = "physweep_sweep_release_view_v1"
 PIPELINE_SCHEMA = "physweep_sweep_pipeline_view_v1"
-GROUP_SCHEMA = "physweep_sweep_group_manifest_v1"
+GROUP_SCHEMAS = {
+    "single_target": "physweep_sweep_group_manifest_v1",
+    "multi_target": "physweep_sweep_group_manifest_v2",
+}
 AUDIT_SCHEMA = "physweep_sweep_release_view_audit_v1"
-SWEEP_AXES = SWEEP_PARAMETER_FIELDS
-DERIVED_LEVELS = SWEEP_DERIVED_LEVELS
 SWEEP_INDEX_FIELDS = {
     "scene_id",
     "path",
@@ -76,7 +81,7 @@ def sweep_descriptor(record: dict[str, Any]) -> dict[str, Any]:
         descriptor["parameter"] not in SWEEP_AXES
         or isinstance(descriptor["level_index"], bool)
         or not isinstance(descriptor["level_index"], int)
-        or descriptor["level_index"] not in DERIVED_LEVELS
+        or descriptor["level_index"] not in SWEEP_DERIVED_LEVELS
         or isinstance(descriptor["value"], bool)
         or not isinstance(descriptor["value"], (int, float))
     ):
@@ -92,6 +97,7 @@ def sibling_release_roots(
     base_root: Path,
     sweep_root: Path,
     *,
+    object_count: int,
     allow_staging_markers: bool = False,
 ) -> tuple[Path, Path]:
     base_root = base_root.resolve()
@@ -106,10 +112,13 @@ def sibling_release_roots(
     if (
         base_root.name != "base"
         or sweep_name != "sweep"
-        or base_root.parent.name != "one_object"
+        or base_root.parent.name != dataset_directory_name(object_count)
         or base_root.parent != sweep_root.parent
     ):
-        raise ValueError("release roots must be one_object/base and one_object/sweep")
+        dataset_name = dataset_directory_name(object_count)
+        raise ValueError(
+            f"release roots must be {dataset_name}/base and {dataset_name}/sweep"
+        )
     return base_root, sweep_root
 
 
@@ -139,7 +148,12 @@ def sweep_sort_key(record: dict[str, Any]) -> tuple[int, int]:
     return SWEEP_AXES.index(str(record["parameter"])), int(record["level_index"])
 
 
-def load_base_groups(base_root: Path, release_parent: Path) -> dict[str, dict[str, Any]]:
+def load_base_groups(
+    base_root: Path,
+    release_parent: Path,
+    *,
+    expected_object_count: int,
+) -> dict[str, dict[str, Any]]:
     base_root = base_root.resolve()
     root_manifest_path = base_root / "manifest.json"
     root_manifest = load_json(root_manifest_path)
@@ -159,6 +173,11 @@ def load_base_groups(base_root: Path, release_parent: Path) -> dict[str, dict[st
                 f"{scene_id} base metadata",
             )
             summary = validate_base_metadata(load_json(metadata_path))
+            enforce_object_count(
+                summary,
+                expected_object_count=expected_object_count,
+                scene_id=scene_id,
+            )
             group_id = safe_scene_id(summary["group_id"])
             if group_id in groups:
                 raise ValueError(f"duplicate base group: {group_id}")
@@ -177,7 +196,13 @@ def validate_groups(
     sweep_records: list[dict[str, Any]],
     base_by_source: dict[str, dict[str, Any]],
     base_groups: dict[str, dict[str, Any]],
+    *,
+    object_count: int,
 ) -> dict[str, str]:
+    if isinstance(object_count, bool) or not isinstance(object_count, int):
+        raise TypeError("sweep release object_count must be an integer")
+    if object_count < 1:
+        raise ValueError("sweep release object_count must be positive")
     group_by_scene: dict[str, str] = {}
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for record in sweep_records:
@@ -194,21 +219,35 @@ def validate_groups(
         grouped[group_id].append(record)
     if set(grouped) != set(base_groups):
         raise ValueError("base and sweep group sets differ")
-    expected_axis_levels = {
-        (axis, level) for axis in SWEEP_AXES for level in DERIVED_LEVELS
-    }
+    expected_target_indices = set(range(object_count))
     for group_id, records in grouped.items():
-        observed = {
-            (str(record.get("axis")), record.get("level_index"))
-            for record in records
-        }
-        targets = {str(record.get("target_object_id")) for record in records}
+        by_target: dict[int, list[dict[str, Any]]] = defaultdict(list)
+        target_ids: dict[int, str] = {}
+        for record in records:
+            raw_target_index = record.get("target_object_index")
+            if isinstance(raw_target_index, bool) or not isinstance(
+                raw_target_index, int
+            ):
+                raise ValueError(f"target index is invalid: {group_id}")
+            target_index = raw_target_index
+            target_id = safe_scene_id(record.get("target_object_id"))
+            if target_ids.setdefault(target_index, target_id) != target_id:
+                raise ValueError(f"target identity differs: {group_id}/{target_index}")
+            by_target[target_index].append(record)
         if (
-            len(records) != SWEEP_DERIVED_COUNT
-            or observed != expected_axis_levels
-            or len(targets) != 1
+            set(by_target) != expected_target_indices
+            or len(set(target_ids.values())) != object_count
         ):
-            raise ValueError(f"derived one-factor group differs: {group_id}")
+            raise ValueError(f"derived target coverage differs: {group_id}")
+        for target_index, target_records in by_target.items():
+            try:
+                validate_target_sweep_grid(
+                    target_records, label=f"{group_id}/{target_index}"
+                )
+            except ValueError as error:
+                raise ValueError(
+                    f"derived one-factor group differs: {group_id}/{target_index}"
+                ) from error
     return group_by_scene
 
 
@@ -333,7 +372,12 @@ def group_manifest(
     results: list[dict[str, Any]],
     base_groups: dict[str, dict[str, Any]],
     work: Path,
+    object_count: int,
 ) -> dict[str, Any]:
+    if isinstance(object_count, bool) or not isinstance(object_count, int):
+        raise TypeError("group manifest object_count must be an integer")
+    if object_count < 1:
+        raise ValueError("group manifest object_count must be positive")
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for result in results:
         family = str(result["family"])
@@ -341,12 +385,24 @@ def group_manifest(
         scene_id = str(compact["scene_id"])
         metadata = load_json(work / family / scene_id / "metadata.json")
         descriptor = metadata["sweep"]
+        object_ids = [
+            str(record["object_id"])
+            for record in metadata["physics"]["objects"]
+        ]
+        target_object_id = str(descriptor["target_object_id"])
+        try:
+            target_object_index = object_ids.index(target_object_id)
+        except ValueError as error:
+            raise ValueError(
+                f"sweep target is absent from physics.objects: {scene_id}"
+            ) from error
         grouped[str(metadata["group_id"])].append(
             {
                 "scene_id": scene_id,
                 "path": f"{output_name}/{family}/{scene_id}",
                 "metadata_sha256": str(compact["metadata_sha256"]),
-                "target_object_id": descriptor["target_object_id"],
+                "target_object_id": target_object_id,
+                "target_object_index": target_object_index,
                 "parameter": descriptor["parameter"],
                 "level_index": descriptor["level_index"],
             }
@@ -354,30 +410,63 @@ def group_manifest(
     records = []
     for group_id in sorted(base_groups):
         base = base_groups[group_id]
-        sweeps = sorted(
-            grouped[group_id],
-            key=sweep_sort_key,
-        )
-        targets = {record.pop("target_object_id") for record in sweeps}
-        if len(targets) != 1:
-            raise ValueError(f"sweep group target differs: {group_id}")
-        records.append(
-            {
-                "group_id": group_id,
-                "family": base["family"],
-                "target_object_id": targets.pop(),
-                "base": {
-                    key: base[key]
-                    for key in ("scene_id", "path", "metadata_sha256")
-                },
-                "sweeps": sweeps,
-            }
-        )
+        base_record = {
+            key: base[key] for key in ("scene_id", "path", "metadata_sha256")
+        }
+        by_target: dict[int, list[dict[str, Any]]] = defaultdict(list)
+        for sweep in grouped[group_id]:
+            by_target[int(sweep["target_object_index"])].append(sweep)
+        if set(by_target) != set(range(object_count)):
+            raise ValueError(f"sweep group target coverage differs: {group_id}")
+        target_records = []
+        for target_index in range(object_count):
+            target_sweeps = sorted(by_target[target_index], key=sweep_sort_key)
+            target_ids = {str(record["target_object_id"]) for record in target_sweeps}
+            if len(target_ids) != 1:
+                raise ValueError(f"sweep group target differs: {group_id}")
+            for record in target_sweeps:
+                record.pop("target_object_id")
+                record.pop("target_object_index")
+            target_records.append(
+                {
+                    "target_object_id": target_ids.pop(),
+                    "target_object_index": target_index,
+                    "sweeps": target_sweeps,
+                }
+            )
+        if object_count == 1:
+            target = target_records[0]
+            records.append(
+                {
+                    "group_id": group_id,
+                    "family": base["family"],
+                    "target_object_id": target["target_object_id"],
+                    "base": base_record,
+                    "sweeps": target["sweeps"],
+                }
+            )
+        else:
+            records.append(
+                {
+                    "group_id": group_id,
+                    "family": base["family"],
+                    "base": base_record,
+                    "targets": target_records,
+                }
+            )
+    sweep_count = sum(
+        len(record["sweeps"])
+        if object_count == 1
+        else sum(len(target["sweeps"]) for target in record["targets"])
+        for record in records
+    )
     return {
-        "schema_version": GROUP_SCHEMA,
+        "schema_version": GROUP_SCHEMAS[
+            "single_target" if object_count == 1 else "multi_target"
+        ],
         "path_base": "release_parent",
         "group_count": len(records),
-        "sweep_count": sum(len(record["sweeps"]) for record in records),
+        "sweep_count": sweep_count,
         "records": records,
     }
 
@@ -391,11 +480,13 @@ def build_view(
     pipeline_specs: Iterable[PipelineSpec],
     workers: int,
     resume: bool,
-    expected_object_count: int | None = None,
+    expected_object_count: int,
 ) -> dict[str, Any]:
     if workers < 1:
         raise ValueError("workers must be positive")
-    base_root, output = sibling_release_roots(base_root, output)
+    base_root, output = sibling_release_roots(
+        base_root, output, object_count=expected_object_count
+    )
     work = output.with_name(f".{output.name}.building")
     if output.exists() or output.is_symlink():
         raise FileExistsError(f"sweep release already exists: {output}")
@@ -419,8 +510,17 @@ def build_view(
     base_by_source = index_unique_string(
         base["records"], "metadata_path", "base source metadata path"
     )
-    base_groups = load_base_groups(base_root, output.parent)
-    group_by_scene = validate_groups(sweep_records, base_by_source, base_groups)
+    base_groups = load_base_groups(
+        base_root,
+        output.parent,
+        expected_object_count=expected_object_count,
+    )
+    group_by_scene = validate_groups(
+        sweep_records,
+        base_by_source,
+        base_groups,
+        object_count=expected_object_count,
+    )
     for record in sweep_records:
         scene_id = safe_scene_id(record["scene_id"])
         family = specs[str(record["source_schema_version"])].name
@@ -499,6 +599,7 @@ def build_view(
         results=results,
         base_groups=base_groups,
         work=work,
+        object_count=expected_object_count,
     )
     group_path = work / "group_manifest.json"
     write_json(group_path, groups)
@@ -518,7 +619,9 @@ def build_view(
             "manifest_sha256": sha256(base_manifest_path),
         },
         "group_index": {
-            "schema_version": GROUP_SCHEMA,
+            "schema_version": GROUP_SCHEMAS[
+                "single_target" if expected_object_count == 1 else "multi_target"
+            ],
             "manifest": "group_manifest.json",
             "manifest_sha256": sha256(group_path),
             "group_count": len(base_groups),
@@ -531,10 +634,18 @@ def build_view(
         "pipelines": pipeline_bindings,
     }
     write_json(work / "manifest.json", manifest)
+    group_description = (
+        f"each base and its {SWEEP_VARIANTS_PER_TARGET} one-factor variants"
+        if expected_object_count == 1
+        else (
+            f"each base and each of its {expected_object_count} target objects' "
+            f"{SWEEP_VARIANTS_PER_TARGET} one-factor variants"
+        )
+    )
     (work / "README.txt").write_text(
         "Canonical PhysSweep derived sweep release v1.\n"
         "metadata.json is the sample authority; group_manifest.json indexes "
-        f"each base and its {SWEEP_DERIVED_COUNT} one-factor variants.\n"
+        f"{group_description}.\n"
         "The release excludes base samples and generation-only frames, logs, and source metadata copies.\n",
         encoding="utf-8",
     )
@@ -566,12 +677,13 @@ def verify_view(
     output: Path,
     *,
     base_root: Path,
+    expected_object_count: int,
     allow_staging_markers: bool = False,
-    expected_object_count: int | None = None,
 ) -> dict[str, Any]:
     base_root, output = sibling_release_roots(
         base_root,
         output,
+        object_count=expected_object_count,
         allow_staging_markers=allow_staging_markers,
     )
     manifest = load_json(output / "manifest.json")
@@ -613,7 +725,11 @@ def verify_view(
         str(base_binding.get("manifest_sha256", "")),
         "base release manifest",
     )
-    base_groups = load_base_groups(base_root, output.parent)
+    base_groups = load_base_groups(
+        base_root,
+        output.parent,
+        expected_object_count=expected_object_count,
+    )
     base_families = {str(record["family"]) for record in base_groups.values()}
     if (
         len(base_groups) != int(manifest["group_count"])
@@ -667,10 +783,13 @@ def verify_view(
         fixture_hashes.add(digest)
         expected_fixture_usage[digest] = int(record["usage_count"])
     group_binding = manifest["group_index"]
+    expected_group_schema = GROUP_SCHEMAS[
+        "single_target" if expected_object_count == 1 else "multi_target"
+    ]
     if (
         set(group_binding)
         != {"schema_version", "manifest", "manifest_sha256", "group_count"}
-        or group_binding.get("schema_version") != GROUP_SCHEMA
+        or group_binding.get("schema_version") != expected_group_schema
         or group_binding.get("manifest") != "group_manifest.json"
         or int(group_binding.get("group_count", -1)) != len(base_groups)
     ):
@@ -684,7 +803,7 @@ def verify_view(
     if (
         set(groups)
         != {"schema_version", "path_base", "group_count", "sweep_count", "records"}
-        or groups.get("schema_version") != GROUP_SCHEMA
+        or groups.get("schema_version") != expected_group_schema
         or groups.get("path_base") != "release_parent"
         or int(groups.get("group_count", -1)) != int(manifest["group_count"])
         or int(groups.get("group_count", -1)) != len(groups.get("records", []))
@@ -692,62 +811,98 @@ def verify_view(
     ):
         raise ValueError("sweep group manifest counts differ")
     expected_axis_levels = {
-        (axis, level) for axis in SWEEP_AXES for level in DERIVED_LEVELS
+        (axis, level) for axis in SWEEP_AXES for level in SWEEP_DERIVED_LEVELS
     }
     expected_axis_level_order = [
-        (axis, level) for axis in SWEEP_AXES for level in DERIVED_LEVELS
+        (axis, level) for axis in SWEEP_AXES for level in SWEEP_DERIVED_LEVELS
     ]
     canonical_output_name = release_directory_name(output, allow_staging_markers)
     observed_groups = set()
+    indexed: dict[str, tuple[str, str, int, dict[str, Any]]] = {}
     for group in groups["records"]:
         group_id = safe_scene_id(group.get("group_id"))
         if group_id in observed_groups or group_id not in base_groups:
             raise ValueError(f"sweep group identity differs: {group_id}")
         observed_groups.add(group_id)
         expected_base = base_groups[group_id]
-        sweeps = group.get("sweeps", [])
         if (
-            set(group)
-            != {"group_id", "family", "target_object_id", "base", "sweeps"}
-            or group.get("family") != expected_base["family"]
+            group.get("family") != expected_base["family"]
             or group.get("base")
             != {
                 key: expected_base[key]
                 for key in ("scene_id", "path", "metadata_sha256")
             }
-            or len(sweeps) != SWEEP_DERIVED_COUNT
-            or any(set(record) != SWEEP_INDEX_FIELDS for record in sweeps)
-            or {
-                (record.get("parameter"), record.get("level_index"))
-                for record in sweeps
-            }
-            != expected_axis_levels
-            or [
-                (record.get("parameter"), record.get("level_index"))
-                for record in sweeps
-            ]
-            != expected_axis_level_order
         ):
             raise ValueError(f"sweep group record differs: {group_id}")
-        target_object_id = safe_scene_id(group["target_object_id"])
-        for record in sweeps:
-            scene_id = safe_scene_id(record["scene_id"])
-            if record["path"] != (
-                f"{canonical_output_name}/{expected_base['family']}/{scene_id}"
+        if expected_object_count == 1:
+            if set(group) != {
+                "group_id",
+                "family",
+                "target_object_id",
+                "base",
+                "sweeps",
+            }:
+                raise ValueError(f"sweep group record differs: {group_id}")
+            targets = [
+                {
+                    "target_object_id": group["target_object_id"],
+                    "target_object_index": 0,
+                    "sweeps": group["sweeps"],
+                }
+            ]
+        else:
+            targets = group.get("targets", [])
+            if (
+                set(group) != {"group_id", "family", "base", "targets"}
+                or not isinstance(targets, list)
+                or len(targets) != expected_object_count
             ):
-                raise ValueError(f"sweep group path differs: {scene_id}")
+                raise ValueError(f"sweep target groups differ: {group_id}")
+        for expected_target_index, target in enumerate(targets):
+            if (
+                set(target)
+                != {"target_object_id", "target_object_index", "sweeps"}
+                or target.get("target_object_index") != expected_target_index
+            ):
+                raise ValueError(
+                    f"sweep target index differs: {group_id}/{expected_target_index}"
+                )
+            target_object_id = safe_scene_id(target["target_object_id"])
+            sweeps = target.get("sweeps", [])
+            if (
+                len(sweeps) != SWEEP_VARIANTS_PER_TARGET
+                or any(set(record) != SWEEP_INDEX_FIELDS for record in sweeps)
+                or {
+                    (record.get("parameter"), record.get("level_index"))
+                    for record in sweeps
+                }
+                != expected_axis_levels
+                or [
+                    (record.get("parameter"), record.get("level_index"))
+                    for record in sweeps
+                ]
+                != expected_axis_level_order
+            ):
+                raise ValueError(
+                    f"sweep target record differs: {group_id}/{target_object_id}"
+                )
+            for record in sweeps:
+                scene_id = safe_scene_id(record["scene_id"])
+                if scene_id in indexed:
+                    raise ValueError(f"duplicate sweep identity: {scene_id}")
+                if record["path"] != (
+                    f"{canonical_output_name}/{expected_base['family']}/{scene_id}"
+                ):
+                    raise ValueError(f"sweep group path differs: {scene_id}")
+                indexed[scene_id] = (
+                    group_id,
+                    target_object_id,
+                    expected_target_index,
+                    record,
+                )
     if observed_groups != set(base_groups):
         raise ValueError("sweep group coverage differs")
-    indexed = {
-        str(sweep["scene_id"]): (
-            str(group["group_id"]),
-            str(group["target_object_id"]),
-            sweep,
-        )
-        for group in groups["records"]
-        for sweep in group["sweeps"]
-    }
-    if len(indexed) != sum(len(group["sweeps"]) for group in groups["records"]):
+    if len(indexed) != int(groups["sweep_count"]):
         raise ValueError("duplicate sweep identity in group index")
     attribution_binding = manifest["asset_attribution"]
     if (
@@ -816,10 +971,16 @@ def verify_view(
                 raise ValueError(f"sweep metadata identity differs: {scene_id}")
             if metadata_path.is_symlink():
                 raise ValueError(f"sweep metadata must be materialized: {scene_id}")
-            indexed_group, indexed_target, indexed_record = indexed[scene_id]
+            (
+                indexed_group,
+                indexed_target,
+                indexed_target_index,
+                indexed_record,
+            ) = indexed[scene_id]
             if (
                 indexed_group != summary["group_id"]
                 or indexed_target != metadata["sweep"]["target_object_id"]
+                or summary["object_ids"][indexed_target_index] != indexed_target
                 or indexed_record["metadata_sha256"] != record["metadata_sha256"]
                 or indexed_record["parameter"] != metadata["sweep"]["parameter"]
                 or indexed_record["level_index"] != metadata["sweep"]["level_index"]

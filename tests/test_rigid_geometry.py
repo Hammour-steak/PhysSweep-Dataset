@@ -8,15 +8,25 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 from tools.core.rigid_geometry import (  # noqa: E402
-    build_support_geometry,
+    build_support_geometry as _build_support_geometry,
     pose_on_support,
     support_surface_height_m,
     validate_support_geometry,
 )
+from tools.motion_rules.one_object import support_geometry_policy  # noqa: E402
 from tools.sampling.sample_pybullet_base import (  # noqa: E402
     load_active_rules,
     resolve_support_geometry_variant,
 )
+
+
+def build_support_geometry(support, motion, subtype, motion_direction=None):
+    return _build_support_geometry(
+        support,
+        support_geometry_policy(motion),
+        subtype,
+        motion_direction,
+    )
 
 
 class RigidGeometryTests(unittest.TestCase):
