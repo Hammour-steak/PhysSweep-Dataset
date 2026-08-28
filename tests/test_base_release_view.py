@@ -346,7 +346,7 @@ class BaseReleaseViewTests(unittest.TestCase):
                 },
             )
 
-            output = root / "outputs/one_object_release_v5/base"
+            output = root / "outputs/one_object/base"
             result = build_view(
                 release_project_root=root,
                 release_manifest=release_path,
