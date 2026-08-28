@@ -15,6 +15,7 @@ from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic as write_json
 from tools.core.paths import resolve_project_path as project_path
+from tools.core.sweep_values import SWEEP_GROUP_SIZE
 from tools.physics.specialized_backend_registry import specialized_by_schema
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -41,8 +42,12 @@ def select_complete_groups(
         record for record in metadata_records if str(record["parent"]) in selected_parents
     ]
     counts = Counter(str(record["parent"]) for record in selected)
-    if set(counts) != selected_parents or any(value != 13 for value in counts.values()):
-        raise ValueError("selected sweep records do not form complete 13-sample groups")
+    if set(counts) != selected_parents or any(
+        value != SWEEP_GROUP_SIZE for value in counts.values()
+    ):
+        raise ValueError(
+            f"selected sweep records do not form complete {SWEEP_GROUP_SIZE}-sample groups"
+        )
     return selected
 
 

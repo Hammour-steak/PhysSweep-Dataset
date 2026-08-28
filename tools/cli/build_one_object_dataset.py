@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
+from tools.core.hashing import sha256_file
+from tools.core.paths import resolve_project_path_within_root
 from tools.release.base_release_view import (
     PipelineSpec,
     build_view as build_base_view,
@@ -49,6 +51,55 @@ def pipeline_specs(
     ]
 
 
+def source_release_binding(
+    release_project_root: Path, release_manifest: Path
+) -> dict[str, str]:
+    root = release_project_root.resolve()
+    manifest_path = resolve_project_path_within_root(root, release_manifest)
+    release = json.loads(manifest_path.read_text(encoding="utf-8"))
+    metadata_path = resolve_project_path_within_root(
+        root, release["metadata_manifest"]
+    )
+    return {
+        "metadata_sha256": sha256_file(metadata_path),
+        "manifest_sha256": sha256_file(manifest_path),
+    }
+
+
+def require_source_binding(
+    release_root: Path, expected: dict[str, str]
+) -> None:
+    base = json.loads(
+        (release_root / "base" / "manifest.json").read_text(encoding="utf-8")
+    )
+    base_provenance = base.get("provenance", {})
+    observed_base = {
+        "metadata_sha256": base_provenance.get(
+            "source_generation_release_metadata", {}
+        ).get("manifest_sha256"),
+        "manifest_sha256": base_provenance.get("source_sweep_release", {}).get(
+            "manifest_sha256"
+        ),
+    }
+    if observed_base != expected:
+        raise ValueError("existing base release belongs to a different source release")
+    sweep_path = release_root / "sweep" / "manifest.json"
+    if not sweep_path.is_file():
+        return
+    sweep = json.loads(sweep_path.read_text(encoding="utf-8"))
+    sweep_provenance = sweep.get("provenance", {})
+    observed_sweep = {
+        "metadata_sha256": sweep_provenance.get(
+            "source_generation_release_metadata_sha256"
+        ),
+        "manifest_sha256": sweep_provenance.get(
+            "source_sweep_release_manifest_sha256"
+        ),
+    }
+    if observed_sweep != expected:
+        raise ValueError("existing sweep release belongs to a different source release")
+
+
 def publish_dataset(
     *,
     release_project_root: Path,
@@ -59,8 +110,18 @@ def publish_dataset(
     resume: bool,
 ) -> dict[str, Any]:
     base_root, sweep_root = one_object_release_roots(release_root)
+    base_exists = base_root.exists() or base_root.is_symlink()
+    sweep_exists = sweep_root.exists() or sweep_root.is_symlink()
+    if sweep_exists and not base_exists:
+        raise ValueError("sweep release exists without its sibling base release")
+    if (base_exists or sweep_exists) and not resume:
+        raise FileExistsError(f"canonical release already exists: {release_root}")
     specs = list(pipeline_specs)
-    if base_root.exists():
+    if base_exists:
+        require_source_binding(
+            base_root.parent,
+            source_release_binding(release_project_root, release_manifest),
+        )
         base = verify_base_view(base_root, expected_object_count=EXPECTED_OBJECT_COUNT)
     else:
         base = build_base_view(
@@ -70,7 +131,7 @@ def publish_dataset(
             pipeline_specs=specs,
             expected_object_count=EXPECTED_OBJECT_COUNT,
         )
-    if sweep_root.exists():
+    if sweep_exists:
         sweep = verify_sweep_view(
             sweep_root,
             base_root=base_root,

@@ -35,8 +35,9 @@ python -m tools.cli.generate_one_object_dataset \
 ```
 
 Use `--plan-only` to inspect the resolved stages and `--resume` to reuse only
-completed, validated stage artifacts. Existing canonical views are verified,
-never overwritten.
+completed, validated stage artifacts. Resume requires the same frozen count,
+seed, source metadata hash, and source release hash. Existing canonical views
+are verified, never overwritten.
 
 Verify an existing dataset without modifying it:
 

@@ -8,26 +8,33 @@ from typing import Any
 
 from tools.core.hashing import sha256_file as sha256
 from tools.core.paths import resolve_project_path
+from tools.core.sweep_values import (
+    SWEEP_AXES,
+    SWEEP_DERIVED_LEVELS,
+    SWEEP_GROUP_SIZE,
+)
 
-AXES = ("mass_kg", "contact_friction", "contact_restitution")
+AXES = SWEEP_AXES
 SUPPORTED_TARGET_OBJECT_INDICES = (0,)
 
 
 def validate_groups(records: list[dict[str, Any]]) -> int:
-    """Validate the frozen 13-record, one-object sweep group contract."""
+    """Validate the frozen one-object sweep group contract."""
 
     groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for record in records:
         groups[str(record["parent"])].append(record)
     for parent, group in groups.items():
-        if len(group) != 13:
-            raise ValueError(f"group does not contain 13 records: {parent}")
+        if len(group) != SWEEP_GROUP_SIZE:
+            raise ValueError(
+                f"group does not contain {SWEEP_GROUP_SIZE} records: {parent}"
+            )
         if sum(record["kind"] == "base" for record in group) != 1:
             raise ValueError(f"group does not contain one canonical base: {parent}")
         axis_counts = Counter(
             record.get("axis") for record in group if record["kind"] == "sweep"
         )
-        if axis_counts != Counter({axis: 4 for axis in AXES}):
+        if axis_counts != Counter({axis: len(SWEEP_DERIVED_LEVELS) for axis in AXES}):
             raise ValueError(f"group has an invalid axis layout: {parent}")
         derived = [record for record in group if record["kind"] == "sweep"]
         for axis in AXES:
@@ -36,7 +43,7 @@ def validate_groups(records: list[dict[str, Any]]) -> int:
                 for record in derived
                 if record["axis"] == axis
             }
-            if levels != {0, 1, 3, 4}:
+            if levels != set(SWEEP_DERIVED_LEVELS):
                 raise ValueError(f"group has invalid sweep levels: {parent}/{axis}")
         targets = {
             (str(record["target_object_id"]), int(record["target_object_index"]))

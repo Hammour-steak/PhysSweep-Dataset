@@ -13,6 +13,7 @@ from tools.core.paths import (
     project_relative_path,
     resolve_project_path_within_root,
 )
+from tools.core.sweep_values import SWEEP_GROUP_SIZE
 from tools.dataset_contract.object_identity_contract import validate_object_identity
 from tools.release.sweep_validation import validate_groups, validate_source_artifacts
 
@@ -114,7 +115,10 @@ def publish_source_release(
         ):
             raise ValueError(f"sweep physics did not pass exactly: {scene_id}")
 
-    if len(base_records) != group_count or len(metadata_records) != group_count * 13:
+    if (
+        len(base_records) != group_count
+        or len(metadata_records) != group_count * SWEEP_GROUP_SIZE
+    ):
         raise ValueError("one-object release group totals differ")
     base_count = group_count
     derived_count = len(metadata_records) - base_count
@@ -141,7 +145,7 @@ def publish_source_release(
                 "dataset_id": DATASET_ID,
                 "sample_count": len(metadata_records),
                 "group_count": group_count,
-                "group_size": 13,
+                "group_size": SWEEP_GROUP_SIZE,
                 "sources": [source_binding],
                 "records": metadata_records,
             },
@@ -157,7 +161,7 @@ def publish_source_release(
                 "error_count": 0,
                 "pass_rate": 1.0,
                 "group_count": group_count,
-                "group_size": 13,
+                "group_size": SWEEP_GROUP_SIZE,
                 "sources": [source_binding],
                 "records": physics_records,
             },

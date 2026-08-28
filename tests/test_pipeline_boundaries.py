@@ -78,8 +78,13 @@ class PipelineBoundaryTest(unittest.TestCase):
             ROOT / "tools/cli/generate_one_object_dataset.py",
         )
         plan = module.generation_plan(
-            ROOT, "smoke", Path("outputs/smoke/one_object")
+            ROOT,
+            "smoke",
+            Path("outputs/smoke/one_object"),
+            count=17,
+            seed=31,
         )
+        self.assertEqual(plan["request"], {"base_count": 17, "seed": 31})
         self.assertEqual(
             plan["stages"],
             [
@@ -179,6 +184,86 @@ class PipelineBoundaryTest(unittest.TestCase):
                 )
         self.assertEqual(base.call_args.kwargs["pipeline_specs"], [spec])
         self.assertEqual(sweep.call_args.kwargs["pipeline_specs"], [spec])
+
+    def test_existing_release_requires_resume(self):
+        module = load_module(
+            "dataset_existing_release_entry",
+            ROOT / "tools/cli/build_one_object_dataset.py",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            release_root = root / "outputs/one_object"
+            (release_root / "base").mkdir(parents=True)
+            with self.assertRaisesRegex(FileExistsError, "already exists"):
+                module.publish_dataset(
+                    release_project_root=root,
+                    release_manifest=Path("release.json"),
+                    release_root=release_root,
+                    pipeline_specs=[],
+                    workers=1,
+                    resume=False,
+                )
+
+    def test_resume_rejects_a_different_source_release(self):
+        module = load_module(
+            "dataset_resume_binding_entry",
+            ROOT / "tools/cli/build_one_object_dataset.py",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            release_root = root / "outputs/one_object"
+            base_root = release_root / "base"
+            base_root.mkdir(parents=True)
+            metadata = root / "metadata.json"
+            metadata.write_text("{}", encoding="utf-8")
+            release = root / "release.json"
+            release.write_text(
+                json.dumps({"metadata_manifest": "metadata.json"}),
+                encoding="utf-8",
+            )
+            (base_root / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "provenance": {
+                            "source_generation_release_metadata": {
+                                "manifest_sha256": "0" * 64
+                            },
+                            "source_sweep_release": {
+                                "manifest_sha256": "0" * 64
+                            },
+                        }
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with (
+                patch.object(module, "verify_base_view", return_value={"passed": True}),
+                self.assertRaisesRegex(ValueError, "different source release"),
+            ):
+                module.publish_dataset(
+                    release_project_root=root,
+                    release_manifest=release,
+                    release_root=release_root,
+                    pipeline_specs=[],
+                    workers=1,
+                    resume=True,
+                )
+
+    def test_resume_request_cannot_replace_the_frozen_plan(self):
+        module = load_module(
+            "dataset_generation_resume_entry",
+            ROOT / "tools/cli/generate_one_object_dataset.py",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "generation_plan.json"
+            module.bind_generation_plan(path, {"request": {"seed": 1}}, False)
+            with self.assertRaisesRegex(ValueError, "differs"):
+                module.bind_generation_plan(
+                    path, {"request": {"seed": 2}}, True
+                )
+            self.assertEqual(
+                json.loads(path.read_text()), {"request": {"seed": 1}}
+            )
 
     def test_generator_publishes_sweep_baselines_as_canonical_bases(self):
         module = load_module(

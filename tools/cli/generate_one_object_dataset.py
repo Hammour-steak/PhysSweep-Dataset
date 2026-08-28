@@ -15,6 +15,7 @@ from tools.cli.build_one_object_dataset import publish_dataset
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic_sorted as write_json
 from tools.core.paths import safe_scene_id
+from tools.core.sweep_values import SWEEP_DERIVED_COUNT, SWEEP_GROUP_SIZE
 from tools.physics.specialized_backend_registry import load_specialized_backends
 from tools.release.base_release_view import PipelineSpec
 from tools.release.one_object_source_release import publish_source_release
@@ -57,12 +58,20 @@ def generation_layout(root: Path, work_id: str, release_root: Path) -> Layout:
     )
 
 
-def generation_plan(root: Path, work_id: str, release_root: Path) -> dict[str, Any]:
+def generation_plan(
+    root: Path,
+    work_id: str,
+    release_root: Path,
+    *,
+    count: int,
+    seed: int,
+) -> dict[str, Any]:
     layout = generation_layout(root, work_id, release_root)
     backends = load_specialized_backends(root)
     return {
         "schema_version": PLAN_SCHEMA,
         "work_id": work_id,
+        "request": {"base_count": count, "seed": seed},
         "layout": {
             key: value.resolve().relative_to(root.resolve()).as_posix()
             for key, value in asdict(layout).items()
@@ -94,6 +103,16 @@ def generation_plan(root: Path, work_id: str, release_root: Path) -> dict[str, A
             ],
         ],
     }
+
+
+def bind_generation_plan(path: Path, plan: dict[str, Any], resume: bool) -> None:
+    if path.is_file():
+        if not resume:
+            raise FileExistsError(f"generation plan already exists: {path}")
+        if load_json(path) != plan:
+            raise ValueError("resume request differs from the frozen generation plan")
+        return
+    write_json(path, plan)
 
 
 def run(command: list[str], root: Path) -> None:
@@ -214,7 +233,6 @@ def render_sweep(
 ) -> None:
     plan = load_json(layout.sweep_render / "manifest.json")
     counts = {str(key): int(value) for key, value in plan["branch_counts"].items()}
-    derived_per_group = 12
     if counts.get("asset", 0):
         base_plan = load_json(layout.base_render / "render_plan.json")
         run(
@@ -232,7 +250,7 @@ def render_sweep(
             root,
         )
     if counts.get("generic", 0):
-        if counts["generic"] % 13:
+        if counts["generic"] % SWEEP_GROUP_SIZE:
             raise ValueError("generic sweep branch is not composed of complete groups")
         bound_root = layout.sweep_render / "generic" / "bound"
         bound = bound_root / "bound_manifest.json"
@@ -254,8 +272,8 @@ def render_sweep(
             completion=bound,
             resume=resume,
         )
-        expected = counts["generic"] // 13 * derived_per_group
-        base_expected = counts["generic"] // 13
+        expected = counts["generic"] // SWEEP_GROUP_SIZE * SWEEP_DERIVED_COUNT
+        base_expected = counts["generic"] // SWEEP_GROUP_SIZE
         base_result = bound_root / "base_render_manifest.json"
         base_command = [
             sys.executable,
@@ -306,10 +324,10 @@ def render_sweep(
         count = counts.get(branch, 0)
         if not count:
             continue
-        if count % 13:
+        if count % SWEEP_GROUP_SIZE:
             raise ValueError(f"{branch} sweep branch is not composed of complete groups")
-        expected = count // 13 * derived_per_group
-        base_expected = count // 13
+        expected = count // SWEEP_GROUP_SIZE * SWEEP_DERIVED_COUNT
+        base_expected = count // SWEEP_GROUP_SIZE
         base_result = layout.sweep_render / branch / "base_render_manifest.json"
         base_command = [
             sys.executable,
@@ -406,13 +424,19 @@ def main() -> None:
     if not [value for value in args.gpus.split(",") if value.strip()]:
         raise ValueError("--gpus must contain at least one id")
     root = args.root.resolve()
-    plan = generation_plan(root, args.work_id, args.release_root)
+    plan = generation_plan(
+        root,
+        args.work_id,
+        args.release_root,
+        count=args.count,
+        seed=args.seed,
+    )
     if args.plan_only:
         print(json.dumps(plan, indent=2, sort_keys=True))
         return
     layout = generation_layout(root, args.work_id, args.release_root)
     plan_path = root / "outputs" / safe_scene_id(args.work_id) / "generation_plan.json"
-    write_json(plan_path, plan)
+    bind_generation_plan(plan_path, plan, args.resume)
 
     run_once(
         [
@@ -435,8 +459,12 @@ def main() -> None:
         resume=args.resume,
     )
     base = load_json(layout.base_manifest)
-    if int(base.get("sample_count", -1)) != args.count:
-        raise ValueError("generated base count differs from the request")
+    if (
+        base.get("schema_version") != "physweep_one_object_decoupled_manifest_v5"
+        or int(base.get("sample_count", -1)) != args.count
+        or int(base.get("seed", -1)) != args.seed
+    ):
+        raise ValueError("generated base identity differs from the request")
     run_once(
         [
             sys.executable,

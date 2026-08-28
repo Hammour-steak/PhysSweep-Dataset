@@ -3,10 +3,10 @@ import math
 from pathlib import Path
 from typing import Iterable
 
+from tools.core.sweep_values import SWEEP_AXES, SWEEP_LEVEL_COUNT
 
 SAMPLE_SCHEMA = "physweep.video_condition_sample.v4"
 MANIFEST_SCHEMA = "physweep.video_condition_manifest.v4"
-SWEEP_AXES = ("mass_kg", "contact_friction", "contact_restitution")
 SPLITS = {"train", "validation", "test"}
 
 
@@ -219,7 +219,7 @@ def validate_training_record(
     level_count = sweep.get("level_count")
     level_index = sweep.get("level_index")
     base_level_index = sweep.get("base_level_index")
-    if level_count != 5:
+    if level_count != SWEEP_LEVEL_COUNT:
         raise SchemaError("the current sweep contract requires five levels")
     if not isinstance(level_index, int) or not 0 <= level_index < level_count:
         raise SchemaError("sweep.level_index is invalid")

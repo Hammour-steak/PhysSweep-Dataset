@@ -14,6 +14,7 @@ from typing import Any, Iterable
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 from tools.release.base_release_attribution import load_billiards_templates
+from tools.core.sweep_values import SWEEP_DERIVED_COUNT
 from tools.release.base_release_schema import (
     FIXTURE_SCHEMA,
     SAMPLE_ENTRIES,
@@ -202,7 +203,11 @@ def validate_groups(
             for record in records
         }
         targets = {str(record.get("target_object_id")) for record in records}
-        if len(records) != 12 or observed != expected_axis_levels or len(targets) != 1:
+        if (
+            len(records) != SWEEP_DERIVED_COUNT
+            or observed != expected_axis_levels
+            or len(targets) != 1
+        ):
             raise ValueError(f"derived one-factor group differs: {group_id}")
     return group_by_scene
 
@@ -528,7 +533,8 @@ def build_view(
     write_json(work / "manifest.json", manifest)
     (work / "README.txt").write_text(
         "Canonical PhysSweep derived sweep release v1.\n"
-        "metadata.json is the sample authority; group_manifest.json indexes each base and its 12 one-factor variants.\n"
+        "metadata.json is the sample authority; group_manifest.json indexes "
+        f"each base and its {SWEEP_DERIVED_COUNT} one-factor variants.\n"
         "The release excludes base samples and generation-only frames, logs, and source metadata copies.\n",
         encoding="utf-8",
     )
@@ -709,7 +715,7 @@ def verify_view(
                 key: expected_base[key]
                 for key in ("scene_id", "path", "metadata_sha256")
             }
-            or len(sweeps) != 12
+            or len(sweeps) != SWEEP_DERIVED_COUNT
             or any(set(record) != SWEEP_INDEX_FIELDS for record in sweeps)
             or {
                 (record.get("parameter"), record.get("level_index"))

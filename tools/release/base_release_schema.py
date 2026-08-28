@@ -20,6 +20,7 @@ import numpy as np
 from PIL import Image
 
 from tools.core.json_io import write_json_atomic_sorted as write_json
+from tools.core.sweep_values import SWEEP_AXES, SWEEP_DERIVED_LEVELS
 from tools.release.audit_release_provenance import sha256
 
 BASE_SAMPLE_SCHEMA = "physweep_base_sample_v11"
@@ -68,17 +69,14 @@ SAMPLE_METADATA_FIELDS = {
 }
 
 DYNAMIC_MATERIAL_FIELDS = (
-    "mass_kg",
-    "contact_friction",
-    "contact_restitution",
+    *SWEEP_AXES,
     "rolling_friction",
     "spinning_friction",
     "linear_damping",
     "angular_damping",
     "contact_processing_threshold_m",
 )
-SWEEP_PARAMETER_FIELDS = DYNAMIC_MATERIAL_FIELDS[:3]
-SWEEP_DERIVED_LEVELS = (0, 1, 3, 4)
+SWEEP_PARAMETER_FIELDS = SWEEP_AXES
 
 ASSET_LABELS = {
     "decorated dinner plate": "decorated dinner plate",

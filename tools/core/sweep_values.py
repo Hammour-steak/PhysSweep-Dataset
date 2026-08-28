@@ -6,6 +6,16 @@ import math
 from typing import Any
 
 
+SWEEP_AXES = ("mass_kg", "contact_friction", "contact_restitution")
+SWEEP_LEVEL_COUNT = 5
+SWEEP_BASE_LEVEL_INDEX = SWEEP_LEVEL_COUNT // 2
+SWEEP_DERIVED_LEVELS = tuple(
+    index for index in range(SWEEP_LEVEL_COUNT) if index != SWEEP_BASE_LEVEL_INDEX
+)
+SWEEP_DERIVED_COUNT = len(SWEEP_AXES) * len(SWEEP_DERIVED_LEVELS)
+SWEEP_GROUP_SIZE = 1 + SWEEP_DERIVED_COUNT
+
+
 def round_sweep_value(value: float) -> float:
     """Round a sweep value using the published metadata precision."""
 

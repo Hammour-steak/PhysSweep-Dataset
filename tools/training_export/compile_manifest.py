@@ -10,6 +10,7 @@ import numpy as np
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 from tools.core.hashing import sha256_file as _sha256
 from tools.core.paths import project_relative_path
+from tools.core.sweep_values import SWEEP_GROUP_SIZE, SWEEP_LEVEL_COUNT
 from tools.dataset_contract.gt_scene_input import (
     DEFAULT_ENVIRONMENT_POINTS,
     DEFAULT_OBJECT_POINTS,
@@ -349,7 +350,7 @@ def _record(
             "mode": "base" if canonical_base else "one_factor",
             "axis": axis,
             "level_index": int(source["level_index"]),
-            "level_count": 5,
+            "level_count": SWEEP_LEVEL_COUNT,
             "base_level_index": int(source["base_level_index"]),
             "base_level_indices": {
                 key: int(value)
@@ -544,7 +545,7 @@ def compile_manifest(args) -> dict:
         "mode_counts": dict(mode_counts),
         "base_deduplication": {
             "input_records_per_base": 15,
-            "output_records_per_base": 13,
+            "output_records_per_base": SWEEP_GROUP_SIZE,
             "canonical_base_axis": args.canonical_base_axis,
             "base_level_source": "per_axis_sweep_metadata",
             "base_level_distribution": {
