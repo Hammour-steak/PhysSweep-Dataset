@@ -10,6 +10,7 @@ import numpy as np
 from tools.base_release_schema import (
     BASE_SAMPLE_SCHEMA,
     MASK_MANIFEST_SCHEMA,
+    SAMPLE_METADATA_FIELDS,
     SWEEP_SAMPLE_SCHEMA,
     TRAJECTORY_FIELDS,
     TRAJECTORY_SCHEMA,
@@ -230,6 +231,7 @@ class BaseReleaseSchemaTests(unittest.TestCase):
             }
             summary = validate_base_metadata(metadata)
             self.assertEqual(metadata["schema_version"], BASE_SAMPLE_SCHEMA)
+            self.assertEqual(set(metadata), SAMPLE_METADATA_FIELDS["base"])
             sweep_metadata = build_sweep_metadata(
                 sweep={
                     "target_object_id": "ball",
@@ -254,6 +256,7 @@ class BaseReleaseSchemaTests(unittest.TestCase):
             }
             sweep_summary = validate_sweep_metadata(sweep_metadata)
             self.assertEqual(sweep_metadata["schema_version"], SWEEP_SAMPLE_SCHEMA)
+            self.assertEqual(set(sweep_metadata), SAMPLE_METADATA_FIELDS["sweep"])
             self.assertEqual(sweep_metadata["sample_kind"], "sweep")
             self.assertEqual(sweep_summary["group_id"], "logical_scene")
             sweep_metadata["sweep"]["value"] = 0.3

@@ -24,6 +24,8 @@ try:
         BASE_SAMPLE_SCHEMA,
         FIXTURE_SCHEMA,
         MASK_MANIFEST_SCHEMA,
+        SAMPLE_ENTRIES,
+        SAMPLE_LAYOUT_CONTRACT,
         TRAJECTORY_FIELDS,
         TRAJECTORY_SCHEMA,
         materialize_base_sample,
@@ -48,6 +50,8 @@ except ModuleNotFoundError:
         BASE_SAMPLE_SCHEMA,
         FIXTURE_SCHEMA,
         MASK_MANIFEST_SCHEMA,
+        SAMPLE_ENTRIES,
+        SAMPLE_LAYOUT_CONTRACT,
         TRAJECTORY_FIELDS,
         TRAJECTORY_SCHEMA,
         materialize_base_sample,
@@ -67,6 +71,7 @@ VIEW_SCHEMA = "physweep_base_release_view_v14"
 PIPELINE_SCHEMA = "physweep_base_pipeline_view_v12"
 AUDIT_SCHEMA = "physweep_base_release_view_audit_v14"
 FIXTURE_CATALOG_SCHEMA = "physweep_static_fixture_catalog_v2"
+DEFAULT_RELEASE_ROOT = Path("outputs/one_object")
 VIDEO_ENCODING_FIELDS = (
     "codec",
     "constant_rate_factor",
@@ -76,6 +81,13 @@ VIDEO_ENCODING_FIELDS = (
     "preset",
     "profile_version",
 )
+
+
+def one_object_release_roots(release_root: Path) -> tuple[Path, Path]:
+    release_root = Path(release_root)
+    if release_root.name != "one_object":
+        raise ValueError("release root must be named one_object")
+    return release_root / "base", release_root / "sweep"
 
 COORDINATE_CONTRACT = {
     "units": {
@@ -147,16 +159,6 @@ MASK_CONTRACT = {
     "resolution_source": "render_contract.resolution",
     "path_layout": "masks/{object_id}/frame_{one_based_frame:04d}.png",
     "cross_modal_key": "object_id",
-}
-
-SAMPLE_LAYOUT_CONTRACT = {
-    "sample_directory": "{family}/{scene_id}",
-    "metadata": "metadata.json",
-    "trajectory": "trajectory.npz",
-    "video": "video.mp4",
-    "mask_manifest": "mask_manifest.json",
-    "masks": "masks/{object_id}/frame_{one_based_frame:04d}.png",
-    "fixture": "fixtures/{metadata.physics.fixture.sha256}.json",
 }
 
 TEXT_CONTRACT = {
@@ -589,6 +591,8 @@ def build_view(
     pipeline_specs: Iterable[PipelineSpec],
 ) -> dict[str, Any]:
     output = output.resolve()
+    if output.name != "base" or output.parent.name != "one_object":
+        raise ValueError("base output must be one_object/base")
     if output.exists() or output.is_symlink():
         raise FileExistsError(f"base release already exists: {output}")
     specs = validate_pipeline_specs(pipeline_specs)
@@ -1088,15 +1092,8 @@ def verify_view(output: Path) -> dict[str, Any]:
             )
             if video.is_symlink():
                 raise ValueError(f"video must be materialized: {scene_id}")
-            expected_entries = {
-                "metadata.json",
-                "trajectory.npz",
-                "video.mp4",
-                "masks",
-                "mask_manifest.json",
-            }
             validate_mask_artifacts(sample, metadata)
-            if {path.name for path in sample.iterdir()} != expected_entries:
+            if {path.name for path in sample.iterdir()} != SAMPLE_ENTRIES:
                 raise ValueError(f"unexpected base sample files: {scene_id}")
             count += 1
         actual_samples = {
@@ -1130,7 +1127,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--release-project-root", type=Path)
     parser.add_argument("--release-manifest", type=Path)
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--release-root",
+        type=Path,
+        default=DEFAULT_RELEASE_ROOT,
+        help="Canonical output root; must be named one_object.",
+    )
     parser.add_argument(
         "--pipeline",
         nargs=5,
@@ -1144,8 +1146,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    output, _ = one_object_release_roots(args.release_root)
     if args.verify_only:
-        result = verify_view(args.output)
+        result = verify_view(output)
     else:
         if args.release_project_root is None or args.release_manifest is None:
             raise SystemExit(
@@ -1164,7 +1167,7 @@ def main() -> None:
         result = build_view(
             release_project_root=args.release_project_root,
             release_manifest=args.release_manifest,
-            output=args.output,
+            output=output,
             pipeline_specs=specs,
         )
     print(json.dumps(result, indent=2, ensure_ascii=True))

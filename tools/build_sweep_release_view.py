@@ -21,6 +21,8 @@ try:
     from base_release_schema import (
         FIXTURE_SCHEMA,
         MASK_MANIFEST_SCHEMA,
+        SAMPLE_ENTRIES,
+        SAMPLE_LAYOUT_CONTRACT,
         SWEEP_DERIVED_LEVELS,
         SWEEP_PARAMETER_FIELDS,
         SWEEP_SAMPLE_SCHEMA,
@@ -36,6 +38,7 @@ try:
         CAMERA_PROJECTION_CONTRACT,
         COLLISION_PROXY_CONTRACT,
         COORDINATE_CONTRACT,
+        DEFAULT_RELEASE_ROOT,
         FIXTURE_BINDING_CONTRACT,
         FIXTURE_CATALOG_SCHEMA,
         MASK_CONTRACT,
@@ -43,7 +46,6 @@ try:
         OBJECT_IDENTITY_CONTRACT,
         OBJECT_SEMANTICS_CONTRACT,
         OBJECT_VISUAL_CONTRACT,
-        SAMPLE_LAYOUT_CONTRACT,
         TEMPORAL_CONTRACT,
         TEXT_CONTRACT,
         TRAJECTORY_CONTRACT,
@@ -52,6 +54,7 @@ try:
         index_unique,
         index_unique_string,
         load_json,
+        one_object_release_roots,
         release_documents,
         render_sources,
         safe_scene_id,
@@ -68,6 +71,8 @@ except ModuleNotFoundError:
     from tools.base_release_schema import (
         FIXTURE_SCHEMA,
         MASK_MANIFEST_SCHEMA,
+        SAMPLE_ENTRIES,
+        SAMPLE_LAYOUT_CONTRACT,
         SWEEP_DERIVED_LEVELS,
         SWEEP_PARAMETER_FIELDS,
         SWEEP_SAMPLE_SCHEMA,
@@ -83,6 +88,7 @@ except ModuleNotFoundError:
         CAMERA_PROJECTION_CONTRACT,
         COLLISION_PROXY_CONTRACT,
         COORDINATE_CONTRACT,
+        DEFAULT_RELEASE_ROOT,
         FIXTURE_BINDING_CONTRACT,
         FIXTURE_CATALOG_SCHEMA,
         MASK_CONTRACT,
@@ -90,7 +96,6 @@ except ModuleNotFoundError:
         OBJECT_IDENTITY_CONTRACT,
         OBJECT_SEMANTICS_CONTRACT,
         OBJECT_VISUAL_CONTRACT,
-        SAMPLE_LAYOUT_CONTRACT,
         TEMPORAL_CONTRACT,
         TEXT_CONTRACT,
         TRAJECTORY_CONTRACT,
@@ -99,6 +104,7 @@ except ModuleNotFoundError:
         index_unique,
         index_unique_string,
         load_json,
+        one_object_release_roots,
         release_documents,
         render_sources,
         safe_scene_id,
@@ -114,13 +120,6 @@ GROUP_SCHEMA = "physweep_sweep_group_manifest_v1"
 AUDIT_SCHEMA = "physweep_sweep_release_view_audit_v1"
 SWEEP_AXES = SWEEP_PARAMETER_FIELDS
 DERIVED_LEVELS = SWEEP_DERIVED_LEVELS
-SAMPLE_ENTRIES = {
-    "metadata.json",
-    "trajectory.npz",
-    "video.mp4",
-    "mask_manifest.json",
-    "masks",
-}
 SWEEP_INDEX_FIELDS = {
     "scene_id",
     "path",
@@ -153,11 +152,28 @@ def relative_path(path: Path, start: Path) -> str:
     return Path(os.path.relpath(path.resolve(), start.resolve())).as_posix()
 
 
-def sibling_release_roots(base_root: Path, sweep_root: Path) -> tuple[Path, Path]:
+def sibling_release_roots(
+    base_root: Path,
+    sweep_root: Path,
+    *,
+    allow_staging_markers: bool = False,
+) -> tuple[Path, Path]:
     base_root = base_root.resolve()
     sweep_root = sweep_root.resolve()
-    if base_root == sweep_root or base_root.parent != sweep_root.parent:
-        raise ValueError("base and sweep releases must be distinct siblings")
+    sweep_name = sweep_root.name
+    if (
+        allow_staging_markers
+        and sweep_name.startswith(".")
+        and sweep_name.endswith(".building")
+    ):
+        sweep_name = sweep_name[1 : -len(".building")]
+    if (
+        base_root.name != "base"
+        or sweep_name != "sweep"
+        or base_root.parent.name != "one_object"
+        or base_root.parent != sweep_root.parent
+    ):
+        raise ValueError("release roots must be one_object/base and one_object/sweep")
     return base_root, sweep_root
 
 
@@ -661,7 +677,11 @@ def verify_view(
     base_root: Path,
     allow_staging_markers: bool = False,
 ) -> dict[str, Any]:
-    base_root, output = sibling_release_roots(base_root, output)
+    base_root, output = sibling_release_roots(
+        base_root,
+        output,
+        allow_staging_markers=allow_staging_markers,
+    )
     manifest = load_json(output / "manifest.json")
     expected_manifest_fields = {
         "schema_version",
@@ -1049,10 +1069,14 @@ def verify_view(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--release-project-root", type=Path, required=True)
-    parser.add_argument("--release-manifest", type=Path, required=True)
-    parser.add_argument("--base-root", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--release-project-root", type=Path)
+    parser.add_argument("--release-manifest", type=Path)
+    parser.add_argument(
+        "--release-root",
+        type=Path,
+        default=DEFAULT_RELEASE_ROOT,
+        help="Canonical output root; must be named one_object.",
+    )
     parser.add_argument("--workers", type=int, default=32)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--verify-only", action="store_true")
@@ -1067,9 +1091,14 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    base_root, output = one_object_release_roots(args.release_root)
     if args.verify_only:
-        result = verify_view(args.output, base_root=args.base_root)
+        result = verify_view(output, base_root=base_root)
     else:
+        if args.release_project_root is None or args.release_manifest is None:
+            raise SystemExit(
+                "--release-project-root and --release-manifest are required when building"
+            )
         specs = [
             PipelineSpec(name, schema, Path(root), Path(render), Path(masks))
             for name, schema, root, render, masks in (args.pipeline or [])
@@ -1077,8 +1106,8 @@ def main() -> None:
         result = build_view(
             release_project_root=args.release_project_root,
             release_manifest=args.release_manifest,
-            base_root=args.base_root,
-            output=args.output,
+            base_root=base_root,
+            output=output,
             pipeline_specs=specs,
             workers=args.workers,
             resume=args.resume,

@@ -31,6 +31,45 @@ TRAJECTORY_SCHEMA = "physweep_object_trajectory_v4"
 MASK_MANIFEST_SCHEMA = "physweep_instance_mask_manifest_v4"
 FIXTURE_SCHEMA = "physweep_static_fixture_v1"
 
+SAMPLE_ENTRIES = frozenset(
+    {
+        "metadata.json",
+        "trajectory.npz",
+        "video.mp4",
+        "mask_manifest.json",
+        "masks",
+    }
+)
+SAMPLE_LAYOUT_CONTRACT = {
+    "sample_directory": "{family}/{scene_id}",
+    "metadata": "metadata.json",
+    "trajectory": "trajectory.npz",
+    "video": "video.mp4",
+    "mask_manifest": "mask_manifest.json",
+    "masks": "masks/{object_id}/frame_{one_based_frame:04d}.png",
+    "fixture": "fixtures/{metadata.physics.fixture.sha256}.json",
+}
+COMMON_SAMPLE_METADATA_FIELDS = frozenset(
+    {
+        "schema_version",
+        "scene_id",
+        "group_id",
+        "family",
+        "sample_kind",
+        "seed",
+        "semantics",
+        "physics",
+        "visual",
+        "text",
+        "artifacts",
+        "lineage",
+    }
+)
+SAMPLE_METADATA_FIELDS = {
+    "base": COMMON_SAMPLE_METADATA_FIELDS,
+    "sweep": COMMON_SAMPLE_METADATA_FIELDS | {"sweep"},
+}
+
 DYNAMIC_MATERIAL_FIELDS = (
     "mass_kg",
     "contact_friction",
@@ -1403,12 +1442,9 @@ def _validate_sample_metadata(
 ) -> dict[str, Any]:
     if metadata.get("schema_version") != schema_version:
         raise ValueError(f"not canonical PhysSweep {sample_kind} metadata")
-    required = {
-        "schema_version", "scene_id", "group_id", "family", "sample_kind",
-        "seed", "semantics", "physics", "visual", "text", "artifacts", "lineage",
-    }
-    if sample_kind == "sweep":
-        required.add("sweep")
+    required = SAMPLE_METADATA_FIELDS.get(sample_kind)
+    if required is None:
+        raise ValueError(f"invalid sample kind: {sample_kind}")
     if set(metadata) != required or metadata.get("sample_kind") != sample_kind:
         raise ValueError(f"canonical {sample_kind} fields are invalid")
     scene_id = str(metadata.get("scene_id", ""))

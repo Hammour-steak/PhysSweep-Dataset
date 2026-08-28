@@ -10,6 +10,7 @@ from tools.build_sweep_release_view import (
     SWEEP_AXES,
     SWEEP_INDEX_FIELDS,
     group_manifest,
+    one_object_release_roots,
     sibling_release_roots,
     sweep_descriptor,
     sweep_sort_key,
@@ -57,9 +58,18 @@ class SweepReleaseViewTests(unittest.TestCase):
         self.assertNotIn("target_object_id", SWEEP_INDEX_FIELDS)
 
     def test_release_roots_are_siblings_and_axis_order_is_canonical(self) -> None:
-        base, sweep = sibling_release_roots(Path("release/base"), Path("release/sweep"))
+        base, sweep = one_object_release_roots(Path("outputs/one_object"))
+        base, sweep = sibling_release_roots(base, sweep)
         self.assertEqual(base.parent, sweep.parent)
-        with self.assertRaisesRegex(ValueError, "distinct siblings"):
+        _, staging = sibling_release_roots(
+            base,
+            sweep.with_name(".sweep.building"),
+            allow_staging_markers=True,
+        )
+        self.assertEqual(staging.name, ".sweep.building")
+        with self.assertRaisesRegex(ValueError, "one_object/sweep"):
+            sibling_release_roots(base, sweep.with_name(".sweep.building"))
+        with self.assertRaisesRegex(ValueError, "one_object/base"):
             sibling_release_roots(Path("release/base"), Path("other/sweep"))
         indexed = [
             {"parameter": record["axis"], "level_index": record["level_index"]}

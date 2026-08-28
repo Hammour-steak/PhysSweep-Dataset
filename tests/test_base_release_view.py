@@ -10,7 +10,12 @@ from PIL import Image
 
 from tools.audit_release_provenance import sha256
 from tools.base_release_schema import BASE_SAMPLE_SCHEMA, TRAJECTORY_FIELDS
-from tools.build_base_release_view import PipelineSpec, build_view, verify_view
+from tools.build_base_release_view import (
+    PipelineSpec,
+    build_view,
+    one_object_release_roots,
+    verify_view,
+)
 
 
 def write_json(path: Path, value: object) -> None:
@@ -19,6 +24,13 @@ def write_json(path: Path, value: object) -> None:
 
 
 class BaseReleaseViewTests(unittest.TestCase):
+    def test_one_object_release_root_has_fixed_children(self) -> None:
+        base, sweep = one_object_release_roots(Path("outputs/one_object"))
+        self.assertEqual(base, Path("outputs/one_object/base"))
+        self.assertEqual(sweep, Path("outputs/one_object/sweep"))
+        with self.assertRaisesRegex(ValueError, "named one_object"):
+            one_object_release_roots(Path("outputs/versioned_release"))
+
     def test_base_release_is_canonical_hash_checked_and_non_overwriting(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -346,7 +358,7 @@ class BaseReleaseViewTests(unittest.TestCase):
                 },
             )
 
-            output = root / "outputs/one_object/base"
+            output, _ = one_object_release_roots(root / "outputs/one_object")
             result = build_view(
                 release_project_root=root,
                 release_manifest=release_path,
@@ -448,13 +460,20 @@ class BaseReleaseViewTests(unittest.TestCase):
                     output=output,
                     pipeline_specs=specs,
                 )
+            with self.assertRaisesRegex(ValueError, "one_object/base"):
+                build_view(
+                    release_project_root=root,
+                    release_manifest=release_path,
+                    output=root / "outputs/versioned/base",
+                    pipeline_specs=specs,
+                )
             original_audit = audits[0].read_bytes()
             audits[0].write_bytes(b"tampered")
             with self.assertRaisesRegex(ValueError, "trajectory audit hash mismatch"):
                 build_view(
                     release_project_root=root,
                     release_manifest=release_path,
-                    output=output.parent / "tampered-audit-base",
+                    output=root / "tampered/one_object/base",
                     pipeline_specs=specs,
                 )
             audits[0].write_bytes(original_audit)

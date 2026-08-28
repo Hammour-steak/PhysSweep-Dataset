@@ -292,13 +292,15 @@ physics or rendering. Every pipeline uses the same sample layout:
 Shared fixtures and collision assets live in `fixtures/` and `fixture_assets/`.
 The release contains no symlinks, debug frames, adapter-only trajectory fields,
 or source metadata copies. Root manifests bind the format contracts, source
-release, fixtures, and attribution catalog.
+release, fixtures, and attribution catalog. Both builders use
+`outputs/one_object` by default and derive the fixed `base/` and `sweep/`
+children from that single root.
 
 ```bash
 .venv/bin/python tools/build_base_release_view.py \
   --release-project-root <frozen-project> \
   --release-manifest datasets/<dataset>/release/manifest.json \
-  --output outputs/<release>/base \
+  --release-root outputs/one_object \
   --pipeline <name> <source-schema> <source-project> <render-root> <mask-root>
 ```
 
@@ -308,7 +310,7 @@ publishing. It excludes derived sweep samples. Verify an existing release with:
 
 ```bash
 .venv/bin/python tools/build_base_release_view.py \
-  --verify-only --output outputs/<release>/base
+  --verify-only --release-root outputs/one_object
 ```
 
 `build_sweep_release_view.py` writes only derived samples beside the canonical
@@ -322,8 +324,7 @@ visible only after full verification:
 .venv/bin/python tools/build_sweep_release_view.py \
   --release-project-root <frozen-project> \
   --release-manifest datasets/<dataset>/release/manifest.json \
-  --base-root outputs/<release>/base \
-  --output outputs/<release>/sweep \
+  --release-root outputs/one_object \
   --workers 64 --resume \
   --pipeline <name> <source-schema> <source-project> <render-root> <mask-root>
 ```
