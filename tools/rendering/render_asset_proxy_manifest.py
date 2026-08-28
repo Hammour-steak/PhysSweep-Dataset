@@ -25,6 +25,20 @@ from tools.physics.specialized_backend_registry import specialized_by_pipeline
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 EVIDENCE_CONTRACT = "physweep_specialized_render_evidence_v2"
 MASK_RESULT_SCHEMA = "physweep_specialized_mask_render_manifest_v1"
+MASK_REQUIRED_SCHEMAS = frozenset(
+    {
+        "physweep_asset_proxy_scene_v3",
+        "physweep_billiards_scene_v4",
+        "physweep_passive_pinball_scene_v1",
+        "physweep_marble_run_scene_v1",
+    }
+)
+RENDER_RECORD_IMPLEMENTATION_SCHEMAS = frozenset(
+    {
+        "physweep_asset_proxy_scene_v3",
+        "physweep_billiards_scene_v4",
+    }
+)
 
 
 def renderer_table(root: Path) -> dict[str, tuple[str, str, str, str]]:
@@ -351,10 +365,11 @@ def reusable_render_record(
     strict_evidence = (
         metadata.get("render", {}).get("evidence_contract") == EVIDENCE_CONTRACT
     )
-    renderer_requires_masks = str(metadata.get("schema_version", "")) in {
-        "physweep_asset_proxy_scene_v3",
-        "physweep_billiards_scene_v4",
-    }
+    schema = str(metadata.get("schema_version", ""))
+    renderer_requires_masks = schema in MASK_REQUIRED_SCHEMAS
+    render_record_binds_implementation = (
+        schema in RENDER_RECORD_IMPLEMENTATION_SCHEMAS
+    )
     require_instance_masks = strict_evidence or renderer_requires_masks
     expected_mask_objects = None
     expected_mask_directory = None
@@ -432,7 +447,7 @@ def reusable_render_record(
             renderer_script,
         )
         and (
-            not renderer_requires_masks
+            not render_record_binds_implementation
             or render_record_implementation_is_reusable(
                 root,
                 render_record,

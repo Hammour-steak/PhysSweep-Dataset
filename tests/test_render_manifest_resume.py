@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 from tools.rendering.render_asset_proxy_manifest import (  # noqa: E402
+    MASK_REQUIRED_SCHEMAS,
     expected_instance_mask_directory,
     implementation_is_reusable,
     instance_masks_are_reusable,
@@ -31,6 +32,17 @@ def write_json(path: Path, value: object) -> None:
 
 
 class RenderManifestResumeTests(unittest.TestCase):
+    def test_every_specialized_renderer_requires_materialized_masks(self) -> None:
+        self.assertEqual(
+            MASK_REQUIRED_SCHEMAS,
+            {
+                "physweep_asset_proxy_scene_v3",
+                "physweep_billiards_scene_v4",
+                "physweep_passive_pinball_scene_v1",
+                "physweep_marble_run_scene_v1",
+            },
+        )
+
     def test_render_override_moves_asset_masks_with_video_and_frames(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
