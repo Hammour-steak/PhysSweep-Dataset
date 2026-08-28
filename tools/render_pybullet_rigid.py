@@ -30,10 +30,16 @@ from appearance_adaptation import (
 )
 from blender_render_settings import configure_render_engine
 from static_support_proxy import blender_import_static_support_visual
-from video_encoding import configure_h264_output
+from video_encoding import configure_h264_output, normalize_h264_container
 from trajectory_contract import object_trajectory_view
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def configure_project_root(root: Path) -> Path:
+    global PROJECT_ROOT
+    PROJECT_ROOT = root.resolve()
+    return PROJECT_ROOT
 
 
 def blender_argv() -> list[str]:
@@ -1165,6 +1171,7 @@ def render(
     else:
         bpy.context.scene.frame_set(int(render_config["frame_start"]))
         bpy.ops.render.render(animation=True)
+        normalize_h264_container(video_path)
         video_sha = sha256(video_path)
         instance_mask_output = render_unoccluded_instance_masks(
             render_config, metadata, dynamic
@@ -1223,6 +1230,7 @@ def parse_resolution(value: str) -> tuple[int, int]:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--metadata", type=Path, required=True)
+    parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--first-frame-only", action="store_true")
     parser.add_argument("--mask-only", action="store_true")
     parser.add_argument("--instance-mask-dir")
@@ -1232,6 +1240,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    configure_project_root(args.root)
     if args.first_frame_only and args.mask_only:
         raise ValueError("first-frame-only and mask-only are mutually exclusive")
     record = render(

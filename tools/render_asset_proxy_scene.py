@@ -34,7 +34,7 @@ from render_asset_proxy_reviews import (  # pylint: disable=wrong-import-positio
 from blender_render_settings import configure_render_engine
 from immutable_scene_contract import validate_simulation_record
 from static_support_proxy import blender_import_static_support_visual
-from video_encoding import configure_h264_output
+from video_encoding import configure_h264_output, normalize_h264_container
 from trajectory_contract import adapter_trajectory_view
 from appearance_adaptation import apply_material_lightness_adaptation
 from camera_geometry import blocker_safe_seeded_view_order, seeded_view_order
@@ -921,6 +921,7 @@ def render(
     )
     render_samples = int(scene.eevee.taa_render_samples)
     bpy.ops.render.render(animation=True)
+    normalize_h264_container(video_path)
     mask_path = metadata["object_identity"]["instance_masks"].get("path")
     instance_mask_output = None
     if instance_mask_dir is not None or (

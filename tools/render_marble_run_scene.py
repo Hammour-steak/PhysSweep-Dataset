@@ -32,7 +32,7 @@ from generate_marble_run_scene import (  # pylint: disable=wrong-import-position
 from immutable_scene_contract import validate_simulation_record
 from render_asset_proxy_reviews import clear_scene, look_at
 from trajectory_contract import adapter_trajectory_view
-from video_encoding import configure_h264_output
+from video_encoding import configure_h264_output, normalize_h264_container
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -365,6 +365,7 @@ def render(
         frame_count=int(metadata["simulation"]["time"]["frame_count"]),
     )
     bpy.ops.render.render(animation=True)
+    normalize_h264_container(video_path)
     instance_mask_output = render_instance_masks(
         metadata, marble, fixture_objects, frame_dir
     )

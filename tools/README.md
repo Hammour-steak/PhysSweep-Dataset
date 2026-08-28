@@ -83,6 +83,9 @@ their videos. To add those masks to an existing immutable RGB render without
 rerendering the video, use the same frozen source manifest with a separate output
 root:
 
+Full renders strip volatile MP4 metadata and non-visual H.264 SEI without
+re-encoding frames, so repeated renders do not differ only by runtime metadata.
+
 ```bash
 .venv/bin/python tools/render_asset_proxy_manifest.py --renderer asset \
   --manifest outputs/<batch>/asset/asset_render_manifest.json \

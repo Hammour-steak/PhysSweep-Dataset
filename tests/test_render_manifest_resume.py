@@ -462,6 +462,9 @@ class RenderManifestResumeTests(unittest.TestCase):
             video = output / "videos/scene.mp4"
             frame_dir = output / "frames/scene"
             mask_dir = output / "masks/scene/object"
+            script = root / "tools/render_pybullet_rigid.py"
+            script.parent.mkdir(parents=True)
+            script.write_text("renderer", encoding="utf-8")
             trajectory.parent.mkdir(parents=True)
             trajectory.write_bytes(b"trajectory")
             video.parent.mkdir(parents=True)
@@ -495,6 +498,10 @@ class RenderManifestResumeTests(unittest.TestCase):
                 "metadata_sha256": sha256(metadata_path),
             }
             record = {
+                "implementation": {
+                    "path": str(script),
+                    "sha256": sha256(script),
+                },
                 "scene_id": "scene",
                 "render_scope": "full_animation",
                 "metadata_path": str(metadata_path),
@@ -520,8 +527,24 @@ class RenderManifestResumeTests(unittest.TestCase):
                     record,
                     False,
                     3,
+                    script,
                 )
             )
+            script.write_text("changed renderer", encoding="utf-8")
+            self.assertFalse(
+                reusable_generic_record(
+                    root,
+                    output,
+                    sample,
+                    metadata_path,
+                    metadata,
+                    record,
+                    False,
+                    3,
+                    script,
+                )
+            )
+            script.write_text("renderer", encoding="utf-8")
             masks[-1].unlink()
             self.assertFalse(
                 reusable_generic_record(
@@ -533,6 +556,7 @@ class RenderManifestResumeTests(unittest.TestCase):
                     record,
                     False,
                     3,
+                    script,
                 )
             )
 

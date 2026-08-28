@@ -193,6 +193,7 @@ def reusable_render_record(
     record: dict[str, Any],
     first_frame_only: bool,
     gpu: int,
+    script: Path,
 ) -> bool:
     render = metadata["visualization"]["render"]
     frame_dir = project_path(root, render["inspection_frame_dir"])
@@ -221,6 +222,8 @@ def reusable_render_record(
     )
     reusable = (
         str(record.get("scene_id")) == str(sample["scene_id"])
+        and record.get("implementation")
+        == {"path": str(script), "sha256": sha256(script)}
         and record.get("render_scope") == expected_scope
         and project_path(root, str(record.get("metadata_path"))) == metadata_path
         and str(record.get("metadata_sha256")) == sha256(metadata_path)
@@ -308,6 +311,7 @@ def worker(
             record,
             first_frame_only,
             gpu,
+            Path(script),
         ):
             if not record.get("egl_device_verified"):
                 record["egl_device_verified"] = True
@@ -331,7 +335,17 @@ def worker(
         if Path(output_root) not in video_path.parents:
             raise ValueError("video must remain below the render output root")
         video_path.unlink(missing_ok=True)
-    command = [blender, "-b", "--python", script, "--", "--metadata", str(metadata_path)]
+    command = [
+        blender,
+        "-b",
+        "--python",
+        script,
+        "--",
+        "--metadata",
+        str(metadata_path),
+        "--root",
+        str(project_root),
+    ]
     if first_frame_only:
         command.append("--first-frame-only")
     started = time.perf_counter()
@@ -369,6 +383,7 @@ def worker(
             record,
             first_frame_only,
             gpu,
+            Path(script),
         )
     )
     return {
@@ -518,7 +533,9 @@ def main() -> None:
         raise ValueError("render result manifest must remain below the output root")
     selector = build_egl_device_selector(root)
     selector_path = root / str(selector["binary_path"])
-    script = root / "tools/render_pybullet_rigid.py"
+    script = PROJECT_ROOT / "tools/render_pybullet_rigid.py"
+    if not script.is_file():
+        raise FileNotFoundError(script)
     started = time.perf_counter()
     blender = project_path(root, args.blender)
     blender.relative_to(root)
