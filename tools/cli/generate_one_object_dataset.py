@@ -255,6 +255,29 @@ def render_sweep(
             resume=resume,
         )
         expected = counts["generic"] // 13 * derived_per_group
+        base_expected = counts["generic"] // 13
+        base_result = bound_root / "base_render_manifest.json"
+        base_command = [
+            sys.executable,
+            "-m",
+            "tools.rendering.render_pybullet_manifest",
+            "--root",
+            str(root),
+            "--manifest",
+            str(bound),
+            "--sweep-kind",
+            "base",
+            "--result-manifest",
+            str(base_result),
+            "--workers",
+            str(workers),
+            "--gpus",
+            gpus,
+        ]
+        if resume:
+            base_command.append("--resume")
+        run(base_command, root)
+        verify_render_manifest(base_result, base_expected)
         result = bound_root / "derived_render_manifest.json"
         command = [
             sys.executable,
@@ -286,6 +309,29 @@ def render_sweep(
         if count % 13:
             raise ValueError(f"{branch} sweep branch is not composed of complete groups")
         expected = count // 13 * derived_per_group
+        base_expected = count // 13
+        base_result = layout.sweep_render / branch / "base_render_manifest.json"
+        base_command = [
+            sys.executable,
+            "-m",
+            "tools.rendering.render_asset_proxy_manifest",
+            "--root",
+            str(root),
+            "--renderer",
+            str(backend["renderer_id"]),
+            "--manifest",
+            str(layout.sweep_render / branch / "base_render_input_manifest.json"),
+            "--result-manifest",
+            str(base_result),
+            "--workers",
+            str(workers),
+            "--gpus",
+            gpus,
+        ]
+        if resume:
+            base_command.append("--resume")
+        run(base_command, root)
+        verify_render_manifest(base_result, base_expected)
         result = layout.sweep_render / branch / "derived_render_manifest.json"
         command = [
             sys.executable,
@@ -333,13 +379,14 @@ def release_specs(
     sweep_specs = []
     for schema in sorted(selected):
         family, branch = definitions[schema]
-        base_root = layout.base_render / branch
         sweep_root = (
             layout.sweep_render / branch / "bound"
             if schema == GENERIC_SCHEMA
             else layout.sweep_render / branch
         )
-        base_specs.append(PipelineSpec(family, schema, root, base_root, base_root / "masks"))
+        base_specs.append(
+            PipelineSpec(family, schema, root, sweep_root, sweep_root / "masks")
+        )
         sweep_specs.append(
             PipelineSpec(family, schema, root, sweep_root, sweep_root / "masks")
         )

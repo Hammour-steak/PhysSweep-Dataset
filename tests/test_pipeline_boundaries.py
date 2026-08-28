@@ -184,6 +184,55 @@ class PipelineBoundaryTest(unittest.TestCase):
         self.assertEqual(base.call_args.kwargs["pipeline_specs"], [base_spec])
         self.assertEqual(sweep.call_args.kwargs["pipeline_specs"], [sweep_spec])
 
+    def test_generator_publishes_sweep_baselines_as_canonical_bases(self):
+        module = load_module(
+            "dataset_sweep_baseline_entry",
+            ROOT / "tools/cli/generate_one_object_dataset.py",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            release = root / "datasets/work/release"
+            metadata = release / "metadata.json"
+            metadata.parent.mkdir(parents=True)
+            metadata.write_text(
+                json.dumps(
+                    {
+                        "records": [
+                            {
+                                "source_schema_version": "physweep_pybullet_rigid_metadata_v1"
+                            },
+                            {"source_schema_version": "asset_schema"},
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (release / "manifest.json").write_text(
+                json.dumps({"metadata_manifest": str(metadata.relative_to(root))}),
+                encoding="utf-8",
+            )
+            layout = module.generation_layout(
+                root, "work", Path("outputs/work/one_object")
+            )
+            with patch.object(
+                module,
+                "load_specialized_backends",
+                return_value=[
+                    {
+                        "source_schema_version": "asset_schema",
+                        "sweep_branch": "asset",
+                    }
+                ],
+            ):
+                base_specs, sweep_specs = module.release_specs(root, layout)
+        base_roots = {spec.name: spec.render_root for spec in base_specs}
+        sweep_roots = {spec.name: spec.render_root for spec in sweep_specs}
+        self.assertEqual(base_roots, sweep_roots)
+        self.assertEqual(
+            base_roots["generic"], layout.sweep_render / "generic" / "bound"
+        )
+        self.assertEqual(base_roots["asset"], layout.sweep_render / "asset")
+
     def test_bound_manifest_bootstraps_scene_export_without_published_dataset(self):
         module = load_module(
             "scene_export_entry",
