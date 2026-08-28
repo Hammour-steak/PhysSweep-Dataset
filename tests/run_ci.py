@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 EXTERNAL_ASSET_MODULES = {
     "test_asset_ingestion_contract",
+    "test_billiards_scene",
     "test_decoupled_sampling_matrix",
     "test_physical_proxy_catalog",
     "test_pybullet_sampler",
