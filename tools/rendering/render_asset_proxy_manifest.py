@@ -74,6 +74,30 @@ def render_samples_are_reusable(
     ) == int(declared)
 
 
+def expected_instance_mask_directory(
+    root: Path,
+    output: Path,
+    source_record: Mapping[str, Any],
+    mask_contract: Mapping[str, Any],
+    *,
+    renderer_requires_masks: bool,
+) -> Path:
+    """Resolve the mask destination used by the current render invocation."""
+    if renderer_requires_masks and isinstance(
+        source_record.get("render_output"), dict
+    ):
+        path = output / "masks" / str(source_record["scene_id"])
+    else:
+        declared = mask_contract.get("path")
+        if not isinstance(declared, str) or not declared:
+            raise ValueError("instance-mask contract has no output path")
+        path = project_path(root, declared)
+    path = path.resolve()
+    if root.resolve() not in path.parents:
+        raise ValueError("instance-mask output must remain below the project root")
+    return path
+
+
 def instance_masks_are_reusable(
     root: Path,
     render_record: dict[str, Any],
@@ -364,14 +388,15 @@ def reusable_render_record(
             or mask_contract.get("filename_pattern") != "frame_{frame:04d}.png"
         ):
             return False
-        declared_mask_path = mask_contract.get("path")
-        if isinstance(declared_mask_path, str) and declared_mask_path:
-            expected_mask_directory = project_path(root, declared_mask_path)
-        elif renderer_requires_masks:
-            expected_mask_directory = output / "masks" / str(source_record["scene_id"])
-        else:
-            return False
-        if root.resolve() not in expected_mask_directory.parents:
+        try:
+            expected_mask_directory = expected_instance_mask_directory(
+                root,
+                output,
+                source_record,
+                mask_contract,
+                renderer_requires_masks=renderer_requires_masks,
+            )
+        except ValueError:
             return False
         expected_mask_samples = max(
             8, min(int(metadata["render"]["samples"]), 16)

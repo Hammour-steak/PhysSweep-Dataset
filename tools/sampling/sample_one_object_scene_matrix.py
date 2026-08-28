@@ -33,6 +33,7 @@ from tools.physics.specialized_backend_registry import load_specialized_backends
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 MATRIX_PATH = PROJECT_ROOT / "configs/one_object_sampling_matrix.json"
+DEFAULT_MATRIX_COUNT = 3200
 
 
 def matrix_dependency_paths(
@@ -979,7 +980,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--matrix", type=Path, default=MATRIX_PATH)
     parser.add_argument("--output-dataset", required=True)
-    parser.add_argument("--count", type=int, default=20)
+    parser.add_argument(
+        "--count",
+        type=int,
+        default=DEFAULT_MATRIX_COUNT,
+        help="Base-scene count satisfying the sampling matrix (production: 3200).",
+    )
     parser.add_argument("--seed", type=int, default=20260722)
     parser.add_argument("--resolution", nargs=2, type=int)
     parser.add_argument("--samples", type=int)

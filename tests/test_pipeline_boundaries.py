@@ -105,6 +105,22 @@ class PipelineBoundaryTest(unittest.TestCase):
         )
         self.assertTrue(plan["layout"]["canonical_release"].endswith("one_object"))
 
+    def test_matrix_sampler_defaults_to_the_formal_release_size(self):
+        tree = ast.parse(
+            (ROOT / "tools/sampling/sample_one_object_scene_matrix.py").read_text(
+                encoding="utf-8"
+            )
+        )
+        defaults = {
+            node.targets[0].id: ast.literal_eval(node.value)
+            for node in tree.body
+            if isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+            and node.targets[0].id == "DEFAULT_MATRIX_COUNT"
+        }
+        self.assertEqual(defaults, {"DEFAULT_MATRIX_COUNT": 3200})
+
     def test_dataset_entry_propagates_the_one_object_boundary(self):
         module = load_module(
             "dataset_boundary_entry",
