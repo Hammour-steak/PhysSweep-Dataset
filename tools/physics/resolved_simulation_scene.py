@@ -10,6 +10,7 @@ from typing import Any
 
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
+from tools.core.rigid_geometry import finite_vector as _finite_vector
 
 
 RESOLVED_SCENE_VERSION = "physweep_resolved_simulation_scene_v1"
@@ -40,13 +41,6 @@ def _load_pinned_json(root: Path, binding: dict[str, Any], label: str) -> dict[s
     if expected is not None and sha256(path) != str(expected):
         raise ValueError(f"{label} hash mismatch: {path}")
     return load_json(path)
-
-
-def _finite_vector(value: Any, length: int, label: str) -> list[float]:
-    result = [float(item) for item in value]
-    if len(result) != length or not all(math.isfinite(item) for item in result):
-        raise ValueError(f"invalid {label}: {value}")
-    return result
 
 
 def _finite_quaternion(value: Any, label: str) -> list[float]:

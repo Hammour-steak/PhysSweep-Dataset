@@ -7,6 +7,26 @@ import math
 from typing import Any
 
 
+def finite_vector(value: Any, length: int, label: str) -> list[float]:
+    """Return a fixed-length vector whose components are all finite."""
+
+    result = [float(item) for item in value]
+    if len(result) != length or not all(math.isfinite(item) for item in result):
+        raise ValueError(f"invalid {label}: {value}")
+    return result
+
+
+def positive_vector(value: Any, length: int, label: str) -> list[float]:
+    """Return a fixed-length vector whose components are strictly positive."""
+
+    result = [float(item) for item in value]
+    if len(result) != length or not all(
+        math.isfinite(item) and item > 0.0 for item in result
+    ):
+        raise ValueError(f"invalid {label}: {value}")
+    return result
+
+
 def clamp(value: float, lower: float, upper: float) -> float:
     return max(lower, min(upper, float(value)))
 

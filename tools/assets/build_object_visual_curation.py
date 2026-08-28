@@ -15,6 +15,7 @@ from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import read_jsonl
 from tools.core.json_io import write_json
+from tools.core.paths import join_project_path as resolved
 from tools.assets.physical_proxy_catalog import load_catalog, records_by_id
 from tools.assets.static_support_proxy import record_sha256
 
@@ -56,10 +57,6 @@ def parse_args() -> argparse.Namespace:
         default="physweep_object_visual_curation_v8",
     )
     return parser.parse_args()
-
-
-def resolved(root: Path, path: Path) -> Path:
-    return path if path.is_absolute() else root / path
 
 
 def validate_proxy_evidence_sources(

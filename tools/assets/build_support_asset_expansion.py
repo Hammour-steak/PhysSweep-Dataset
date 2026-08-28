@@ -13,14 +13,11 @@ from typing import Any
 
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_sorted as write_json
+from tools.core.paths import join_project_path as resolved
 from tools.assets.build_asset_proxy_registry import validate_record
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
-def resolved(root: Path, path: Path) -> Path:
-    return path if path.is_absolute() else root / path
 
 
 def build_support_record(

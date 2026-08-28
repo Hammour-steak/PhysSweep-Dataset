@@ -7,32 +7,18 @@ import argparse
 import json
 import re
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
+from tools.core.process import run_checked as run
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_SUPPORT_ID = "sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d"
 DEFAULT_PROFILES = ["vertical_drop", "resting_push", "diagonal_push", "edge_exit"]
-
-
-def run(command: list[str], root: Path) -> None:
-    completed = subprocess.run(
-        command,
-        cwd=root,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        check=False,
-    )
-    if completed.returncode:
-        tail = "\n".join(completed.stdout.splitlines()[-40:])
-        raise RuntimeError(f"command failed: {' '.join(command)}\n{tail}")
 
 
 def parse_args() -> argparse.Namespace:

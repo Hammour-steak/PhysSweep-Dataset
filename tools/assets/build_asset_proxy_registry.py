@@ -12,16 +12,10 @@ from typing import Any
 
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_sorted as write_json
+from tools.core.rigid_geometry import positive_vector as _positive_vector
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
-def _positive_vector(value: Any, length: int, label: str) -> list[float]:
-    result = [float(item) for item in value]
-    if len(result) != length or min(result) <= 0.0:
-        raise ValueError(f"invalid {label}: {value}")
-    return result
 
 
 def validate_collider(collider: dict[str, Any], asset_id: str) -> None:

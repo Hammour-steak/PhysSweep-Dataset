@@ -6,11 +6,17 @@ from pathlib import Path
 from typing import Any
 
 
+def join_project_path(root: Path, value: str | Path) -> Path:
+    """Join a project-relative path without canonicalizing either component."""
+
+    path = Path(value)
+    return path if path.is_absolute() else root / path
+
+
 def resolve_project_path(root: Path, value: str | Path) -> Path:
     """Resolve an absolute path or a path relative to ``root``."""
 
-    path = Path(value)
-    return (path if path.is_absolute() else root / path).resolve()
+    return join_project_path(root, value).resolve()
 
 
 def resolve_project_path_within_root(root: Path, value: str | Path) -> Path:

@@ -13,6 +13,7 @@ from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import read_jsonl
 from tools.core.json_io import write_json_atomic_sorted
+from tools.core.rigid_geometry import positive_vector as _positive_vector
 
 
 # Kept as a public alias for provenance-frozen catalog tools.
@@ -48,13 +49,6 @@ def write_jsonl(path: Path, records: Iterable[dict[str, Any]]) -> None:
                 json.dumps(record, ensure_ascii=True, sort_keys=True) + "\n"
             )
     temporary.replace(path)
-
-
-def _positive_vector(value: Any, length: int, label: str) -> list[float]:
-    result = [float(item) for item in value]
-    if len(result) != length or min(result) <= 0.0:
-        raise ValueError(f"invalid {label}: {value}")
-    return result
 
 
 def _validate_analytic_proxy(record: dict[str, Any]) -> None:

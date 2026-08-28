@@ -17,6 +17,7 @@ from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic_sorted as write_json
 from tools.core.paths import resolve_project_path as project_path
+from tools.core.rigid_geometry import finite_vector as _finite_vector
 from tools.core.sweep_values import round_sweep_value, sweep_values
 from tools.physics.physics_invariants import quaternion_matrix_wxyz
 
@@ -35,13 +36,6 @@ def project_relative(root: Path, path: Path) -> str:
         return path.resolve().relative_to(root.resolve()).as_posix()
     except ValueError as exc:
         raise ValueError(f"candidate path is outside the project: {path}") from exc
-
-
-def _finite_vector(value: Any, length: int, label: str) -> list[float]:
-    result = [float(item) for item in value]
-    if len(result) != length or not all(math.isfinite(item) for item in result):
-        raise ValueError(f"invalid {label}: {value}")
-    return result
 
 
 def _positive(value: Any, label: str) -> float:
