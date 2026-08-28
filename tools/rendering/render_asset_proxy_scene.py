@@ -24,6 +24,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
 from tools.rendering.render_asset_proxy_reviews import (  # pylint: disable=wrong-import-position
     clear_scene,
     import_meshes,
@@ -37,14 +40,12 @@ from tools.assets.static_support_proxy import blender_import_static_support_visu
 from tools.rendering.video_encoding import configure_h264_output, normalize_h264_container
 from tools.dataset_contract.trajectory_contract import adapter_trajectory_view
 from tools.rendering.appearance_adaptation import apply_material_lightness_adaptation
-from tools.rendering.camera_geometry import blocker_safe_seeded_view_order, seeded_view_order
+from tools.core.camera_geometry import blocker_safe_seeded_view_order, seeded_view_order
 from tools.rendering.specialized_render_evidence import (
     render_instance_mask_record,
     render_instance_masks,
     render_implementation,
 )
-
-
 
 
 def configure_project_root(root: Path) -> Path:
@@ -63,23 +64,6 @@ def blender_args() -> argparse.Namespace:
     parser.add_argument("--mask-only", action="store_true")
     parser.add_argument("--instance-mask-dir", type=Path)
     return parser.parse_args(values)
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def resolve(value: str) -> Path:

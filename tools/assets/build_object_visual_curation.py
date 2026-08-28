@@ -5,13 +5,15 @@ from __future__ import annotations
 
 import argparse
 import copy
-import hashlib
 import json
 import math
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
 from tools.assets.physical_proxy_catalog import load_catalog, records_by_id
 from tools.assets.static_support_proxy import record_sha256
 
@@ -57,23 +59,6 @@ def parse_args() -> argparse.Namespace:
 
 def resolved(root: Path, path: Path) -> Path:
     return path if path.is_absolute() else root / path
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:

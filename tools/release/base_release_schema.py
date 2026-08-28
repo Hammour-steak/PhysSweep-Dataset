@@ -19,6 +19,7 @@ from typing import Any, Mapping
 import numpy as np
 from PIL import Image
 
+from tools.core.json_io import write_json_atomic_sorted as write_json
 from tools.release.audit_release_provenance import sha256
 
 BASE_SAMPLE_SCHEMA = "physweep_base_sample_v11"
@@ -143,26 +144,6 @@ def safe_path_component(value: Any, label: str) -> str:
     ):
         raise ValueError(f"invalid {label}: {component!r}")
     return component
-
-
-def write_json(path: Path, value: Any) -> None:
-    """Write deterministic JSON atomically."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}-{time.time_ns()}")
-    try:
-        temporary.write_text(
-            json.dumps(
-                value,
-                indent=2,
-                ensure_ascii=True,
-                sort_keys=True,
-            )
-            + "\n",
-            encoding="utf-8",
-        )
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
 
 
 def write_content_addressed_json(root: Path, directory: str, value: Any) -> tuple[str, str]:

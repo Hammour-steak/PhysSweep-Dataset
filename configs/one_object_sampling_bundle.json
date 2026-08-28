@@ -22,7 +22,7 @@
   "implementation": {
     "sampler": "tools/sampling/sample_pybullet_base.py",
     "compiler": "tools/assets/scene_kit_compiler.py",
-    "geometry": "tools/physics/rigid_geometry.py",
+    "geometry": "tools/core/rigid_geometry.py",
     "inclined_support": "tools/physics/inclined_support.py",
     "support_structure": "tools/physics/support_structure.py",
     "time_step": "tools/physics/physics_time_step.py",
@@ -37,7 +37,7 @@
     "visual_preflight": "tools/assets/audit_object_visual_candidates.py",
     "visual_repair": "tools/assets/repair_physassets_visuals.py",
     "visual_curation": "tools/assets/build_object_visual_curation.py",
-    "camera_geometry": "tools/rendering/camera_geometry.py",
+    "camera_geometry": "tools/core/camera_geometry.py",
     "environment_collision": "tools/assets/environment_collision.py",
     "motion_rule_package": "tools/motion_rules/one_object/__init__.py",
     "motion_rule_contracts": "tools/motion_rules/one_object/contracts.py",

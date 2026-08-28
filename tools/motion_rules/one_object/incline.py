@@ -6,7 +6,7 @@ import math
 
 import numpy as np
 
-from tools.physics.rigid_geometry import clamp, cross, pose_on_support, slope_tangent_velocity
+from tools.core.rigid_geometry import clamp, cross, pose_on_support, slope_tangent_velocity
 
 from .common import (
     climb_speed_for_distance,

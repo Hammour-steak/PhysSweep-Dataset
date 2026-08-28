@@ -9,13 +9,14 @@ from pathlib import Path
 
 import numpy as np
 
+from tools.core.hashing import sha256_file as sha256
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 from tools.dataset_contract.point_trajectory import (
     POINT_COUNT,
     POINT_TRAJECTORY_SCHEMA,
     build_point_trajectory,
     save_point_trajectory,
-    sha256,
 )
 
 

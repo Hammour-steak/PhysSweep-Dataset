@@ -10,16 +10,10 @@ import math
 from pathlib import Path
 from typing import Any
 
+from tools.core.hashing import sha256_file as sha256
+
 
 BINDING_VERSION = "physweep_static_support_binding_v1"
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def record_sha256(record: dict[str, Any]) -> str:

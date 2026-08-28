@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import itertools
-import json
 import math
 import sys
 from datetime import datetime, timezone
@@ -16,6 +15,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
 from tools.rendering import render_sketchfab_background_compositions as comp  # noqa: E402
 
 
@@ -26,18 +27,6 @@ def blender_argv() -> list[str]:
     if "--" in sys.argv:
         return sys.argv[sys.argv.index("--") + 1 :]
     return sys.argv[1:]
-
-
-def load_json(path: Path) -> Any:
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def write_json(path: Path, data: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=True)
-        f.write("\n")
 
 
 def clear_scene() -> None:

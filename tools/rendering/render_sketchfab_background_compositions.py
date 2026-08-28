@@ -12,6 +12,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
 from tools.physics.support_structure import table_structure_boxes
 from tools.physics.inclined_support import inclined_plane_geometry
 from tools.rendering.lighting_quality import floor_glare_guard
@@ -51,18 +53,6 @@ def blender_argv() -> list[str]:
     if "--" in sys.argv:
         return sys.argv[sys.argv.index("--") + 1 :]
     return sys.argv[1:]
-
-
-def load_json(path: Path) -> Any:
-    with path.open("r", encoding="utf-8") as f:
-        return json.load(f)
-
-
-def write_json(path: Path, data: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=True)
-        f.write("\n")
 
 
 def merged_shadow_lighting_rule(metadata: dict[str, Any] | None = None) -> dict[str, Any]:

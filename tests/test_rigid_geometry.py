@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-from tools.physics.rigid_geometry import (  # noqa: E402
+from tools.core.rigid_geometry import (  # noqa: E402
     build_support_geometry,
     pose_on_support,
     support_surface_height_m,

@@ -6,20 +6,11 @@ from __future__ import annotations
 import argparse
 import collections
 import copy
-import json
 from pathlib import Path
 from typing import Any
 
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8"
-    )
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
 
 
 def counts(records: list[dict[str, Any]]) -> dict[str, Any]:

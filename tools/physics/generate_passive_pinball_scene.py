@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import copy
-import hashlib
 import json
 import math
 import random
@@ -14,6 +13,10 @@ from typing import Any
 
 import numpy as np
 
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json_atomic as write_json
+from tools.core.paths import resolve_project_path as project_path
 from tools.dataset_contract.immutable_scene_contract import freeze_metadata, write_simulation_record
 from tools.dataset_contract.object_identity_contract import attach_object_identity
 
@@ -23,33 +26,6 @@ SPECIALIZED_REGISTRY = Path("configs/specialized_scene_backends.json")
 RENDERER = Path("tools/rendering/render_passive_pinball_scene.py")
 SCHEMA_VERSION = "physweep_passive_pinball_scene_v1"
 AUDIT_VERSION = "physweep_passive_pinball_audit_v1"
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(
-        json.dumps(value, indent=2, ensure_ascii=True) + "\n",
-        encoding="utf-8",
-    )
-    temporary.replace(path)
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def project_path(root: Path, value: str | Path) -> Path:
-    path = Path(value)
-    return path.resolve() if path.is_absolute() else (root / path).resolve()
 
 
 def project_relative(root: Path, path: Path) -> str:

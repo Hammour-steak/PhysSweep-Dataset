@@ -4,11 +4,14 @@
 from __future__ import annotations
 
 import json
-import hashlib
 import math
 from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable
+
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json_atomic_sorted as write_json
 
 
 CATALOG_VERSION = "physweep_physical_proxy_catalog_v1"
@@ -31,34 +34,12 @@ REPRESENTATIONS = {
 QUALITY_GRADES = {"A", "B", "C", "reject"}
 
 
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return [
         json.loads(line)
         for line in path.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(
-        json.dumps(value, indent=2, ensure_ascii=True, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-    temporary.replace(path)
 
 
 def write_jsonl(path: Path, records: Iterable[dict[str, Any]]) -> None:

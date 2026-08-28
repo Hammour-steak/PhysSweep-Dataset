@@ -10,6 +10,7 @@ Asset download, conversion, and proxy-building tools additionally require
 ## Package Layout
 
 - `assets`: acquisition, curation, proxies, and static scene assets.
+- `core`: object-count-neutral I/O, hashing, path, rigid, and camera geometry.
 - `sampling`: base selection, sweep derivation, and deterministic resampling.
 - `motion_rules/one_object`: 1obj rule contracts and dispatch; a future 2obj
   registry belongs in a parallel `motion_rules/two_object` package.

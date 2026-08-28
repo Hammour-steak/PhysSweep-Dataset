@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 from typing import Any
 
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+from tools.core.paths import resolve_project_path as project_path
 from tools.assets.physical_proxy_catalog import load_catalog, records_by_id
 from tools.assets.scene_kit_compiler import validate_registry_counts
 
@@ -17,23 +19,6 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 CONTRACT_PATH = Path("configs/asset_ingestion_contract.json")
 TEXT_SUFFIXES = {".json", ".md", ".py", ".sh"}
 FORBIDDEN_ACTIVE_REFERENCE = "archive" + "/config_history"
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def project_path(root: Path, value: str | Path) -> Path:
-    path = Path(value)
-    return path.resolve() if path.is_absolute() else (root / path).resolve()
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def audit_active_references(root: Path, excluded: set[Path] | None = None) -> None:

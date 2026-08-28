@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ACTIVE_GENERATORS = (
-    "physics/rigid_geometry.py",
+    "core/rigid_geometry.py",
     "sampling/sample_pybullet_base.py",
     "physics/rigid_trajectory.py",
     "physics/simulate_pybullet_rigid.py",

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import math
 from pathlib import Path
 from typing import Any
@@ -13,22 +12,13 @@ import trimesh
 from PIL import Image, ImageDraw
 from scipy import ndimage
 
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_PROFILES = PROJECT_ROOT / "configs/scene_mesh_profiles.json"
 DEFAULT_OUTPUT = PROJECT_ROOT / "artifacts/environment_action_surface_audit_v1"
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(value, indent=2, ensure_ascii=True) + "\n",
-        encoding="utf-8",
-    )
 
 
 def gltf_to_blender(values: np.ndarray) -> np.ndarray:

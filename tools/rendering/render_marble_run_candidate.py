@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 from typing import Any
@@ -17,9 +16,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from tools.core.json_io import read_json as load_json
+from tools.core.paths import resolve_project_path as project_path
 from tools.physics.generate_marble_run_candidate import _validate_metadata_files
-
-
 
 
 def blender_args() -> argparse.Namespace:
@@ -32,15 +31,6 @@ def blender_args() -> argparse.Namespace:
     parser.add_argument("--frames", default="0,12,24,36,48,60,72")
     parser.add_argument("--video", type=Path)
     return parser.parse_args(values)
-
-
-def project_path(root: Path, value: str | Path) -> Path:
-    path = Path(value)
-    return path.resolve() if path.is_absolute() else (root / path).resolve()
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def clear_scene() -> None:

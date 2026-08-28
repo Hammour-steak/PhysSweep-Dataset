@@ -10,20 +10,11 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json_sorted as write_json
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="\n") as destination:
-        destination.write(
-            json.dumps(value, indent=2, ensure_ascii=True, sort_keys=True) + "\n"
-        )
 
 
 def _positive_vector(value: Any, length: int, label: str) -> list[float]:

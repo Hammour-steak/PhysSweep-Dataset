@@ -14,6 +14,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
 from tools.assets.repair_physassets_visuals import (
     clear_scene,
     imported_meshes,
@@ -35,17 +37,6 @@ def blender_args() -> argparse.Namespace:
         default=Path("configs/object_visual_preflight.json"),
     )
     return parser.parse_args(values)
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8"
-    )
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:

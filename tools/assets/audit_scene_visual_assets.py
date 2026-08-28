@@ -4,12 +4,13 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import sys
 from pathlib import Path
 from typing import Any
+
+from tools.core.hashing import sha256_file as sha256
 
 
 DEFAULT_IDS = (
@@ -47,14 +48,6 @@ def blender_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--ids", nargs="*", default=list(DEFAULT_IDS))
     return parser.parse_args(args)
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def reset_scene() -> None:

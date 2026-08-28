@@ -11,18 +11,12 @@ from typing import Any
 
 import pybullet as pb
 
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DT = 1.0 / 240.0
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
 
 
 def quaternion(euler_degrees: list[float]) -> tuple[float, float, float, float]:

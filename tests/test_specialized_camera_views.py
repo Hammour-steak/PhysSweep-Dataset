@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-from tools.rendering.camera_geometry import (  # noqa: E402
+from tools.core.camera_geometry import (  # noqa: E402
     blocker_safe_seeded_view_order,
     seeded_view_order,
 )

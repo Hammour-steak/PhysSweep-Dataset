@@ -18,6 +18,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from tools.core.json_io import read_json as load_json
 from tools.assets.inspect_scene_asset_components import inspection_transform  # noqa: E402
 from tools.rendering.render_asset_proxy_reviews import bounds, clear_scene, import_meshes  # noqa: E402
 
@@ -33,10 +34,6 @@ def blender_args() -> argparse.Namespace:
     parser.add_argument("--normal-z-min", type=float, default=0.94)
     parser.add_argument("--cluster-tolerance-m", type=float, default=0.008)
     return parser.parse_args(values)
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def triangle_area(a: Any, b: Any, c: Any) -> float:

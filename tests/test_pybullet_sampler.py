@@ -29,7 +29,7 @@ from tools.sampling.sample_pybullet_base import (  # noqa: E402
     support_allowed,
 )
 from tools.rendering.bind_pybullet_visuals import frozen_environment_binding  # noqa: E402
-from tools.physics.rigid_geometry import build_support_geometry  # noqa: E402
+from tools.core.rigid_geometry import build_support_geometry  # noqa: E402
 
 
 class PyBulletSamplerTests(unittest.TestCase):

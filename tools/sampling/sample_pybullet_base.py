@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import copy
-import hashlib
 import json
 import math
 import random
@@ -16,7 +15,10 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
-from tools.physics.rigid_geometry import (
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
+from tools.core.rigid_geometry import (
     build_support_geometry,
     clamp,
     cross,
@@ -29,7 +31,7 @@ from tools.assets.scene_kit_compiler import load_sampling_bundle
 from tools.physics.physics_time_step import simulation_hz_for_geometry
 from tools.assets.static_support_proxy import compile_static_support_binding
 from tools.assets.environment_collision import compile_environment_binding
-from tools.rendering.camera_geometry import camera_corridor_admits_inclined_surface
+from tools.core.camera_geometry import camera_corridor_admits_inclined_surface
 from tools.motion_rules.one_object import MotionDerivationContext, MotionPlan, derive_motion
 from tools.motion_rules.one_object.ballistic import (
     bounce_observation_contract as grouped_bounce_observation_contract,
@@ -45,25 +47,8 @@ class IncompatibleSupportVisual(ValueError):
     """The selected visual support cannot safely host the sampled object."""
 
 
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
 def load_active_rules(root: Path = PROJECT_ROOT) -> dict[str, Any]:
     return load_sampling_bundle(root, root / BUNDLE_PATH.relative_to(PROJECT_ROOT))
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def sampling_manifest_rule_sources(

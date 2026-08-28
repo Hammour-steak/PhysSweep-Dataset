@@ -4,46 +4,19 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
-import json
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
+
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
+from tools.core.paths import resolve_project_path_within_root as project_path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 AXES = ("mass_kg", "contact_friction", "contact_restitution")
 DERIVED_LEVELS = (0, 1, 3, 4)
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(value, indent=2, ensure_ascii=True) + "\n",
-        encoding="utf-8",
-    )
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def project_path(root: Path, value: str | Path) -> Path:
-    path = Path(value)
-    resolved = (path if path.is_absolute() else root / path).resolve()
-    try:
-        resolved.relative_to(root)
-    except ValueError as exc:
-        raise ValueError(f"path is outside project root: {resolved}") from exc
-    return resolved
 
 
 def relative_path(root: Path, path: Path) -> str:

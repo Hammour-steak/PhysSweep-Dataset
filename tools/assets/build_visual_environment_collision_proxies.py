@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import sys
 from pathlib import Path
@@ -14,6 +13,10 @@ import bpy
 import bmesh
 import mathutils
 import numpy as np
+
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
 
 if "bool" not in np.__dict__:
     np.bool = np.bool_  # type: ignore[attr-defined]
@@ -40,25 +43,6 @@ def blender_args() -> argparse.Namespace:
     )
     parser.add_argument("--maximum-face-count", type=int, default=80000)
     return parser.parse_args(values)
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8"
-    )
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def project_relative(root: Path, path: Path) -> str:

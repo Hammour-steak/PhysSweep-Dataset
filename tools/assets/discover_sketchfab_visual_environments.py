@@ -17,17 +17,14 @@ from typing import Any
 
 from PIL import Image, ImageDraw, ImageFont
 
+from tools.core.json_io import write_json
+
 
 API_ROOT = "https://api.sketchfab.com/v3"
 
 
 def read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
 
 
 def request_bytes(url: str, *, attempts: int = 5) -> bytes:

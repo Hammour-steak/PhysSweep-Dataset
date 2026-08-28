@@ -5,28 +5,18 @@ from __future__ import annotations
 
 import argparse
 import copy
-import hashlib
 import json
 import math
 from pathlib import Path
 from typing import Any
 
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
 from tools.dataset_contract.object_identity_contract import attach_object_identity
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = PROJECT_ROOT / "configs/physics_sweep.json"
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(value, indent=2, ensure_ascii=True, sort_keys=False) + "\n",
-        encoding="utf-8",
-    )
 
 
 def validate_output_dir(root: Path, output_dir: Path) -> None:
@@ -40,14 +30,6 @@ def validate_output_dir(root: Path, output_dir: Path) -> None:
         raise FileExistsError(
             f"sweep output is not empty: {output_dir}; use a clean output directory"
         )
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def _objects(metadata: dict[str, Any]) -> list[dict[str, Any]]:

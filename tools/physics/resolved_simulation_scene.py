@@ -4,11 +4,12 @@
 from __future__ import annotations
 
 import copy
-import hashlib
-import json
 import math
 from pathlib import Path
 from typing import Any
+
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
 
 
 RESOLVED_SCENE_VERSION = "physweep_resolved_simulation_scene_v1"
@@ -24,18 +25,6 @@ SUPPORTED_SCHEMAS = {
     PASSIVE_PINBALL_SCHEMA,
     MARBLE_RUN_SCHEMA,
 }
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def _project_path(root: Path, value: str) -> Path:

@@ -13,6 +13,8 @@ from typing import Any
 
 import numpy as np
 
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import write_json_atomic as write_json
 from tools.physics.generate_billiards_scene import simulate as simulate_billiards
 from tools.physics.generate_marble_run_scene import simulate as simulate_marble_run
 from tools.physics.generate_passive_pinball_scene import simulate as simulate_passive_pinball
@@ -22,25 +24,6 @@ from tools.physics.simulate_pybullet_rigid import simulate as simulate_generic_r
 
 DISPATCH_RECORD_VERSION = "physweep_dispatched_simulation_record_v1"
 TRAJECTORY_LAYOUT_VERSION = "physweep_object_trajectory_v2"
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(
-        f".{path.name}.tmp-{os.getpid()}-{time.time_ns()}"
-    )
-    try:
-        temporary.write_text(
-            json.dumps(value, indent=2, ensure_ascii=True) + "\n",
-            encoding="utf-8",
-        )
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
 
 
 def write_npz(path: Path, **arrays: np.ndarray) -> None:
@@ -53,14 +36,6 @@ def write_npz(path: Path, **arrays: np.ndarray) -> None:
         os.replace(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def _xyzw_to_wxyz(values: np.ndarray) -> np.ndarray:

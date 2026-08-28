@@ -17,6 +17,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from tools.core.json_io import read_json as load_json
 from tools.assets.audit_scene_visual_assets import bbox, look_at, setup_stage  # noqa: E402
 from tools.assets.inspect_scene_asset_components import inspection_transform  # noqa: E402
 from tools.rendering.render_asset_proxy_reviews import clear_scene, import_meshes  # noqa: E402
@@ -39,10 +40,6 @@ def blender_args() -> argparse.Namespace:
     parser.add_argument("--asset-id", required=True)
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args(values)
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def make_role_material(name: str, color: tuple[float, float, float, float]) -> Any:

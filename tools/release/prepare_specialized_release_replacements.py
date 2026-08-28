@@ -11,34 +11,18 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json_atomic as write_json
+from tools.core.paths import resolve_project_path as project_path
 from tools.release.specialized_release_extension import (
     load_extension_spec,
     project_root_reference,
     select_replacement_slots,
-    sha256,
     stable_seed,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(
-        json.dumps(value, indent=2, ensure_ascii=True) + "\n",
-        encoding="utf-8",
-    )
-    temporary.replace(path)
-
-
-def project_path(root: Path, value: str | Path) -> Path:
-    path = Path(value)
-    return (path if path.is_absolute() else root / path).resolve()
 
 
 def root_relative(root: Path, path: Path) -> str:

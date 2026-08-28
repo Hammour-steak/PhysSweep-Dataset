@@ -9,12 +9,11 @@ import json
 from pathlib import Path
 from typing import Any
 
+from tools.core.json_io import read_json as load_json
+from tools.core.paths import resolve_project_path as project_path
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def json_bytes(value: Any) -> bytes:
@@ -32,11 +31,6 @@ def write_json(path: Path, value: Any) -> None:
 
 def sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
-
-
-def project_path(root: Path, value: str | Path) -> Path:
-    path = Path(value)
-    return (path if path.is_absolute() else root / path).resolve()
 
 
 def indexed_records(manifest: dict[str, Any], label: str) -> dict[str, dict[str, Any]]:

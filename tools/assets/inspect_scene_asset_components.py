@@ -18,6 +18,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
 from tools.rendering.render_asset_proxy_reviews import (  # pylint: disable=wrong-import-position
     bounds as mesh_list_bounds,
     clear_scene,
@@ -45,15 +47,6 @@ def blender_args() -> argparse.Namespace:
     parser.add_argument("--asset-id", required=True)
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args(values)
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
 
 
 def bounds(obj: Any) -> tuple[list[float], list[float]]:

@@ -4,25 +4,15 @@ from __future__ import annotations
 
 import argparse
 import copy
-import hashlib
 import json
 from pathlib import Path
 from typing import Any
 
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def approved_profile_ids(composition: dict[str, Any]) -> list[str]:

@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import copy
-import hashlib
 import json
 import math
 import random
@@ -17,6 +16,10 @@ from typing import Any
 import numpy as np
 import pybullet as pb
 
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
+from tools.core.paths import resolve_project_path as project_path
 from tools.motion_rules.one_object import asset_motion_group
 from tools.physics.physics_time_step import simulation_hz_for_min_extent
 from tools.physics.physics_invariants import (
@@ -48,14 +51,6 @@ DEFAULT_SEMANTIC_RULES_PATH = Path("configs/asset_semantic_scene_rules.json")
 DEFAULT_COMPOSITION_RULES_PATH = Path("configs/asset_scene_composition.json")
 
 
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def project_path(root: Path, path: Path) -> Path:
-    return path.resolve() if path.is_absolute() else (root / path).resolve()
-
-
 def asset_motion_usefulness(
     backend: dict[str, Any], profile: str
 ) -> dict[str, float]:
@@ -75,19 +70,6 @@ def asset_motion_usefulness(
             backend["quality"]["active_speed_threshold_m_s"]
         ),
     }
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def file_binding(root: Path, path: Path) -> dict[str, str]:

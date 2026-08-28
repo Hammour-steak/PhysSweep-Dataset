@@ -6,7 +6,7 @@ import math
 
 import numpy as np
 
-from tools.physics.rigid_geometry import clamp
+from tools.core.rigid_geometry import clamp
 
 from .common import (
     distance_upper_bound,

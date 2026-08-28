@@ -4,10 +4,13 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
 from typing import Any, Mapping
+
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+from tools.core.paths import resolve_project_path as project_path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -16,23 +19,6 @@ MANIFEST_BINDINGS = (
     ("metadata_manifest", "metadata_manifest_sha256"),
     ("physics_manifest", "physics_manifest_sha256"),
 )
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def project_path(root: Path, value: str | Path) -> Path:
-    path = Path(value)
-    return (path if path.is_absolute() else root / path).resolve()
 
 
 def verified_path(root: Path, binding: Mapping[str, Any], label: str) -> Path:

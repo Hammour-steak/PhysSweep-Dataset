@@ -9,16 +9,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-
 SPEC_SCHEMA = "physweep_specialized_release_extension_v1"
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def project_root_reference(root: Path, project_root: Path) -> str:

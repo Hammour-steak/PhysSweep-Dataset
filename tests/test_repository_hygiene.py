@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import re
 import subprocess
 import unittest
@@ -15,6 +16,11 @@ FORBIDDEN = (
     re.compile(r"hf_[A-Za-z0-9]{20,}"),
     re.compile(r"-----BEGIN (?:OPENSSH |RSA |EC )?PRIVATE KEY-----"),
 )
+PROVENANCE_FROZEN_INFRASTRUCTURE = {
+    "tools/assets/extract_static_support_proxies.py",
+    "tools/assets/probe_physical_proxy_catalog.py",
+    "tools/assets/publish_asset_catalog.py",
+}
 
 
 class RepositoryHygieneTest(unittest.TestCase):
@@ -40,7 +46,7 @@ class RepositoryHygieneTest(unittest.TestCase):
     def test_public_payload_has_no_github_oversized_file(self) -> None:
         oversized = []
         for path in self.public_files():
-            if path.stat().st_size >= 95 * 1024 * 1024:
+            if path.is_file() and path.stat().st_size >= 95 * 1024 * 1024:
                 oversized.append(str(path.relative_to(ROOT)))
         self.assertEqual(oversized, [])
 
@@ -66,6 +72,7 @@ class RepositoryHygieneTest(unittest.TestCase):
         expected = {
             "assets",
             "cli",
+            "core",
             "dataset_contract",
             "motion_rules",
             "physics",
@@ -88,6 +95,78 @@ class RepositoryHygieneTest(unittest.TestCase):
         self.assertFalse(
             (ROOT / "tools" / "dataset_generation" / "__init__.py").exists()
         )
+
+    def test_core_has_no_feature_package_dependencies(self) -> None:
+        forbidden = {
+            "tools.assets",
+            "tools.cli",
+            "tools.dataset_contract",
+            "tools.motion_rules",
+            "tools.physics",
+            "tools.release",
+            "tools.rendering",
+            "tools.sampling",
+            "tools.training_export",
+        }
+        findings = []
+        for path in (ROOT / "tools" / "core").glob("*.py"):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                modules = []
+                if isinstance(node, ast.Import):
+                    modules = [alias.name for alias in node.names]
+                elif isinstance(node, ast.ImportFrom) and node.module:
+                    modules = [node.module]
+                for module in modules:
+                    if any(
+                        module == item or module.startswith(item + ".")
+                        for item in forbidden
+                    ):
+                        findings.append(f"{path.name}: {module}")
+        self.assertEqual(findings, [])
+
+    def test_contracts_and_motion_rules_depend_only_on_core(self) -> None:
+        findings = []
+        for package in ("dataset_contract", "motion_rules"):
+            for path in (ROOT / "tools" / package).rglob("*.py"):
+                tree = ast.parse(path.read_text(encoding="utf-8"))
+                for node in ast.walk(tree):
+                    modules = []
+                    if isinstance(node, ast.Import):
+                        modules = [alias.name for alias in node.names]
+                    elif isinstance(node, ast.ImportFrom) and node.module:
+                        modules = [node.module]
+                    for module in modules:
+                        if not module.startswith("tools."):
+                            continue
+                        dependency = module.split(".", 2)[1]
+                        if dependency not in {package, "core"}:
+                            findings.append(
+                                f"{path.relative_to(ROOT)}: {module}"
+                            )
+        self.assertEqual(findings, [])
+
+    def test_shared_infrastructure_has_no_exact_function_copies(self) -> None:
+        fingerprints: dict[tuple[str, str], list[str]] = {}
+        shared_names = {"load_json", "write_json", "sha256", "project_path"}
+        for path in (ROOT / "tools").rglob("*.py"):
+            relative = path.relative_to(ROOT).as_posix()
+            if relative in PROVENANCE_FROZEN_INFRASTRUCTURE:
+                continue
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in tree.body:
+                if not isinstance(node, ast.FunctionDef) or node.name not in shared_names:
+                    continue
+                body = ast.dump(
+                    ast.Module(body=node.body, type_ignores=[]),
+                    include_attributes=False,
+                )
+                key = (node.name, body)
+                fingerprints.setdefault(key, []).append(
+                    str(path.relative_to(ROOT))
+                )
+        duplicates = [paths for paths in fingerprints.values() if len(paths) > 1]
+        self.assertEqual(duplicates, [])
 
     def test_object_count_rules_have_an_explicit_namespace(self) -> None:
         motion_rules = ROOT / "tools" / "motion_rules"

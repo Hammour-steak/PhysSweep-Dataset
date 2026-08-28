@@ -11,14 +11,11 @@ from typing import Any
 
 import numpy as np
 
+from tools.core.json_io import read_json as load_json
 from tools.physics.rigid_trajectory import active_motion_duration_s
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def trajectory_metrics(path: Path, fps: float) -> dict[str, Any]:

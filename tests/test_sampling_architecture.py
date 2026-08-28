@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-from tools.physics.rigid_geometry import SUPPORT_BUILDERS  # noqa: E402
+from tools.core.rigid_geometry import SUPPORT_BUILDERS  # noqa: E402
 from tools.sampling.sample_pybullet_base import (  # noqa: E402
     BUNDLE_PATH,
     compile_camera_observation,

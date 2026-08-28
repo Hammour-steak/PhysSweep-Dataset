@@ -11,6 +11,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from tools.core.hashing import sha256_file as sha256
 from tools.release.publish_sweep_release import (
     load_json,
     resolve,
@@ -24,7 +25,6 @@ from tools.release.specialized_release_extension import (
     index_replacements,
     load_extension_spec,
     project_root_reference,
-    sha256,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]

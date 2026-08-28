@@ -14,7 +14,9 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
-from tools.physics.pybullet_backend_dispatcher import dispatch_simulation, load_json, write_json
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json_atomic as write_json
+from tools.physics.pybullet_backend_dispatcher import dispatch_simulation
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]

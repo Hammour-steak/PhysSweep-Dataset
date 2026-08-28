@@ -4,12 +4,14 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
-import json
 import tempfile
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
+
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json_atomic as write_json
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 AXES = ("mass_kg", "contact_friction", "contact_restitution")
@@ -19,27 +21,6 @@ def generic_manifest_counts(metadata: list[dict[str, Any]]) -> dict[str, Any]:
     """Load the generic sampler only when a release actually needs coverage."""
     from tools.sampling.sample_pybullet_base import manifest_counts
     return manifest_counts(metadata)
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(
-        json.dumps(value, indent=2, ensure_ascii=True) + "\n", encoding="utf-8"
-    )
-    temporary.replace(path)
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def validate_groups(records: list[dict[str, Any]]) -> int:

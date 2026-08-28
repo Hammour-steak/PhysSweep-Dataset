@@ -6,7 +6,7 @@ import math
 
 import numpy as np
 
-from tools.physics.rigid_geometry import clamp, pose_on_support
+from tools.core.rigid_geometry import clamp, pose_on_support
 
 from .common import entry_speed_after_coulomb_travel
 from .contracts import MotionAuditContext, MotionDerivationContext, MotionPlan

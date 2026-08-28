@@ -8,13 +8,11 @@ import json
 from pathlib import Path
 from typing import Any
 
+from tools.core.json_io import read_json as load_json
 from tools.dataset_contract.object_identity_contract import (
     OBJECT_IDENTITY_SCHEMA_VERSION,
     validate_object_identity,
 )
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def metadata_paths(input_path: Path) -> list[Path]:

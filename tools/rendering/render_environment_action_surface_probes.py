@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import argparse
-import json
 import math
 import sys
 from pathlib import Path
 from typing import Any
+
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -18,18 +20,6 @@ def blender_argv() -> list[str]:
     if "--" in sys.argv:
         return sys.argv[sys.argv.index("--") + 1 :]
     return sys.argv[1:]
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def write_json(path: Path, value: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(value, indent=2, ensure_ascii=True) + "\n",
-        encoding="utf-8",
-    )
 
 
 def patch_numpy() -> None:

@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import copy
-import hashlib
 import json
 import re
 import sys
@@ -25,10 +24,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
 from tools.assets.physical_proxy_catalog import load_catalog, write_json  # noqa: E402
 from tools.assets.static_support_proxy import compile_static_support_binding  # noqa: E402
-
-
 
 
 def blender_args() -> argparse.Namespace:
@@ -49,18 +48,6 @@ def blender_args() -> argparse.Namespace:
     )
     parser.add_argument("--resolution", nargs=2, type=int, default=[640, 360])
     return parser.parse_args(values)
-
-
-def load_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def clear_scene() -> None:
