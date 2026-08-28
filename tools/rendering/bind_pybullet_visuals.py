@@ -383,14 +383,72 @@ def manifest_rules_path(root: Path, manifest: dict[str, Any]) -> Path:
     return path
 
 
+def binding_samples(
+    root: Path, manifest: dict[str, Any]
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Resolve a sampled or audited-physics manifest into binding jobs."""
+
+    samples = manifest.get("samples")
+    if isinstance(samples, list):
+        return manifest, list(samples)
+    if manifest.get("schema_version") != "physweep_pybullet_batch_record_v1":
+        raise ValueError("binder requires a sampling or physics batch manifest")
+    source_value = Path(str(manifest.get("source_manifest", "")))
+    source_path = source_value if source_value.is_absolute() else root / source_value
+    source_path = source_path.resolve()
+    source_path.relative_to(root)
+    source = load_json(source_path)
+    source_samples = source.get("samples")
+    records = manifest.get("records")
+    if not isinstance(source_samples, list) or not isinstance(records, list):
+        raise ValueError("physics batch manifest has no valid source samples")
+    if int(manifest.get("sample_count", -1)) != len(records):
+        raise ValueError("physics batch manifest count differs from its records")
+    records_by_id = {str(record.get("scene_id", "")): record for record in records}
+    source_ids = [str(sample.get("scene_id", "")) for sample in source_samples]
+    if (
+        "" in records_by_id
+        or len(records_by_id) != len(records)
+        or "" in source_ids
+        or len(source_ids) != len(set(source_ids))
+        or set(source_ids) != set(records_by_id)
+    ):
+        raise ValueError("sampling and physics manifests select different scenes")
+    result = []
+    for sample in source_samples:
+        scene_id = str(sample["scene_id"])
+        record = records_by_id[scene_id]
+        if not record.get("ok") or not record.get("audit_passed"):
+            raise ValueError(f"physics record is not audited: {scene_id}")
+        source_metadata = (root / str(sample["metadata_path"])).resolve()
+        record_metadata = Path(str(record["metadata_path"])).resolve()
+        if (
+            source_metadata != record_metadata
+            or str(sample["metadata_sha256"]) != str(record["metadata_sha256"])
+        ):
+            raise ValueError(f"physics metadata binding differs: {scene_id}")
+        trajectory_path = Path(str(record["trajectory_path"])).resolve()
+        result.append(
+            {
+                **sample,
+                "metadata_path": str(record_metadata),
+                "simulation_record_path": str(
+                    trajectory_path.with_name("simulation_record.json")
+                ),
+                "trajectory_path": str(trajectory_path),
+            }
+        )
+    return source, result
+
+
 def main() -> None:
     args = parse_args()
     root = args.root.resolve()
     manifest = load_json(args.manifest.resolve())
-    rules_path = manifest_rules_path(root, manifest)
+    source_manifest, samples = binding_samples(root, manifest)
+    rules_path = manifest_rules_path(root, source_manifest)
     rules = load_json(rules_path)
     output_root = args.output_root.resolve()
-    samples = list(manifest["samples"])
     if args.limit is not None:
         samples = samples[: args.limit]
     def sample_path(sample: dict[str, Any], key: str, fallback: Path) -> Path:

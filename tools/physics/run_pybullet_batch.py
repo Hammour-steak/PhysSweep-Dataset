@@ -98,6 +98,12 @@ def prepare_output_root(output_root: Path, allow_existing: bool) -> None:
     output_root.mkdir(parents=True, exist_ok=True)
 
 
+def default_output_root(manifest_path: Path) -> Path:
+    """Keep physics records inside the dataset that owns the manifest."""
+
+    return manifest_path.parent / "physics"
+
+
 def batch_failed(
     *, rejected_count: int, error_count: int, allow_audit_rejections: bool
 ) -> bool:
@@ -163,7 +169,7 @@ def main() -> None:
     output_root = (
         args.output_root.resolve()
         if args.output_root is not None
-        else manifest_path.parent.parent / "physics"
+        else default_output_root(manifest_path)
     )
     prepare_output_root(output_root, args.allow_existing_output)
     started = time.perf_counter()

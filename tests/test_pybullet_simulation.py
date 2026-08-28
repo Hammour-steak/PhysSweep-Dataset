@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import copy
+import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -9,7 +11,10 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 
-from tools.rendering.bind_pybullet_visuals import resolve_render_request  # noqa: E402
+from tools.rendering.bind_pybullet_visuals import (  # noqa: E402
+    binding_samples,
+    resolve_render_request,
+)
 from tools.rendering.camera_solver import (  # noqa: E402
     camera_inside_structural_envelope,
     camera_occlusion_colliders,
@@ -38,6 +43,46 @@ from tools.physics.simulate_pybullet_rigid import simulate  # noqa: E402
 
 
 class PyBulletSimulationTests(unittest.TestCase):
+    def test_visual_binding_consumes_audited_physics_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_path = root / "datasets" / "batch" / "manifest.json"
+            source_path.parent.mkdir(parents=True)
+            metadata_path = source_path.parent / "scene.json"
+            metadata_path.write_text("{}", encoding="utf-8")
+            source = {
+                "samples": [
+                    {
+                        "scene_id": "scene_a",
+                        "metadata_path": str(metadata_path.relative_to(root)),
+                        "metadata_sha256": "metadata-hash",
+                    }
+                ]
+            }
+            source_path.write_text(json.dumps(source), encoding="utf-8")
+            trajectory = root / "datasets" / "batch" / "physics" / "scene_a" / "trajectory.npz"
+            physics = {
+                "schema_version": "physweep_pybullet_batch_record_v1",
+                "source_manifest": str(source_path),
+                "sample_count": 1,
+                "records": [
+                    {
+                        "ok": True,
+                        "audit_passed": True,
+                        "scene_id": "scene_a",
+                        "metadata_path": str(metadata_path),
+                        "metadata_sha256": "metadata-hash",
+                        "trajectory_path": str(trajectory),
+                    }
+                ],
+            }
+            resolved_source, samples = binding_samples(root, physics)
+        self.assertEqual(resolved_source, source)
+        self.assertEqual(samples[0]["trajectory_path"], str(trajectory))
+        self.assertEqual(
+            samples[0]["simulation_record_path"],
+            str(trajectory.with_name("simulation_record.json")),
+        )
     def test_visual_binding_inherits_frozen_render_request(self) -> None:
         metadata = {"render_request": {"resolution": [1280, 720], "samples": 16}}
 

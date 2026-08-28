@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 from tools.physics.run_pybullet_batch import (  # noqa: E402
     batch_failed,
+    default_output_root,
     group_samples_by_schema,
     manifest_samples,
     prepare_output_root,
@@ -15,6 +16,12 @@ from tools.physics.run_pybullet_batch import (  # noqa: E402
 
 
 class PyBulletBatchRunnerTests(unittest.TestCase):
+    def test_default_output_stays_inside_the_source_dataset(self) -> None:
+        manifest = Path("datasets/batch/manifest.json")
+        self.assertEqual(
+            default_output_root(manifest), Path("datasets/batch/physics")
+        )
+
     def test_audit_rejections_can_be_returned_to_a_resampling_caller(self) -> None:
         self.assertFalse(
             batch_failed(

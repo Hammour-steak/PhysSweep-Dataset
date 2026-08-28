@@ -56,7 +56,7 @@ consume published dataset records and never feed generation.
   --manifest datasets/my_base_batch/manifest.json --workers 20
 
 .venv/bin/python -m tools.rendering.bind_pybullet_visuals \
-  --manifest datasets/my_base_batch/manifest.json \
+  --manifest datasets/my_base_batch/physics/manifest.json \
   --output-root outputs/my_base_batch --resolution 1280x720 \
   --samples 16 --workers 8
 
