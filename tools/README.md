@@ -39,8 +39,8 @@ consume published dataset records and never feed generation.
   already audited source release.
 - Package-local commands under `sampling`, `physics`, `rendering`, and `release`
   are reproducible stages used by the generator.
-- Asset inspection, contact-sheet, and comparison commands are maintenance
-  tools; they do not define release semantics.
+- Asset inspection, contact-sheet, and QA commands are maintenance tools; they
+  do not define release semantics.
 
 ## Active Contracts
 
@@ -80,49 +80,25 @@ all physical parameters. Simulation consumes that metadata and writes a hashed
 trajectory. Visual binding solves the camera but reuses the already frozen
 environment visual/collision pose.
 
-## Decoupled Render Pipeline
+## Render Staging
 
-`sample_one_object_scene_matrix.py` may select generic, curated-asset, billiards,
-passive-pinball, and marble-run scenes. Stage the selected records, render each
-required branch, then collect them with the staged outer manifest:
+`sample_one_object_scene_matrix.py` selects generic, curated-asset, billiards,
+passive-pinball, and marble-run scenes. The dataset generator stages and renders
+each selected branch, then passes its audited render manifest directly to the
+canonical base/sweep materializer. There is no intermediate collected copy.
+
+The staging command remains available for inspecting or reproducing a frozen
+base selection:
 
 ```bash
 .venv/bin/python -m tools.rendering.prepare_formal_render_manifests \
   --manifest datasets/<batch>/manifest.json \
   --output-root outputs/<batch> --selection all
-
-.venv/bin/python -m tools.rendering.bind_pybullet_visuals \
-  --manifest outputs/<batch>/manifests/generic_source_manifest.json \
-  --output-root outputs/<batch>/generic --workers 8
-.venv/bin/python -m tools.rendering.render_pybullet_manifest \
-  --manifest outputs/<batch>/generic/bound_manifest.json --workers 8
-.venv/bin/python -m tools.rendering.render_asset_proxy_manifest \
-  --manifest outputs/<batch>/asset/asset_render_manifest.json --workers 8
-.venv/bin/python -m tools.rendering.render_asset_proxy_manifest --renderer billiards \
-  --manifest outputs/<batch>/billiards/billiards_manifest.json --workers 8
-.venv/bin/python -m tools.rendering.render_asset_proxy_manifest --renderer passive_pinball \
-  --manifest outputs/<batch>/passive_pinball/passive_pinball_manifest.json \
-  --workers 8
-.venv/bin/python -m tools.rendering.render_asset_proxy_manifest --renderer marble_run \
-  --manifest outputs/<batch>/marble_run/marble_run_manifest.json --workers 8
-
-.venv/bin/python -m tools.rendering.collect_decoupled_renders \
-  --manifest outputs/<batch>/staged_manifest.json \
-  --generic-render-manifest outputs/<batch>/generic/render_manifest.json \
-  --asset-render-manifest outputs/<batch>/asset/render_manifest.json \
-  --billiards-render-manifest \
-    outputs/<batch>/billiards/billiards_render_manifest.json \
-  --specialized-render-manifest \
-    passive_pinball=outputs/<batch>/passive_pinball/passive_pinball_render_manifest.json \
-  --specialized-render-manifest \
-    marble_run=outputs/<batch>/marble_run/marble_run_render_manifest.json \
-  --output outputs/<batch>/collected
 ```
 
-Asset and billiards renders write deterministic per-object instance masks beside
-their videos. To add those masks to an existing immutable RGB render without
-rerendering the video, use the same frozen source manifest with a separate output
-root:
+Specialized renders write deterministic per-object instance masks beside their
+videos. To backfill masks for an immutable RGB render, use the same frozen
+source manifest and a separate output root:
 
 Full renders strip volatile MP4 metadata and non-visual H.264 SEI without
 re-encoding frames, so repeated renders do not differ only by runtime metadata.
@@ -137,19 +113,6 @@ re-encoding frames, so repeated renders do not differ only by runtime metadata.
 Mask-only mode reuses the frozen metadata, trajectory, scene construction, and
 camera solver. Its output is accepted on resume only when every identity object,
 frame, file hash, renderer hash, and verified EGL device binding matches.
-
-The collector loads only pipelines present in `staged_manifest.json`. A
-versioned delta therefore supplies only its specialized render result; it does
-not require empty or synthetic render-result manifests for retained branches.
-
-Use `pilot20` or `pilot40` for compact coverage reviews. `stress60` creates a
-deterministic stress review. A v3 manifest keeps 30 ordinary generic motions,
-20 support transitions, 8 curated asset-proxy scenes, and both billiards
-profiles. A v4 manifest uses 28 ordinary generic motions and adds one scene
-from each passive-pinball profile, preserving the fixed 60-scene review size.
-
-The collector intentionally rejects the raw sampling manifest because only the
-staged manifest freezes the selected subset and its canonical source manifest.
 
 ## Independent Physics Sweep Pipeline
 

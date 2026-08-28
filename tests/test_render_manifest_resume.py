@@ -348,25 +348,6 @@ class RenderManifestResumeTests(unittest.TestCase):
                 )
             )
 
-    def test_billiards_legacy_paths_are_normalized(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            metadata = root / "datasets/scene.json"
-            write_json(
-                metadata,
-                {
-                    "schema_version": "physweep_billiards_scene_v4",
-                    "scene_id": "scene",
-                },
-            )
-            records = render_source_records(
-                root,
-                {"billiards_metadata_paths": [str(metadata.relative_to(root))]},
-                "billiards",
-                {"billiards": ("", "", "", "physweep_billiards_scene_v4")},
-            )
-            self.assertEqual(records[0]["scene_id"], "scene")
-
     def test_renderer_rejects_the_wrong_scene_schema(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

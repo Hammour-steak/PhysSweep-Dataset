@@ -39,7 +39,7 @@ class FormalRenderPreparationTests(unittest.TestCase):
 
     def test_source_manifest_requires_consistent_unique_records(self) -> None:
         manifest = {
-            "schema_version": "physweep_one_object_decoupled_manifest_v3",
+            "schema_version": "physweep_one_object_decoupled_manifest_v5",
             "sample_count": 1,
             "records": [
                 {
@@ -49,11 +49,14 @@ class FormalRenderPreparationTests(unittest.TestCase):
                 }
             ],
         }
-        self.assertEqual(validated_source_records(manifest), manifest["records"])
+        pipelines = {"generic_pybullet"}
+        self.assertEqual(
+            validated_source_records(manifest, pipelines), manifest["records"]
+        )
         manifest["records"].append(dict(manifest["records"][0]))
         manifest["sample_count"] = 2
         with self.assertRaisesRegex(ValueError, "duplicate"):
-            validated_source_records(manifest)
+            validated_source_records(manifest, pipelines)
 
     def test_review100_selection_covers_formal_strata(self) -> None:
         records = []

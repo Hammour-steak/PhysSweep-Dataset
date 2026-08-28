@@ -469,11 +469,6 @@ def render_source_records(
     if renderer not in renderers:
         raise ValueError(f"unknown specialized renderer: {renderer}")
     source_records = manifest.get("records")
-    if source_records is None and renderer == "billiards":
-        source_records = [
-            {"metadata_path": str(value)}
-            for value in manifest["billiards_metadata_paths"]
-        ]
     if source_records is None:
         raise ValueError("render manifest has no records")
     expected_schema = renderers[renderer][3]

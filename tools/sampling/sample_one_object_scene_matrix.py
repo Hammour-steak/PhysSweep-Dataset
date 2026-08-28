@@ -1535,25 +1535,11 @@ def main() -> None:
             if generic_slots
             else None
         ),
-        "generic_simulation_manifest_path": (
-            f"datasets/{args.output_dataset}/generic_matrix/simulation_manifest.json"
-            if generic_slots
-            else None
-        ),
         "asset_proxy_manifest_path": (
             str((dataset_root / "asset_proxy_manifest.json").relative_to(root))
             if asset_records
             else None
         ),
-        "billiards_metadata_paths": [
-            record["metadata_path"] for record in billiards_records
-        ],
-        **{
-            f"{pipeline}_metadata_paths": [
-                record["metadata_path"] for record in pipeline_records
-            ]
-            for pipeline, pipeline_records in passive_fixture_records.items()
-        },
         "records": records,
     }
     write_json(dataset_root / "manifest.json", manifest)

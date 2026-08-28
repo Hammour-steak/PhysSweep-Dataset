@@ -329,6 +329,17 @@ class PipelineBoundaryTest(unittest.TestCase):
                 path.read_text(encoding="utf-8"),
             )
 
+    def test_obsolete_collected_render_layer_is_absent(self):
+        for relative in (
+            "tools/physics/audit_decoupled_motion.py",
+            "tools/rendering/audit_collected_videos.py",
+            "tools/rendering/collect_decoupled_renders.py",
+            "tools/rendering/finalize_render_comparison.py",
+            "tools/rendering/prepare_render_engine_comparison.py",
+        ):
+            with self.subTest(module=relative):
+                self.assertFalse((ROOT / relative).exists())
+
     def test_method_brand_and_model_artifacts_are_absent(self):
         forbidden = ("PhyContext", "PhysBind", "phycontext.", "physbind")
         tracked_files = subprocess.run(
