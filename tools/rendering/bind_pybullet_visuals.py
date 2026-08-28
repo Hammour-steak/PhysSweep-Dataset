@@ -426,7 +426,7 @@ def binding_samples(
             source_metadata != record_metadata
             or str(sample["metadata_sha256"]) != str(record["metadata_sha256"])
         ):
-            raise ValueError(f"physics metadata binding differs: {scene_id}")
+            raise ValueError(f"physics metadata binding mismatch for scene {scene_id}")
         trajectory_path = Path(str(record["trajectory_path"])).resolve()
         result.append(
             {
