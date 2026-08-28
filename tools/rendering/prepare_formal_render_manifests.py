@@ -597,6 +597,9 @@ def main() -> None:
         )
 
     staged_outer = copy.deepcopy(source_manifest)
+    staged_outer.pop("generic_simulation_manifest_path", None)
+    for backend in specialized.values():
+        staged_outer.pop(f"{backend['sweep_branch']}_metadata_paths", None)
     staged_outer["dataset_id"] = f"{source_manifest['dataset_id']}__{selection_id}"
     staged_outer["source_manifest"] = str(source_manifest_path)
     staged_outer["selection"] = args.selection
