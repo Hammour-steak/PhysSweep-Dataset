@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from tools.core.blender_runtime import clear_blender_scene
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
@@ -21,23 +22,6 @@ def blender_args() -> argparse.Namespace:
     parser.add_argument("--repairs", type=Path, required=True)
     parser.add_argument("--ids", nargs="*", default=[])
     return parser.parse_args(values)
-
-
-def clear_scene() -> None:
-    import bpy
-
-    bpy.ops.object.select_all(action="SELECT")
-    bpy.ops.object.delete(use_global=False)
-    for collection in (
-        bpy.data.meshes,
-        bpy.data.materials,
-        bpy.data.images,
-        bpy.data.cameras,
-        bpy.data.lights,
-    ):
-        for value in list(collection):
-            if value.users == 0:
-                collection.remove(value)
 
 
 def imported_meshes():
@@ -210,7 +194,7 @@ def process_record(root: Path, record: dict[str, Any]) -> dict[str, Any]:
     if actual_source_sha != str(record["source_sha256"]):
         raise ValueError(f"source hash mismatch: {record['visual_asset_id']}")
 
-    clear_scene()
+    clear_blender_scene(("meshes", "materials", "images", "cameras", "lights"))
     bpy.ops.import_scene.gltf(filepath=str(source))
     meshes = imported_meshes()
     if not meshes:
@@ -232,7 +216,7 @@ def process_record(root: Path, record: dict[str, Any]) -> dict[str, Any]:
         export_animations=False,
     )
 
-    clear_scene()
+    clear_blender_scene(("meshes", "materials", "images", "cameras", "lights"))
     bpy.ops.import_scene.gltf(filepath=str(output))
     repaired_meshes = imported_meshes()
     after = mesh_signature(repaired_meshes)

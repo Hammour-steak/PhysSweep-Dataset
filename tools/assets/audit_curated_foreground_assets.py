@@ -17,27 +17,20 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
-from tools.core.blender_runtime import blender_argv, patch_numpy_for_blender_gltf
+from tools.core.blender_runtime import (
+    blender_argv,
+    clear_blender_scene,
+    patch_numpy_for_blender_gltf,
+)
 
 
 DEFAULT_SOURCE_MANIFEST = PROJECT_ROOT / "assets/manifests/sketchfab_foreground_source_v1.json"
 
 
-def clear_scene() -> None:
-    import bpy  # pylint: disable=import-outside-toplevel
-
-    bpy.ops.object.select_all(action="SELECT")
-    bpy.ops.object.delete(use_global=False)
-    for datablocks in (bpy.data.meshes, bpy.data.materials, bpy.data.images):
-        for datablock in list(datablocks):
-            if datablock.users == 0:
-                datablocks.remove(datablock)
-
-
 def imported_meshes(path: Path) -> list[Any]:
     import bpy  # pylint: disable=import-outside-toplevel
 
-    clear_scene()
+    clear_blender_scene(("meshes", "materials", "images"))
     patch_numpy_for_blender_gltf()
     before = set(bpy.data.objects)
     bpy.ops.import_scene.gltf(filepath=str(path))

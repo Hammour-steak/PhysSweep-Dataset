@@ -69,45 +69,6 @@ def validated_lighting_quality_rule(value: dict[str, Any] | None = None) -> dict
     return rule
 
 
-def derive_glare_guarded_lighting_rule(
-    lighting_rule: dict[str, Any], quality_rule: dict[str, Any] | None = None
-) -> dict[str, Any]:
-    """Create an auditable visual-only lighting candidate from a source rule.
-
-    Blender AREA lights are square by default, so energy divided by ``size**2``
-    is a useful source-independent proxy for their radiance. The derived rule
-    writes the effective values into metadata rather than relying on a hidden
-    renderer override.
-    """
-
-    result = copy.deepcopy(lighting_rule)
-    quality = validated_lighting_quality_rule(quality_rule)
-    key_light = result.setdefault("key_light", {})
-    source_size = finite_number(key_light.get("size", 1.6), "key_light.size", minimum=0.05)
-    source_energy = finite_number(key_light.get("energy", 0.0), "key_light.energy", minimum=0.0)
-    area_key = quality["area_key"]
-    effective_size = max(source_size, float(area_key["minimum_size_m"]))
-    energy_cap = float(area_key["maximum_energy_per_square_meter"]) * effective_size**2
-    effective_energy = min(source_energy, energy_cap)
-    key_light["size"] = round(effective_size, 6)
-    key_light["energy"] = round(effective_energy, 6)
-    result["lighting_quality_rule"] = quality
-    result["lighting_quality_derivation"] = {
-        "source_key_light": {
-            "energy": round(source_energy, 6),
-            "size": round(source_size, 6),
-            "energy_per_square_meter": round(source_energy / source_size**2, 6),
-        },
-        "effective_key_light": {
-            "energy": round(effective_energy, 6),
-            "size": round(effective_size, 6),
-            "energy_per_square_meter": round(effective_energy / effective_size**2, 6),
-        },
-        "derivation_policy": "minimum_area_and_maximum_radiance_v1",
-    }
-    return result
-
-
 def floor_glare_guard(lighting_rule: dict[str, Any] | None) -> dict[str, float] | None:
     """Return explicit backdrop-floor material limits, if the metadata requests them."""
 

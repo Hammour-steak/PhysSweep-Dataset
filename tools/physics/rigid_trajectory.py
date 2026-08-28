@@ -8,12 +8,17 @@ from typing import Any
 
 import numpy as np
 
+from tools.dataset_contract.object_identity_contract import (
+    require_single_simulation_object,
+)
 from tools.motion_rules.one_object import MotionAuditContext, audit_motion
 from tools.motion_rules.one_object.common import (
     distance_lower_bound as _distance_lower_bound,
     distance_upper_bound as _distance_upper_bound,
 )
 from tools.physics.physics_invariants import PROXY_SHAPE_CODE, additional_physics_invariants
+
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1,)
 
 
 def _horizontal_displacement(positions: np.ndarray) -> float:
@@ -134,7 +139,7 @@ def audit_support_transition_contract(
         if abs(source_height - source_top) > 1.0e-6:
             raise ValueError("raised transition height differs from its source collider")
     initial_velocity = np.asarray(
-        metadata["simulation"]["objects"][0]["initial_state"][
+        require_single_simulation_object(metadata, __name__)["initial_state"][
             "linear_velocity_m_s"
         ][:2],
         dtype=np.float64,
@@ -209,7 +214,7 @@ def audit_support_transition_contract(
 
 
 def audit_trajectory(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]) -> dict[str, Any]:
-    obj = metadata["simulation"]["objects"][0]
+    obj = require_single_simulation_object(metadata, __name__)
     object_id = str(obj["object_id"])
     positions = np.asarray(trajectory[f"{object_id}__position_m"], dtype=np.float64)
     velocities = np.asarray(trajectory[f"{object_id}__linear_velocity_m_s"], dtype=np.float64)
@@ -622,7 +627,8 @@ def compact_advisory_ids(audit: dict[str, Any]) -> list[str]:
 
 
 def validate_trajectory_contract(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]) -> None:
-    object_id = str(metadata["simulation"]["objects"][0]["object_id"])
+    obj = require_single_simulation_object(metadata, __name__)
+    object_id = str(obj["object_id"])
     required = {
         "time_s",
         f"{object_id}__position_m",
@@ -637,9 +643,9 @@ def validate_trajectory_contract(metadata: dict[str, Any], trajectory: dict[str,
         f"{object_id}__total_normal_force_n",
         f"{object_id}__maximum_coulomb_friction_utilization",
     }
-    required_collider_id = metadata["simulation"]["objects"][0][
-        "expected_motion"
-    ].get("required_collider_contact_id")
+    required_collider_id = obj["expected_motion"].get(
+        "required_collider_contact_id"
+    )
     if required_collider_id:
         required.add(
             f"{object_id}__collider_contact_count__{required_collider_id}"

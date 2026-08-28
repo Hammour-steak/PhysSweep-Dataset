@@ -64,12 +64,6 @@ def entry_speed_after_coulomb_travel(
     )
 
 
-def coast_speed_for_distance(
-    friction: float, gravity_m_s2: float, distance_m: float
-) -> float:
-    return math.sqrt(2.0 * friction * gravity_m_s2 * distance_m)
-
-
 def climb_speed_for_distance(
     deceleration_m_s2: float, distance_m: float
 ) -> float:

@@ -19,6 +19,7 @@ from tools.core.json_io import (
     write_json_sorted,
 )
 from tools.core.paths import (
+    project_relative_path,
     resolve_project_path,
     resolve_project_path_within_root,
     safe_scene_id,
@@ -108,6 +109,12 @@ class CoreInfrastructureTest(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, "outside project root"):
                 resolve_project_path_within_root(root, root.parent / "outside.json")
+            self.assertEqual(
+                project_relative_path(root, root / "records/item.json"),
+                "records/item.json",
+            )
+            with self.assertRaisesRegex(ValueError, "outside project root"):
+                project_relative_path(root, root.parent / "outside.json")
 
     def test_scene_id_is_one_safe_path_component(self) -> None:
         self.assertEqual(safe_scene_id("group__scene_001"), "group__scene_001")

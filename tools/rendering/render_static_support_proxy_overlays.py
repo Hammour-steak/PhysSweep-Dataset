@@ -25,6 +25,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from tools.core.hashing import sha256_file as sha256
+from tools.core.blender_runtime import clear_blender_scene
 from tools.core.json_io import read_json as load_json
 from tools.assets.physical_proxy_catalog import load_catalog  # noqa: E402
 from tools.assets.static_support_proxy import compile_static_support_binding  # noqa: E402
@@ -49,15 +50,6 @@ def blender_args() -> argparse.Namespace:
     )
     parser.add_argument("--resolution", nargs=2, type=int, default=[640, 360])
     return parser.parse_args(values)
-
-
-def clear_scene() -> None:
-    bpy.ops.object.select_all(action="SELECT")
-    bpy.ops.object.delete(use_global=False)
-    for collection in (bpy.data.meshes, bpy.data.materials, bpy.data.cameras, bpy.data.lights):
-        for item in list(collection):
-            if item.users == 0:
-                collection.remove(item)
 
 
 def import_glb(
@@ -359,7 +351,7 @@ def render_record(
         usage_id=usage["id"],
         maximum_axis_scale_ratio=usage["maximum_axis_scale_ratio"],
     )
-    clear_scene()
+    clear_blender_scene(("meshes", "materials", "cameras", "lights"))
     visual_path = root / str(record["source"]["visual_path"])
     include_names = []
     if registry_record is not None:

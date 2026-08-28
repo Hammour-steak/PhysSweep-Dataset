@@ -12,13 +12,18 @@ from pathlib import Path
 from typing import Any
 
 from tools.core.hashing import sha256_file as sha256
-from tools.release.publish_sweep_release import (
-    load_json,
-    resolve,
-    root_relative,
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json_atomic as write_json
+from tools.core.paths import (
+    project_relative_path as root_relative,
+    resolve_project_path as resolve,
+)
+from tools.dataset_contract.semantic_coverage import (
+    semantic_coverage_counts as generic_manifest_counts,
+)
+from tools.release.sweep_validation import (
     validate_groups,
     validate_source_artifacts,
-    write_json,
 )
 from tools.physics.specialized_backend_registry import specialized_by_pipeline
 from tools.release.specialized_release_extension import (
@@ -30,13 +35,8 @@ from tools.release.specialized_release_extension import (
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
-def generic_manifest_counts(metadata: list[dict[str, Any]]) -> dict[str, Any]:
-    from tools.sampling.sample_pybullet_base import manifest_counts
-    return manifest_counts(metadata)
-
-
 def project_path(root: Path, value: str | Path) -> Path:
-    return resolve(root, Path(value))
+    return resolve(root, value)
 
 
 def verified_manifest(

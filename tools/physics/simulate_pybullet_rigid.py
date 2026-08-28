@@ -14,6 +14,9 @@ import numpy as np
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
+from tools.dataset_contract.object_identity_contract import (
+    require_simulation_objects,
+)
 from tools.physics.physics_invariants import maximum_coulomb_utilization, runtime_collision_descriptors
 from tools.core.rigid_geometry import quaternion_xyzw_from_wxyz
 from tools.physics.rigid_trajectory import (
@@ -30,6 +33,7 @@ from tools.assets.environment_collision import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1,)
 
 
 def create_box_body(pb: Any, collider: dict[str, Any]) -> int:
@@ -209,9 +213,12 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
         raise ValueError("unsupported rigid metadata schema")
     if metadata["simulation"]["backend"]["id"] != "pybullet_rigid_v1":
         raise ValueError("metadata does not declare the PyBullet rigid backend")
-    objects = metadata["simulation"]["objects"]
-    if len(objects) != 1 or objects[0]["body_model"] != "rigid_body":
+    objects = require_simulation_objects(
+        metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
+    )
+    if objects[0]["body_model"] != "rigid_body":
         raise ValueError("PyBullet rigid v1 requires exactly one rigid body")
+    obj = objects[0]
 
     simulation = metadata["simulation"]
     time_config = simulation["time"]
@@ -221,7 +228,7 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
         raise ValueError("simulation_hz must be divisible by output_fps")
     exact_static_binding = simulation["support"].get("exact_static_binding")
     contact_mode = str(
-        simulation["objects"][0].get("expected_motion", {}).get("contact_mode", "")
+        obj.get("expected_motion", {}).get("contact_mode", "")
     )
     # Concave static meshes need a finer step only during ballistic impact.
     integration_substep_factor = (

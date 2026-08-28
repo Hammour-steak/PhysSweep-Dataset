@@ -25,7 +25,9 @@ from tools.assets.physical_proxy_catalog import (
     validate_curated_registry_bindings,
 )
 from tools.sampling.sample_asset_proxy_scenes import proxy_volume_fill_ratio
-from tools.sampling.sample_pybullet_base import manifest_counts as generic_manifest_counts
+from tools.dataset_contract.semantic_coverage import (
+    semantic_coverage_counts as generic_manifest_counts,
+)
 from tools.physics.specialized_backend_registry import load_specialized_backends
 
 

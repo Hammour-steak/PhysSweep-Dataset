@@ -15,6 +15,8 @@ import mathutils
 import numpy as np
 
 from tools.core.hashing import sha256_file as sha256
+from tools.core.blender_runtime import blender_world_bounds
+from tools.core.blender_runtime import clear_blender_scene
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
 
@@ -49,24 +51,10 @@ def project_relative(root: Path, path: Path) -> str:
     return str(path.resolve().relative_to(root.resolve())).replace("\\", "/")
 
 
-def clear_scene() -> None:
-    bpy.ops.object.select_all(action="SELECT")
-    bpy.ops.object.delete(use_global=False)
-    for collection in (
-        bpy.data.meshes,
-        bpy.data.materials,
-        bpy.data.cameras,
-        bpy.data.lights,
-        bpy.data.armatures,
-        bpy.data.actions,
-    ):
-        for item in list(collection):
-            if item.users == 0:
-                collection.remove(item)
-
-
 def import_meshes(path: Path) -> list[Any]:
-    clear_scene()
+    clear_blender_scene(
+        ("meshes", "materials", "cameras", "lights", "armatures", "actions")
+    )
     before = set(bpy.context.scene.objects)
     bpy.ops.import_scene.gltf(filepath=str(path))
     meshes = [
@@ -78,21 +66,6 @@ def import_meshes(path: Path) -> list[Any]:
         raise ValueError(f"environment has no mesh: {path}")
     bpy.context.view_layer.update()
     return meshes
-
-
-def world_bounds(meshes: list[Any]) -> tuple[mathutils.Vector, mathutils.Vector]:
-    points = [
-        obj.matrix_world @ mathutils.Vector(corner)
-        for obj in meshes
-        for corner in obj.bound_box
-    ]
-    low = mathutils.Vector(
-        tuple(min(float(point[axis]) for point in points) for axis in range(3))
-    )
-    high = mathutils.Vector(
-        tuple(max(float(point[axis]) for point in points) for axis in range(3))
-    )
-    return low, high
 
 
 def apply_reviewed_shell_edits(meshes: list[Any], asset: dict[str, Any]) -> list[Any]:
@@ -263,7 +236,7 @@ def build_record(
     if sha256(source) != str(asset["sha256"]):
         raise ValueError(f"visual hash changed: {asset['asset_id']}")
     meshes = import_meshes(source)
-    low, high = world_bounds(meshes)
+    low, high = blender_world_bounds(meshes)
     expected_size = np.asarray(asset["source_bbox_size"], dtype=np.float64)
     actual_size = np.asarray(tuple(high - low), dtype=np.float64)
     if float(np.max(np.abs(actual_size - expected_size))) > 2.0e-4:

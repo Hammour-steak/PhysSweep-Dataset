@@ -9,6 +9,9 @@ import math
 import sys
 from pathlib import Path
 
+from tools.core.blender_runtime import blender_world_bounds as world_bounds
+from tools.core.blender_runtime import clear_blender_scene as clear_scene
+
 
 def args_from_blender() -> argparse.Namespace:
     values = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
@@ -19,25 +22,6 @@ def args_from_blender() -> argparse.Namespace:
     parser.add_argument("--ids-file", type=Path)
     parser.add_argument("--views", type=int, choices=(1, 3), default=1)
     return parser.parse_args(values)
-
-
-def clear_scene() -> None:
-    import bpy
-    bpy.ops.object.select_all(action="SELECT")
-    bpy.ops.object.delete(use_global=False)
-
-
-def world_bounds(objects):
-    import mathutils
-    low = mathutils.Vector((float("inf"),) * 3)
-    high = mathutils.Vector((float("-inf"),) * 3)
-    for obj in objects:
-        for corner in obj.bound_box:
-            point = obj.matrix_world @ mathutils.Vector(corner)
-            for axis in range(3):
-                low[axis] = min(low[axis], point[axis])
-                high[axis] = max(high[axis], point[axis])
-    return low, high
 
 
 def look_at(obj, target) -> None:

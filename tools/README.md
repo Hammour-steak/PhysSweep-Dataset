@@ -22,10 +22,15 @@ Asset download, conversion, and proxy-building tools additionally require
 - `training_export`: derived training views; never an input to dataset generation.
 - `native`: small compiled runtime helpers used by render workers.
 
-The `tools` root contains no executable modules. Shared physics, rendering, and
-dataset contracts stay object-count neutral; object-count-specific rules do not.
-Sampling may call physics backends, but physics modules never import samplers.
-Training exports consume published dataset records and never feed generation.
+The `tools` root contains no executable modules. Core utilities, dataset
+contracts, backend dispatch, and normalized trajectories are object-count
+neutral. The current generic PyBullet simulator, trajectory auditor, visual
+binder, Blender renderer, and sweep publisher are explicitly 1obj adapters;
+their established file paths remain stable for provenance. A future 2obj path
+must add parallel `motion_rules/two_object` rules and multi-object adapters while
+reusing the shared identity and object-axis contracts. Sampling may call physics
+backends, but physics and release modules never import samplers. Training exports
+consume published dataset records and never feed generation.
 
 ## Active Contracts
 

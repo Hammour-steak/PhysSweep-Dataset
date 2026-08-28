@@ -104,26 +104,6 @@ def fit_axis_cylinder(mesh: trimesh.Trimesh, axis: int) -> list[dict]:
     return [collider("cylinder", [2 * radius, 2 * radius, hi - lo], center.tolist(), rotation)]
 
 
-def fit_profile_cylinders(mesh: trimesh.Trimesh, bands: int = 3) -> list[dict]:
-    vertices = np.asarray(mesh.vertices)
-    z_edges = np.linspace(vertices[:, 2].min(), vertices[:, 2].max(), bands + 1)
-    result = []
-    for index in range(bands):
-        upper = vertices[:, 2] <= z_edges[index + 1] if index == bands - 1 else vertices[:, 2] < z_edges[index + 1]
-        selected = vertices[(vertices[:, 2] >= z_edges[index]) & upper]
-        if len(selected) < 4:
-            continue
-        xy_center = (selected[:, :2].min(axis=0) + selected[:, :2].max(axis=0)) * 0.5
-        radius = float(np.linalg.norm(selected[:, :2] - xy_center, axis=1).max())
-        height = float(z_edges[index + 1] - z_edges[index])
-        result.append(collider(
-            "cylinder", [2 * radius, 2 * radius, height],
-            [float(xy_center[0]), float(xy_center[1]), float((z_edges[index] + z_edges[index + 1]) * 0.5)],
-            cid=f"profile_{index}",
-        ))
-    return result
-
-
 def primitive_volume(item: dict) -> float:
     size = item["size_m"]
     if item["shape"] == "box":

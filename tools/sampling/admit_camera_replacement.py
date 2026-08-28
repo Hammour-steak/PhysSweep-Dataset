@@ -11,19 +11,14 @@ from typing import Any
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic as write_json
+from tools.core.paths import (
+    project_relative_path as root_relative,
+    resolve_project_path as resolve,
+)
 from tools.sampling.sample_one_object_scene_matrix import generic_retry_seed
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
-def resolve(root: Path, path: Path | str) -> Path:
-    value = Path(path)
-    return value.resolve() if value.is_absolute() else (root / value).resolve()
-
-
-def root_relative(root: Path, path: Path | str) -> str:
-    return str(resolve(root, path).relative_to(root))
 
 
 def require_single_record(document: dict[str, Any], key: str) -> dict[str, Any]:

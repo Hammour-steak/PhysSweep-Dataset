@@ -8,29 +8,12 @@ import math
 from pathlib import Path
 from typing import Any
 
-from tools.core.blender_runtime import blender_argv
+from tools.core.blender_runtime import blender_argv, blender_world_bounds
 from tools.core.blender_runtime import patch_numpy_for_blender_gltf as patch_numpy
 from tools.rendering.blender_scene import look_at
 
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
-
-
-def bbox(meshes: list[Any]) -> tuple[Any, Any]:
-    import mathutils  # pylint: disable=import-outside-toplevel
-
-    minimum = mathutils.Vector((float("inf"), float("inf"), float("inf")))
-    maximum = mathutils.Vector((float("-inf"), float("-inf"), float("-inf")))
-    for obj in meshes:
-        for corner in obj.bound_box:
-            point = obj.matrix_world @ mathutils.Vector(corner)
-            minimum.x = min(minimum.x, point.x)
-            minimum.y = min(minimum.y, point.y)
-            minimum.z = min(minimum.z, point.z)
-            maximum.x = max(maximum.x, point.x)
-            maximum.y = max(maximum.y, point.y)
-            maximum.z = max(maximum.z, point.z)
-    return minimum, maximum
 
 
 def setup_scene(width: int, height: int, samples: int) -> None:
@@ -89,7 +72,7 @@ def import_asset(record: dict[str, Any]) -> list[Any]:
 def normalize(meshes: list[Any], target_extent: float) -> tuple[list[Any], list[list[float]]]:
     import mathutils  # pylint: disable=import-outside-toplevel
 
-    minimum, maximum = bbox(meshes)
+    minimum, maximum = blender_world_bounds(meshes)
     size = maximum - minimum
     scale = target_extent / max(float(size.x), float(size.y), float(size.z), 1.0e-8)
     center_bottom = mathutils.Vector(
@@ -114,7 +97,7 @@ def add_camera() -> Any:
 
 
 def frame_camera(camera: Any, meshes: list[Any]) -> dict[str, list[float]]:
-    minimum, maximum = bbox(meshes)
+    minimum, maximum = blender_world_bounds(meshes)
     center = (minimum + maximum) * 0.5
     span = maximum - minimum
     radius = max(0.5, 0.5 * float(span.length))
@@ -151,7 +134,7 @@ def render_record(
         bpy.context.scene.render.filepath = str(image_path)
         bpy.ops.render.render(write_still=True)
         views.append({"yaw_degrees": yaw, "image_path": str(image_path), "camera": frame})
-    minimum, maximum = bbox(meshes)
+    minimum, maximum = blender_world_bounds(meshes)
     return {
         "candidate_id": record["candidate_id"],
         "name": record.get("name"),

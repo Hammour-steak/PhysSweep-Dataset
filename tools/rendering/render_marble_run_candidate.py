@@ -17,6 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from tools.core.json_io import read_json as load_json
+from tools.core.blender_runtime import clear_blender_scene
 from tools.core.paths import resolve_project_path as project_path
 from tools.physics.generate_marble_run_candidate import _validate_metadata_files
 
@@ -31,21 +32,6 @@ def blender_args() -> argparse.Namespace:
     parser.add_argument("--frames", default="0,12,24,36,48,60,72")
     parser.add_argument("--video", type=Path)
     return parser.parse_args(values)
-
-
-def clear_scene() -> None:
-    bpy.ops.object.select_all(action="SELECT")
-    bpy.ops.object.delete(use_global=False)
-    for collection in (
-        bpy.data.meshes,
-        bpy.data.curves,
-        bpy.data.materials,
-        bpy.data.cameras,
-        bpy.data.lights,
-    ):
-        for item in list(collection):
-            if item.users == 0:
-                collection.remove(item)
 
 
 def material(name: str, rgba: list[float], metallic: float = 0.0) -> Any:
@@ -185,7 +171,7 @@ def configure_scene(metadata: dict[str, Any]) -> None:
 
 
 def build_scene(root: Path, metadata: dict[str, Any], trajectory: dict[str, np.ndarray]) -> None:
-    clear_scene()
+    clear_blender_scene(("meshes", "curves", "materials", "cameras", "lights"))
     for component in metadata["fixture"]["mesh_components"]:
         import_track(root, component)
     for collider in metadata["fixture"]["analytic_colliders"]:

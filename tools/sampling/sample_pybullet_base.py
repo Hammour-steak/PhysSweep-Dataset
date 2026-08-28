@@ -37,6 +37,9 @@ from tools.motion_rules.one_object.ballistic import (
     bounce_observation_contract as grouped_bounce_observation_contract,
 )
 from tools.dataset_contract.object_identity_contract import attach_object_identity
+from tools.dataset_contract.semantic_coverage import (
+    semantic_coverage_counts as manifest_counts,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BUNDLE_PATH = PROJECT_ROOT / "configs/one_object_sampling_bundle.json"
@@ -1934,60 +1937,6 @@ def build_batch(
         attach_object_identity(scene)
         scenes.append(scene)
     return scenes
-
-
-def manifest_counts(scenes: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
-    dimensions = [scene["semantic_sampling"]["five_dimensions"] for scene in scenes]
-    return {
-        "motion": dict(Counter(item["motion"]["family"] for item in dimensions)),
-        "object": dict(Counter(item["foreground_object"]["object_type"] for item in dimensions)),
-        "visual_type": dict(Counter(item["foreground_object"]["visual_type"] for item in dimensions)),
-        "scene_class": dict(Counter(item["support_interaction"]["scene_class"] for item in dimensions)),
-        "support": dict(Counter(item["support_interaction"]["support_type"] for item in dimensions)),
-        "support_geometry_variant": dict(
-            Counter(
-                item["support_interaction"]["geometry_variant_id"]
-                for item in dimensions
-            )
-        ),
-        "scene_visual": dict(
-            Counter(
-                item["support_interaction"]["scene_visual_profile"]
-                for item in dimensions
-            )
-        ),
-        "scene_visual_type": dict(
-            Counter(
-                item["support_interaction"]["scene_visual_type"]
-                for item in dimensions
-            )
-        ),
-        "support_visual": dict(
-            Counter(
-                item["support_interaction"]["support_visual_profile"]
-                for item in dimensions
-            )
-        ),
-        "support_visual_type": dict(
-            Counter(
-                item["support_interaction"]["support_visual_type"]
-                for item in dimensions
-            )
-        ),
-        "camera": dict(
-            Counter(
-                item["camera_observation"]["camera_profile"]
-                for item in dimensions
-            )
-        ),
-        "surface_family": dict(Counter(item["appearance_lighting"]["surface_family"] for item in dimensions)),
-        "environment_category": dict(
-            Counter(
-                item["appearance_lighting"]["environment_category"]
-                for item in dimensions
-            )
-        ),
-    }
 
 
 def parse_args() -> argparse.Namespace:

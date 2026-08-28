@@ -164,6 +164,24 @@ class RepositoryHygieneTest(unittest.TestCase):
                 )
         self.assertEqual(findings, [])
 
+    def test_release_does_not_depend_on_sampling(self) -> None:
+        findings = []
+        for path in (ROOT / "tools" / "release").glob("*.py"):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                modules = []
+                if isinstance(node, ast.Import):
+                    modules = [alias.name for alias in node.names]
+                elif isinstance(node, ast.ImportFrom) and node.module:
+                    modules = [node.module]
+                findings.extend(
+                    f"{path.name}: {module}"
+                    for module in modules
+                    if module == "tools.sampling"
+                    or module.startswith("tools.sampling.")
+                )
+        self.assertEqual(findings, [])
+
     def test_assets_do_not_depend_on_rendering(self) -> None:
         findings = []
         for path in (ROOT / "tools" / "assets").glob("*.py"):
@@ -184,7 +202,19 @@ class RepositoryHygieneTest(unittest.TestCase):
 
     def test_shared_infrastructure_has_no_exact_function_copies(self) -> None:
         fingerprints: dict[tuple[str, str], list[str]] = {}
-        shared_names = {"load_json", "write_json", "sha256", "project_path"}
+        shared_names = {
+            "bbox",
+            "bounds",
+            "clear_scene",
+            "load_json",
+            "project_path",
+            "relative_path",
+            "resolve_path",
+            "root_relative",
+            "sha256",
+            "world_bounds",
+            "write_json",
+        }
         for path in (ROOT / "tools").rglob("*.py"):
             relative = path.relative_to(ROOT).as_posix()
             if relative in PROVENANCE_FROZEN_INFRASTRUCTURE:
@@ -211,6 +241,45 @@ class RepositoryHygieneTest(unittest.TestCase):
             ["__init__.py"],
         )
         self.assertTrue((motion_rules / "one_object" / "registry.py").is_file())
+
+    def test_current_single_object_adapters_declare_their_capability(self) -> None:
+        adapters = (
+            "tools/physics/rigid_trajectory.py",
+            "tools/physics/simulate_pybullet_rigid.py",
+            "tools/rendering/bind_pybullet_visuals.py",
+            "tools/rendering/render_pybullet_rigid.py",
+        )
+        for relative in adapters:
+            with self.subTest(module=relative):
+                tree = ast.parse((ROOT / relative).read_text(encoding="utf-8"))
+                declarations = [
+                    ast.literal_eval(node.value)
+                    for node in tree.body
+                    if isinstance(node, ast.Assign)
+                    and any(
+                        isinstance(target, ast.Name)
+                        and target.id == "SUPPORTED_DYNAMIC_OBJECT_COUNTS"
+                        for target in node.targets
+                    )
+                ]
+                self.assertEqual(declarations, [(1,)])
+
+        validation = ast.parse(
+            (ROOT / "tools/release/sweep_validation.py").read_text(
+                encoding="utf-8"
+            )
+        )
+        target_declarations = [
+            ast.literal_eval(node.value)
+            for node in validation.body
+            if isinstance(node, ast.Assign)
+            and any(
+                isinstance(target, ast.Name)
+                and target.id == "SUPPORTED_TARGET_OBJECT_INDICES"
+                for target in node.targets
+            )
+        ]
+        self.assertEqual(target_declarations, [(0,)])
 
 
 if __name__ == "__main__":

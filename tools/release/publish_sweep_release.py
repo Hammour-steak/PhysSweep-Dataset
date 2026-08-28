@@ -5,91 +5,24 @@ from __future__ import annotations
 
 import argparse
 import tempfile
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic as write_json
+from tools.core.paths import project_relative_path, resolve_project_path
+from tools.dataset_contract.semantic_coverage import (
+    semantic_coverage_counts as generic_manifest_counts,
+)
+from tools.release.sweep_validation import (
+    AXES,
+    validate_groups,
+    validate_source_artifacts,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-AXES = ("mass_kg", "contact_friction", "contact_restitution")
-
-
-def generic_manifest_counts(metadata: list[dict[str, Any]]) -> dict[str, Any]:
-    """Load the generic sampler only when a release actually needs coverage."""
-    from tools.sampling.sample_pybullet_base import manifest_counts
-    return manifest_counts(metadata)
-
-
-def validate_groups(records: list[dict[str, Any]]) -> int:
-    groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for record in records:
-        groups[str(record["parent"])].append(record)
-    for parent, group in groups.items():
-        if len(group) != 13:
-            raise ValueError(f"group does not contain 13 records: {parent}")
-        if sum(record["kind"] == "base" for record in group) != 1:
-            raise ValueError(f"group does not contain one canonical base: {parent}")
-        axis_counts = Counter(
-            record.get("axis") for record in group if record["kind"] == "sweep"
-        )
-        if axis_counts != Counter({axis: 4 for axis in AXES}):
-            raise ValueError(f"group has an invalid axis layout: {parent}")
-        derived = [record for record in group if record["kind"] == "sweep"]
-        for axis in AXES:
-            levels = {
-                int(record["level_index"])
-                for record in derived
-                if record["axis"] == axis
-            }
-            if levels != {0, 1, 3, 4}:
-                raise ValueError(f"group has invalid sweep levels: {parent}/{axis}")
-        targets = {
-            (str(record["target_object_id"]), int(record["target_object_index"]))
-            for record in derived
-        }
-        if len(targets) != 1 or next(iter(targets))[1] != 0:
-            raise ValueError(f"group does not target one object: {parent}")
-    return len(groups)
-
-
-def validate_source_artifacts(
-    root: Path,
-    metadata_records: list[dict[str, Any]],
-    physics_records: list[dict[str, Any]],
-) -> None:
-    physics_by_id = {str(record["scene_id"]): record for record in physics_records}
-    if len(physics_by_id) != len(physics_records):
-        raise ValueError("physics manifest contains duplicate scene ids")
-    for metadata in metadata_records:
-        scene_id = str(metadata["scene_id"])
-        physics = physics_by_id.get(scene_id)
-        if physics is None:
-            raise ValueError(f"physics record is missing: {scene_id}")
-        metadata_path = resolve(root, Path(metadata["path"]))
-        metadata_path.relative_to(root)
-        metadata_hash = sha256(metadata_path)
-        if (
-            resolve(root, Path(physics["metadata_path"])) != metadata_path
-            or str(metadata["metadata_sha256"]) != metadata_hash
-            or str(physics["metadata_sha256"]) != metadata_hash
-        ):
-            raise ValueError(f"metadata provenance mismatch: {scene_id}")
-        if str(metadata["source_schema_version"]) != str(
-            physics["source_schema_version"]
-        ):
-            raise ValueError(f"source schema mismatch: {scene_id}")
-        for path_key, hash_key in (
-            ("resolved_scene_path", "resolved_scene_sha256"),
-            ("trajectory_path", "trajectory_sha256"),
-            ("audit_path", "audit_sha256"),
-        ):
-            artifact = resolve(root, Path(physics[path_key]))
-            artifact.relative_to(root)
-            if sha256(artifact) != str(physics[hash_key]):
-                raise ValueError(f"physics artifact hash mismatch: {scene_id}/{path_key}")
 
 
 def merge_base_records(
@@ -190,11 +123,11 @@ def parse_args() -> argparse.Namespace:
 
 
 def resolve(root: Path, path: Path) -> Path:
-    return path.resolve() if path.is_absolute() else (root / path).resolve()
+    return resolve_project_path(root, path)
 
 
 def root_relative(root: Path, path: Path) -> str:
-    return path.resolve().relative_to(root).as_posix()
+    return project_relative_path(root, path)
 
 
 def main() -> None:

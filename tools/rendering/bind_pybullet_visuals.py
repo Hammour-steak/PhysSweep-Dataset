@@ -16,7 +16,10 @@ import numpy as np
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic as write_json
-from tools.dataset_contract.object_identity_contract import attach_object_identity
+from tools.dataset_contract.object_identity_contract import (
+    attach_object_identity,
+    require_single_simulation_object,
+)
 
 from tools.core.camera_geometry import (
     camera_azimuth_offsets,
@@ -28,6 +31,7 @@ from tools.dataset_contract.trajectory_contract import object_trajectory_view
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 ACTIVE_RULES_PATH = PROJECT_ROOT / "configs/one_object_sampling_rules.json"
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1,)
 
 
 def project_points(
@@ -540,7 +544,8 @@ def solve_camera(
     request = metadata["camera_request"]
     profile = str(request["profile"])
     observation = request["observation"]
-    object_id = str(metadata["simulation"]["objects"][0]["object_id"])
+    obj = require_single_simulation_object(metadata, __name__)
+    object_id = str(obj["object_id"])
     focus_points, positions, center_indices = sampled_motion_points(
         trajectory,
         object_id,
@@ -554,7 +559,7 @@ def solve_camera(
         ]
     )
     object_size = np.asarray(
-        metadata["simulation"]["objects"][0]["geometry"]["size_m"], dtype=np.float64
+        obj["geometry"]["size_m"], dtype=np.float64
     )
     object_lower = np.asarray(
         trajectory[f"{object_id}__aabb_min_m"], dtype=np.float64
@@ -1390,10 +1395,8 @@ def solve_camera(
 
 
 def shadow_readable_lighting(metadata: dict[str, Any]) -> dict[str, Any]:
-    object_size = np.asarray(
-        metadata["simulation"]["objects"][0]["geometry"]["size_m"],
-        dtype=np.float64,
-    )
+    obj = require_single_simulation_object(metadata, __name__)
+    object_size = np.asarray(obj["geometry"]["size_m"], dtype=np.float64)
     footprint_m = float(max(object_size[0], object_size[1]))
     thickness_m = float(min(object_size))
     key_size_m = float(np.clip(4.5 * footprint_m, 0.95, 1.60))

@@ -13,14 +13,10 @@ from typing import Any
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic as write_json
+from tools.core.paths import resolve_project_path as resolve_path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
-def resolve_path(root: Path, value: str | Path) -> Path:
-    path = Path(value)
-    return path if path.is_absolute() else root / path
 
 
 def project_path(root: Path, path: Path) -> str:

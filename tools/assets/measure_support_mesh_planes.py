@@ -10,6 +10,9 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from tools.core.blender_runtime import blender_world_bounds as bounds
+from tools.core.blender_runtime import clear_blender_scene as clear_scene
+
 
 def args_from_blender() -> argparse.Namespace:
     values = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
@@ -23,13 +26,6 @@ def args_from_blender() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--ids", nargs="+", required=True)
     return parser.parse_args(values)
-
-
-def clear_scene() -> None:
-    import bpy
-
-    bpy.ops.object.select_all(action="SELECT")
-    bpy.ops.object.delete(use_global=False)
 
 
 def import_meshes(path: Path) -> list[Any]:
@@ -49,20 +45,6 @@ def import_meshes(path: Path) -> list[Any]:
         obj.parent = None
         obj.matrix_world = matrix
     return meshes
-
-
-def bounds(meshes: list[Any]) -> tuple[Any, Any]:
-    import mathutils
-
-    low = mathutils.Vector((float("inf"),) * 3)
-    high = mathutils.Vector((float("-inf"),) * 3)
-    for obj in meshes:
-        for corner in obj.bound_box:
-            point = obj.matrix_world @ mathutils.Vector(corner)
-            for axis in range(3):
-                low[axis] = min(low[axis], point[axis])
-                high[axis] = max(high[axis], point[axis])
-    return low, high
 
 
 def projected_xy_area(points: list[Any]) -> float:

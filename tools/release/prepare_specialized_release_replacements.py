@@ -14,7 +14,10 @@ from typing import Any
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic as write_json
-from tools.core.paths import resolve_project_path as project_path
+from tools.core.paths import (
+    project_relative_path as root_relative,
+    resolve_project_path as project_path,
+)
 from tools.release.specialized_release_extension import (
     load_extension_spec,
     project_root_reference,
@@ -23,10 +26,6 @@ from tools.release.specialized_release_extension import (
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
-def root_relative(root: Path, path: Path) -> str:
-    return path.resolve().relative_to(root.resolve()).as_posix()
 
 
 def module_name(root: Path, script: Path) -> str:

@@ -6,38 +6,13 @@ import math
 from pathlib import Path
 from typing import Any
 
+from tools.core.blender_runtime import blender_world_bounds as bounds
+from tools.core.blender_runtime import clear_blender_scene
 from tools.core.hashing import sha256_file as sha256
 
 
 def clear_scene() -> None:
-    import bpy
-
-    bpy.ops.object.select_all(action="SELECT")
-    bpy.ops.object.delete(use_global=False)
-    for collection in (
-        bpy.data.meshes,
-        bpy.data.curves,
-        bpy.data.cameras,
-        bpy.data.lights,
-        bpy.data.materials,
-    ):
-        for item in list(collection):
-            if item.users == 0:
-                collection.remove(item)
-
-
-def bounds(objects: list[Any]) -> tuple[Any, Any]:
-    import mathutils
-
-    low = mathutils.Vector((float("inf"),) * 3)
-    high = mathutils.Vector((float("-inf"),) * 3)
-    for obj in objects:
-        for corner in obj.bound_box:
-            point = obj.matrix_world @ mathutils.Vector(corner)
-            for axis in range(3):
-                low[axis] = min(low[axis], point[axis])
-                high[axis] = max(high[axis], point[axis])
-    return low, high
+    clear_blender_scene(("meshes", "curves", "cameras", "lights", "materials"))
 
 
 def import_meshes(root: Path, record: dict[str, Any]) -> list[Any]:

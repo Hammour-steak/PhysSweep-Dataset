@@ -54,42 +54,6 @@ def transform_points(points: np.ndarray, transform: np.ndarray) -> np.ndarray:
     return (homogeneous @ transform.T)[:, :3]
 
 
-def camera_from_world_from_spec(camera: dict[str, Any]) -> np.ndarray:
-    position = np.asarray(camera["position_m"], dtype=np.float64)
-    target = np.asarray(camera["target_m"], dtype=np.float64)
-    if position.shape != (3,) or target.shape != (3,):
-        raise ValueError("camera position and target must have shape [3]")
-    forward = target - position
-    forward /= max(float(np.linalg.norm(forward)), 1.0e-12)
-    world_up = np.asarray(camera.get("world_up", [0.0, 0.0, 1.0]), dtype=np.float64)
-    right = np.cross(forward, world_up)
-    right /= max(float(np.linalg.norm(right)), 1.0e-12)
-    up = np.cross(right, forward)
-    up /= max(float(np.linalg.norm(up)), 1.0e-12)
-    rotation = np.stack([right, up, forward], axis=0)
-    transform = np.eye(4, dtype=np.float64)
-    transform[:3, :3] = rotation
-    transform[:3, 3] = -rotation @ position
-    return transform
-
-
-def camera_intrinsics_from_spec(
-    camera: dict[str, Any], image_size_px: tuple[int, int]
-) -> np.ndarray:
-    width, height = [int(value) for value in image_size_px]
-    focal = float(camera["focal_length_mm"])
-    sensor_width = float(camera["sensor_width_mm"])
-    focal_px = focal / sensor_width * width
-    return np.asarray(
-        [
-            [focal_px, 0.0, width * 0.5],
-            [0.0, focal_px, height * 0.5],
-            [0.0, 0.0, 1.0],
-        ],
-        dtype=np.float64,
-    )
-
-
 def project_camera_points(
     points_camera_m: np.ndarray,
     intrinsics: np.ndarray,

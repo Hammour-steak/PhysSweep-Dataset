@@ -23,9 +23,12 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from tools.core.hashing import sha256_file as sha256
-from tools.core.blender_runtime import blender_argv
+from tools.core.blender_runtime import blender_argv, clear_blender_scene
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
+from tools.dataset_contract.object_identity_contract import (
+    require_single_simulation_object,
+)
 from tools.rendering import render_sketchfab_background_compositions as composition
 from tools.rendering.appearance_adaptation import (
     apply_material_lightness_adaptation,
@@ -35,6 +38,8 @@ from tools.rendering.blender_render_settings import configure_render_engine
 from tools.assets.static_support_proxy import blender_import_static_support_visual
 from tools.rendering.video_encoding import configure_h264_output, normalize_h264_container
 from tools.dataset_contract.trajectory_contract import object_trajectory_view
+
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1,)
 
 
 def configure_project_root(root: Path) -> Path:
@@ -46,21 +51,6 @@ def configure_project_root(root: Path) -> Path:
 def resolve_project_path(value: str) -> Path:
     path = Path(value)
     return path if path.is_absolute() else PROJECT_ROOT / path
-
-
-def clear_scene() -> None:
-    bpy.ops.object.select_all(action="SELECT")
-    bpy.ops.object.delete(use_global=False)
-    for datablocks in (
-        bpy.data.meshes,
-        bpy.data.curves,
-        bpy.data.materials,
-        bpy.data.cameras,
-        bpy.data.lights,
-    ):
-        for datablock in list(datablocks):
-            if datablock.users == 0:
-                datablocks.remove(datablock)
 
 
 def setup_scene(render: dict[str, Any]) -> None:
@@ -774,7 +764,8 @@ def build_static_scene(
     add_area_light("key_area", visual["environment"]["key_light"])
     add_area_light("fill_area", visual["environment"]["fill_light"])
     apply_hdri(visual["hdri"])
-    dynamic_size = metadata["simulation"]["objects"][0]["geometry"]["size_m"]
+    record = require_single_simulation_object(metadata, __name__)
+    dynamic_size = record["geometry"]["size_m"]
     return {
         "dynamic_object": material_from_binding(
             "physweep_dynamic_object",
@@ -788,7 +779,7 @@ def build_static_scene(
 def add_dynamic_animation(
     metadata: dict[str, Any], trajectory: dict[str, np.ndarray], material: Any
 ) -> Any:
-    record = metadata["simulation"]["objects"][0]
+    record = require_single_simulation_object(metadata, __name__)
     object_id = str(record["object_id"])
     positions = np.asarray(trajectory[f"{object_id}__position_m"], dtype=np.float64)
     quaternions = np.asarray(
@@ -881,7 +872,8 @@ def render_unoccluded_instance_masks(
 ) -> dict[str, Any]:
     """Render a conservative silhouette tube using the bound camera and trajectory."""
     mask_dir = resolve_project_path(str(render["instance_mask_dir"]))
-    object_id = str(metadata["simulation"]["objects"][0]["object_id"])
+    record = require_single_simulation_object(metadata, __name__)
+    object_id = str(record["object_id"])
     object_dir = mask_dir / object_id
     object_dir.mkdir(parents=True, exist_ok=True)
     for stale_mask in object_dir.glob("frame_*.png"):
@@ -1076,7 +1068,7 @@ def render(
     )
     if int(trajectory["time_s"].shape[0]) != expected_frames:
         raise ValueError("render and trajectory frame counts differ")
-    clear_scene()
+    clear_blender_scene(("meshes", "curves", "materials", "cameras", "lights"))
     setup_scene(render_config)
     materials = build_static_scene(metadata, visual)
     dynamic = add_dynamic_animation(metadata, trajectory, materials["dynamic_object"])

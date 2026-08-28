@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from tools.core.blender_runtime import blender_world_bounds as bbox
 from tools.core.hashing import sha256_file as sha256
 
 
@@ -59,20 +60,6 @@ def reset_scene() -> None:
         for datablock in list(datablocks):
             if datablock.users == 0:
                 datablocks.remove(datablock)
-
-
-def bbox(objects: list[Any]) -> tuple[Any, Any]:
-    import mathutils
-
-    low = mathutils.Vector((float("inf"),) * 3)
-    high = mathutils.Vector((float("-inf"),) * 3)
-    for obj in objects:
-        for corner in obj.bound_box:
-            point = obj.matrix_world @ mathutils.Vector(corner)
-            for axis in range(3):
-                low[axis] = min(low[axis], point[axis])
-                high[axis] = max(high[axis], point[axis])
-    return low, high
 
 
 def has_image_texture(objects: list[Any]) -> bool:

@@ -5,11 +5,32 @@ import unittest
 from tools.dataset_contract.object_identity_contract import (
     OBJECT_IDENTITY_SCHEMA_VERSION,
     attach_object_identity,
+    require_simulation_objects,
+    require_single_simulation_object,
     validate_object_identity,
 )
 
 
 class ObjectIdentityContractTests(unittest.TestCase):
+    def test_adapter_object_count_capability_is_explicit(self) -> None:
+        metadata = {
+            "simulation": {
+                "objects": [
+                    {"object_id": "object_a"},
+                    {"object_id": "object_b"},
+                ]
+            }
+        }
+        self.assertEqual(
+            [
+                record["object_id"]
+                for record in require_simulation_objects(metadata, (1, 2), "test")
+            ],
+            ["object_a", "object_b"],
+        )
+        with self.assertRaisesRegex(ValueError, "supports dynamic object counts"):
+            require_single_simulation_object(metadata, "one_object_test")
+
     def test_generic_object_maps_text_trajectory_mask_and_sweep(self) -> None:
         metadata = {
             "semantic_sampling": {

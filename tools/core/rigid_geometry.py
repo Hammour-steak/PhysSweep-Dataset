@@ -118,12 +118,6 @@ def object_contact_offset_m(shape: str, size_m: list[float]) -> float:
     raise ValueError(f"unsupported rigid shape: {shape}")
 
 
-def object_projection_radius_xy_m(shape: str, size_m: list[float]) -> float:
-    if shape == "sphere":
-        return float(size_m[0]) / 2.0
-    return math.hypot(float(size_m[0]), float(size_m[1])) / 2.0
-
-
 def _layout_for_support(support: dict[str, Any], motion: str, subtype: dict[str, Any]) -> str:
     placement = support.get("overrides", {}).get("placement", {})
     support_shape = str(placement.get("support_shape", "rectangular_slab"))

@@ -11,16 +11,15 @@ from typing import Any
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
-from tools.core.paths import resolve_project_path_within_root as project_path
+from tools.core.paths import (
+    project_relative_path as relative_path,
+    resolve_project_path_within_root as project_path,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 AXES = ("mass_kg", "contact_friction", "contact_restitution")
 DERIVED_LEVELS = (0, 1, 3, 4)
-
-
-def relative_path(root: Path, path: Path) -> str:
-    return str(path.resolve().relative_to(root))
 
 
 def validate_source_groups(

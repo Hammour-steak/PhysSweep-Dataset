@@ -8,7 +8,7 @@ import math
 from pathlib import Path
 from typing import Any
 
-from tools.core.blender_runtime import blender_argv
+from tools.core.blender_runtime import blender_argv, blender_world_bounds
 from tools.core.blender_runtime import patch_numpy_for_blender_gltf as patch_numpy
 from tools.rendering.blender_scene import look_at
 
@@ -17,23 +17,6 @@ from tools.core.json_io import write_json
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
-def bbox(meshes: list[Any]) -> tuple[Any, Any]:
-    import mathutils  # pylint: disable=import-outside-toplevel
-
-    low = mathutils.Vector((float("inf"), float("inf"), float("inf")))
-    high = mathutils.Vector((float("-inf"), float("-inf"), float("-inf")))
-    for obj in meshes:
-        for corner in obj.bound_box:
-            point = obj.matrix_world @ mathutils.Vector(corner)
-            low.x = min(low.x, point.x)
-            low.y = min(low.y, point.y)
-            low.z = min(low.z, point.z)
-            high.x = max(high.x, point.x)
-            high.y = max(high.y, point.y)
-            high.z = max(high.z, point.z)
-    return low, high
 
 
 def setup_scene(width: int, height: int, samples: int) -> None:
@@ -90,7 +73,7 @@ def import_asset(asset: dict[str, Any]) -> tuple[list[Any], Any, Any]:
         matrix = obj.matrix_world.copy()
         obj.parent = None
         obj.matrix_world = matrix
-    low, high = bbox(meshes)
+    low, high = blender_world_bounds(meshes)
     excluded_names = {str(value) for value in asset.get("exclude_object_names", [])}
     excluded_prefixes = tuple(
         str(value) for value in asset.get("exclude_object_name_prefixes", [])

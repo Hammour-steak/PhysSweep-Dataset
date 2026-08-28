@@ -14,12 +14,44 @@ from typing import Any
 
 
 OBJECT_IDENTITY_SCHEMA_VERSION = "physweep_object_identity_v1"
+
+
 def _as_mapping(value: Any) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
 
 
 def _as_list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
+
+
+def require_simulation_objects(
+    metadata: Mapping[str, Any],
+    supported_counts: Iterable[int],
+    consumer: str,
+) -> list[dict[str, Any]]:
+    """Return explicit simulation objects after checking an adapter capability."""
+
+    simulation = metadata.get("simulation")
+    records = simulation.get("objects") if isinstance(simulation, Mapping) else None
+    if not isinstance(records, list) or any(
+        not isinstance(record, dict) for record in records
+    ):
+        raise ValueError(f"{consumer} requires simulation.objects records")
+    allowed = tuple(sorted({int(value) for value in supported_counts}))
+    if len(records) not in allowed:
+        raise ValueError(
+            f"{consumer} supports dynamic object counts {list(allowed)}, "
+            f"received {len(records)}"
+        )
+    return records
+
+
+def require_single_simulation_object(
+    metadata: Mapping[str, Any], consumer: str
+) -> dict[str, Any]:
+    """Return the sole object for an explicitly one-object adapter."""
+
+    return require_simulation_objects(metadata, (1,), consumer)[0]
 
 
 def canonical_object_id(record: Mapping[str, Any], index: int) -> str:
