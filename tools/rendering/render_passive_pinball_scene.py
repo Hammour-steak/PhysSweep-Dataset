@@ -167,11 +167,14 @@ def render_instance_masks(
     ball: Any,
     fixture_objects: list[Any],
     frame_dir: Path,
+    mask_root_override: Path | None = None,
 ) -> dict[str, Any]:
     scene = bpy.context.scene
     object_id = str(metadata["simulation"]["objects"][0]["object_id"])
     declared = metadata["object_identity"]["instance_masks"].get("path")
-    if declared:
+    if mask_root_override is not None:
+        mask_root = mask_root_override.resolve()
+    elif declared:
         declared_root = Path(str(declared))
         if declared_root.is_absolute():
             raise ValueError("passive-pinball mask path must be project-relative")
@@ -252,6 +255,7 @@ def render(
     metadata_path: Path,
     video_path_override: Path | None = None,
     frame_dir_override: Path | None = None,
+    mask_root_override: Path | None = None,
 ) -> dict[str, Any]:
     started = time.perf_counter()
     metadata_path = metadata_path.resolve()
@@ -305,7 +309,7 @@ def render(
     bpy.ops.render.render(animation=True)
     normalize_h264_container(video_path)
     instance_mask_output = render_instance_masks(
-        metadata, ball, fixture_objects, frame_dir
+        metadata, ball, fixture_objects, frame_dir, mask_root_override
     )
     fixture_payload = json.dumps(
         metadata["physics"]["fixture"], sort_keys=True, separators=(",", ":")
@@ -337,5 +341,10 @@ def render(
 
 
 if __name__ == "__main__":
-    args = parse_scene_render_args(__doc__)
-    render(args.metadata, args.video_path, args.inspection_frame_dir)
+    args = parse_scene_render_args(__doc__, include_mask_output=True)
+    render(
+        args.metadata,
+        args.video_path,
+        args.inspection_frame_dir,
+        args.instance_mask_dir,
+    )

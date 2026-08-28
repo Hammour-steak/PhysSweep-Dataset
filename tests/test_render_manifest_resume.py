@@ -51,7 +51,6 @@ class RenderManifestResumeTests(unittest.TestCase):
                     output,
                     source_record,
                     mask_contract,
-                    renderer_requires_masks=True,
                 ),
                 (output / "masks/scene").resolve(),
             )

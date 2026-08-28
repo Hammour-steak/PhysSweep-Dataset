@@ -108,6 +108,15 @@ class PipelineBoundaryTest(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("tools.rendering.freeze_asset_sweep_cameras", source)
+        for renderer in (
+            "render_passive_pinball_scene.py",
+            "render_marble_run_scene.py",
+        ):
+            renderer_source = (ROOT / "tools/rendering" / renderer).read_text(
+                encoding="utf-8"
+            )
+            self.assertIn("include_mask_output=True", renderer_source)
+            self.assertIn("args.instance_mask_dir", renderer_source)
 
     def test_matrix_sampler_defaults_to_the_formal_release_size(self):
         tree = ast.parse(

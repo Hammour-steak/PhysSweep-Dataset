@@ -79,13 +79,9 @@ def expected_instance_mask_directory(
     output: Path,
     source_record: Mapping[str, Any],
     mask_contract: Mapping[str, Any],
-    *,
-    renderer_requires_masks: bool,
 ) -> Path:
     """Resolve the mask destination used by the current render invocation."""
-    if renderer_requires_masks and isinstance(
-        source_record.get("render_output"), dict
-    ):
+    if isinstance(source_record.get("render_output"), dict):
         path = output / "masks" / str(source_record["scene_id"])
     else:
         declared = mask_contract.get("path")
@@ -122,6 +118,11 @@ def instance_masks_are_reusable(
         return False
     manifest = load_json(manifest_path)
     if str(manifest.get("scene_id")) != str(render_record.get("scene_id")):
+        return False
+    if (
+        expected_directory is not None
+        and manifest_path.parent != expected_directory.resolve()
+    ):
         return False
     schema = str(manifest.get("schema_version", ""))
     if schema == "physweep_instance_mask_manifest_v1":
@@ -393,7 +394,6 @@ def reusable_render_record(
                 output,
                 source_record,
                 mask_contract,
-                renderer_requires_masks=renderer_requires_masks,
             )
         except ValueError:
             return False
@@ -550,8 +550,7 @@ def worker(
         "--inspection-frame-dir",
         str(frame_dir),
     ]
-    if script.name in {"render_asset_proxy_scene.py", "render_billiards_scene.py"}:
-        command.extend(("--instance-mask-dir", str(mask_directory)))
+    command.extend(("--instance-mask-dir", str(mask_directory)))
     started = time.perf_counter()
     with isolated_blender_environment(gpu, selector_path) as (
         environment,
