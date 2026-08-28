@@ -104,6 +104,10 @@ class PipelineBoundaryTest(unittest.TestCase):
             },
         )
         self.assertTrue(plan["layout"]["canonical_release"].endswith("one_object"))
+        source = (ROOT / "tools/cli/generate_one_object_dataset.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("tools.rendering.freeze_asset_sweep_cameras", source)
 
     def test_matrix_sampler_defaults_to_the_formal_release_size(self):
         tree = ast.parse(

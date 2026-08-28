@@ -56,56 +56,43 @@ def source_metadata_hash(root: Path, metadata: dict[str, Any], scene_id: str) ->
     return source_hash
 
 
-def freeze_cameras(
-    root: Path, manifest_path: Path, base_manifest_path: Path
-) -> dict[str, int]:
-    root = root.resolve()
-    manifest_path = project_path(root, manifest_path)
-    base_manifest_path = project_path(root, base_manifest_path)
-    derived_manifest_path = manifest_path.with_name("derived_render_input_manifest.json")
-    for path in (manifest_path, base_manifest_path, derived_manifest_path):
-        path.relative_to(root / "outputs")
-
-    manifest = load_json(manifest_path)
-    base_manifest = load_json(base_manifest_path)
-    derived_manifest = load_json(derived_manifest_path)
-    records = indexed_records(manifest, "asset render manifest")
-    base_records = indexed_records(base_manifest, "asset base manifest")
-    derived_records = indexed_records(derived_manifest, "asset derived manifest")
-    if set(records) != set(base_records) | set(derived_records):
-        raise ValueError("base and derived manifests do not partition the asset manifest")
-    if set(base_records) & set(derived_records):
-        raise ValueError("asset base and derived manifests overlap")
-
+def rendered_base_cameras(
+    root: Path, base_manifest: dict[str, Any]
+) -> dict[str, dict[str, Any]]:
     cameras: dict[str, dict[str, Any]] = {}
-    base_parents: dict[str, str] = {}
-    for scene_id, record in base_records.items():
+    for scene_id, record in indexed_records(
+        base_manifest, "asset base render manifest"
+    ).items():
         metadata_path = project_path(root, record["metadata_path"])
-        metadata_path.relative_to(root / "outputs")
+        metadata_path.relative_to(root)
         metadata = load_json(metadata_path)
-        if str(metadata["scene_id"]) != scene_id or metadata["sweep"]["kind"] != "base":
-            raise ValueError(f"invalid asset base metadata: {scene_id}")
-        source_hash = source_metadata_hash(root, metadata, scene_id)
-        parent = str(metadata["sweep"]["parent_scene_id"])
-        if parent in cameras:
-            raise ValueError(f"duplicate asset base parent: {parent}")
-        frame_dir = project_path(root, record["render_output"]["inspection_frame_dir"])
-        render_record = load_json(frame_dir / "render_record.json")
         if (
-            str(render_record["schema_version"])
+            str(metadata.get("schema_version")) != "physweep_asset_proxy_scene_v3"
+            or str(metadata.get("scene_id")) != scene_id
+        ):
+            raise ValueError(f"invalid rendered asset base metadata: {scene_id}")
+        frame_dir = project_path(
+            root, record["render_output"]["inspection_frame_dir"]
+        )
+        render_record_path = frame_dir / "render_record.json"
+        render_record = load_json(render_record_path)
+        metadata_hash = sha256_bytes(metadata_path.read_bytes())
+        if (
+            str(render_record.get("schema_version"))
             != "physweep_asset_proxy_render_record_v1"
-            or str(render_record["scene_id"]) != scene_id
-            or source_hash != str(render_record["metadata_sha256"])
+            or str(render_record.get("scene_id")) != scene_id
+            or str(render_record.get("metadata_sha256")) != metadata_hash
         ):
             raise ValueError(f"base render provenance mismatch: {scene_id}")
-        camera = render_record["camera"]
+        camera = render_record.get("camera")
         if (
-            len(camera["position_m"]) != 3
-            or len(camera["target_m"]) != 3
-            or float(camera["focal_length_mm"]) <= 0.0
+            not isinstance(camera, dict)
+            or len(camera.get("position_m", [])) != 3
+            or len(camera.get("target_m", [])) != 3
+            or float(camera.get("focal_length_mm", 0.0)) <= 0.0
         ):
             raise ValueError(f"invalid rendered base camera: {scene_id}")
-        cameras[parent] = {
+        cameras[scene_id] = {
             "solver_version": "frozen_from_one_factor_base_v1",
             "source_base_scene_id": scene_id,
             "position_m": camera["position_m"],
@@ -113,7 +100,44 @@ def freeze_cameras(
             "focal_length_mm": camera["focal_length_mm"],
             "focus_span_m": camera.get("focus_span_m"),
         }
-        base_parents[scene_id] = parent
+    return cameras
+
+
+def freeze_cameras(
+    root: Path, manifest_path: Path, base_manifest_path: Path
+) -> dict[str, int]:
+    root = root.resolve()
+    manifest_path = project_path(root, manifest_path)
+    base_manifest_path = project_path(root, base_manifest_path)
+    sweep_base_manifest_path = manifest_path.with_name(
+        "base_render_input_manifest.json"
+    )
+    derived_manifest_path = manifest_path.with_name(
+        "derived_render_input_manifest.json"
+    )
+    for path in (
+        manifest_path,
+        base_manifest_path,
+        sweep_base_manifest_path,
+        derived_manifest_path,
+    ):
+        path.relative_to(root / "outputs")
+
+    manifest = load_json(manifest_path)
+    base_manifest = load_json(base_manifest_path)
+    sweep_base_manifest = load_json(sweep_base_manifest_path)
+    derived_manifest = load_json(derived_manifest_path)
+    records = indexed_records(manifest, "asset render manifest")
+    sweep_base_records = indexed_records(
+        sweep_base_manifest, "asset sweep-base manifest"
+    )
+    derived_records = indexed_records(derived_manifest, "asset derived manifest")
+    if set(records) != set(sweep_base_records) | set(derived_records):
+        raise ValueError("base and derived manifests do not partition the asset manifest")
+    if set(sweep_base_records) & set(derived_records):
+        raise ValueError("asset base and derived manifests overlap")
+
+    cameras = rendered_base_cameras(root, base_manifest)
 
     updates: dict[Path, dict[str, Any]] = {}
     counts = {parent: {"base": 0, "sweep": 0} for parent in cameras}
@@ -145,32 +169,30 @@ def freeze_cameras(
         ):
             raise ValueError(f"asset render metadata hash mismatch: {scene_id}")
         if kind == "base":
-            if scene_id not in base_records or base_parents[scene_id] != parent:
+            if scene_id not in sweep_base_records:
                 raise ValueError(f"base partition mismatch: {scene_id}")
-            metadata = without_binding
         else:
             if scene_id not in derived_records:
                 raise ValueError(f"derived partition mismatch: {scene_id}")
-            metadata["camera_binding"] = cameras[parent]
+        metadata["camera_binding"] = cameras[parent]
         updates[metadata_path] = metadata
         new_hashes[scene_id] = sha256_bytes(json_bytes(metadata))
 
-    if any(value != {"base": 1, "sweep": 12} for value in counts.values()):
+    if set(counts) != set(cameras) or any(
+        value != {"base": 1, "sweep": 12} for value in counts.values()
+    ):
         raise ValueError("camera binding requires complete 13-sample asset groups")
     for scene_id, record in records.items():
         record["metadata_sha256"] = new_hashes[scene_id]
     for scene_id, record in derived_records.items():
         record["metadata_sha256"] = new_hashes[scene_id]
-    for scene_id, record in base_records.items():
-        declared_hash = record.get("metadata_sha256")
-        if declared_hash is not None and str(declared_hash) != new_hashes[scene_id]:
-            raise ValueError(f"base metadata provenance changed: {scene_id}")
+    for scene_id, record in sweep_base_records.items():
         record["metadata_sha256"] = new_hashes[scene_id]
 
     for path, metadata in updates.items():
         write_json(path, metadata)
     write_json(manifest_path, manifest)
-    write_json(base_manifest_path, base_manifest)
+    write_json(sweep_base_manifest_path, sweep_base_manifest)
     write_json(derived_manifest_path, derived_manifest)
     return {
         "group_count": len(cameras),

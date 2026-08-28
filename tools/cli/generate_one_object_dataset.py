@@ -215,6 +215,22 @@ def render_sweep(
     plan = load_json(layout.sweep_render / "manifest.json")
     counts = {str(key): int(value) for key, value in plan["branch_counts"].items()}
     derived_per_group = 12
+    if counts.get("asset", 0):
+        base_plan = load_json(layout.base_render / "render_plan.json")
+        run(
+            [
+                sys.executable,
+                "-m",
+                "tools.rendering.freeze_asset_sweep_cameras",
+                "--root",
+                str(root),
+                "--manifest",
+                str(layout.sweep_render / "asset" / "render_input_manifest.json"),
+                "--base-manifest",
+                str(base_plan["asset_render_input_manifest"]),
+            ],
+            root,
+        )
     if counts.get("generic", 0):
         if counts["generic"] % 13:
             raise ValueError("generic sweep branch is not composed of complete groups")
