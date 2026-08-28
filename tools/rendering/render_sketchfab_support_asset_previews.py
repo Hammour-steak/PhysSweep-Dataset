@@ -11,57 +11,18 @@ from typing import Any
 
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
+from tools.assets.blender_asset_import import (
+    mesh_world_bounds as bbox_for_objects,
+    meshes_have_image_texture as has_image_texture,
+    patch_numpy_for_blender_gltf,
+)
+from tools.rendering.blender_scene import look_at
 
 
 def blender_argv() -> list[str]:
     if "--" in sys.argv:
         return sys.argv[sys.argv.index("--") + 1 :]
     return sys.argv[1:]
-
-
-def patch_numpy_for_blender_gltf() -> None:
-    import numpy as np  # pylint: disable=import-outside-toplevel
-
-    if not hasattr(np, "bool"):
-        np.bool = bool  # type: ignore[attr-defined]
-
-
-def bbox_for_objects(objects: list[Any]) -> tuple[Any, Any]:
-    import mathutils  # pylint: disable=import-outside-toplevel
-
-    mins = mathutils.Vector((float("inf"), float("inf"), float("inf")))
-    maxs = mathutils.Vector((float("-inf"), float("-inf"), float("-inf")))
-    found = False
-    for obj in objects:
-        if obj.type != "MESH":
-            continue
-        found = True
-        for corner in obj.bound_box:
-            point = obj.matrix_world @ mathutils.Vector(corner)
-            mins.x = min(mins.x, point.x)
-            mins.y = min(mins.y, point.y)
-            mins.z = min(mins.z, point.z)
-            maxs.x = max(maxs.x, point.x)
-            maxs.y = max(maxs.y, point.y)
-            maxs.z = max(maxs.z, point.z)
-    if not found:
-        mins = mathutils.Vector((0.0, 0.0, 0.0))
-        maxs = mathutils.Vector((1.0, 1.0, 1.0))
-    return mins, maxs
-
-
-def has_image_texture(objects: list[Any]) -> bool:
-    for obj in objects:
-        if obj.type != "MESH":
-            continue
-        for slot in obj.material_slots:
-            mat = slot.material
-            if not mat or not mat.use_nodes:
-                continue
-            for node in mat.node_tree.nodes:
-                if node.bl_idname == "ShaderNodeTexImage" and getattr(node, "image", None):
-                    return True
-    return False
 
 
 def make_solid_material(name: str, color: tuple[float, float, float, float]) -> Any:
@@ -170,13 +131,6 @@ def normalize_asset(meshes: list[Any], record: dict[str, Any]) -> dict[str, Any]
         "bbox_max": [round(float(v), 6) for v in new_max],
         "has_image_texture": has_image_texture(meshes),
     }
-
-
-def look_at(camera: Any, target: tuple[float, float, float]) -> None:
-    import mathutils  # pylint: disable=import-outside-toplevel
-
-    direction = mathutils.Vector(target) - camera.location
-    camera.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
 
 
 def add_camera(meshes: list[Any]) -> dict[str, Any]:

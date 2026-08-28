@@ -8,22 +8,11 @@ import json
 from pathlib import Path
 
 from tools.core.hashing import sha256_file as sha256
+from tools.dataset_contract.schema import iter_jsonl
 
 
 SCHEMA = "physweep.point_trajectory_manifest.v1"
 POINT_COUNT = 2048
-
-
-def iter_jsonl(path: Path):
-    with path.open("r", encoding="utf-8") as handle:
-        for line_number, line in enumerate(handle, 1):
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                yield json.loads(line)
-            except json.JSONDecodeError as error:
-                raise ValueError(f"invalid JSON at {path}:{line_number}: {error}") from error
 
 
 def load_json(path: Path) -> dict:

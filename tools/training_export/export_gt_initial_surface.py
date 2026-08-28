@@ -8,7 +8,6 @@ scene state; no future trajectory is loaded or inspected.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import sys
@@ -26,6 +25,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from tools.rendering import render_pybullet_rigid as rigid_renderer
+from tools.core.hashing import sha256_file as _sha256
 from tools.dataset_contract.gt_scene_input import (
     DEFAULT_ENVIRONMENT_POINTS,
     DEFAULT_OBJECT_POINTS,
@@ -43,14 +43,6 @@ def _argv() -> list[str]:
     if "--" in sys.argv:
         return sys.argv[sys.argv.index("--") + 1 :]
     return sys.argv[1:]
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(8 * 1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def _resolve(value: str) -> Path:

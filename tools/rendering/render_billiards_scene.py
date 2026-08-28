@@ -35,7 +35,8 @@ from tools.rendering.render_asset_proxy_scene import (  # pylint: disable=wrong-
     write_json,
 )
 from tools.dataset_contract.immutable_scene_contract import validate_simulation_record
-from tools.rendering.render_asset_proxy_reviews import clear_scene, look_at  # pylint: disable=wrong-import-position
+from tools.assets.blender_asset_import import clear_scene
+from tools.rendering.blender_scene import look_at
 from tools.rendering.video_encoding import configure_h264_output, normalize_h264_container
 from tools.dataset_contract.trajectory_contract import adapter_trajectory_view
 from tools.rendering.specialized_render_evidence import (

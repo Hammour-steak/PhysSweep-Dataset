@@ -20,7 +20,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from tools.core.json_io import read_json as load_json
 from tools.assets.audit_scene_visual_assets import bbox, look_at, setup_stage  # noqa: E402
 from tools.assets.inspect_scene_asset_components import inspection_transform  # noqa: E402
-from tools.rendering.render_asset_proxy_reviews import clear_scene, import_meshes  # noqa: E402
+from tools.assets.blender_asset_import import clear_scene, import_meshes  # noqa: E402
 
 
 ROLE_COLORS = (

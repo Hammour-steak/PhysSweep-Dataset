@@ -10,7 +10,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import bpy
 import mathutils
 
 
@@ -20,7 +19,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from tools.core.json_io import read_json as load_json
 from tools.assets.inspect_scene_asset_components import inspection_transform  # noqa: E402
-from tools.rendering.render_asset_proxy_reviews import bounds, clear_scene, import_meshes  # noqa: E402
+from tools.assets.blender_asset_import import bounds, clear_scene, import_meshes  # noqa: E402
 
 
 def blender_args() -> argparse.Namespace:

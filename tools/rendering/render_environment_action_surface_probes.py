@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from tools.rendering.blender_scene import look_at
+
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
 
@@ -180,13 +182,6 @@ def add_markers(clear_radius_m: float) -> list[Any]:
     ring.name = "clearance_ring"
     ring.data.materials.append(yellow)
     return [anchor, ring]
-
-
-def look_at(camera: Any, target: tuple[float, float, float]) -> None:
-    import mathutils  # pylint: disable=import-outside-toplevel
-
-    direction = mathutils.Vector(target) - camera.location
-    camera.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
 
 
 def add_camera() -> Any:

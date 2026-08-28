@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 
 def resolve_project_path(root: Path, value: str | Path) -> Path:
@@ -22,3 +23,12 @@ def resolve_project_path_within_root(root: Path, value: str | Path) -> Path:
     except ValueError as exc:
         raise ValueError(f"path is outside project root: {resolved}") from exc
     return resolved
+
+
+def safe_scene_id(value: Any) -> str:
+    """Return a scene identifier that is safe as one path component."""
+
+    scene_id = str(value)
+    if not scene_id or Path(scene_id).name != scene_id or scene_id in {".", ".."}:
+        raise ValueError(f"invalid scene id: {scene_id!r}")
+    return scene_id

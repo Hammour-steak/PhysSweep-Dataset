@@ -16,6 +16,12 @@ from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
 from tools.physics.support_structure import table_structure_boxes
 from tools.physics.inclined_support import inclined_plane_geometry
+from tools.assets.blender_asset_import import (
+    mesh_world_bounds as bbox_for_objects,
+    meshes_have_image_texture as object_has_image_texture,
+    patch_numpy_for_blender_gltf,
+)
+from tools.rendering.blender_scene import look_at
 from tools.rendering.lighting_quality import floor_glare_guard
 
 
@@ -66,37 +72,6 @@ def merged_shadow_lighting_rule(metadata: dict[str, Any] | None = None) -> dict[
                 else:
                     rule[key] = value
     return rule
-
-
-def patch_numpy_for_blender_gltf() -> None:
-    import numpy as np  # pylint: disable=import-outside-toplevel
-
-    if not hasattr(np, "bool"):
-        np.bool = bool  # type: ignore[attr-defined]
-
-
-def bbox_for_objects(objects: list[Any]) -> tuple[Any, Any]:
-    import mathutils  # pylint: disable=import-outside-toplevel
-
-    mins = mathutils.Vector((float("inf"), float("inf"), float("inf")))
-    maxs = mathutils.Vector((float("-inf"), float("-inf"), float("-inf")))
-    found = False
-    for obj in objects:
-        if obj.type != "MESH":
-            continue
-        found = True
-        for corner in obj.bound_box:
-            point = obj.matrix_world @ mathutils.Vector(corner)
-            mins.x = min(mins.x, point.x)
-            mins.y = min(mins.y, point.y)
-            mins.z = min(mins.z, point.z)
-            maxs.x = max(maxs.x, point.x)
-            maxs.y = max(maxs.y, point.y)
-            maxs.z = max(maxs.z, point.z)
-    if not found:
-        mins = mathutils.Vector((0.0, 0.0, 0.0))
-        maxs = mathutils.Vector((1.0, 1.0, 1.0))
-    return mins, maxs
 
 
 def vector_list(vec: Any) -> list[float]:
@@ -779,20 +754,6 @@ def create_procedural_support(support: dict[str, Any], metadata: dict[str, Any])
     }
 
 
-def object_has_image_texture(objects: list[Any]) -> bool:
-    for obj in objects:
-        if obj.type != "MESH":
-            continue
-        for slot in obj.material_slots:
-            mat = slot.material
-            if not mat or not mat.use_nodes:
-                continue
-            for node in mat.node_tree.nodes:
-                if node.bl_idname == "ShaderNodeTexImage" and getattr(node, "image", None):
-                    return True
-    return False
-
-
 def fallback_color(asset: dict[str, Any]) -> tuple[float, float, float, float]:
     category = asset.get("semantic_category") or asset.get("role") or ""
     role = asset.get("composition_role") or asset.get("slot") or ""
@@ -1453,13 +1414,6 @@ def place_asset(
         "final_bbox_max": vector_list(final_max),
         "objects": meshes,
     }
-
-
-def look_at(camera: Any, target: tuple[float, float, float]) -> None:
-    import mathutils  # pylint: disable=import-outside-toplevel
-
-    direction = mathutils.Vector(target) - camera.location
-    camera.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
 
 
 def add_camera(focus_meshes: list[Any], support_top_z: float, camera_config: dict[str, Any]) -> dict[str, Any]:

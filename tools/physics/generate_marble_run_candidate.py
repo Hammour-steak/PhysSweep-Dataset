@@ -17,7 +17,7 @@ from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic_sorted as write_json
 from tools.core.paths import resolve_project_path as project_path
-from tools.sampling.derive_physics_sweep import _round_value, _sweep_values
+from tools.core.sweep_values import round_sweep_value, sweep_values
 from tools.physics.physics_invariants import quaternion_matrix_wxyz
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -745,7 +745,7 @@ def derive_sweep_metadata(
         schema_domain = axis_rules.get("schema_domains", {}).get(
             base["schema_version"]
         )
-        values = _sweep_values(
+        values = sweep_values(
             base_value,
             axis_rules,
             mass_bounds,
@@ -753,7 +753,7 @@ def derive_sweep_metadata(
             domain_override=schema_domain,
             endpoint_policy=rules["endpoint_policy"],
         )
-        rounded_base = _round_value(base_value)
+        rounded_base = round_sweep_value(base_value)
         base_level_index = values.index(rounded_base)
         if base_level_index != len(values) // 2:
             raise ValueError(f"{axis} does not preserve the base at the middle level")

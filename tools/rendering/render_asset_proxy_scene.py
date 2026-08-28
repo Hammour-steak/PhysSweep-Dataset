@@ -27,13 +27,13 @@ if str(PROJECT_ROOT) not in sys.path:
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
-from tools.rendering.render_asset_proxy_reviews import (  # pylint: disable=wrong-import-position
+from tools.assets.blender_asset_import import (  # pylint: disable=wrong-import-position
     clear_scene,
     import_meshes,
-    look_at,
     normalized_transform,
     selected_visual_meshes,
 )
+from tools.rendering.blender_scene import look_at
 from tools.rendering.blender_render_settings import configure_render_engine
 from tools.dataset_contract.immutable_scene_contract import validate_simulation_record
 from tools.assets.static_support_proxy import blender_import_static_support_visual

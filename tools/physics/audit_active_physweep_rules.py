@@ -8,11 +8,9 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from tools.sampling.sample_one_object_scene_matrix import MATRIX_PATH
-from tools.sampling.sample_pybullet_base import BUNDLE_PATH
-
-
 ROOT = Path(__file__).resolve().parents[2]
+BUNDLE_PATH = ROOT / "configs/one_object_sampling_bundle.json"
+MATRIX_PATH = ROOT / "configs/one_object_sampling_matrix.json"
 
 
 def load_unique_json(path: Path) -> Any:

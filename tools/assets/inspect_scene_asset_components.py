@@ -20,7 +20,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
-from tools.rendering.render_asset_proxy_reviews import (  # pylint: disable=wrong-import-position
+from tools.assets.blender_asset_import import (  # pylint: disable=wrong-import-position
     bounds as mesh_list_bounds,
     clear_scene,
     import_meshes,

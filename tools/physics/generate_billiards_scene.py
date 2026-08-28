@@ -13,15 +13,12 @@ from typing import Any
 import numpy as np
 import pybullet as pb
 
-from tools.sampling.sample_asset_proxy_scenes import (
-    PROJECT_ROOT,
-    choose_environment,
-    file_binding,
-    load_json,
-    project_path,
-    sha256,
-    write_json,
-)
+from tools.assets.visual_environment_binding import choose_environment
+from tools.core.hashing import relative_file_binding as file_binding
+from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_json as load_json
+from tools.core.json_io import write_json
+from tools.core.paths import resolve_project_path as project_path
 from tools.dataset_contract.immutable_scene_contract import freeze_metadata, write_simulation_record
 from tools.dataset_contract.object_identity_contract import attach_object_identity
 from tools.assets.physical_proxy_catalog import load_catalog, records_by_id
@@ -31,6 +28,8 @@ from tools.assets.static_support_proxy import (
     create_pybullet_static_support,
 )
 
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 BILLIARDS_AUDIT_VERSION = "physweep_billiards_audit_v2"
 PROFILE_FAMILIES = {

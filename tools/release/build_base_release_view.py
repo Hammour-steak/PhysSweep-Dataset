@@ -13,6 +13,8 @@ from typing import Any, Iterable, Mapping
 import numpy as np
 from PIL import Image
 
+from tools.core.paths import safe_scene_id
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 from tools.release.audit_release_provenance import (
@@ -285,13 +287,6 @@ class PipelineSpec:
     project_root: Path
     render_root: Path
     mask_root: Path
-
-
-def safe_scene_id(value: Any) -> str:
-    scene_id = str(value)
-    if not scene_id or Path(scene_id).name != scene_id or scene_id in {".", ".."}:
-        raise ValueError(f"invalid scene id: {scene_id!r}")
-    return scene_id
 
 
 def index_unique(

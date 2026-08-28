@@ -10,7 +10,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 
-from tools.sampling.sample_asset_proxy_scenes import audit_asset_trajectory  # noqa: E402
+from tools.physics.asset_proxy_simulation import audit_asset_trajectory  # noqa: E402
 from tools.sampling.sample_pybullet_base import (  # noqa: E402
     weighted_scene_class_cycle,
 )

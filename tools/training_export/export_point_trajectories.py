@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 
 from tools.core.hashing import sha256_file as sha256
+from tools.dataset_contract.schema import iter_jsonl
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 from tools.dataset_contract.point_trajectory import (
@@ -33,18 +34,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int)
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
-
-
-def iter_jsonl(path: Path):
-    with path.open("r", encoding="utf-8") as handle:
-        for line_number, line in enumerate(handle, 1):
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                yield json.loads(line)
-            except json.JSONDecodeError as error:
-                raise ValueError(f"invalid JSON at {path}:{line_number}: {error}") from error
 
 
 def project_path(root: Path, value: str) -> Path:

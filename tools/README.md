@@ -24,6 +24,8 @@ Asset download, conversion, and proxy-building tools additionally require
 
 The `tools` root contains no executable modules. Shared physics, rendering, and
 dataset contracts stay object-count neutral; object-count-specific rules do not.
+Sampling may call physics backends, but physics modules never import samplers.
+Training exports consume published dataset records and never feed generation.
 
 ## Active Contracts
 

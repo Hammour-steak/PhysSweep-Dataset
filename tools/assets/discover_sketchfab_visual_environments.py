@@ -18,6 +18,7 @@ from typing import Any
 from PIL import Image, ImageDraw, ImageFont
 
 from tools.core.json_io import write_json
+from tools.assets.sketchfab_policy import noai_declared
 
 
 API_ROOT = "https://api.sketchfab.com/v3"
@@ -52,12 +53,6 @@ def request_bytes(url: str, *, attempts: int = 5) -> bytes:
 
 def request_json(url: str) -> dict[str, Any]:
     return json.loads(request_bytes(url).decode("utf-8"))
-
-
-def noai_declared(model: dict[str, Any]) -> bool:
-    fields = [model.get("name"), model.get("description")]
-    fields.extend(tag.get("name") for tag in model.get("tags", []) if isinstance(tag, dict))
-    return "noai" in " ".join(str(value or "") for value in fields).lower().replace("-", "")
 
 
 def largest_thumbnail(model: dict[str, Any]) -> str | None:

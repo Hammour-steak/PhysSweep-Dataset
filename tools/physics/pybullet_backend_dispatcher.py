@@ -19,7 +19,7 @@ from tools.physics.generate_billiards_scene import simulate as simulate_billiard
 from tools.physics.generate_marble_run_scene import simulate as simulate_marble_run
 from tools.physics.generate_passive_pinball_scene import simulate as simulate_passive_pinball
 from tools.physics.resolved_simulation_scene import compile_resolved_scene
-from tools.sampling.sample_asset_proxy_scenes import simulate_scene as simulate_asset_proxy
+from tools.physics.asset_proxy_simulation import simulate_scene as simulate_asset_proxy
 from tools.physics.simulate_pybullet_rigid import simulate as simulate_generic_rigid
 
 DISPATCH_RECORD_VERSION = "physweep_dispatched_simulation_record_v1"

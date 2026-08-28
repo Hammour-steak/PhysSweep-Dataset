@@ -1,1 +1,1 @@
-"""PhysSweep training-data contracts and condition encoders."""
+"""Published dataset schemas and object/trajectory contracts."""

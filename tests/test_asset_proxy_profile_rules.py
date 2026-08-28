@@ -11,10 +11,12 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 
-from tools.sampling.sample_asset_proxy_scenes import (  # noqa: E402
+from tools.physics.asset_proxy_simulation import (  # noqa: E402
     asset_motion_usefulness,
-    asset_camera_observation,
     audit_asset_trajectory,
+)
+from tools.sampling.sample_asset_proxy_scenes import (  # noqa: E402
+    asset_camera_observation,
     motion_initial_state,
     proxy_volume_fill_ratio,
 )

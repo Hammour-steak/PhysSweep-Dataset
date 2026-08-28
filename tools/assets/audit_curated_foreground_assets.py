@@ -17,7 +17,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
-from tools.rendering import render_sketchfab_background_compositions as comp  # noqa: E402
+from tools.assets.blender_asset_import import patch_numpy_for_blender_gltf
 
 
 DEFAULT_SOURCE_MANIFEST = PROJECT_ROOT / "assets/manifests/sketchfab_foreground_source_v1.json"
@@ -44,7 +44,7 @@ def imported_meshes(path: Path) -> list[Any]:
     import bpy  # pylint: disable=import-outside-toplevel
 
     clear_scene()
-    comp.patch_numpy_for_blender_gltf()
+    patch_numpy_for_blender_gltf()
     before = set(bpy.data.objects)
     bpy.ops.import_scene.gltf(filepath=str(path))
     imported = [obj for obj in bpy.data.objects if obj not in before]

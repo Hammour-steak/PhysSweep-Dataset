@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 import argparse
-import hashlib
 import json
 import math
 from collections import defaultdict
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from tools.core.hashing import sha256_file as _sha256
 from tools.dataset_contract.gt_scene_input import (
     MODEL_SCENE_SCHEMA,
     inspect_model_scene_condition,
@@ -15,14 +15,6 @@ from tools.dataset_contract.schema import iter_jsonl, validate_manifest
 
 
 AXES = ("mass_kg", "contact_friction", "contact_restitution")
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(8 * 1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def _controls(record: dict) -> dict[str, float]:

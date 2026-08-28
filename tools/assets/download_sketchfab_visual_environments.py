@@ -19,6 +19,7 @@ from typing import Any
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
+from tools.assets.sketchfab_policy import noai_declared, require_glb_download
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -56,19 +57,6 @@ def download_file(url: str, output: Path) -> None:
             raise
 
 
-def noai_declared(model: dict[str, Any]) -> bool:
-    searchable = [str(model.get("name", "")), str(model.get("description", ""))]
-    searchable.extend(str(tag.get("name", "")) for tag in model.get("tags", []))
-    return "noai" in " ".join(searchable).lower().replace("-", "")
-
-
-def choose_glb(downloads: dict[str, Any]) -> dict[str, Any]:
-    glb = downloads.get("glb")
-    if not isinstance(glb, dict) or not glb.get("url"):
-        raise ValueError("candidate has no downloadable GLB archive")
-    return glb
-
-
 def download_candidate(
     candidate: dict[str, Any],
     *,
@@ -93,7 +81,7 @@ def download_candidate(
     archive = asset_dir / "model.glb"
     status = "exists"
     if overwrite or not archive.exists():
-        download = choose_glb(
+        download = require_glb_download(
             request_json(f"https://api.sketchfab.com/v3/models/{uid}/download", token)
         )
         download_file(str(download["url"]), archive)

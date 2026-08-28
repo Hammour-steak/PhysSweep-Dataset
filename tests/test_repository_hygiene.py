@@ -146,6 +146,42 @@ class RepositoryHygieneTest(unittest.TestCase):
                             )
         self.assertEqual(findings, [])
 
+    def test_physics_does_not_depend_on_sampling(self) -> None:
+        findings = []
+        for path in (ROOT / "tools" / "physics").glob("*.py"):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                modules = []
+                if isinstance(node, ast.Import):
+                    modules = [alias.name for alias in node.names]
+                elif isinstance(node, ast.ImportFrom) and node.module:
+                    modules = [node.module]
+                findings.extend(
+                    f"{path.name}: {module}"
+                    for module in modules
+                    if module == "tools.sampling"
+                    or module.startswith("tools.sampling.")
+                )
+        self.assertEqual(findings, [])
+
+    def test_assets_do_not_depend_on_rendering(self) -> None:
+        findings = []
+        for path in (ROOT / "tools" / "assets").glob("*.py"):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                modules = []
+                if isinstance(node, ast.Import):
+                    modules = [alias.name for alias in node.names]
+                elif isinstance(node, ast.ImportFrom) and node.module:
+                    modules = [node.module]
+                findings.extend(
+                    f"{path.name}: {module}"
+                    for module in modules
+                    if module == "tools.rendering"
+                    or module.startswith("tools.rendering.")
+                )
+        self.assertEqual(findings, [])
+
     def test_shared_infrastructure_has_no_exact_function_copies(self) -> None:
         fingerprints: dict[tuple[str, str], list[str]] = {}
         shared_names = {"load_json", "write_json", "sha256", "project_path"}

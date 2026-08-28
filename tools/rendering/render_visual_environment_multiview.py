@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from tools.rendering.blender_scene import look_at
+
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
 
@@ -109,13 +111,6 @@ def normalize(meshes: list[Any], target_extent: float) -> tuple[list[Any], list[
     for obj in meshes:
         obj.matrix_world = transform @ obj.matrix_world
     return meshes, [[float(value) for value in row] for row in transform]
-
-
-def look_at(camera: Any, target: tuple[float, float, float]) -> None:
-    import mathutils  # pylint: disable=import-outside-toplevel
-
-    direction = mathutils.Vector(target) - camera.location
-    camera.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
 
 
 def add_camera() -> Any:

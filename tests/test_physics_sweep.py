@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from tools.core.sweep_values import sweep_values
 from tools.sampling.derive_physics_sweep import (
     collect_inputs,
     derive_one,
@@ -12,7 +13,6 @@ from tools.sampling.derive_physics_sweep import (
     validate_output_dir,
     _friction_domain,
     _mass_bounds,
-    _sweep_values,
     normalize_canonical_base,
 )
 
@@ -637,7 +637,7 @@ class PhysicsSweepTests(unittest.TestCase):
             "contact_restitution": (0.0, 0.8),
         }
         for axis, base_value in base_values.items():
-            values = _sweep_values(
+            values = sweep_values(
                 base_value,
                 config["axes"][axis],
                 None,
@@ -660,7 +660,7 @@ class PhysicsSweepTests(unittest.TestCase):
             "domain": [0.02, 1.0],
             "scale": "linear",
         }
-        values = _sweep_values(
+        values = sweep_values(
             0.4,
             axis_rules,
             None,
@@ -685,7 +685,7 @@ class PhysicsSweepTests(unittest.TestCase):
             "scale": "linear",
         }
         with self.assertRaisesRegex(ValueError, "cannot occupy the middle level"):
-            _sweep_values(
+            sweep_values(
                 0.0,
                 axis_rules,
                 None,
@@ -709,7 +709,7 @@ class PhysicsSweepTests(unittest.TestCase):
             "domain": [0.02, 1.0],
             "scale": "linear",
         }
-        values = _sweep_values(
+        values = sweep_values(
             0.68,
             axis_rules,
             None,

@@ -15,6 +15,7 @@ from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic as write_json
 from tools.core.paths import resolve_project_path as project_path
+from tools.core.paths import safe_scene_id
 from tools.rendering.blender_worker_environment import (
     build_egl_device_selector,
     isolated_blender_environment,
@@ -43,13 +44,6 @@ def output_path(root: Path, value: str | Path) -> Path:
     if (root / "outputs").resolve() not in path.parents:
         raise ValueError(f"render output must be below root/outputs: {path}")
     return path
-
-
-def safe_scene_id(value: Any) -> str:
-    scene_id = str(value)
-    if not scene_id or Path(scene_id).name != scene_id or scene_id in {".", ".."}:
-        raise ValueError(f"invalid scene id: {scene_id!r}")
-    return scene_id
 
 
 def result_manifest_path(

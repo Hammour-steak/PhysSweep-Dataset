@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.core.hashing import sha256_file
+from tools.core.hashing import relative_file_binding, sha256_file
 from tools.core.json_io import (
     read_json,
     write_json,
@@ -14,7 +14,11 @@ from tools.core.json_io import (
     write_json_atomic_sorted,
     write_json_sorted,
 )
-from tools.core.paths import resolve_project_path, resolve_project_path_within_root
+from tools.core.paths import (
+    resolve_project_path,
+    resolve_project_path_within_root,
+    safe_scene_id,
+)
 
 
 class CoreInfrastructureTest(unittest.TestCase):
@@ -53,6 +57,22 @@ class CoreInfrastructureTest(unittest.TestCase):
             path.write_bytes(payload)
             self.assertEqual(sha256_file(path), hashlib.sha256(payload).hexdigest())
 
+    def test_relative_file_binding_uses_project_path_and_content_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            path = root / "records" / "payload.bin"
+            path.parent.mkdir()
+            path.write_bytes(b"payload")
+            self.assertEqual(
+                relative_file_binding(root, path),
+                {
+                    "path": "records/payload.bin",
+                    "sha256": hashlib.sha256(b"payload").hexdigest(),
+                },
+            )
+            with self.assertRaises(ValueError):
+                relative_file_binding(root, root.parent / "outside.bin")
+
     def test_project_path_resolution_is_explicit(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
@@ -68,6 +88,13 @@ class CoreInfrastructureTest(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, "outside project root"):
                 resolve_project_path_within_root(root, root.parent / "outside.json")
+
+    def test_scene_id_is_one_safe_path_component(self) -> None:
+        self.assertEqual(safe_scene_id("group__scene_001"), "group__scene_001")
+        for invalid in ("", ".", "..", "nested/scene"):
+            with self.subTest(invalid=invalid):
+                with self.assertRaisesRegex(ValueError, "invalid scene id"):
+                    safe_scene_id(invalid)
 
 
 if __name__ == "__main__":

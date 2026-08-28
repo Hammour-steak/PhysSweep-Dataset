@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import subprocess
@@ -12,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+from tools.core.hashing import sha256_file as _sha256
 from tools.dataset_contract.gt_scene_input import (
     DEFAULT_ENVIRONMENT_POINTS,
     DEFAULT_OBJECT_POINTS,
@@ -23,14 +23,6 @@ from tools.dataset_contract.schema import iter_jsonl
 
 DEFAULT_BLENDER = Path("runtime/blender-3.4.0-linux-x64/blender")
 DEFAULT_EXPORTER = Path("tools/training_export/export_gt_initial_surface.py")
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(8 * 1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def _relative(path: Path, root: Path) -> str:
