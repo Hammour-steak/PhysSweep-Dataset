@@ -9,12 +9,12 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 
-from tools.rendering.bind_pybullet_visuals import (  # noqa: E402
+from tools.rendering.bind_pybullet_visuals import resolve_render_request  # noqa: E402
+from tools.rendering.camera_solver import (  # noqa: E402
     camera_inside_structural_envelope,
     camera_occlusion_colliders,
     camera_target_centers,
     image_center_visibility_mask,
-    resolve_render_request,
     segment_intersects_box,
     segments_intersect_box,
     solve_camera,

@@ -27,22 +27,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 ACTIVE_RULES_PATH = PROJECT_ROOT / "configs/one_object_sampling_rules.json"
 SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1,)
 
-from tools.rendering.camera_solver import (
-    camera_azimuth_degrees,
-    camera_elevation_degrees,
-    camera_inside_structural_envelope,
-    camera_occlusion_colliders,
-    camera_target_centers,
-    image_center_visibility_mask,
-    project_points,
-    rotation_matrix_xyz_degrees,
-    sampled_motion_points,
-    segment_intersects_box,
-    segments_intersect_box,
-    solve_camera,
-    support_context_points,
-    unoccluded_fraction,
-)
+from tools.rendering.camera_solver import solve_camera
 
 def shadow_readable_lighting(metadata: dict[str, Any]) -> dict[str, Any]:
     obj = require_single_simulation_object(metadata, __name__)
