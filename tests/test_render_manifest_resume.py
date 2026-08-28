@@ -463,6 +463,20 @@ class RenderManifestResumeTests(unittest.TestCase):
                 "PhysSweep EGL selector: CUDA device 3 matched EGL index 0",
                 encoding="utf-8",
             )
+            self.assertFalse(
+                reusable_asset_record(
+                    root,
+                    output,
+                    source_record,
+                    metadata_path,
+                    metadata,
+                    frame_dir,
+                    video,
+                    record,
+                    3,
+                )
+            )
+            record["metadata_sha256"] = sha256(metadata_path)
             self.assertTrue(
                 reusable_asset_record(
                     root,

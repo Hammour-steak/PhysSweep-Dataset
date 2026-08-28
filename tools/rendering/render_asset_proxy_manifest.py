@@ -330,8 +330,7 @@ def reusable_render_record(
     if isinstance(source_metadata, dict):
         source_path = project_path(root, str(source_metadata["path"]))
         source_path.relative_to(root)
-        expected_metadata_sha256 = sha256(source_path)
-        if expected_metadata_sha256 != str(source_metadata["sha256"]):
+        if sha256(source_path) != str(source_metadata["sha256"]):
             raise ValueError(f"source metadata hash mismatch: {source_path}")
     log_path = output / "logs" / f"{source_record['scene_id']}.log"
     egl_marker = f"PhysSweep EGL selector: CUDA device {gpu} "
