@@ -11,6 +11,7 @@ from PIL import Image
 from tools.audit_release_provenance import sha256
 from tools.base_release_schema import BASE_SAMPLE_SCHEMA, TRAJECTORY_FIELDS
 from tools.build_base_release_view import (
+    DEFAULT_RELEASE_ROOT,
     PipelineSpec,
     build_view,
     one_object_release_roots,
@@ -25,9 +26,11 @@ def write_json(path: Path, value: object) -> None:
 
 class BaseReleaseViewTests(unittest.TestCase):
     def test_one_object_release_root_has_fixed_children(self) -> None:
+        project_root = Path(__file__).resolve().parents[1]
         base, sweep = one_object_release_roots(Path("outputs/one_object"))
-        self.assertEqual(base, Path("outputs/one_object/base"))
-        self.assertEqual(sweep, Path("outputs/one_object/sweep"))
+        self.assertEqual(DEFAULT_RELEASE_ROOT, project_root / "outputs/one_object")
+        self.assertEqual(base, project_root / "outputs/one_object/base")
+        self.assertEqual(sweep, project_root / "outputs/one_object/sweep")
         with self.assertRaisesRegex(ValueError, "named one_object"):
             one_object_release_roots(Path("outputs/versioned_release"))
 

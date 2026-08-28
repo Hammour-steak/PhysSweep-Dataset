@@ -67,11 +67,12 @@ except ModuleNotFoundError:
     )
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 VIEW_SCHEMA = "physweep_base_release_view_v14"
 PIPELINE_SCHEMA = "physweep_base_pipeline_view_v12"
 AUDIT_SCHEMA = "physweep_base_release_view_audit_v14"
 FIXTURE_CATALOG_SCHEMA = "physweep_static_fixture_catalog_v2"
-DEFAULT_RELEASE_ROOT = Path("outputs/one_object")
+DEFAULT_RELEASE_ROOT = PROJECT_ROOT / "outputs" / "one_object"
 VIDEO_ENCODING_FIELDS = (
     "codec",
     "constant_rate_factor",
@@ -85,6 +86,9 @@ VIDEO_ENCODING_FIELDS = (
 
 def one_object_release_roots(release_root: Path) -> tuple[Path, Path]:
     release_root = Path(release_root)
+    if not release_root.is_absolute():
+        release_root = PROJECT_ROOT / release_root
+    release_root = release_root.resolve(strict=False)
     if release_root.name != "one_object":
         raise ValueError("release root must be named one_object")
     return release_root / "base", release_root / "sweep"

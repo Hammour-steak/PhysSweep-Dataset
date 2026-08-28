@@ -293,8 +293,9 @@ Shared fixtures and collision assets live in `fixtures/` and `fixture_assets/`.
 The release contains no symlinks, debug frames, adapter-only trajectory fields,
 or source metadata copies. Root manifests bind the format contracts, source
 release, fixtures, and attribution catalog. Both builders use
-`outputs/one_object` by default and derive the fixed `base/` and `sweep/`
-children from that single root.
+`<project-root>/outputs/one_object` by default and derive the fixed `base/` and
+`sweep/` children from that single root. Relative `--release-root` values are
+always resolved against the project root, not the caller's working directory.
 
 ```bash
 .venv/bin/python tools/build_base_release_view.py \

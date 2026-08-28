@@ -1,6 +1,7 @@
 import importlib.util
 import ast
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -139,12 +140,15 @@ class PipelineBoundaryTest(unittest.TestCase):
 
     def test_method_brand_and_model_artifacts_are_absent(self):
         forbidden = ("PhyContext", "PhysBind", "phycontext.", "physbind")
-        for path in ROOT.rglob("*"):
-            if path == Path(__file__).resolve():
-                continue
-            if not path.is_file() or any(
-                part in {".git", "__pycache__"} for part in path.parts
-            ):
+        tracked_files = subprocess.run(
+            ["git", "-C", str(ROOT), "ls-files"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.splitlines()
+        for relative in tracked_files:
+            path = ROOT / relative
+            if path == Path(__file__).resolve() or not path.is_file():
                 continue
             if path.suffix not in {".py", ".md", ".json", ".yml", ".yaml", ".sh"}:
                 continue
