@@ -13,6 +13,7 @@ from tools.core.hashing import (
     relative_file_binding,
     sha256_file,
     sha256_json,
+    sha256_json_binding,
     sha256_json_without_field,
 )
 from tools.core.json_io import (
@@ -49,6 +50,7 @@ class CoreInfrastructureTest(unittest.TestCase):
         self.assertEqual(
             sha256_json_without_field(record, "binding_sha256"), expected
         )
+        self.assertEqual(sha256_json_binding(record), expected)
         self.assertEqual(record["binding_sha256"], "old")
         self.assertEqual(sha256_json({"z": 2, "a": {"value": 1}}), expected)
 

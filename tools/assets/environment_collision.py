@@ -8,15 +8,10 @@ from pathlib import Path
 from typing import Any
 
 from tools.core.hashing import sha256_file as sha256
-from tools.core.hashing import sha256_json as record_sha256
-from tools.core.hashing import sha256_json_without_field
+from tools.core.hashing import sha256_json_binding as binding_sha256
 
 
 BINDING_VERSION = "physweep_environment_binding_v3"
-
-
-def binding_sha256(binding: dict[str, Any]) -> str:
-    return sha256_json_without_field(binding, "binding_sha256")
 
 
 def camera_azimuth_degrees(

@@ -36,6 +36,12 @@ def sha256_json_without_field(value: dict[str, Any], field: str) -> str:
     return sha256_json(payload)
 
 
+def sha256_json_binding(value: dict[str, Any]) -> str:
+    """Hash an immutable binding without its self-referential digest."""
+
+    return sha256_json_without_field(value, "binding_sha256")
+
+
 def relative_file_binding(root: Path, path: Path) -> dict[str, str]:
     """Bind a project-local file by relative path and content hash."""
 

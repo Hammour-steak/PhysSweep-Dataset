@@ -10,14 +10,10 @@ from typing import Any
 
 from tools.core.hashing import sha256_file as sha256
 from tools.core.hashing import sha256_json as record_sha256
-from tools.core.hashing import sha256_json_without_field
+from tools.core.hashing import sha256_json_binding as _binding_sha256
 
 
 BINDING_VERSION = "physweep_static_support_binding_v1"
-
-
-def _binding_sha256(binding: dict[str, Any]) -> str:
-    return sha256_json_without_field(binding, "binding_sha256")
 
 
 def _vector(value: Any, length: int, label: str, positive: bool = False) -> list[float]:
