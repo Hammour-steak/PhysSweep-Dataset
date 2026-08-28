@@ -152,15 +152,6 @@ def normalized_transform(meshes: list[Any], record: dict[str, Any]) -> Any:
     return mathutils.Matrix.Scale(scale_value, 4) @ rotation @ mathutils.Matrix.Translation(-anchor)
 
 
-def patch_numpy_for_blender_gltf() -> None:
-    """Restore the NumPy alias expected by Blender's bundled glTF importer."""
-
-    import numpy as np  # pylint: disable=import-outside-toplevel
-
-    if not hasattr(np, "bool"):
-        np.bool = bool  # type: ignore[attr-defined]
-
-
 def mesh_world_bounds(objects: list[Any]) -> tuple[Any, Any]:
     """Return world-space bounds for mesh objects, with a stable empty default."""
 

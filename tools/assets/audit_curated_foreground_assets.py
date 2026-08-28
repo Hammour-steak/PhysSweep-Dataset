@@ -17,16 +17,10 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
-from tools.assets.blender_asset_import import patch_numpy_for_blender_gltf
+from tools.core.blender_runtime import blender_argv, patch_numpy_for_blender_gltf
 
 
 DEFAULT_SOURCE_MANIFEST = PROJECT_ROOT / "assets/manifests/sketchfab_foreground_source_v1.json"
-
-
-def blender_argv() -> list[str]:
-    if "--" in sys.argv:
-        return sys.argv[sys.argv.index("--") + 1 :]
-    return sys.argv[1:]
 
 
 def clear_scene() -> None:

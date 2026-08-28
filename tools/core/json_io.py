@@ -15,6 +15,16 @@ def read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def read_jsonl(path: Path) -> list[Any]:
+    """Read non-empty UTF-8 JSON Lines records in source order."""
+
+    return [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+
 def write_json(
     path: Path,
     value: Any,

@@ -5,27 +5,15 @@ from __future__ import annotations
 
 import argparse
 import math
-import sys
 from pathlib import Path
 from typing import Any
 
+from tools.core.blender_runtime import blender_argv
+from tools.core.blender_runtime import patch_numpy_for_blender_gltf as patch_numpy
 from tools.rendering.blender_scene import look_at
 
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
-
-
-def blender_argv() -> list[str]:
-    if "--" in sys.argv:
-        return sys.argv[sys.argv.index("--") + 1 :]
-    return sys.argv[1:]
-
-
-def patch_numpy() -> None:
-    import numpy as np  # pylint: disable=import-outside-toplevel
-
-    if not hasattr(np, "bool"):
-        np.bool = bool  # type: ignore[attr-defined]
 
 
 def bbox(meshes: list[Any]) -> tuple[Any, Any]:

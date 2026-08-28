@@ -8,10 +8,10 @@ import json
 import math
 import os
 import shutil
-import sys
 from pathlib import Path
 from typing import Any
 
+from tools.core.blender_runtime import blender_argv, patch_numpy_for_blender_gltf
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
 from tools.physics.support_structure import table_structure_boxes
@@ -19,7 +19,6 @@ from tools.physics.inclined_support import inclined_plane_geometry
 from tools.assets.blender_asset_import import (
     mesh_world_bounds as bbox_for_objects,
     meshes_have_image_texture as object_has_image_texture,
-    patch_numpy_for_blender_gltf,
 )
 from tools.rendering.blender_scene import look_at
 from tools.rendering.lighting_quality import floor_glare_guard
@@ -53,12 +52,6 @@ def resolve_project_asset_paths(value: Any, root: Path = DEFAULT_ROOT) -> Any:
     if isinstance(value, str) and (value.startswith("assets/") or value.startswith("configs/")):
         return str(root / value)
     return value
-
-
-def blender_argv() -> list[str]:
-    if "--" in sys.argv:
-        return sys.argv[sys.argv.index("--") + 1 :]
-    return sys.argv[1:]
 
 
 def merged_shadow_lighting_rule(metadata: dict[str, Any] | None = None) -> dict[str, Any]:

@@ -23,6 +23,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from tools.core.hashing import sha256_file as sha256
+from tools.core.blender_runtime import blender_argv
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
 from tools.rendering import render_sketchfab_background_compositions as composition
@@ -40,12 +41,6 @@ def configure_project_root(root: Path) -> Path:
     global PROJECT_ROOT
     PROJECT_ROOT = root.resolve()
     return PROJECT_ROOT
-
-
-def blender_argv() -> list[str]:
-    if "--" in sys.argv:
-        return sys.argv[sys.argv.index("--") + 1 :]
-    return sys.argv[1:]
 
 
 def resolve_project_path(value: str) -> Path:

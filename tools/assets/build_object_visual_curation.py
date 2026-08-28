@@ -13,6 +13,7 @@ from typing import Any
 
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
+from tools.core.json_io import read_jsonl
 from tools.core.json_io import write_json
 from tools.assets.physical_proxy_catalog import load_catalog, records_by_id
 from tools.assets.static_support_proxy import record_sha256
@@ -59,14 +60,6 @@ def parse_args() -> argparse.Namespace:
 
 def resolved(root: Path, path: Path) -> Path:
     return path if path.is_absolute() else root / path
-
-
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
 
 
 def validate_proxy_evidence_sources(

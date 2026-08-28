@@ -7,9 +7,9 @@ import argparse
 import json
 import re
 from pathlib import Path
-from typing import Any
 
 from tools.core.hashing import sha256_file as sha256
+from tools.core.json_io import read_jsonl
 from tools.assets.physassets_alignment import best_axis_alignment
 
 
@@ -23,10 +23,6 @@ PHYSICS_BY_CATEGORY = {
     "other": {"friction": 0.50, "restitution": 0.12, "mass_range_kg": [0.05, 0.60]},
     "rod": {"friction": 0.48, "restitution": 0.12, "mass_range_kg": [0.08, 0.80]},
 }
-
-
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
 def slug(value: str) -> str:

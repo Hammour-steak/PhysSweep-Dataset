@@ -17,15 +17,12 @@ from typing import Any
 
 from PIL import Image, ImageDraw, ImageFont
 
+from tools.core.json_io import read_json
 from tools.core.json_io import write_json
 from tools.assets.sketchfab_policy import noai_declared
 
 
 API_ROOT = "https://api.sketchfab.com/v3"
-
-
-def read_json(path: Path) -> Any:
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def request_bytes(url: str, *, attempts: int = 5) -> bytes:

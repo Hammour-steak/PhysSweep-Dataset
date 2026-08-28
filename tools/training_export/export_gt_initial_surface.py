@@ -25,6 +25,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from tools.rendering import render_pybullet_rigid as rigid_renderer
+from tools.core.blender_runtime import blender_argv as _argv
 from tools.core.hashing import sha256_file as _sha256
 from tools.dataset_contract.gt_scene_input import (
     DEFAULT_ENVIRONMENT_POINTS,
@@ -37,12 +38,6 @@ from tools.dataset_contract.gt_scene_input import (
     sample_metric_surface_indices,
     write_gt_surface,
 )
-
-
-def _argv() -> list[str]:
-    if "--" in sys.argv:
-        return sys.argv[sys.argv.index("--") + 1 :]
-    return sys.argv[1:]
 
 
 def _resolve(value: str) -> Path:

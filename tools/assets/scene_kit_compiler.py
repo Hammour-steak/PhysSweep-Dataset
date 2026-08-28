@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 import copy
-import json
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
+from tools.core.json_io import read_jsonl
 from tools.assets.physical_proxy_catalog import (
     load_catalog,
     records_by_id,
@@ -27,14 +27,6 @@ TOPOLOGY_TO_SUPPORT_SHAPE = {
     "pedestal": "pedestal_block",
     "pocketed_table": "pocketed_table",
 }
-
-
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
 
 
 def _unique(records: list[dict[str, Any]], key: str, source: str) -> None:

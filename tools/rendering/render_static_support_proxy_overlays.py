@@ -26,8 +26,9 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
-from tools.assets.physical_proxy_catalog import load_catalog, write_json  # noqa: E402
+from tools.assets.physical_proxy_catalog import load_catalog  # noqa: E402
 from tools.assets.static_support_proxy import compile_static_support_binding  # noqa: E402
+from tools.core.json_io import write_json_atomic_sorted as write_json  # noqa: E402
 
 
 def blender_args() -> argparse.Namespace:

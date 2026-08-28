@@ -2,13 +2,17 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
+from tools.core.blender_runtime import blender_argv
 from tools.core.hashing import relative_file_binding, sha256_file
 from tools.core.json_io import (
     read_json,
+    read_jsonl,
     write_json,
     write_json_atomic,
     write_json_atomic_sorted,
@@ -22,6 +26,22 @@ from tools.core.paths import (
 
 
 class CoreInfrastructureTest(unittest.TestCase):
+    def test_blender_argv_respects_separator(self) -> None:
+        with mock.patch.object(
+            sys,
+            "argv",
+            ["blender", "--background", "--", "--input", "scene.json"],
+        ):
+            self.assertEqual(blender_argv(), ["--input", "scene.json"])
+        with mock.patch.object(sys, "argv", ["script.py", "--input", "scene.json"]):
+            self.assertEqual(blender_argv(), ["--input", "scene.json"])
+
+    def test_jsonl_reader_ignores_blank_lines_and_preserves_order(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "records.jsonl"
+            path.write_text('{"id": 2}\n\n  \n{"id": 1}\n', encoding="utf-8")
+            self.assertEqual(read_jsonl(path), [{"id": 2}, {"id": 1}])
+
     def test_json_writers_preserve_declared_key_policy(self) -> None:
         value = {"z": 1, "a": 2}
         with tempfile.TemporaryDirectory() as directory:

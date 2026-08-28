@@ -11,7 +11,12 @@ from typing import Any, Iterable
 
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
-from tools.core.json_io import write_json_atomic_sorted as write_json
+from tools.core.json_io import read_jsonl
+from tools.core.json_io import write_json_atomic_sorted
+
+
+# Kept as a public alias for provenance-frozen catalog tools.
+write_json = write_json_atomic_sorted
 
 
 CATALOG_VERSION = "physweep_physical_proxy_catalog_v1"
@@ -32,14 +37,6 @@ REPRESENTATIONS = {
     "none",
 }
 QUALITY_GRADES = {"A", "B", "C", "reject"}
-
-
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [
-        json.loads(line)
-        for line in path.read_text(encoding="utf-8").splitlines()
-        if line.strip()
-    ]
 
 
 def write_jsonl(path: Path, records: Iterable[dict[str, Any]]) -> None:

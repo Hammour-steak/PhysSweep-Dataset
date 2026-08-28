@@ -5,24 +5,17 @@ from __future__ import annotations
 
 import argparse
 import math
-import sys
 from pathlib import Path
 from typing import Any
 
+from tools.core.blender_runtime import blender_argv, patch_numpy_for_blender_gltf
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
 from tools.assets.blender_asset_import import (
     mesh_world_bounds as bbox_for_objects,
     meshes_have_image_texture as has_image_texture,
-    patch_numpy_for_blender_gltf,
 )
 from tools.rendering.blender_scene import look_at
-
-
-def blender_argv() -> list[str]:
-    if "--" in sys.argv:
-        return sys.argv[sys.argv.index("--") + 1 :]
-    return sys.argv[1:]
 
 
 def make_solid_material(name: str, color: tuple[float, float, float, float]) -> Any:
