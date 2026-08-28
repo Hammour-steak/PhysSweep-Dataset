@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from tools.dataset_contract.gt_scene_input import interaction_collider_ids
 
@@ -54,10 +55,11 @@ class PipelineBoundaryTest(unittest.TestCase):
             ROOT / "tools/cli/build_one_object_dataset.py",
         )
         config = module.load_config(ROOT / "configs/datasets/one_object.json")
+        self.assertEqual(
+            set(config), {"schema_version", "release_root", "object_count"}
+        )
         self.assertEqual(config["release_root"], "outputs/one_object")
         self.assertEqual(config["object_count"], 1)
-        self.assertEqual(config["views"], ["base", "sweep"])
-        self.assertNotIn("stages", config)
 
     def test_dataset_entry_requires_explicit_published_sources(self):
         module = load_module(
@@ -69,6 +71,89 @@ class PipelineBoundaryTest(unittest.TestCase):
         )
         self.assertEqual(specs[0].name, "generic")
         self.assertEqual(specs[0].source_schema_version, "schema")
+
+    def test_generation_plan_is_complete_and_registry_driven(self):
+        module = load_module(
+            "dataset_generation_entry",
+            ROOT / "tools/cli/generate_one_object_dataset.py",
+        )
+        plan = module.generation_plan(
+            ROOT, "smoke", Path("outputs/smoke/one_object")
+        )
+        self.assertEqual(
+            plan["stages"],
+            [
+                "sample_and_audit_base",
+                "stage_and_render_base",
+                "derive_and_audit_sweep",
+                "publish_source_release",
+                "stage_and_render_derived_sweep",
+                "materialize_canonical_base_and_sweep",
+                "verify_canonical_release",
+            ],
+        )
+        pipelines = {record["pipeline"] for record in plan["pipelines"]}
+        self.assertEqual(
+            pipelines,
+            {
+                "generic_pybullet",
+                "asset_proxy",
+                "billiards",
+                "passive_pinball",
+                "marble_run",
+            },
+        )
+        self.assertTrue(plan["layout"]["canonical_release"].endswith("one_object"))
+
+    def test_dataset_entry_propagates_the_one_object_boundary(self):
+        module = load_module(
+            "dataset_boundary_entry",
+            ROOT / "tools/cli/build_one_object_dataset.py",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            release_root = Path(directory) / "one_object"
+            with (
+                patch.object(module, "verify_base_view", return_value={"passed": True}) as base,
+                patch.object(module, "verify_sweep_view", return_value={"passed": True}) as sweep,
+            ):
+                module.verify_dataset(release_root)
+        base.assert_called_once_with(
+            release_root / "base", expected_object_count=1
+        )
+        sweep.assert_called_once_with(
+            release_root / "sweep",
+            base_root=release_root / "base",
+            expected_object_count=1,
+        )
+
+    def test_base_and_sweep_render_sources_are_distinct(self):
+        module = load_module(
+            "dataset_distinct_render_entry",
+            ROOT / "tools/cli/build_one_object_dataset.py",
+        )
+        base_spec = module.pipeline_specs(
+            [("generic", "schema", "project", "base_render", "base_masks")]
+        )[0]
+        sweep_spec = module.pipeline_specs(
+            [("generic", "schema", "project", "sweep_render", "sweep_masks")]
+        )[0]
+        with tempfile.TemporaryDirectory() as directory:
+            release_root = Path(directory) / "one_object"
+            with (
+                patch.object(module, "build_base_view", return_value={"passed": True}) as base,
+                patch.object(module, "build_sweep_view", return_value={"passed": True}) as sweep,
+            ):
+                module.publish_dataset(
+                    release_project_root=Path(directory),
+                    release_manifest=Path("release.json"),
+                    release_root=release_root,
+                    base_specs=[base_spec],
+                    sweep_specs=[sweep_spec],
+                    workers=2,
+                    resume=False,
+                )
+        self.assertEqual(base.call_args.kwargs["pipeline_specs"], [base_spec])
+        self.assertEqual(sweep.call_args.kwargs["pipeline_specs"], [sweep_spec])
 
     def test_bound_manifest_bootstraps_scene_export_without_published_dataset(self):
         module = load_module(

@@ -68,6 +68,17 @@ class RepositoryHygieneTest(unittest.TestCase):
         )
         self.assertEqual(output.returncode, 1)
 
+    def test_versioned_release_replay_configs_are_quarantined(self) -> None:
+        versioned = [
+            path
+            for path in (ROOT / "configs").glob("*.json")
+            if "release" in path.name and re.search(r"v\d+", path.name)
+        ]
+        self.assertEqual(versioned, [])
+        self.assertTrue(
+            (ROOT / "configs/history/marble_run_v5_release_extension.json").is_file()
+        )
+
     def test_tools_are_partitioned_by_responsibility(self) -> None:
         expected = {
             "assets",
@@ -181,6 +192,28 @@ class RepositoryHygieneTest(unittest.TestCase):
                     or module.startswith("tools.sampling.")
                 )
         self.assertEqual(findings, [])
+
+    def test_release_libraries_are_not_command_line_entry_points(self) -> None:
+        for relative in (
+            "tools/release/base_release_view.py",
+            "tools/release/sweep_release_view.py",
+        ):
+            with self.subTest(module=relative):
+                source = (ROOT / relative).read_text(encoding="utf-8")
+                tree = ast.parse(source)
+                imports = {
+                    alias.name
+                    for node in tree.body
+                    if isinstance(node, ast.Import)
+                    for alias in node.names
+                }
+                functions = {
+                    node.name for node in tree.body if isinstance(node, ast.FunctionDef)
+                }
+                self.assertNotIn("argparse", imports)
+                self.assertNotIn("parse_args", functions)
+                self.assertNotIn("main", functions)
+                self.assertNotIn('__name__ == "__main__"', source)
 
     def test_assets_do_not_depend_on_rendering(self) -> None:
         findings = []

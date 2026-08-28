@@ -22,18 +22,21 @@ conda activate "$PWD/.venv"
 pip install -r requirements.txt
 ```
 
-## Publish
+## Generate
 
-Sampling, physics, and rendering produce immutable source manifests. Publish an
-audited source release into the canonical `outputs/one_object/{base,sweep}`
-dataset with explicit source and pipeline bindings:
+One command runs the registry-driven base and sweep pipeline, renders every
+selected family, publishes a fresh hash-bound source release, and materializes
+the canonical `outputs/one_object/{base,sweep}` dataset:
 
 ```bash
-python -m tools.cli.build_one_object_dataset \
-  --release-project-root <frozen-project> \
-  --release-manifest datasets/<dataset>/release/manifest.json \
-  --pipeline <name> <source-schema> <project-root> <render-root> <mask-root>
+python -m tools.cli.generate_one_object_dataset \
+  --work-id production --count 3200 \
+  --physics-workers 24 --render-workers 64 --gpus 0,1,2,3
 ```
+
+Use `--plan-only` to inspect the resolved stages and `--resume` to reuse only
+completed, validated stage artifacts. Existing canonical views are verified,
+never overwritten.
 
 Verify an existing dataset without modifying it:
 

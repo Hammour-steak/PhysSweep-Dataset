@@ -5,14 +5,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.release.build_sweep_release_view import (
+from tools.release.sweep_release_view import (
     DERIVED_LEVELS,
     SWEEP_SAMPLE_SCHEMA,
     SWEEP_AXES,
     SWEEP_INDEX_FIELDS,
     PipelineSpec,
     group_manifest,
-    one_object_release_roots,
     release_contract_fields,
     sha256,
     sibling_release_roots,
@@ -21,6 +20,7 @@ from tools.release.build_sweep_release_view import (
     validate_groups,
     write_pipeline_manifests,
 )
+from tools.release.base_release_view import one_object_release_roots
 
 
 class SweepReleaseViewTests(unittest.TestCase):

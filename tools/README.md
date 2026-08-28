@@ -32,6 +32,19 @@ reusing the shared identity and object-axis contracts. Sampling may call physics
 backends, but physics and release modules never import samplers. Training exports
 consume published dataset records and never feed generation.
 
+## Entry Points
+
+- `tools.cli.generate_one_object_dataset`: active end-to-end generator.
+- `tools.cli.build_one_object_dataset`: canonical materializer/verifier for an
+  already audited source release.
+- Package-local commands under `sampling`, `physics`, `rendering`, and `release`
+  are reproducible stages used by the generator.
+- Asset inspection, contact-sheet, and comparison commands are maintenance
+  tools; they do not define release semantics.
+- `finalize_sweep_groups.py`, `publish_sweep_release.py`, and specialized
+  extension publishers are historical replay tools. Versioned extension specs
+  live under `configs/history/` and are not active generation inputs.
+
 ## Active Contracts
 
 - Asset ingestion: `configs/asset_ingestion_contract.json`
@@ -93,6 +106,8 @@ required branch, then collect them with the staged outer manifest:
 .venv/bin/python -m tools.rendering.render_asset_proxy_manifest --renderer passive_pinball \
   --manifest outputs/<batch>/passive_pinball/passive_pinball_manifest.json \
   --workers 8
+.venv/bin/python -m tools.rendering.render_asset_proxy_manifest --renderer marble_run \
+  --manifest outputs/<batch>/marble_run/marble_run_manifest.json --workers 8
 
 .venv/bin/python -m tools.rendering.collect_decoupled_renders \
   --manifest outputs/<batch>/staged_manifest.json \
@@ -102,6 +117,8 @@ required branch, then collect them with the staged outer manifest:
     outputs/<batch>/billiards/billiards_render_manifest.json \
   --specialized-render-manifest \
     passive_pinball=outputs/<batch>/passive_pinball/passive_pinball_render_manifest.json \
+  --specialized-render-manifest \
+    marble_run=outputs/<batch>/marble_run/marble_run_render_manifest.json \
   --output outputs/<batch>/collected
 ```
 
@@ -311,6 +328,10 @@ visible only after full verification:
   --workers 64 --resume \
   --pipeline <name> <source-schema> <source-project> <render-root> <mask-root>
 ```
+
+At dataset level, `tools.cli.build_one_object_dataset` takes separate
+`--base-pipeline` and `--sweep-pipeline` bindings because those views are
+rendered into different immutable roots. A single shared binding is rejected.
 
 ## Audits
 

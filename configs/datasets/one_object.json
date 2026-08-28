@@ -1,7 +1,5 @@
 {
   "schema_version": "physweep_dataset_build_v2",
-  "dataset_id": "physweep_one_object",
   "release_root": "outputs/one_object",
-  "object_count": 1,
-  "views": ["base", "sweep"]
+  "object_count": 1
 }

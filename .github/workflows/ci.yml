@@ -19,10 +19,5 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Compile Python sources
         run: python -m compileall -q tools tests
-      - name: Repository contract tests
-        run: |
-          python -m unittest -v \
-            tests.test_repository_hygiene \
-            tests.test_pipeline_boundaries \
-            tests.test_physics_sweep \
-            tests.test_physics_rule_invariants
+      - name: Repository test suite
+        run: python tests/run_ci.py

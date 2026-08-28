@@ -57,18 +57,16 @@ The normalization radius is stored in meters and does not discard metric scale.
 
 ## Build And Review
 
-The default one-object build configuration currently stops after frozen base and
-sweep metadata. Inspect its resolved stages with:
+Inspect the complete one-object generation stages without writing data with:
 
 ```bash
-.venv/bin/python -m tools.cli.build_one_object_dataset \
-  --config configs/datasets/one_object.json --dry-run
+.venv/bin/python -m tools.cli.generate_one_object_dataset \
+  --work-id review --plan-only
 ```
 
-Scene-condition construction starts only after mixed-schema trajectory
-simulation and rendering have produced validated manifests. Do not treat the
-metadata-only build as a training release. Direct calls to `compile_manifest.py`
-require every source and output path explicitly.
+Training-scene construction starts only after mixed-schema trajectory simulation,
+rendering, and canonical dataset verification. Direct calls to
+`compile_manifest.py` require every source and output path explicitly.
 
 The formal builder is resumable and produces only the 10,240-point scene
 contract. Dense source surfaces, fixed model inputs, logs, and provenance

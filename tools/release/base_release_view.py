@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import argparse
-import json
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -786,6 +784,7 @@ def build_view(
     release_manifest: Path,
     output: Path,
     pipeline_specs: Iterable[PipelineSpec],
+    expected_object_count: int | None = None,
 ) -> dict[str, Any]:
     output = output.resolve()
     if output.name != "base" or output.parent.name != "one_object":
@@ -938,11 +937,11 @@ def build_view(
             "assets/attribution_manifest.json records source and content provenance.\n",
             encoding="utf-8",
         )
-        verify_view(work)
+        verify_view(work, expected_object_count=expected_object_count)
         if output.exists() or output.is_symlink():
             raise FileExistsError(f"base release appeared during build: {output}")
         work.replace(output)
-    return verify_view(output)
+    return verify_view(output, expected_object_count=expected_object_count)
 
 
 def validate_trajectory_artifact(path: Path, metadata: dict[str, Any]) -> None:
@@ -1021,7 +1020,29 @@ def validate_mask_artifacts(sample: Path, metadata: dict[str, Any]) -> None:
                     raise ValueError("mask frame must be grayscale")
 
 
-def verify_view(output: Path) -> dict[str, Any]:
+def enforce_object_count(
+    summary: Mapping[str, Any],
+    *,
+    expected_object_count: int | None,
+    scene_id: str,
+) -> None:
+    if expected_object_count is None:
+        return
+    if expected_object_count < 1:
+        raise ValueError("expected_object_count must be positive")
+    actual = len(summary["object_ids"])
+    if actual != expected_object_count:
+        raise ValueError(
+            f"object count differs for {scene_id}: "
+            f"expected {expected_object_count}, observed {actual}"
+        )
+
+
+def verify_view(
+    output: Path,
+    *,
+    expected_object_count: int | None = None,
+) -> dict[str, Any]:
     output = output.resolve()
     manifest = load_json(output / "manifest.json")
     render_contract = validate_release_manifest_contract(
@@ -1121,6 +1142,11 @@ def verify_view(output: Path) -> dict[str, Any]:
                 raise ValueError(f"metadata must be materialized: {scene_id}")
             metadata = load_json(metadata_path)
             summary = validate_base_metadata(metadata)
+            enforce_object_count(
+                summary,
+                expected_object_count=expected_object_count,
+                scene_id=scene_id,
+            )
             group_id = safe_scene_id(summary["group_id"])
             if (
                 summary["scene_id"] != scene_id
@@ -1186,57 +1212,3 @@ def verify_view(output: Path) -> dict[str, Any]:
         "pipeline_count": len(manifest["pipelines"]),
         "passed": True,
     }
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--release-project-root", type=Path)
-    parser.add_argument("--release-manifest", type=Path)
-    parser.add_argument(
-        "--release-root",
-        type=Path,
-        default=DEFAULT_RELEASE_ROOT,
-        help="Canonical output root; must be named one_object.",
-    )
-    parser.add_argument(
-        "--pipeline",
-        nargs=5,
-        action="append",
-        metavar=("NAME", "SOURCE_SCHEMA", "PROJECT_ROOT", "RENDER_ROOT", "MASK_ROOT"),
-        help="Repeat once per release pipeline.",
-    )
-    parser.add_argument("--verify-only", action="store_true")
-    return parser.parse_args()
-
-
-def main() -> None:
-    args = parse_args()
-    output, _ = one_object_release_roots(args.release_root)
-    if args.verify_only:
-        result = verify_view(output)
-    else:
-        if args.release_project_root is None or args.release_manifest is None:
-            raise SystemExit(
-                "--release-project-root and --release-manifest are required when building"
-            )
-        specs = [
-            PipelineSpec(
-                name,
-                schema,
-                Path(root),
-                Path(render_root),
-                Path(mask_root),
-            )
-            for name, schema, root, render_root, mask_root in (args.pipeline or [])
-        ]
-        result = build_view(
-            release_project_root=args.release_project_root,
-            release_manifest=args.release_manifest,
-            output=output,
-            pipeline_specs=specs,
-        )
-    print(json.dumps(result, indent=2, ensure_ascii=True))
-
-
-if __name__ == "__main__":
-    main()

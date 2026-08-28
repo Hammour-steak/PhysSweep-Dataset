@@ -16,7 +16,7 @@ from tools.release.specialized_release_extension import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC_PATH = ROOT / "configs/marble_run_v5_release_extension.json"
+SPEC_PATH = ROOT / "configs/history/marble_run_v5_release_extension.json"
 
 
 class SpecializedReleaseExtensionTests(unittest.TestCase):

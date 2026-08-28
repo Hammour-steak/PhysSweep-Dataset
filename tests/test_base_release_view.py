@@ -14,6 +14,7 @@ from tools.release.base_release_view import (
     DEFAULT_RELEASE_ROOT,
     PipelineSpec,
     build_view,
+    enforce_object_count,
     one_object_release_roots,
     verify_view,
 )
@@ -25,6 +26,19 @@ def write_json(path: Path, value: object) -> None:
 
 
 class BaseReleaseViewTests(unittest.TestCase):
+    def test_one_object_boundary_is_enforced_by_the_release_entry(self) -> None:
+        enforce_object_count(
+            {"object_ids": ["object_0"]},
+            expected_object_count=1,
+            scene_id="one",
+        )
+        with self.assertRaisesRegex(ValueError, "expected 1, observed 2"):
+            enforce_object_count(
+                {"object_ids": ["object_0", "object_1"]},
+                expected_object_count=1,
+                scene_id="two",
+            )
+
     def test_one_object_release_root_has_fixed_children(self) -> None:
         project_root = Path(__file__).resolve().parents[1]
         base, sweep = one_object_release_roots(Path("outputs/one_object"))
