@@ -2,25 +2,23 @@ from __future__ import annotations
 
 import copy
 import json
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from immutable_scene_contract import (  # noqa: E402
+from tools.dataset_contract.immutable_scene_contract import (  # noqa: E402
     freeze_metadata,
     validate_simulation_record,
     write_simulation_record,
 )
-from static_support_proxy import (  # noqa: E402
+from tools.assets.static_support_proxy import (  # noqa: E402
     compile_static_support_binding,
     validate_static_support_binding,
 )
-from video_encoding import PROFILE_VERSION, configure_h264_output
+from tools.rendering.video_encoding import PROFILE_VERSION, configure_h264_output
 
 
 def first_static_record() -> dict:

@@ -1,17 +1,14 @@
 from __future__ import annotations
 
 import json
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOLS = ROOT / "tools"
-sys.path.insert(0, str(TOOLS))
 
-from collect_decoupled_renders import collect, sha256  # noqa: E402
+from tools.rendering.collect_decoupled_renders import collect, sha256  # noqa: E402
 
 
 def write_json(path: Path, value: object) -> None:

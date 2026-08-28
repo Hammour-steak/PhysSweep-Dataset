@@ -3,16 +3,14 @@ from __future__ import annotations
 import copy
 import json
 import math
-import sys
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from rigid_geometry import SUPPORT_BUILDERS  # noqa: E402
-from sample_pybullet_base import (  # noqa: E402
+from tools.physics.rigid_geometry import SUPPORT_BUILDERS  # noqa: E402
+from tools.sampling.sample_pybullet_base import (  # noqa: E402
     BUNDLE_PATH,
     compile_camera_observation,
     constrained_trajectory_extent,
@@ -20,7 +18,7 @@ from sample_pybullet_base import (  # noqa: E402
     scene_visual_profile_admits_camera,
     support_allowed,
 )
-from scene_kit_compiler import (  # noqa: E402
+from tools.assets.scene_kit_compiler import (  # noqa: E402
     compile_object_profile,
     compile_scene_kit,
     validate_generic_capabilities,

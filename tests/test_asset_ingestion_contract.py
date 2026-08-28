@@ -1,20 +1,18 @@
 from __future__ import annotations
 
 import json
-import sys
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from audit_asset_ingestion import (  # noqa: E402
+from tools.assets.audit_asset_ingestion import (  # noqa: E402
     CONTRACT_PATH,
     audit_active_references,
     audit_contract,
 )
-from publish_asset_catalog import POLICY_PATH, build_manifest  # noqa: E402
+from tools.assets.publish_asset_catalog import POLICY_PATH, build_manifest  # noqa: E402
 
 
 class AssetIngestionContractTests(unittest.TestCase):

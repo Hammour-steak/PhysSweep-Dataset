@@ -1,17 +1,14 @@
 from __future__ import annotations
 
 import os
-import sys
 import unittest
 from pathlib import Path
 from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOLS = ROOT / "tools"
-sys.path.insert(0, str(TOOLS))
 
-from blender_worker_environment import isolated_blender_environment  # noqa: E402
+from tools.rendering.blender_worker_environment import isolated_blender_environment  # noqa: E402
 
 
 class BlenderWorkerEnvironmentTests(unittest.TestCase):

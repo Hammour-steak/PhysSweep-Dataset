@@ -42,7 +42,7 @@
     "environment_id": "marble_run_track",
     "scene_schema_version": "physweep_marble_run_scene_v1",
     "backend_config": "configs/marble_run_backend.json",
-    "generator_script": "tools/generate_marble_run_scene.py",
+    "generator_script": "tools/physics/generate_marble_run_scene.py",
     "profiles": [
       "early_release_chain",
       "late_release_chain"

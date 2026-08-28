@@ -3,7 +3,6 @@ from __future__ import annotations
 import copy
 import json
 import random
-import sys
 import unittest
 from pathlib import Path
 
@@ -11,11 +10,8 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOLS = ROOT / "tools"
-if str(TOOLS) not in sys.path:
-    sys.path.insert(0, str(TOOLS))
 
-from sample_asset_proxy_scenes import (  # noqa: E402
+from tools.sampling.sample_asset_proxy_scenes import (  # noqa: E402
     asset_motion_usefulness,
     asset_camera_observation,
     audit_asset_trajectory,

@@ -8,9 +8,9 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from tools.audit_release_provenance import sha256
-from tools.base_release_schema import BASE_SAMPLE_SCHEMA, TRAJECTORY_FIELDS
-from tools.build_base_release_view import (
+from tools.release.audit_release_provenance import sha256
+from tools.release.base_release_schema import BASE_SAMPLE_SCHEMA, TRAJECTORY_FIELDS
+from tools.release.build_base_release_view import (
     DEFAULT_RELEASE_ROOT,
     PipelineSpec,
     build_view,

@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import json
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from bind_physics_sweep_visuals import bind_one, sha256, validated_sweep_samples
+from tools.rendering.bind_physics_sweep_visuals import bind_one, sha256, validated_sweep_samples
 
 
 def write_json(path: Path, value: object) -> None:

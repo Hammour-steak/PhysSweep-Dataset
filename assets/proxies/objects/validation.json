@@ -1,14 +1,14 @@
 {
   "catalog_path": "assets/proxies/catalog.json",
-  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
   "counts": {
     "failed": 0,
     "passed": 134,
     "tested": 134
   },
   "implementation": {
-    "path": "tools/probe_physical_proxy_catalog.py",
-    "sha256": "b2a3d6edc8d93f36d749964cb7e1a4c2c9a57e3718d6656111503dbf9e1bb63d"
+    "path": "tools/assets/probe_physical_proxy_catalog.py",
+    "sha256": "f0422e953d73e76cbedc4ab7b23a8511372259d38611136c0616e2d9740594a4"
   },
   "records": [
     {

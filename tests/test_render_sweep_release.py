@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.render_sweep_release import (
+from tools.rendering.render_sweep_release import (
     generic_render_command,
     load_release,
     release_metadata_selection,

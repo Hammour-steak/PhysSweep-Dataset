@@ -1,9 +1,28 @@
 # PhysSweep Tools
 
-Run commands from the project root with `.venv/bin/python`. Install
+Run Python commands from the project root as modules with
+`.venv/bin/python -m tools.<package>.<module>`. Blender entry points remain file
+paths because Blender's `--python` interface requires them. Install
 `requirements.txt` for sampling, simulation, rendering, and validation.
 Asset download, conversion, and proxy-building tools additionally require
 `requirements-assets.txt`.
+
+## Package Layout
+
+- `assets`: acquisition, curation, proxies, and static scene assets.
+- `sampling`: base selection, sweep derivation, and deterministic resampling.
+- `motion_rules/one_object`: 1obj rule contracts and dispatch; a future 2obj
+  registry belongs in a parallel `motion_rules/two_object` package.
+- `physics`: simulation, geometry, trajectory audits, and specialized backends.
+- `rendering`: visual binding, Blender rendering, video encoding, and visual QA.
+- `dataset_contract`: published sample schemas and object/trajectory contracts.
+- `release`: immutable base/sweep packaging and provenance audits.
+- `cli`: dataset-level orchestration only.
+- `training_export`: derived training views; never an input to dataset generation.
+- `native`: small compiled runtime helpers used by render workers.
+
+The `tools` root contains no executable modules. Shared physics, rendering, and
+dataset contracts stay object-count neutral; object-count-specific rules do not.
 
 ## Active Contracts
 
@@ -20,21 +39,21 @@ Asset download, conversion, and proxy-building tools additionally require
 ## Generic Base Pipeline
 
 ```bash
-.venv/bin/python tools/sample_pybullet_base.py \
+.venv/bin/python -m tools.sampling.sample_pybullet_base \
   --bundle configs/one_object_sampling_bundle.json \
   --output-dataset my_base_batch --count 100 --seed 1 \
   --duration 4 --fps 24 --resolution 1280 720 --samples 16
 
-.venv/bin/python tools/run_pybullet_batch.py \
+.venv/bin/python -m tools.physics.run_pybullet_batch \
   --manifest datasets/my_base_batch/manifest.json --workers 20
 
-.venv/bin/python tools/bind_pybullet_visuals.py \
+.venv/bin/python -m tools.rendering.bind_pybullet_visuals \
   --manifest datasets/my_base_batch/manifest.json \
   --output-root outputs/my_base_batch --resolution 1280x720 \
   --samples 16 --workers 8
 
 runtime/blender-3.4.0-linux-x64/blender -b \
-  --python tools/render_pybullet_rigid.py -- \
+  --python tools/rendering/render_pybullet_rigid.py -- \
   --metadata outputs/my_base_batch/metadata/SCENE_ID.json
 ```
 
@@ -50,24 +69,24 @@ passive-pinball, and marble-run scenes. Stage the selected records, render each
 required branch, then collect them with the staged outer manifest:
 
 ```bash
-.venv/bin/python tools/prepare_formal_render_manifests.py \
+.venv/bin/python -m tools.rendering.prepare_formal_render_manifests \
   --manifest datasets/<batch>/manifest.json \
   --output-root outputs/<batch> --selection all
 
-.venv/bin/python tools/bind_pybullet_visuals.py \
+.venv/bin/python -m tools.rendering.bind_pybullet_visuals \
   --manifest outputs/<batch>/manifests/generic_source_manifest.json \
   --output-root outputs/<batch>/generic --workers 8
-.venv/bin/python tools/render_pybullet_manifest.py \
+.venv/bin/python -m tools.rendering.render_pybullet_manifest \
   --manifest outputs/<batch>/generic/bound_manifest.json --workers 8
-.venv/bin/python tools/render_asset_proxy_manifest.py \
+.venv/bin/python -m tools.rendering.render_asset_proxy_manifest \
   --manifest outputs/<batch>/asset/asset_render_manifest.json --workers 8
-.venv/bin/python tools/render_asset_proxy_manifest.py --renderer billiards \
+.venv/bin/python -m tools.rendering.render_asset_proxy_manifest --renderer billiards \
   --manifest outputs/<batch>/billiards/billiards_manifest.json --workers 8
-.venv/bin/python tools/render_asset_proxy_manifest.py --renderer passive_pinball \
+.venv/bin/python -m tools.rendering.render_asset_proxy_manifest --renderer passive_pinball \
   --manifest outputs/<batch>/passive_pinball/passive_pinball_manifest.json \
   --workers 8
 
-.venv/bin/python tools/collect_decoupled_renders.py \
+.venv/bin/python -m tools.rendering.collect_decoupled_renders \
   --manifest outputs/<batch>/staged_manifest.json \
   --generic-render-manifest outputs/<batch>/generic/render_manifest.json \
   --asset-render-manifest outputs/<batch>/asset/render_manifest.json \
@@ -87,7 +106,7 @@ Full renders strip volatile MP4 metadata and non-visual H.264 SEI without
 re-encoding frames, so repeated renders do not differ only by runtime metadata.
 
 ```bash
-.venv/bin/python tools/render_asset_proxy_manifest.py --renderer asset \
+.venv/bin/python -m tools.rendering.render_asset_proxy_manifest --renderer asset \
   --manifest outputs/<batch>/asset/asset_render_manifest.json \
   --mask-only --mask-output-root outputs/<batch>/asset_mask_backfill \
   --workers 8 --resume
@@ -116,7 +135,7 @@ The sweep stage consumes frozen base metadata. It does not call the base
 sampler and it does not modify the base record.
 
 ```bash
-.venv/bin/python tools/derive_physics_sweep.py \
+.venv/bin/python -m tools.sampling.derive_physics_sweep \
   --base-manifest datasets/one_object_base/manifest.json \
   --output-dir datasets/<sweep>/metadata
 ```
@@ -128,16 +147,14 @@ dynamic objects, and records its parent metadata hash in `sweep`. With no
 target filter, one-factor groups are generated for every dynamic object. See
 `configs/physics_sweep.json` and `docs/PHYSWEEP_SWEEP_PIPELINE.md`.
 
-`run_pybullet_batch.py` routes generic, asset-proxy, billiards,
+`tools.physics.run_pybullet_batch` routes generic, asset-proxy, billiards,
 passive-pinball, and marble-run schemas through their registered reviewed
-adapters. Unknown
-schemas and unsupported object counts are rejected instead of being sent
+adapters. Unknown schemas and unsupported object counts are rejected instead of being sent
 through the generic simulator.
 
 ## Frozen Passive-Pinball v4
 
-The v4-specific preparer and publisher are not active tools. They remain
-reproducible at
+The v4-specific preparer and publisher are not active tools. They remain reproducible at
 `feature/passive-pinball-v4@29aa9c238542c03a9ddbeb34db16852fa7f39514`.
 Run them only inside that frozen source root. Forward development uses
 `prepare_specialized_release_replacements.py` and
@@ -155,21 +172,21 @@ complete v4 generic drop groups and keeps the 3200-group/41600-record contract.
 The v4 release must be read from its frozen source worktree.
 
 ```bash
-.venv/bin/python tools/prepare_specialized_release_replacements.py \
+.venv/bin/python -m tools.release.prepare_specialized_release_replacements \
   --source-root /path/to/frozen-v4-worktree \
   --source-release datasets/one_object_v4/release/manifest.json \
   --spec configs/marble_run_v5_release_extension.json \
   --output-root datasets/one_object_v5/marble_run_replacements
 
-.venv/bin/python tools/derive_physics_sweep.py \
+.venv/bin/python -m tools.sampling.derive_physics_sweep \
   --base-manifest datasets/one_object_v5/marble_run_replacements/manifest.json \
   --output-dir datasets/one_object_v5/marble_run_sweep
 
-.venv/bin/python tools/run_pybullet_batch.py \
+.venv/bin/python -m tools.physics.run_pybullet_batch \
   --manifest datasets/one_object_v5/marble_run_sweep/manifest.json \
   --output-root datasets/one_object_v5/marble_run_sweep/physics
 
-.venv/bin/python tools/publish_specialized_release_extension.py \
+.venv/bin/python -m tools.release.publish_specialized_release_extension \
   --source-root /path/to/frozen-v4-worktree \
   --source-release datasets/one_object_v4/release/manifest.json \
   --replacement-manifest \
@@ -193,12 +210,12 @@ For authenticated Sketchfab downloads without placing a token in shell history:
 ```bash
 read -rsp "Sketchfab token: " token; echo
 printf '%s\n' "$token" | \
-  .venv/bin/python tools/run_download_with_stdin_token.py [downloader arguments]
+  .venv/bin/python -m tools.assets.run_download_with_stdin_token [downloader arguments]
 unset token
 ```
 
 ```bash
-.venv/bin/python tools/audit_asset_ingestion.py
+.venv/bin/python -m tools.assets.audit_asset_ingestion
 ```
 
 The audit is the handoff gate between asset builders and sampling. Direct
@@ -206,15 +223,19 @@ The audit is the handoff gate between asset builders and sampling. Direct
 semantic rules, and composition rules; they never fall back to a historical
 release.
 
+Historical proxy records bind the exact extractor bytes under
+`assets/provenance/source/`; active extraction uses `tools.assets` and its
+current contract hash. The provenance snapshot is not an executable entry point.
+
 After proxy records and their validation report are updated, publish the
 catalog only through the validated atomic publisher:
 
 ```bash
-.venv/bin/python tools/probe_physical_proxy_catalog.py \
+.venv/bin/python -m tools.assets.probe_physical_proxy_catalog \
   --records assets/proxies/objects/records.jsonl
-.venv/bin/python tools/publish_asset_catalog.py
-.venv/bin/python tools/publish_asset_catalog.py --promote
-.venv/bin/python tools/audit_asset_ingestion.py
+.venv/bin/python -m tools.assets.publish_asset_catalog
+.venv/bin/python -m tools.assets.publish_asset_catalog --promote
+.venv/bin/python -m tools.assets.audit_asset_ingestion
 ```
 
 The first command is a dry run. `--promote` replaces only the catalog manifest,
@@ -226,10 +247,10 @@ the generated profiles and curation ledger as one revision:
 
 ```bash
 runtime/blender-3.4.0-linux-x64/blender -b \
-  --python tools/audit_object_visual_candidates.py -- \
+  --python tools/assets/audit_object_visual_candidates.py -- \
   --root . --policy configs/object_visual_preflight.json
 
-.venv/bin/python tools/build_object_visual_curation.py \
+.venv/bin/python -m tools.assets.build_object_visual_curation \
   --source-profiles configs/physassets_core_object_profiles_source.json \
   --preflight configs/object_visual_preflight.json \
   --output-profiles outputs/object_visual_revision/profiles.json \
@@ -240,32 +261,29 @@ Review both generated files, then replace
 `configs/physassets_core_object_profiles.json` and
 `configs/object_visual_curation.json` together. The curation ledger stores the
 exact generated profile hash, so publishing only one file is invalid. Finish
-with `tools/audit_asset_ingestion.py`.
+with `tools/assets/audit_asset_ingestion.py`.
 
 ## Environment Collision Pipeline
 
 ```bash
 runtime/blender-3.4.0-linux-x64/blender -b \
-  --python tools/build_visual_environment_collision_proxies.py -- \
+  --python tools/assets/build_visual_environment_collision_proxies.py -- \
   --root . --profiles configs/scene_mesh_profiles.json \
   --output-root assets/proxies/environment \
   --manifest configs/visual_environment_collision_proxies.json \
   --maximum-face-count 80000
 
-.venv/bin/python \
-  tools/attach_visual_environment_collision_proxies.py \
+.venv/bin/python -m tools.assets.attach_visual_environment_collision_proxies \
   --profiles configs/scene_mesh_profiles.json \
   --collision-proxies configs/visual_environment_collision_proxies.json \
   --output configs/scene_mesh_profiles.json
 
-.venv/bin/python \
-  tools/build_visual_environment_collision_registry.py \
+.venv/bin/python -m tools.assets.build_visual_environment_collision_registry \
   --base-registry configs/asset_proxy_registry.json \
   --collision-proxies configs/visual_environment_collision_proxies.json \
   --output configs/asset_proxy_registry.json
 
-.venv/bin/python \
-  tools/validate_visual_environment_collision_proxies.py \
+.venv/bin/python -m tools.assets.validate_visual_environment_collision_proxies \
   --manifest configs/visual_environment_collision_proxies.json \
   --output artifacts/visual_environment_v6/environment_collision_validation_v1.json
 ```
@@ -277,7 +295,7 @@ global floor remains the only floor contact authority.
 
 ## Base Release View
 
-`build_base_release_view.py` packages audited base records without recomputing
+`tools.release.build_base_release_view` packages audited base records without recomputing
 physics or rendering. Every pipeline uses the same sample layout:
 
 ```text
@@ -298,7 +316,7 @@ release, fixtures, and attribution catalog. Both builders use
 always resolved against the project root, not the caller's working directory.
 
 ```bash
-.venv/bin/python tools/build_base_release_view.py \
+.venv/bin/python -m tools.release.build_base_release_view \
   --release-project-root <frozen-project> \
   --release-manifest datasets/<dataset>/release/manifest.json \
   --release-root outputs/one_object \
@@ -310,11 +328,11 @@ existing view and validates hashes, provenance, video, and masks before
 publishing. It excludes derived sweep samples. Verify an existing release with:
 
 ```bash
-.venv/bin/python tools/build_base_release_view.py \
+.venv/bin/python -m tools.release.build_base_release_view \
   --verify-only --release-root outputs/one_object
 ```
 
-`build_sweep_release_view.py` writes only derived samples beside the canonical
+`tools.release.build_sweep_release_view` writes only derived samples beside the canonical
 base view; the base and sweep output roots must be siblings. It uses the same
 sample layout and adds `group_manifest.json` for the
 base-to-sweep mapping. The index stores navigation keys only; physical values
@@ -322,7 +340,7 @@ remain authoritative in each `metadata.json`. Builds are resumable and become
 visible only after full verification:
 
 ```bash
-.venv/bin/python tools/build_sweep_release_view.py \
+.venv/bin/python -m tools.release.build_sweep_release_view \
   --release-project-root <frozen-project> \
   --release-manifest datasets/<dataset>/release/manifest.json \
   --release-root outputs/one_object \
@@ -333,9 +351,9 @@ visible only after full verification:
 ## Audits
 
 ```bash
-.venv/bin/python tools/audit_active_physweep_rules.py
+.venv/bin/python -m tools.physics.audit_active_physweep_rules
 
-.venv/bin/python tools/audit_scene_first_frames.py \
+.venv/bin/python -m tools.rendering.audit_scene_first_frames \
   --output-root outputs/<batch> \
   --csv outputs/<batch>/first_frame_audit.csv \
   --json outputs/<batch>/first_frame_audit.json

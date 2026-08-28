@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from tools.base_release_schema import (
+from tools.release.base_release_schema import (
     BASE_SAMPLE_SCHEMA,
     MASK_MANIFEST_SCHEMA,
     SAMPLE_METADATA_FIELDS,

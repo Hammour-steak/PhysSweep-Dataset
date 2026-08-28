@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,9 +8,8 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from audit_decoupled_motion import trajectory_metrics  # noqa: E402
+from tools.physics.audit_decoupled_motion import trajectory_metrics  # noqa: E402
 
 
 class DecoupledMotionAuditTests(unittest.TestCase):

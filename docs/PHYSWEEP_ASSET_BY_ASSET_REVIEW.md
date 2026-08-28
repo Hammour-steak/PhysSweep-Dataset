@@ -19,7 +19,7 @@ candidates are never sampled directly.
 - `configs/visual_environment_collision_proxies.json`: static environment
   collision bindings.
 
-Generated catalogs are rebuilt with `tools/publish_asset_catalog.py`; they are
+Generated catalogs are rebuilt with `tools/assets/publish_asset_catalog.py`; they are
 not edited by hand.
 
 ## Admission procedure
@@ -69,5 +69,5 @@ runtime responsibility: only declared collision assets participate in physics.
 - Any catalog, registry, source hash, proxy hash, or runtime-probe mismatch is a
   hard admission failure.
 
-Run `tools/audit_asset_ingestion.py` after any asset change. The audit must pass
+Run `tools/assets/audit_asset_ingestion.py` after any asset change. The audit must pass
 before rebuilding scene metadata.

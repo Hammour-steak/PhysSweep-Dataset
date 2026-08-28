@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.audit_release_provenance import audit_release, sha256
+from tools.release.audit_release_provenance import audit_release, sha256
 
 
 def write_json(path: Path, value: object) -> None:

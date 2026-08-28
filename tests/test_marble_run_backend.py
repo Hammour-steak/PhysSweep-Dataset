@@ -8,15 +8,15 @@ from pathlib import Path
 
 import numpy as np
 
-from tools.generate_marble_run_candidate import materialize_collision_meshes
-from tools.generate_marble_run_scene import (
+from tools.physics.generate_marble_run_candidate import materialize_collision_meshes
+from tools.physics.generate_marble_run_scene import (
     build_metadata,
     load_backend,
     marble_run_camera,
     simulate,
 )
-from tools.resolved_simulation_scene import compile_resolved_scene
-from tools.specialized_backend_registry import specialized_by_pipeline
+from tools.physics.resolved_simulation_scene import compile_resolved_scene
+from tools.physics.specialized_backend_registry import specialized_by_pipeline
 
 
 ROOT = Path(__file__).resolve().parents[1]

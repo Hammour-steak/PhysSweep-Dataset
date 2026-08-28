@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.audit_generic_cameras import project_input_path
+from tools.rendering.audit_generic_cameras import project_input_path
 
 
 class AuditGenericCameraPathTests(unittest.TestCase):

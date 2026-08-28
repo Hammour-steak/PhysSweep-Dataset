@@ -4,7 +4,7 @@ The sweep pipeline is a separate derivation stage after base metadata is frozen.
 
 ## Contract
 
-`tools/derive_physics_sweep.py` reads the exact records declared by the frozen
+`tools/sampling/derive_physics_sweep.py` reads the exact records declared by the frozen
 base manifest and writes derived records. It supports the generic rigid,
 reviewed asset-proxy, billiards, passive-pinball, and marble-run base schemas. It never
 calls the base sampler and never changes a base file. Sweep fields are bound to
@@ -176,7 +176,7 @@ inventing absent evidence.
 Single base:
 
 ```bash
-.venv/bin/python tools/derive_physics_sweep.py \
+.venv/bin/python -m tools.sampling.derive_physics_sweep \
   --config configs/physics_sweep.json \
   --base datasets/<base>/scenes/<scene>/metadata.json \
   --output-dir datasets/<sweep>/metadata
@@ -185,7 +185,7 @@ Single base:
 For a multi-object base, target a specific object when needed:
 
 ```bash
-.venv/bin/python tools/derive_physics_sweep.py \
+.venv/bin/python -m tools.sampling.derive_physics_sweep \
   --base datasets/<base>/<scene>/metadata.json \
   --target-object-id obj_1 \
   --output-dir datasets/<sweep>/metadata
@@ -194,15 +194,15 @@ For a multi-object base, target a specific object when needed:
 Whole base collection:
 
 ```bash
-.venv/bin/python tools/derive_physics_sweep.py \
+.venv/bin/python -m tools.sampling.derive_physics_sweep \
   --config configs/physics_sweep.json \
   --base-manifest datasets/one_object_base/manifest.json \
   --output-dir datasets/<sweep>/metadata
 
 ```
 
-Derivation writes immutable metadata. `tools/run_pybullet_batch.py` sends every
-record through `tools/pybullet_backend_dispatcher.py`. The dispatcher compiles
+Derivation writes immutable metadata. `tools/physics/run_pybullet_batch.py` sends every
+record through `tools/physics/pybullet_backend_dispatcher.py`. The dispatcher compiles
 generic rigid, asset-proxy, billiards, passive-pinball, and marble-run metadata
 into the same `physweep_resolved_simulation_scene_v1` contract, then invokes the
 reviewed PyBullet adapter. It writes normalized trajectories under a separate
@@ -243,7 +243,7 @@ support transition; those motion-completion checks are advisory for sweep
 records only. Penetration, bounds, energy, collision-proxy, and runtime-parameter
 checks remain hard failures.
 
-Release admission is group-atomic. `tools/finalize_sweep_groups.py` joins the
+Release admission is group-atomic. `tools/release/finalize_sweep_groups.py` joins the
 immutable sweep metadata manifest with the batch simulation manifest and
 publishes a group only when its canonical base and all twelve derived endpoint
 records pass their hard audits. One failed record rejects the complete

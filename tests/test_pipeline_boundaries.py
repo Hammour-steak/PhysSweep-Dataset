@@ -28,7 +28,7 @@ class PipelineBoundaryTest(unittest.TestCase):
     def test_dataset_config_has_no_model_settings(self):
         module = load_module(
             "dataset_build_entry",
-            ROOT / "tools/dataset_generation/build_one_object_dataset.py",
+            ROOT / "tools/cli/build_one_object_dataset.py",
         )
         config = module.load_config(ROOT / "configs/datasets/one_object.json")
         self.assertTrue(config["release_root"].startswith("datasets/"))
@@ -39,7 +39,7 @@ class PipelineBoundaryTest(unittest.TestCase):
     def test_bound_manifest_bootstraps_scene_export_without_published_dataset(self):
         module = load_module(
             "scene_export_entry",
-            ROOT / "tools/dataset_generation/build_gt_training_scenes.py",
+            ROOT / "tools/training_export/build_gt_training_scenes.py",
         )
         with tempfile.TemporaryDirectory() as directory:
             manifest = Path(directory) / "bound.json"
@@ -66,7 +66,7 @@ class PipelineBoundaryTest(unittest.TestCase):
     def test_published_paths_resolve_only_from_project_root(self):
         module = load_module(
             "point_trajectory_export_entry",
-            ROOT / "tools/dataset_generation/export_point_trajectories.py",
+            ROOT / "tools/training_export/export_point_trajectories.py",
         )
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "physweep"
@@ -85,7 +85,7 @@ class PipelineBoundaryTest(unittest.TestCase):
     def test_release_audit_requires_an_explicit_path_base(self):
         module = load_module(
             "training_dataset_audit_entry",
-            ROOT / "tools/dataset_generation/audit_training_dataset.py",
+            ROOT / "tools/training_export/audit_training_dataset.py",
         )
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -96,7 +96,7 @@ class PipelineBoundaryTest(unittest.TestCase):
                 module.audit(release, root, forbid_approximations=True)
 
     def test_source_ownership_is_one_way(self):
-        dataset_source = (ROOT / "tools/dataset_generation/build_one_object_dataset.py").read_text()
+        dataset_source = (ROOT / "tools/cli/build_one_object_dataset.py").read_text()
         dataset_imports = {
             node.names[0].name.split(".")[0]
             for node in ast.walk(ast.parse(dataset_source))
@@ -112,7 +112,7 @@ class PipelineBoundaryTest(unittest.TestCase):
             "render_passive_pinball_scene.py",
             "render_marble_run_scene.py",
         ):
-            source = (ROOT / "tools" / name).read_text(encoding="utf-8")
+            source = (ROOT / "tools/rendering" / name).read_text(encoding="utf-8")
             self.assertIn(
                 '"metadata_sha256": sha256(metadata_path)',
                 source,

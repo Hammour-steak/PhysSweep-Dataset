@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(
-    "finalize_sweep_groups", ROOT / "tools/finalize_sweep_groups.py"
+    "finalize_sweep_groups", ROOT / "tools/release/finalize_sweep_groups.py"
 )
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None

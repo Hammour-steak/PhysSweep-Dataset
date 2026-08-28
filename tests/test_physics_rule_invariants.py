@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import random
-import sys
 import unittest
 from pathlib import Path
 
@@ -10,14 +9,13 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from sample_asset_proxy_scenes import audit_asset_trajectory  # noqa: E402
-from sample_pybullet_base import (  # noqa: E402
+from tools.sampling.sample_asset_proxy_scenes import audit_asset_trajectory  # noqa: E402
+from tools.sampling.sample_pybullet_base import (  # noqa: E402
     weighted_scene_class_cycle,
 )
-from physics_time_step import simulation_hz_for_geometry  # noqa: E402
-from scene_kit_compiler import compile_scene_kit  # noqa: E402
+from tools.physics.physics_time_step import simulation_hz_for_geometry  # noqa: E402
+from tools.assets.scene_kit_compiler import compile_scene_kit  # noqa: E402
 
 
 class PhysicsRuleInvariantTests(unittest.TestCase):

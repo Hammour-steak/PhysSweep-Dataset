@@ -1,17 +1,14 @@
 from __future__ import annotations
 
 import json
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOLS = ROOT / "tools"
-sys.path.insert(0, str(TOOLS))
 
-from prepare_formal_render_manifests import (  # noqa: E402
+from tools.rendering.prepare_formal_render_manifests import (  # noqa: E402
     review100_selection,
     select_records,
     sha256,

@@ -62,6 +62,41 @@ class RepositoryHygieneTest(unittest.TestCase):
         )
         self.assertEqual(output.returncode, 1)
 
+    def test_tools_are_partitioned_by_responsibility(self) -> None:
+        expected = {
+            "assets",
+            "cli",
+            "dataset_contract",
+            "motion_rules",
+            "physics",
+            "release",
+            "rendering",
+            "sampling",
+            "training_export",
+        }
+        packages = {
+            path.name
+            for path in (ROOT / "tools").iterdir()
+            if path.is_dir() and (path / "__init__.py").is_file()
+        }
+        self.assertEqual(packages, expected)
+        self.assertTrue((ROOT / "tools" / "native" / "physweep_egl_device.c").is_file())
+        self.assertEqual(
+            sorted(path.name for path in (ROOT / "tools").glob("*.py")),
+            ["__init__.py"],
+        )
+        self.assertFalse(
+            (ROOT / "tools" / "dataset_generation" / "__init__.py").exists()
+        )
+
+    def test_object_count_rules_have_an_explicit_namespace(self) -> None:
+        motion_rules = ROOT / "tools" / "motion_rules"
+        self.assertEqual(
+            sorted(path.name for path in motion_rules.glob("*.py")),
+            ["__init__.py"],
+        )
+        self.assertTrue((motion_rules / "one_object" / "registry.py").is_file())
+
 
 if __name__ == "__main__":
     unittest.main()

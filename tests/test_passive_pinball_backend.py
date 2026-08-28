@@ -7,15 +7,15 @@ from pathlib import Path
 
 import numpy as np
 
-from tools.generate_passive_pinball_scene import (
+from tools.physics.generate_passive_pinball_scene import (
     build_fixture,
     build_metadata,
     initial_state,
     passive_pinball_camera,
     validate_profile_offsets,
 )
-from tools.resolved_simulation_scene import compile_resolved_scene
-from tools.specialized_backend_registry import (
+from tools.physics.resolved_simulation_scene import compile_resolved_scene
+from tools.physics.specialized_backend_registry import (
     load_specialized_backends,
     specialized_by_pipeline,
     specialized_by_schema,

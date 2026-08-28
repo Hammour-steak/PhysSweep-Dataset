@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 import unittest
 from pathlib import Path
 
@@ -8,9 +7,8 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from trajectory_contract import object_trajectory_view  # noqa: E402
+from tools.dataset_contract.trajectory_contract import object_trajectory_view  # noqa: E402
 
 
 class CameraTrajectoryContractTests(unittest.TestCase):

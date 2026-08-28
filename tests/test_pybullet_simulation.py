@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import copy
-import sys
 import unittest
 from pathlib import Path
 
@@ -9,10 +8,8 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOLS = ROOT / "tools"
-sys.path.insert(0, str(TOOLS))
 
-from bind_pybullet_visuals import (  # noqa: E402
+from tools.rendering.bind_pybullet_visuals import (  # noqa: E402
     camera_inside_structural_envelope,
     camera_occlusion_colliders,
     camera_target_centers,
@@ -24,20 +21,20 @@ from bind_pybullet_visuals import (  # noqa: E402
     support_context_points,
     unoccluded_fraction,
 )
-from appearance_adaptation import (  # noqa: E402
+from tools.rendering.appearance_adaptation import (  # noqa: E402
     choose_rendered_frame_exposure_adjustment,
     frame_statistics_within_fixed_limits,
 )
-from environment_collision import binding_sha256  # noqa: E402
-from rigid_trajectory import audit_trajectory  # noqa: E402
-from sample_pybullet_base import (  # noqa: E402
+from tools.assets.environment_collision import binding_sha256  # noqa: E402
+from tools.physics.rigid_trajectory import audit_trajectory  # noqa: E402
+from tools.sampling.sample_pybullet_base import (  # noqa: E402
     BUNDLE_PATH,
     build_batch,
     load_active_rules,
     load_json,
     sampling_manifest_rule_sources,
 )
-from simulate_pybullet_rigid import simulate  # noqa: E402
+from tools.physics.simulate_pybullet_rigid import simulate  # noqa: E402
 
 
 class PyBulletSimulationTests(unittest.TestCase):

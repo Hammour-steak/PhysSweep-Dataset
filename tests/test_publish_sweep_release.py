@@ -11,9 +11,8 @@ from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from publish_sweep_release import (  # noqa: E402
+from tools.release.publish_sweep_release import (  # noqa: E402
     main,
     merge_base_records,
     merge_generic_samples,

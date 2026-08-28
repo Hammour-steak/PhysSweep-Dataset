@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from tools.object_identity_contract import (
+from tools.dataset_contract.object_identity_contract import (
     OBJECT_IDENTITY_SCHEMA_VERSION,
     attach_object_identity,
     validate_object_identity,

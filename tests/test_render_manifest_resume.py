@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import json
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from render_asset_proxy_manifest import (  # noqa: E402
+from tools.rendering.render_asset_proxy_manifest import (  # noqa: E402
     implementation_is_reusable,
     instance_masks_are_reusable,
     mask_record_is_reusable,
@@ -21,7 +19,7 @@ from render_asset_proxy_manifest import (  # noqa: E402
     reusable_render_record as reusable_asset_record,
     sha256,
 )
-from render_pybullet_manifest import (  # noqa: E402
+from tools.rendering.render_pybullet_manifest import (  # noqa: E402
     reusable_render_record as reusable_generic_record,
 )
 
@@ -185,8 +183,8 @@ class RenderManifestResumeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             script = root / "tools/renderer.py"
-            evidence = root / "tools/specialized_render_evidence.py"
-            script.parent.mkdir(parents=True)
+            evidence = root / "tools/rendering/specialized_render_evidence.py"
+            evidence.parent.mkdir(parents=True)
             script.write_text("renderer", encoding="utf-8")
             evidence.write_text("evidence", encoding="utf-8")
             metadata = {
@@ -211,8 +209,8 @@ class RenderManifestResumeTests(unittest.TestCase):
     def test_mask_only_resume_binds_metadata_objects_code_and_egl(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            script = root / "tools/render_asset_proxy_scene.py"
-            evidence = root / "tools/specialized_render_evidence.py"
+            script = root / "tools/rendering/render_asset_proxy_scene.py"
+            evidence = root / "tools/rendering/specialized_render_evidence.py"
             script.parent.mkdir(parents=True)
             script.write_text("renderer", encoding="utf-8")
             evidence.write_text("evidence", encoding="utf-8")
@@ -462,7 +460,7 @@ class RenderManifestResumeTests(unittest.TestCase):
             video = output / "videos/scene.mp4"
             frame_dir = output / "frames/scene"
             mask_dir = output / "masks/scene/object"
-            script = root / "tools/render_pybullet_rigid.py"
+            script = root / "tools/rendering/render_pybullet_rigid.py"
             script.parent.mkdir(parents=True)
             script.write_text("renderer", encoding="utf-8")
             trajectory.parent.mkdir(parents=True)

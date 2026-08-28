@@ -1,13 +1,11 @@
 import json
 import unittest
-import sys
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from run_pybullet_batch import (  # noqa: E402
+from tools.physics.run_pybullet_batch import (  # noqa: E402
     batch_failed,
     group_samples_by_schema,
     manifest_samples,

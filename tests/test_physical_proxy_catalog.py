@@ -1,17 +1,15 @@
 from __future__ import annotations
 
 import json
-import sys
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from physical_proxy_catalog import load_catalog, records_by_id  # noqa: E402
-from sample_pybullet_base import BUNDLE_PATH  # noqa: E402
-from static_support_proxy import compile_static_support_binding  # noqa: E402
+from tools.assets.physical_proxy_catalog import load_catalog, records_by_id  # noqa: E402
+from tools.sampling.sample_pybullet_base import BUNDLE_PATH  # noqa: E402
+from tools.assets.static_support_proxy import compile_static_support_binding  # noqa: E402
 
 
 class PhysicalProxyCatalogTests(unittest.TestCase):

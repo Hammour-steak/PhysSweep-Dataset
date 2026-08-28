@@ -20,8 +20,8 @@ provenance, but release sampling is enabled only by the formal registries.
 
 Marble run completed formal promotion in one-object release v5. The commands
 below reproduce its historical candidate audit; they do not publish or render the
-formal release. Formal generation uses `tools/generate_marble_run_scene.py`,
-formal rendering uses `tools/render_marble_run_scene.py`, and release extension
+formal release. Formal generation uses `tools/physics/generate_marble_run_scene.py`,
+formal rendering uses `tools/rendering/render_marble_run_scene.py`, and release extension
 uses the declarative path documented in `tools/README.md`.
 
 Fetch the pinned source without adding it to the project worktree:
@@ -37,14 +37,14 @@ From the project root, activate the rigid environment and generate the base and
 all 13 one-factor records:
 
 ```bash
-python tools/generate_marble_run_candidate.py --generate-sweep
+python -m tools.physics.generate_marble_run_candidate --generate-sweep
 ```
 
 Render reviewed base frames with the bundled Blender runtime:
 
 ```bash
 runtime/blender-3.4.0-linux-x64/blender -b \
-  --python tools/render_marble_run_candidate.py -- \
+  --python tools/rendering/render_marble_run_candidate.py -- \
   --metadata outputs/specialized_scene_review/marble_run_v1/base/metadata.json \
   --trajectory outputs/specialized_scene_review/marble_run_v1/base/trajectory.npz \
   --output-dir outputs/specialized_scene_review/marble_run_v1/inspection/base

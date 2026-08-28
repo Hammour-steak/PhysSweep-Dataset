@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import sys
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from appearance_adaptation import choose_adaptation
+from tools.rendering.appearance_adaptation import choose_adaptation
 
 
 def stats(luminance: float, classification: str) -> dict:

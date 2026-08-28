@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import sys
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from bind_pybullet_visuals import shadow_readable_lighting
+from tools.rendering.bind_pybullet_visuals import shadow_readable_lighting
 
 
 def metadata(size_m: list[float]) -> dict:

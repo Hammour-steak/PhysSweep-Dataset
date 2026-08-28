@@ -61,7 +61,7 @@ The default one-object build configuration currently stops after frozen base and
 sweep metadata. Inspect its resolved stages with:
 
 ```bash
-.venv/bin/python tools/dataset_generation/build_one_object_dataset.py \
+.venv/bin/python -m tools.cli.build_one_object_dataset \
   --config configs/datasets/one_object.json --dry-run
 ```
 

@@ -2,16 +2,14 @@ from __future__ import annotations
 
 import hashlib
 import json
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from select_environment_review_samples import select_review_samples  # noqa: E402
+from tools.assets.select_environment_review_samples import select_review_samples  # noqa: E402
 
 
 def write_json(path: Path, value: dict) -> str:

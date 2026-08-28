@@ -10,7 +10,7 @@
     },
     "candidate_preflight_report": {
       "path": "assets/manifests/object_visual_preflight_report.json",
-      "sha256": "050284b17e9b9051106b9edc58b81f0c06e37ab2cb8932e114fed88c0e6c2f9b"
+      "sha256": "8d670cbbb7347b9b0929f5feea2c92a2dc33890dd1db2c2641a9bb639c4e3d8f"
     }
   },
   "policy": {
@@ -171,7 +171,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_1439",
                   "catalog_record_sha256": "ec45cd12ccb0e713ca75289f380ec5de3b988628b0531e9bfbd1a2db52e7b6d0",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -343,7 +343,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_16906",
                   "catalog_record_sha256": "c011f1ac2cc75144ac649634e062cbeb917acbafe12f39a14d425babfa9afec5",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -515,7 +515,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_14797",
                   "catalog_record_sha256": "b8d9ffa22c3cdbcb64e6b0a9544a1aeb45aaf276b6f0e28f0383ec408ac01111",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -687,7 +687,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_9463",
                   "catalog_record_sha256": "f2175fde9425210e2b6926f68306e19192b992a2b2bd486a7120d4d8c059affd",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -859,7 +859,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_17826",
                   "catalog_record_sha256": "4929deb1058534dc0bbf6f301d7399726c1d915d1b3fba21d45fc7cae7559add",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -1031,7 +1031,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_8294",
                   "catalog_record_sha256": "21107b709ba2e801879f86574d1d0e1eec7265ab94b58eb31a5bcc3d0c8d4bb7",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -1203,7 +1203,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_16089",
                   "catalog_record_sha256": "2d97a9ef290caa9c775bf9831f74dc39d6d858ba120b4defde55e44235a60bb0",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -1375,7 +1375,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_14083",
                   "catalog_record_sha256": "4057f6efb4c4b436946dd51fa16e9ef949849fe04825a32bb564eeb584be4a90",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -1547,7 +1547,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_8777",
                   "catalog_record_sha256": "b2a7de3cf2a3d415f4663448732222d0b80e3fdf24c5f0fa8f21d16399aa5c5e",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -1719,7 +1719,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_12670",
                   "catalog_record_sha256": "a2e25daef11f11a2df862c2a18b58525db8e6dbd1ddee474c3f8e7d0262bf197",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -1891,7 +1891,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_12411",
                   "catalog_record_sha256": "c42335bb1b841b558532884a371159b23b897a8910e03136635729845cc3cd01",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -2063,7 +2063,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_16047",
                   "catalog_record_sha256": "c9f9740b14a03c862a050f643d23c024b216ee063c84ae2cfce014d91d5841c3",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -2235,7 +2235,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_14593",
                   "catalog_record_sha256": "3e2c396bbf3ddce7cfef7b48a30134a47c865c71c69e63dfc2864eda2388b362",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -2407,7 +2407,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_6527",
                   "catalog_record_sha256": "83cd2e21fae8347157ef53cf80e87152e15e72f36d84a32b35da3cd6547159a0",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -2579,7 +2579,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_18691",
                   "catalog_record_sha256": "004422d1d47f8e0a034e833966026f599a7ddc1b0ffe671c433cb005a26963aa",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -2757,7 +2757,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_1619",
                   "catalog_record_sha256": "e0ef860f7f3bac137fe2d9d44c9aac3ff132088d2c932995f2f5a80b3a6b84be",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -2929,7 +2929,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_16210",
                   "catalog_record_sha256": "3aa8fe20431d3a30e134364fe93a4798c6894dc6d66fb98c1503a1885d301df6",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -3133,7 +3133,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_11905",
                   "catalog_record_sha256": "329ef8132385e168c101e8c598a6bafd2bfaadd86a0594b7e5653e60f59ceaf4",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -3337,7 +3337,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_13740",
                   "catalog_record_sha256": "678065debfc20a768a2b88dbbf64a703a8f8df31e3c98754de5aabf6b7336518",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -3509,7 +3509,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_38",
                   "catalog_record_sha256": "c7a40e285a401da9cd0cb76b79076ab2b32743f529a9db42d849ab84cdfa10f6",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -3681,7 +3681,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_16599",
                   "catalog_record_sha256": "5b313a2fce718bea9afa947aa1e25f891da9e731c89ac5fa5e66c0dae0f3ed1b",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -3853,7 +3853,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_19683",
                   "catalog_record_sha256": "a4fdba040c622370993bb378696bcdafeda6f4963fff5483ad37a67fd86aac27",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -4057,7 +4057,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_13383",
                   "catalog_record_sha256": "a9d0776914af2cab08aaea098be8bd67e5345e5f0c7a0de4e4c88b509f25907a",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -4229,7 +4229,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_11709",
                   "catalog_record_sha256": "e5f5df7d7c832c8453951489cbdf722c424cfd5d0ff763b8142b1c4f84525a80",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -4401,7 +4401,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_3431",
                   "catalog_record_sha256": "fed83bbbf90ddf2f8dce1c7a267010ee39139890f605d4757b2c8690896ee668",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -4573,7 +4573,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_961",
                   "catalog_record_sha256": "7df7c22c1e16802dd746dfc44d1d4e0608416c825a0cd8d5c1361b9770480622",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -4745,7 +4745,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_2592",
                   "catalog_record_sha256": "602dadc95c6b23490d849ec62c49883e6fe0fc7f6dab449cfff855848e07d92b",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -4917,7 +4917,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_15389",
                   "catalog_record_sha256": "0251cffaf4497d621cf9b13bb76607726bbba4a38d717b2a97b9ef3bee21f8eb",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -5089,7 +5089,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_16301",
                   "catalog_record_sha256": "935ad299717bda4e4bc0e04ff5161119f01a4d696551111d43ef2dbe2bd0c55b",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -5261,7 +5261,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_14934",
                   "catalog_record_sha256": "ed35fddd3dd726b70fd2591e293964accccd3786ff76b87d1db3d79bc0fddf93",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -5433,7 +5433,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_17617",
                   "catalog_record_sha256": "1e1e8a5acda4f44286e9126e739d7912de68fca8bf0ea0c2f0d9cc79230fae89",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -5605,7 +5605,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_8032",
                   "catalog_record_sha256": "5d5fc9ac1b36ac8bf33dc05f46c913fe956ab1df5fdc4174bbe0b499072b743c",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -5777,7 +5777,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_20426",
                   "catalog_record_sha256": "23a9e2128bd2e05808cc9e5a2c26c4ac16d2777cbe792680cc2112218ed526bf",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -5949,7 +5949,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_7009",
                   "catalog_record_sha256": "603d57cd4eed4d8d5e3b57671d40413196bf2dc4cc575c85893b4d5c891face5",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -6121,7 +6121,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_1559",
                   "catalog_record_sha256": "2b9d2a5dfd59e32e7d79f48b5c429c1650efc36bbd237d75530c196b64f57e7a",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -6293,7 +6293,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_13094",
                   "catalog_record_sha256": "e7fc27867b28fd358c37cfe5b6d2f45ac7713dc12ac2ee8d318cf5dcb9cf7fe0",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -6465,7 +6465,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_13291",
                   "catalog_record_sha256": "21661699ed0c28d5f322a406b0408dac7b502a1fa222b391b456900aae44c35b",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -6637,7 +6637,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_10348",
                   "catalog_record_sha256": "1fea7bd38a0a1b5ceb1662bea71759c8a56df26ff4f6fea7458afe2c1f217eba",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -6809,7 +6809,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_12633",
                   "catalog_record_sha256": "6a6165f3816791c85aacb1cf0a4ff842e4442184f85d60259e1407dff7b6faf9",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -6981,7 +6981,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_3415",
                   "catalog_record_sha256": "793c0f1940f440462591d59d0f0661d190286993ce80069f22bd9879c74d3c43",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -7153,7 +7153,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_7218",
                   "catalog_record_sha256": "e952e3c20d47d02deb43531abf23b5dd09d499faf8df1ee2023043655ae92869",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -7325,7 +7325,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_3013",
                   "catalog_record_sha256": "95ff069413b08bf6989d858e61fa0283b1dcff9be0fe899aa521864346961fa6",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -7497,7 +7497,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_20799",
                   "catalog_record_sha256": "674f7591f1bfc2aeda8dcc24c930b233eb520c5bde7afbab6021784907d22fdf",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -7669,7 +7669,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_15897",
                   "catalog_record_sha256": "d92197f9a1c7081f7737d7b78c89a27855cf3ae87ae1be1b78753ff90ca9b124",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -7841,7 +7841,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_5429",
                   "catalog_record_sha256": "787393b123320ca1ba4f80c2264729eb75b7da3eab13707620a9fec0cfdb85e4",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -8013,7 +8013,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_18020",
                   "catalog_record_sha256": "761a5ba7fa0871dc3d43f86c623699b8545e4e7c8cb50d4629af593a2f90b248",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -8185,7 +8185,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_487",
                   "catalog_record_sha256": "306b6db680f28e106e6e140162b93e8114b81ed7695d2bb96b9935e03e63902f",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -8357,7 +8357,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_3756",
                   "catalog_record_sha256": "809e6ef025855a230dadd302ceb7528b004e71de27b17f129a49d66c6327ddae",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -8529,7 +8529,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_13102",
                   "catalog_record_sha256": "2dde4a5b11b7473a90aa065fb1077818f2f2ceabe73681c10f2277203dec1ddd",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -8701,7 +8701,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_15118",
                   "catalog_record_sha256": "c76f3e228218c75f4a5eee6e4db536d52ef74affa0ec95b52562859c02aceed6",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -8873,7 +8873,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_13207",
                   "catalog_record_sha256": "0b39cc1d9041676db017a41e30a5a59592dedc435f69544e0d0250aa7275e65d",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -9045,7 +9045,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_7249",
                   "catalog_record_sha256": "70bb3fd4fc3664d80083db446fde0181edc4868e73602d273d9487fa06a7eff4",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -9217,7 +9217,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_2026",
                   "catalog_record_sha256": "2ba7a1310a1178a872616505382e4c359e3f0e117f2d370d98638e25476aad36",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -9389,7 +9389,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_13003",
                   "catalog_record_sha256": "22f3f5838b0d2012f6bb38facca86101e1db6b648c22641b81c7142636ba2b74",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -9561,7 +9561,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_8079",
                   "catalog_record_sha256": "2c8dafbac455f0e667dae5b2b60cd34cd6faedde85d3c6b3aa609ad4bd4fbc74",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -9739,7 +9739,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_10754",
                   "catalog_record_sha256": "c33ce7b7ba631e6f2b02a15dc95f4d8cc6f0e7e03723f55207b741c67d20762f",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -9911,7 +9911,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_19920",
                   "catalog_record_sha256": "1c462cf0aafe6c9e11b860efd3c4357e73fd206b63eb5c271eee1bd1e8f88c83",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -10089,7 +10089,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_12676",
                   "catalog_record_sha256": "ff89695c8d23683f333c542de8bf529a36b641d606781745ebc878689095988b",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -10261,7 +10261,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_15157",
                   "catalog_record_sha256": "aaa918a2ded959423c07173486ce4acf416998531a9d2c3d712986255579c6cd",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -10433,7 +10433,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_732",
                   "catalog_record_sha256": "bf9f7dde60c172865b6e9af401f672e825b1e7e2dde9114c213bf149327cf48c",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -10605,7 +10605,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_21246",
                   "catalog_record_sha256": "e19c1a61cce3a75eaab351a6b137b1d8653a361f34a2d9198bad8473dcaf5807",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -10777,7 +10777,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_12070",
                   "catalog_record_sha256": "d8f1d637eaa6250b7185794494a6e628326d344b39d980d03c3e096e4925c3e1",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -10949,7 +10949,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_10282",
                   "catalog_record_sha256": "3f8501af0d5ab2a690e5a2da54767978b02ab1a2e119c7eef0dea74b484029c6",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -11121,7 +11121,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_17381",
                   "catalog_record_sha256": "fe2e250a7026b2c509b8e37f92955159802ab61494f71d17090e3817cb91053f",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -11321,7 +11321,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_5822",
                   "catalog_record_sha256": "264b9ddc45275643d524be6e6ef763d95d2de70ffc0eb1efcb97c250c7b16d55",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -11493,7 +11493,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_12656",
                   "catalog_record_sha256": "5725bef521c581ddcba04022e7d7b10ed1a0c2bbee4bb72324d0c89bbb2746a6",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -11665,7 +11665,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_11899",
                   "catalog_record_sha256": "ebbeb0cbea0b2a013f763ce1b9e43905b71e3a8e333535a7c59b663f36a57804",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -11837,7 +11837,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_9549",
                   "catalog_record_sha256": "17e8588658aaa503ec006d2fb07c9c3bb38593bc3731b70a8df177938d00a385",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -12009,7 +12009,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_1297",
                   "catalog_record_sha256": "7bb25e84c3bc058ce0bb1dd03625bdb9889d57485ff8c85451da7f57b635a98a",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -12181,7 +12181,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_6107",
                   "catalog_record_sha256": "5d4804d23bcce226831ee1535970f581f1251e0ad11d802a8ecfa2798aa97b78",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -12353,7 +12353,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_15974",
                   "catalog_record_sha256": "744604b943da6e2dd4cfb8bd4db9fa07e054d5e2ba77675de0664f5d090e1e51",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -12525,7 +12525,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_9429",
                   "catalog_record_sha256": "cbe2970afb5ed35b80ef2ff9c7293ae17e940fc8bc3525e6c3130a472bfd4d7f",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -12697,7 +12697,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_10311",
                   "catalog_record_sha256": "74a7854880028dc2cc8806369a5ff013e77fe1965c9454f62c1dedffa77a34e9",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -12869,7 +12869,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_873",
                   "catalog_record_sha256": "abc1dec69e80cae08c772471e3d53e0dc252c1d0fbb951dd78e60c8bec7eb23f",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -13041,7 +13041,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_4357",
                   "catalog_record_sha256": "94633a8085885ae18737a8aa63db79d601015a9d2e251eb5f7020124ce5a76b6",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -13213,7 +13213,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_8393",
                   "catalog_record_sha256": "54c489cd35f6e7fd54606bc136a1bb56499facdae54a0898f028d04bc494973f",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -13385,7 +13385,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_10575",
                   "catalog_record_sha256": "eed4a94ad9a6e10bac9c9a5a0a5e63968aefb7863da8c1c6d61e524e543f28d5",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -13557,7 +13557,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_2957",
                   "catalog_record_sha256": "ea05029e72f00d28abb2c38f3395a7e03f0d4e2fcefd0cfd7b9766a7d53e2d8c",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -13729,7 +13729,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_5837",
                   "catalog_record_sha256": "6e6ea29b2941eea30286fd4ca2ac854a611c784fc00b6c467508673e943294c5",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -13901,7 +13901,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_15412",
                   "catalog_record_sha256": "c983ff8d2d2b7f9b1bfca67810ad82e928812edc483936e56313562e3a59ff82",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "box",
                   "collider_size_m": [
@@ -14073,7 +14073,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_18415",
                   "catalog_record_sha256": "c90c37b4b86a3cdc63f46ca4754b063d6cbe976dd988e2711744842f70ace2fb",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -14245,7 +14245,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_7375",
                   "catalog_record_sha256": "f9857a188ff5a305428ed16815cdb25c066a23cb13632426a3540428398f073c",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "cylinder",
                   "collider_size_m": [
@@ -14417,7 +14417,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_8335",
                   "catalog_record_sha256": "724e55f386a4611102a26f5101742bf31993e0cb7ba137200e72f90c4093f85f",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [
@@ -14589,7 +14589,7 @@
                 "physical_proxy_catalog": {
                   "asset_id": "physassets_8925",
                   "catalog_record_sha256": "c1ddb5d421ad48d49b63dbfa8fe49e128b01b3f7411a24fecf9bbbf4f2a14b64",
-                  "catalog_records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+                  "catalog_records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
                   "representation": "analytic_compound",
                   "collider_shape": "sphere",
                   "collider_size_m": [

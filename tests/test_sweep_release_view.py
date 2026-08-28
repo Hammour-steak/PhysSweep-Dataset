@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.build_sweep_release_view import (
+from tools.release.build_sweep_release_view import (
     DERIVED_LEVELS,
     SWEEP_SAMPLE_SCHEMA,
     SWEEP_AXES,

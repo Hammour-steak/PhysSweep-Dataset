@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOLS = ROOT / "tools"
-sys.path.insert(0, str(TOOLS))
 
-from audit_collected_videos import integrity_error, sha256  # noqa: E402
+from tools.rendering.audit_collected_videos import integrity_error, sha256  # noqa: E402
 
 
 class CollectedVideoIntegrityTests(unittest.TestCase):

@@ -16,21 +16,21 @@
     "environment_composition": "configs/visual_environment_composition.json"
   },
   "implementations": {
-    "source_inspection": "tools/inspect_sketchfab_glb_assets.py",
-    "dynamic_proxy_generation": "tools/generate_physassets_proxy.py",
-    "catalog_publish": "tools/publish_asset_catalog.py",
-    "proxy_probe": "tools/probe_physical_proxy_catalog.py",
-    "visual_preflight": "tools/audit_object_visual_candidates.py",
-    "visual_repair": "tools/repair_physassets_visuals.py",
-    "visual_curation": "tools/build_object_visual_curation.py",
-    "environment_proxy_build": "tools/build_visual_environment_collision_proxies.py",
-    "environment_proxy_validation": "tools/validate_visual_environment_collision_proxies.py",
-    "contract_audit": "tools/audit_asset_ingestion.py"
+    "source_inspection": "tools/assets/inspect_sketchfab_glb_assets.py",
+    "dynamic_proxy_generation": "tools/assets/generate_physassets_proxy.py",
+    "catalog_publish": "tools/assets/publish_asset_catalog.py",
+    "proxy_probe": "tools/assets/probe_physical_proxy_catalog.py",
+    "visual_preflight": "tools/assets/audit_object_visual_candidates.py",
+    "visual_repair": "tools/assets/repair_physassets_visuals.py",
+    "visual_curation": "tools/assets/build_object_visual_curation.py",
+    "environment_proxy_build": "tools/assets/build_visual_environment_collision_proxies.py",
+    "environment_proxy_validation": "tools/assets/validate_visual_environment_collision_proxies.py",
+    "contract_audit": "tools/assets/audit_asset_ingestion.py"
   },
   "immutable_provenance": {
     "static_support_extractor": {
-      "path": "tools/extract_static_support_proxies.py",
-      "sha256": "20aada6a9cbe2afb48babde5c6ae4643b9dc709c6d1127b1a32c5cafb31f4670"
+      "path": "tools/assets/extract_static_support_proxies.py",
+      "sha256": "a4c1965a65aadde16b9070be1bf2234382bea9f57bd249532018ad9af6daf3a1"
     }
   },
   "stages": [

@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.prepare_sweep_render_manifests import (
+from tools.rendering.prepare_sweep_render_manifests import (
     dispatched_paths,
     select_complete_groups,
     sha256,

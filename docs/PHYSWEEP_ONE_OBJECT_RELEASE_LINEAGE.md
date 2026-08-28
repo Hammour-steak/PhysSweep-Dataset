@@ -32,8 +32,8 @@ publisher cannot be mistaken for the active extension path.
 New extensions use the declarative path:
 
 - `configs/<extension>_release_extension.json`
-- `tools/prepare_specialized_release_replacements.py`
-- `tools/publish_specialized_release_extension.py`
+- `tools/release/prepare_specialized_release_replacements.py`
+- `tools/release/publish_specialized_release_extension.py`
 
 The compatibility entry points must not be copied to create another family.
 Reproduce v4 in its frozen source root; use the declarative tools for every new
@@ -48,7 +48,7 @@ manifest hash and to `physweep_pybullet_rigid_metadata_v1`; stale bound scenes
 with matching names but different release provenance are rejected.
 
 Specialized render inputs are produced by
-`tools/prepare_sweep_render_manifests.py`, which verifies the release metadata,
+`tools/rendering/prepare_sweep_render_manifests.py`, which verifies the release metadata,
 physics manifests, source metadata hashes, complete 13-record groups, and the
 registered source schema before writing a branch-specific render plan.
 
@@ -58,7 +58,7 @@ Audit historical code bindings against their frozen owner rather than the
 current checkout:
 
 ```bash
-python tools/audit_release_provenance.py \
+python -m tools.release.audit_release_provenance \
   --release-manifest datasets/one_object_v5/release/manifest.json \
   --release-project-root /path/to/frozen-v5-worktree
 ```

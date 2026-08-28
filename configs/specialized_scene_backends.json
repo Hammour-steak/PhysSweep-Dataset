@@ -6,7 +6,7 @@
       "source_schema_version": "physweep_asset_proxy_scene_v3",
       "sweep_branch": "asset",
       "renderer_id": "asset",
-      "renderer_script": "tools/render_asset_proxy_scene.py",
+      "renderer_script": "tools/rendering/render_asset_proxy_scene.py",
       "render_manifest_schema": "physweep_asset_proxy_render_manifest_v1",
       "render_manifest_name": "render_manifest.json"
     },
@@ -15,7 +15,7 @@
       "source_schema_version": "physweep_billiards_scene_v4",
       "sweep_branch": "billiards",
       "renderer_id": "billiards",
-      "renderer_script": "tools/render_billiards_scene.py",
+      "renderer_script": "tools/rendering/render_billiards_scene.py",
       "render_manifest_schema": "physweep_billiards_render_manifest_v1",
       "render_manifest_name": "billiards_render_manifest.json"
     },
@@ -24,7 +24,7 @@
       "source_schema_version": "physweep_passive_pinball_scene_v1",
       "sweep_branch": "passive_pinball",
       "renderer_id": "passive_pinball",
-      "renderer_script": "tools/render_passive_pinball_scene.py",
+      "renderer_script": "tools/rendering/render_passive_pinball_scene.py",
       "render_manifest_schema": "physweep_passive_pinball_render_manifest_v1",
       "render_manifest_name": "passive_pinball_render_manifest.json"
     },
@@ -33,7 +33,7 @@
       "source_schema_version": "physweep_marble_run_scene_v1",
       "sweep_branch": "marble_run",
       "renderer_id": "marble_run",
-      "renderer_script": "tools/render_marble_run_scene.py",
+      "renderer_script": "tools/rendering/render_marble_run_scene.py",
       "render_manifest_schema": "physweep_marble_run_render_manifest_v1",
       "render_manifest_name": "marble_run_render_manifest.json"
     }

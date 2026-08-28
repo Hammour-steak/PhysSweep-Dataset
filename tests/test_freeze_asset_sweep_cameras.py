@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.freeze_asset_sweep_cameras import freeze_cameras, json_bytes, sha256_bytes
+from tools.rendering.freeze_asset_sweep_cameras import freeze_cameras, json_bytes, sha256_bytes
 
 
 def write_json(path: Path, value: object) -> None:

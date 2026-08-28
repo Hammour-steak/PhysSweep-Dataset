@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,11 +10,8 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOLS = ROOT / "tools"
-if str(TOOLS) not in sys.path:
-    sys.path.insert(0, str(TOOLS))
 
-from generate_marble_run_candidate import (  # noqa: E402
+from tools.physics.generate_marble_run_candidate import (  # noqa: E402
     build_metadata,
     derive_sweep_metadata,
     load_json,
@@ -109,7 +105,7 @@ class MarbleRunCandidateContractTests(unittest.TestCase):
             self.assertTrue(collision_mesh.is_watertight)
             base = build_metadata(ROOT, self.config_path, self.config, collision)
             renderer = base["render"]["implementation"]
-            self.assertEqual(renderer["path"], "tools/render_marble_run_candidate.py")
+            self.assertEqual(renderer["path"], "tools/rendering/render_marble_run_candidate.py")
             self.assertEqual(len(renderer["sha256"]), 64)
             base_path = output / "metadata.json"
             write_json(base_path, base)

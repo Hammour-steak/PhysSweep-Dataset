@@ -2,7 +2,7 @@ import copy
 import unittest
 from pathlib import Path
 
-from tools.resolved_simulation_scene import compile_resolved_scene, sha256
+from tools.physics.resolved_simulation_scene import compile_resolved_scene, sha256
 
 
 ROOT = Path(__file__).resolve().parents[1]

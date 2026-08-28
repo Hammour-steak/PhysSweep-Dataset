@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.video_encoding import normalize_h264_container
+from tools.rendering.video_encoding import normalize_h264_container
 
 
 def file_sha256(path: Path) -> str:

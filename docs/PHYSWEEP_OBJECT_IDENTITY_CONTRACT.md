@@ -19,6 +19,6 @@ uses the same object mapping to render the per-object silhouette sequence after
 the RGB video. Static geometry is hidden only for this mask pass so the motion
 condition remains available through occlusion.
 
-`tools/audit_object_identity_contract.py` rejects records without the canonical
+`tools/dataset_contract/audit_object_identity_contract.py` rejects records without the canonical
 contract. Migration of external or older metadata is an explicit preprocessing
 step and is never part of formal generation.

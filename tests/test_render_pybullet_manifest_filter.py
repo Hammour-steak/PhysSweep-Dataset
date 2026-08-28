@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.render_pybullet_manifest import (
+from tools.rendering.render_pybullet_manifest import (
     result_manifest_name,
     select_release_records,
     select_sweep_kind,

@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.derive_physics_sweep import (
+from tools.sampling.derive_physics_sweep import (
     collect_inputs,
     derive_one,
     load_json,

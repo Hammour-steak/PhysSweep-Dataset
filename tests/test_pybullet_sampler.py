@@ -12,9 +12,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
-sys.path.insert(0, str(TOOLS))
 
-from sample_pybullet_base import (  # noqa: E402
+from tools.sampling.sample_pybullet_base import (  # noqa: E402
     balanced_objects_for_motions,
     bounce_observation_contract,
     coverage_cycle_by_group,
@@ -29,8 +28,8 @@ from sample_pybullet_base import (  # noqa: E402
     support_mesh_scale_ratio,
     support_allowed,
 )
-from bind_pybullet_visuals import frozen_environment_binding  # noqa: E402
-from rigid_geometry import build_support_geometry  # noqa: E402
+from tools.rendering.bind_pybullet_visuals import frozen_environment_binding  # noqa: E402
+from tools.physics.rigid_geometry import build_support_geometry  # noqa: E402
 
 
 class PyBulletSamplerTests(unittest.TestCase):
@@ -357,7 +356,7 @@ class PyBulletSamplerTests(unittest.TestCase):
         script = """
 import hashlib, json
 from pathlib import Path
-from sample_pybullet_base import build_batch, load_active_rules, load_json
+from tools.sampling.sample_pybullet_base import build_batch, load_active_rules, load_json
 root = Path.cwd()
 rules = load_active_rules(root)
 backend = load_json(root / 'configs/pybullet_backend.json')
@@ -371,7 +370,7 @@ print(hashlib.sha256(payload).hexdigest())
         for hash_seed in ("1", "2"):
             environment = dict(os.environ)
             environment["PYTHONHASHSEED"] = hash_seed
-            environment["PYTHONPATH"] = str(TOOLS)
+            environment["PYTHONPATH"] = str(ROOT)
             result = subprocess.run(
                 [sys.executable, "-c", script],
                 cwd=ROOT,

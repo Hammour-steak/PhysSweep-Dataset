@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 import unittest
 from pathlib import Path
 
@@ -8,14 +7,15 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from rigid_trajectory import (  # noqa: E402
+from tools.motion_rules.one_object.common import (
+    precontact_lateral_drift as _precontact_lateral_drift,
+    sampled_extremum_tolerance as _sampled_extremum_tolerance,
+)
+from tools.physics.rigid_trajectory import (
     active_motion_duration_s,
     _distance_lower_bound,
     _distance_upper_bound,
-    _precontact_lateral_drift,
-    _sampled_extremum_tolerance,
 )
 
 

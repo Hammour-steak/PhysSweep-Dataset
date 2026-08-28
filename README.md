@@ -11,7 +11,7 @@ PhysSweep builds the one-object dataset with:
 - five values per sweep axis with the base value at the center;
 - 13 unique samples per base scene;
 - 4-second, 24 FPS, 1280 x 720 videos;
-- scene metadata, first frames, scene conditions, point trajectories, and audit reports.
+- scene metadata, dense rigid trajectories, videos, instance masks, and audit manifests.
 
 ## Setup
 
@@ -29,7 +29,7 @@ Generate base scenes and sweep metadata.
 Preview the build:
 
 ```bash
-python tools/dataset_generation/build_one_object_dataset.py \
+python -m tools.cli.build_one_object_dataset \
   --config configs/datasets/one_object.json \
   --dry-run
 ```
@@ -37,7 +37,7 @@ python tools/dataset_generation/build_one_object_dataset.py \
 Run the build:
 
 ```bash
-python tools/dataset_generation/build_one_object_dataset.py \
+python -m tools.cli.build_one_object_dataset \
   --config configs/datasets/one_object.json
 ```
 
@@ -45,7 +45,8 @@ python tools/dataset_generation/build_one_object_dataset.py \
 
 - `assets/`: asset manifests, curation records, and proxy indexes.
 - `configs/`: sampling, physics, visual, and release rules.
-- `tools/`: generation, simulation, rendering, export, and audit commands.
+- `tools/`: responsibility-based Python packages; invoke commands with `python -m`.
+- `tools/motion_rules/one_object/`: the isolated 1obj rule registry; future object-count rules get parallel packages.
 - `docs/`: dataset contracts and methodology.
 - `tests/`: physics, rendering, pipeline, and repository checks.
 

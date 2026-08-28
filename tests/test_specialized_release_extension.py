@@ -5,8 +5,8 @@ import tempfile
 from collections import Counter
 from pathlib import Path
 
-from tools.publish_specialized_release_extension import specialized_renderer_binding
-from tools.specialized_release_extension import (
+from tools.release.publish_specialized_release_extension import specialized_renderer_binding
+from tools.release.specialized_release_extension import (
     index_replacements,
     load_extension_spec,
     project_root_reference,
@@ -65,7 +65,7 @@ class SpecializedReleaseExtensionTests(unittest.TestCase):
     def test_renderer_binding_comes_from_the_specialized_registry(self) -> None:
         replacement = self.spec["replacement"]
         binding = specialized_renderer_binding(ROOT, replacement)
-        self.assertEqual(binding["path"], "tools/render_marble_run_scene.py")
+        self.assertEqual(binding["path"], "tools/rendering/render_marble_run_scene.py")
 
         changed = {
             **replacement,

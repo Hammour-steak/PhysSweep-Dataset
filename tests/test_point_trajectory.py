@@ -1,5 +1,4 @@
 import json
-import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,9 +7,8 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools" / "dataset_contract"))
 
-from point_trajectory import (  # noqa: E402
+from tools.dataset_contract.point_trajectory import (
     POINT_COUNT,
     build_point_trajectory,
     rigid_points_from_poses,

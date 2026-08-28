@@ -7,7 +7,7 @@ the current asset release. It points to the active visual review, proxy,
 registry, catalog, scene-profile, bundle, and matrix records. Run:
 
 ```bash
-.venv/bin/python tools/audit_asset_ingestion.py
+.venv/bin/python -m tools.assets.audit_asset_ingestion
 ```
 
 The audit requires every declared implementation and release artifact to
@@ -40,7 +40,7 @@ Role classification happens before proxy generation:
 
 Admission is deliberately not a single automatic command. Visual and semantic
 review are manual gates. After proxy records and validation evidence are
-updated, `tools/publish_asset_catalog.py` compiles the active manifest in memory,
+updated, `tools/assets/publish_asset_catalog.py` compiles the active manifest in memory,
 checks all hashes and runtime evidence, and atomically promotes it with
 `--promote`. The contract audit then verifies the handoff to sampling.
 

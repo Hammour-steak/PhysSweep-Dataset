@@ -68,7 +68,7 @@ physics audit.
 
 ## Motion Rule Groups
 
-`tools/motion_rules/registry.py` is the only generic motion dispatcher. It
+`tools/motion_rules/one_object/registry.py` is the only one-object motion dispatcher. It
 assigns every supported motion to one physical mechanism module, and each
 module owns both initial-state derivation and trajectory audit:
 

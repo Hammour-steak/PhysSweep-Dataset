@@ -28,12 +28,12 @@
     "sampling_ready": 131,
     "total": 2920
   },
-  "generator_path": "tools/publish_asset_catalog.py",
-  "generator_sha256": "0cae337dee1ca3e7fdadfd67f8f5807fbf34bedaef65148d227c818d0bc92eff",
+  "generator_path": "tools/assets/publish_asset_catalog.py",
+  "generator_sha256": "8149184c670c1421de4d91d90b84c8dd6eb72e804a662abc3f8e368cc8e21cbb",
   "policy_path": "configs/physical_proxy_pipeline.json",
   "policy_sha256": "d23ac60970a1d35ff47f61ef8874330899ef409601b34509aad4efdb03f93bff",
   "records_path": "assets/proxies/objects/records.jsonl",
-  "records_sha256": "62fc689bbb97805b3a9392671b5fa834345454453dfbc1b3314cb2242ac6d6cc",
+  "records_sha256": "e2cc5a1598893d579c38e31f8aff03cfb9d643d07d28dd2d1002af2f4e9dcf41",
   "scope": {
     "physassets": "all generated primitive candidates",
     "sketchfab": "every locally downloaded GLB has one catalog disposition",
@@ -48,7 +48,7 @@
     },
     "path": "assets/proxies/objects/validation.json",
     "scope": "active_and_static_mesh",
-    "sha256": "047d4529b62f79a724e2b9612273b9ba340073826e87c3c1f5bfaf4fb654baf0",
+    "sha256": "26fb594292170f6417c5498a56ed3c1c630af799dd840eb28ab8a1995d8e5ba5",
     "version": "physweep_physical_proxy_validation_v2"
   },
   "version": "physweep_physical_proxy_catalog_v1"

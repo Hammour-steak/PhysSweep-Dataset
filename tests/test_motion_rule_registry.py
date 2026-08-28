@@ -3,17 +3,13 @@
 
 from __future__ import annotations
 
-import sys
 import unittest
 from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-TOOLS_ROOT = PROJECT_ROOT / "tools"
-if str(TOOLS_ROOT) not in sys.path:
-    sys.path.insert(0, str(TOOLS_ROOT))
 
-from motion_rules import (  # noqa: E402
+from tools.motion_rules.one_object import (
     asset_motion_group,
     motion_group,
     registered_asset_motion_profiles,

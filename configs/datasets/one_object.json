@@ -16,7 +16,8 @@
       "name": "sample_base",
       "command": [
         "{python}",
-        "tools/sample_one_object_scene_matrix.py",
+        "-m",
+        "tools.sampling.sample_one_object_scene_matrix",
         "--root",
         "{root}",
         "--output-dataset",
@@ -38,7 +39,8 @@
       "name": "derive_sweep",
       "command": [
         "{python}",
-        "tools/derive_physics_sweep.py",
+        "-m",
+        "tools.sampling.derive_physics_sweep",
         "--root",
         "{root}",
         "--config",

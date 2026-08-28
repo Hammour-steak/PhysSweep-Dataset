@@ -55,10 +55,10 @@ The current catalog has 20 proxy-ready environment assets. Eight are admitted fo
 - `configs/asset_proxy_registry.json`
 - `configs/one_object_sampling_bundle.json`
 - `configs/one_object_sampling_matrix.json`
-- `tools/camera_geometry.py`
-- `tools/environment_collision.py`
-- `tools/sample_pybullet_base.py`
-- `tools/bind_pybullet_visuals.py`
+- `tools/rendering/camera_geometry.py`
+- `tools/assets/environment_collision.py`
+- `tools/sampling/sample_pybullet_base.py`
+- `tools/rendering/bind_pybullet_visuals.py`
 
 ## Current Validation
 

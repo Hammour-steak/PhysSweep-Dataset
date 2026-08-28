@@ -8,16 +8,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ACTIVE_GENERATORS = (
-    "rigid_geometry.py",
-    "sample_pybullet_base.py",
-    "rigid_trajectory.py",
-    "simulate_pybullet_rigid.py",
-    "bind_pybullet_visuals.py",
-    "render_pybullet_rigid.py",
-    "scene_kit_compiler.py",
-    "sample_asset_proxy_scenes.py",
-    "generate_billiards_scene.py",
-    "sample_one_object_scene_matrix.py",
+    "physics/rigid_geometry.py",
+    "sampling/sample_pybullet_base.py",
+    "physics/rigid_trajectory.py",
+    "physics/simulate_pybullet_rigid.py",
+    "rendering/bind_pybullet_visuals.py",
+    "rendering/render_pybullet_rigid.py",
+    "assets/scene_kit_compiler.py",
+    "sampling/sample_asset_proxy_scenes.py",
+    "physics/generate_billiards_scene.py",
+    "sampling/sample_one_object_scene_matrix.py",
 )
 
 

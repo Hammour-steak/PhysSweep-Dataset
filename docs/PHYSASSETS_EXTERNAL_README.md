@@ -20,7 +20,7 @@ The resumable downloader uses the local SOCKS5 proxy and verifies the official
 checksum after all seven archive parts arrive:
 
 ```bash
-nohup bash tools/download_physassets.sh \
+nohup bash tools/assets/download_physassets.sh \
   > external/physassets/download.log 2>&1 < /dev/null &
 echo $! > external/physassets/download.pid
 ```
@@ -43,7 +43,7 @@ The extraction script removes those components so each sample is placed directly
 under `extracted/<sample_id>/`:
 
 ```bash
-nohup bash tools/extract_physassets.sh \
+nohup bash tools/assets/extract_physassets.sh \
   > external/physassets/extract.log 2>&1 < /dev/null &
 echo $! > external/physassets/extract.pid
 ```
@@ -128,9 +128,9 @@ asset registry.
 
 Files and tools:
 
-- `tools/generate_physassets_primitive_proxy.py`: one-asset fitter and probes.
-- `tools/build_physassets_proxy_batch.py`: resumable parallel batch driver.
-- `tools/render_physassets_proxy_overlays.py`: Blender overlay review renderer.
+- `tools/assets/generate_physassets_primitive_proxy.py`: one-asset fitter and probes.
+- `tools/assets/build_physassets_proxy_batch.py`: resumable parallel batch driver.
+- `tools/rendering/render_physassets_proxy_overlays.py`: Blender overlay review renderer.
 - `external/physassets/generated_proxies/current/<sample_id>/proxy.json`: generated
   per-asset records.
 - `external/physassets/generated_proxies/current/batch_manifest.jsonl`: incremental
@@ -191,5 +191,5 @@ to match the reviewed proxy within 6% on every axis. This prevents mixed glTF
 node coordinate frames from silently rotating or stretching rendered objects.
 
 Published records enter `assets/proxies/catalog.json` only through
-`tools/publish_asset_catalog.py`. Run `tools/audit_asset_ingestion.py` after a
+`tools/assets/publish_asset_catalog.py`. Run `tools/assets/audit_asset_ingestion.py` after a
 publication; staging files under `external/physassets` remain non-sampleable.

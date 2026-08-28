@@ -12,13 +12,11 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOLS = ROOT / "tools"
-sys.path.insert(0, str(TOOLS))
 
-from generate_billiards_scene import billiards_camera, simulate  # noqa: E402
-from physical_proxy_catalog import load_catalog, records_by_id  # noqa: E402
-from sample_one_object_scene_matrix import MATRIX_PATH, matrix_dependency_paths  # noqa: E402
-from static_support_proxy import compile_static_support_binding  # noqa: E402
+from tools.physics.generate_billiards_scene import billiards_camera, simulate  # noqa: E402
+from tools.assets.physical_proxy_catalog import load_catalog, records_by_id  # noqa: E402
+from tools.sampling.sample_one_object_scene_matrix import MATRIX_PATH, matrix_dependency_paths  # noqa: E402
+from tools.assets.static_support_proxy import compile_static_support_binding  # noqa: E402
 
 
 class BilliardsSceneTests(unittest.TestCase):
@@ -190,7 +188,8 @@ class BilliardsSceneTests(unittest.TestCase):
             completed = subprocess.run(
                 [
                     sys.executable,
-                    str(TOOLS / "generate_billiards_scene.py"),
+                    "-m",
+                    "tools.physics.generate_billiards_scene",
                     "--root",
                     str(ROOT),
                     "--output",
@@ -235,7 +234,8 @@ class BilliardsSceneTests(unittest.TestCase):
             completed = subprocess.run(
                 [
                     sys.executable,
-                    str(TOOLS / "generate_billiards_scene.py"),
+                    "-m",
+                    "tools.physics.generate_billiards_scene",
                     "--root",
                     str(ROOT),
                     "--output",

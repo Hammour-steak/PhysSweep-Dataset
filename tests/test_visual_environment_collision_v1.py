@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import sys
 import unittest
 from pathlib import Path
 
@@ -11,21 +10,19 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TOOLS = ROOT / "tools"
-sys.path.insert(0, str(TOOLS))
 
-from environment_collision import (  # noqa: E402
+from tools.assets.environment_collision import (  # noqa: E402
     binding_sha256,
     compile_environment_binding,
     dynamic_back_wall_clearance_m,
     dynamic_motion_lane,
     validate_environment_binding,
 )
-from sample_one_object_scene_matrix import (  # noqa: E402
+from tools.sampling.sample_one_object_scene_matrix import (  # noqa: E402
     MATRIX_PATH,
     matrix_dependency_paths,
 )
-from sample_pybullet_base import BUNDLE_PATH  # noqa: E402
+from tools.sampling.sample_pybullet_base import BUNDLE_PATH  # noqa: E402
 
 
 def load_json(path: Path) -> dict:
@@ -145,7 +142,7 @@ class VisualEnvironmentCollisionV1Tests(unittest.TestCase):
         )
         self.assertEqual(
             self.bundle["implementation"]["environment_collision"],
-            "tools/environment_collision.py",
+            "tools/assets/environment_collision.py",
         )
         self.assertEqual(
             self.matrix["dependencies"]["generic_sampling_bundle"],

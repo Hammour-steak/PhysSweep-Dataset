@@ -13,9 +13,8 @@ from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from sample_one_object_scene_matrix import (  # noqa: E402
+from tools.sampling.sample_one_object_scene_matrix import (  # noqa: E402
     MATRIX_PATH,
     allocate_axis_counts,
     assign_environment_ids,
@@ -64,7 +63,7 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
         physics_manifest = {"sample_count": 1, "records": [simulation_record]}
 
         def fake_run(command: list[str], _cwd: Path) -> None:
-            if "sample_pybullet_base.py" in command[1]:
+            if "tools.sampling.sample_pybullet_base" in command:
                 manifest_path.parent.mkdir(parents=True, exist_ok=True)
                 manifest_path.write_text(json.dumps(source_manifest), encoding="utf-8")
                 return
@@ -85,7 +84,8 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
 
         try:
             with mock.patch(
-                "sample_one_object_scene_matrix.run", side_effect=fake_run
+                "tools.sampling.sample_one_object_scene_matrix.run",
+                side_effect=fake_run,
             ):
                 _, _, returned_path, returned = sample_generic_candidate_batch(
                     root=ROOT,
@@ -442,7 +442,7 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
             "-c",
             (
                 "import json; "
-                "from sample_one_object_scene_matrix import MATRIX_PATH, build_schedule; "
+                "from tools.sampling.sample_one_object_scene_matrix import MATRIX_PATH, build_schedule; "
                 "matrix=json.loads(MATRIX_PATH.read_text(encoding='utf-8')); "
                 "print(json.dumps(build_schedule(matrix, 40, 12345), sort_keys=True))"
             ),
@@ -451,7 +451,7 @@ class DecoupledSamplingMatrixTests(unittest.TestCase):
         for hash_seed in ("1", "987654"):
             environment = dict(os.environ)
             environment["PYTHONHASHSEED"] = hash_seed
-            environment["PYTHONPATH"] = str(ROOT / "tools")
+            environment["PYTHONPATH"] = str(ROOT)
             outputs.append(
                 subprocess.check_output(
                     command,

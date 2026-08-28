@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import sys
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "tools"))
 
-from resample_rejected_sweep_groups import select_replacement_slots  # noqa: E402
+from tools.sampling.resample_rejected_sweep_groups import select_replacement_slots  # noqa: E402
 
 
 class ReplacementSelectionTests(unittest.TestCase):
