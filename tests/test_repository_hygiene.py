@@ -246,8 +246,11 @@ class RepositoryHygieneTest(unittest.TestCase):
         adapters = (
             "tools/physics/rigid_trajectory.py",
             "tools/physics/simulate_pybullet_rigid.py",
+            "tools/assets/environment_collision.py",
             "tools/rendering/bind_pybullet_visuals.py",
+            "tools/rendering/camera_solver.py",
             "tools/rendering/render_pybullet_rigid.py",
+            "tools/training_export/export_gt_initial_surface.py",
         )
         for relative in adapters:
             with self.subTest(module=relative):

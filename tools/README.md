@@ -160,56 +160,12 @@ passive-pinball, and marble-run schemas through their registered reviewed
 adapters. Unknown schemas and unsupported object counts are rejected instead of being sent
 through the generic simulator.
 
-## Frozen Passive-Pinball v4
+## Historical Releases
 
-The v4-specific preparer and publisher are not active tools. They remain reproducible at
-`feature/passive-pinball-v4@29aa9c238542c03a9ddbeb34db16852fa7f39514`.
-Run them only inside that frozen source root. Forward development uses
-`prepare_specialized_release_replacements.py` and
-`publish_specialized_release_extension.py`.
-
-Use `audit_release_provenance.py --release-project-root <frozen-root>` whenever
-the release manifest is inspected from a different checkout. A hash mismatch
-in the current checkout is evidence of the wrong source root, not permission to
-rewrite the historical release.
-
-## Marble-Run v5 Delta
-
-The v5 extension uses the declarative specialized-release path. It replaces 32
-complete v4 generic drop groups and keeps the 3200-group/41600-record contract.
-The v4 release must be read from its frozen source worktree.
-
-```bash
-.venv/bin/python -m tools.release.prepare_specialized_release_replacements \
-  --source-root /path/to/frozen-v4-worktree \
-  --source-release datasets/one_object_v4/release/manifest.json \
-  --spec configs/marble_run_v5_release_extension.json \
-  --output-root datasets/one_object_v5/marble_run_replacements
-
-.venv/bin/python -m tools.sampling.derive_physics_sweep \
-  --base-manifest datasets/one_object_v5/marble_run_replacements/manifest.json \
-  --output-dir datasets/one_object_v5/marble_run_sweep
-
-.venv/bin/python -m tools.physics.run_pybullet_batch \
-  --manifest datasets/one_object_v5/marble_run_sweep/manifest.json \
-  --output-root datasets/one_object_v5/marble_run_sweep/physics
-
-.venv/bin/python -m tools.release.publish_specialized_release_extension \
-  --source-root /path/to/frozen-v4-worktree \
-  --source-release datasets/one_object_v4/release/manifest.json \
-  --replacement-manifest \
-    datasets/one_object_v5/marble_run_replacements/manifest.json \
-  --specialized-metadata-manifest \
-    datasets/one_object_v5/marble_run_sweep/manifest.json \
-  --specialized-physics-manifest \
-    datasets/one_object_v5/marble_run_sweep/physics/manifest.json \
-  --output-dir datasets/one_object_v5/release
-```
-
-The general publisher obtains the renderer from
-`configs/specialized_scene_backends.json`; it must not contain a family-specific
-renderer fallback. See `docs/PHYSWEEP_ONE_OBJECT_RELEASE_LINEAGE.md` for source
-root and immutable compatibility rules.
+Historical source releases remain immutable in their frozen Git roots. Current
+code uses the declarative specialized backend and replacement publishers; see
+`docs/PHYSWEEP_ONE_OBJECT_RELEASE_LINEAGE.md` for exact provenance and replay
+instructions. Never rewrite a historical manifest to match the current checkout.
 
 ## Asset Ingestion Audit
 

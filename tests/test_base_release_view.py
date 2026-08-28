@@ -10,7 +10,7 @@ from PIL import Image
 
 from tools.release.audit_release_provenance import sha256
 from tools.release.base_release_schema import BASE_SAMPLE_SCHEMA, TRAJECTORY_FIELDS
-from tools.release.build_base_release_view import (
+from tools.release.base_release_view import (
     DEFAULT_RELEASE_ROOT,
     PipelineSpec,
     build_view,

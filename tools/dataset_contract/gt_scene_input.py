@@ -34,7 +34,9 @@ REQUIRED_SURFACE_ARRAYS = {
 }
 
 
-def interaction_collider_ids(metadata: dict) -> tuple[str, ...]:
+def interaction_collider_ids(
+    metadata: dict, controlled_object_id: str | None = None
+) -> tuple[str, ...]:
     """Return colliders used by the planned primary interaction."""
     simulation = metadata["simulation"]
     colliders = list(simulation["support"]["colliders"])
@@ -46,7 +48,24 @@ def interaction_collider_ids(metadata: dict) -> tuple[str, ...]:
     ]
     if not interaction:
         raise ValueError("scene metadata has no primary support collider")
-    expected = simulation["objects"][0].get("expected_motion", {})
+    objects = simulation.get("objects", [])
+    if controlled_object_id is None:
+        if len(objects) != 1:
+            raise ValueError(
+                "controlled_object_id is required when a scene has multiple objects"
+            )
+        controlled = objects[0]
+    else:
+        matches = [
+            record
+            for record in objects
+            if str(record.get("object_id", record.get("id", "")))
+            == str(controlled_object_id)
+        ]
+        if len(matches) != 1:
+            raise ValueError(f"unknown controlled object: {controlled_object_id}")
+        controlled = matches[0]
+    expected = controlled.get("expected_motion", {})
     required_id = expected.get("required_collider_contact_id")
     if required_id is not None:
         required_id = str(required_id)

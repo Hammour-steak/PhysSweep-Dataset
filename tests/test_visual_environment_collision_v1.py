@@ -82,6 +82,18 @@ class VisualEnvironmentCollisionV1Tests(unittest.TestCase):
         )
         cls.rules = load_json(ROOT / "configs/one_object_sampling_rules.json")
 
+    def test_environment_collision_rejects_undeclared_object_counts(self) -> None:
+        metadata = {
+            "simulation": {
+                "objects": [{"object_id": "a"}, {"object_id": "b"}],
+                "time": {"duration_s": 4.0},
+            }
+        }
+        with self.assertRaisesRegex(ValueError, "supports dynamic object counts"):
+            dynamic_back_wall_clearance_m(metadata, [1.0, 0.0])
+        with self.assertRaisesRegex(ValueError, "supports dynamic object counts"):
+            dynamic_motion_lane(metadata)
+
     def test_every_admitted_environment_has_one_hashed_static_proxy(self) -> None:
         profiles = {
             str(record["asset"]["asset_id"]): record

@@ -28,7 +28,7 @@ from tools.release.base_release_schema import (
     verified_file,
     write_json,
 )
-from tools.release.build_base_release_view import (
+from tools.release.base_release_view import (
     DEFAULT_RELEASE_ROOT,
     FIXTURE_CATALOG_SCHEMA,
     PipelineSpec,

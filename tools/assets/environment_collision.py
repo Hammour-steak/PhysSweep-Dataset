@@ -9,9 +9,13 @@ from typing import Any
 
 from tools.core.hashing import sha256_file as sha256
 from tools.core.hashing import sha256_json_binding as binding_sha256
+from tools.dataset_contract.object_identity_contract import (
+    require_single_simulation_object,
+)
 
 
 BINDING_VERSION = "physweep_environment_binding_v3"
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1,)
 
 
 def camera_azimuth_degrees(
@@ -52,11 +56,10 @@ def dynamic_back_wall_clearance_m(
     """Conservative no-contact distance for motion directed toward a room wall."""
 
     simulation = metadata["simulation"]
-    objects = simulation.get("objects", [])
     duration = simulation.get("time", {}).get("duration_s")
-    if len(objects) != 1 or duration is None:
+    obj = require_single_simulation_object(metadata, __name__)
+    if duration is None:
         return 0.0
-    obj = objects[0]
     velocity = obj.get("initial_state", {}).get("linear_velocity_m_s")
     size = obj.get("geometry", {}).get("size_m")
     if not isinstance(velocity, list) or not isinstance(size, list):
@@ -93,11 +96,10 @@ def dynamic_motion_lane(
     """Return a conservative planar capsule for set-piece clearance."""
 
     simulation = metadata["simulation"]
-    objects = simulation.get("objects", [])
     duration = simulation.get("time", {}).get("duration_s")
-    if len(objects) != 1 or duration is None:
+    obj = require_single_simulation_object(metadata, __name__)
+    if duration is None:
         return None
-    obj = objects[0]
     state = obj.get("initial_state", {})
     velocity = state.get("linear_velocity_m_s")
     position = state.get("position_m")
@@ -179,9 +181,8 @@ def compile_environment_binding(
     azimuth = math.radians(azimuth_degrees)
     outward = [math.cos(azimuth), math.sin(azimuth)]
     lateral = [-outward[1], outward[0]]
-    initial_position = metadata["simulation"]["objects"][0]["initial_state"][
-        "position_m"
-    ]
+    obj = require_single_simulation_object(metadata, __name__)
+    initial_position = obj["initial_state"]["position_m"]
     scene_class = str(metadata["simulation"]["support"]["scene_class"])
     composition = scene_visual.get("composition")
     integrated_ground = (

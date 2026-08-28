@@ -7,6 +7,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from tools.dataset_contract.gt_scene_input import interaction_collider_ids
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -20,6 +22,27 @@ def load_module(name: str, path: Path):
 
 
 class PipelineBoundaryTest(unittest.TestCase):
+    def test_gt_interaction_requires_an_explicit_multi_object_target(self):
+        metadata = {
+            "simulation": {
+                "support": {
+                    "colliders": [{"id": "floor", "role": "primary_support"}]
+                },
+                "objects": [
+                    {"object_id": "a", "expected_motion": {}},
+                    {
+                        "object_id": "b",
+                        "expected_motion": {
+                            "required_collider_contact_id": "floor"
+                        },
+                    },
+                ],
+            }
+        }
+        with self.assertRaisesRegex(ValueError, "controlled_object_id is required"):
+            interaction_collider_ids(metadata)
+        self.assertEqual(interaction_collider_ids(metadata, "b"), ("floor",))
+
     def test_model_source_is_not_part_of_dataset_repository(self):
         self.assertFalse((ROOT / "tools/model_training").exists())
         self.assertFalse((ROOT / "tools/training_data").exists())
@@ -31,10 +54,21 @@ class PipelineBoundaryTest(unittest.TestCase):
             ROOT / "tools/cli/build_one_object_dataset.py",
         )
         config = module.load_config(ROOT / "configs/datasets/one_object.json")
-        self.assertTrue(config["release_root"].startswith("datasets/"))
-        commands = [token for stage in config["stages"] for token in stage["command"]]
-        self.assertFalse(any("tools/training_data/" in token for token in commands))
-        self.assertFalse(any("tools/model_training/" in token for token in commands))
+        self.assertEqual(config["release_root"], "outputs/one_object")
+        self.assertEqual(config["object_count"], 1)
+        self.assertEqual(config["views"], ["base", "sweep"])
+        self.assertNotIn("stages", config)
+
+    def test_dataset_entry_requires_explicit_published_sources(self):
+        module = load_module(
+            "dataset_publish_entry",
+            ROOT / "tools/cli/build_one_object_dataset.py",
+        )
+        specs = module.pipeline_specs(
+            [("generic", "schema", "project", "render", "masks")]
+        )
+        self.assertEqual(specs[0].name, "generic")
+        self.assertEqual(specs[0].source_schema_version, "schema")
 
     def test_bound_manifest_bootstraps_scene_export_without_published_dataset(self):
         module = load_module(

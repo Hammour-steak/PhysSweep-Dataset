@@ -22,23 +22,23 @@ conda activate "$PWD/.venv"
 pip install -r requirements.txt
 ```
 
-## Generate
+## Publish
 
-Generate base scenes and sweep metadata.
-
-Preview the build:
+Sampling, physics, and rendering produce immutable source manifests. Publish an
+audited source release into the canonical `outputs/one_object/{base,sweep}`
+dataset with explicit source and pipeline bindings:
 
 ```bash
 python -m tools.cli.build_one_object_dataset \
-  --config configs/datasets/one_object.json \
-  --dry-run
+  --release-project-root <frozen-project> \
+  --release-manifest datasets/<dataset>/release/manifest.json \
+  --pipeline <name> <source-schema> <project-root> <render-root> <mask-root>
 ```
 
-Run the build:
+Verify an existing dataset without modifying it:
 
 ```bash
-python -m tools.cli.build_one_object_dataset \
-  --config configs/datasets/one_object.json
+python -m tools.cli.build_one_object_dataset --verify-only
 ```
 
 ## Structure

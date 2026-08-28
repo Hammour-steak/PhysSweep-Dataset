@@ -13,6 +13,7 @@ ACTIVE_GENERATORS = (
     "physics/rigid_trajectory.py",
     "physics/simulate_pybullet_rigid.py",
     "rendering/bind_pybullet_visuals.py",
+    "rendering/camera_solver.py",
     "rendering/render_pybullet_rigid.py",
     "assets/scene_kit_compiler.py",
     "sampling/sample_asset_proxy_scenes.py",

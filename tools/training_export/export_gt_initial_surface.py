@@ -38,6 +38,12 @@ from tools.dataset_contract.gt_scene_input import (
     sample_metric_surface_indices,
     write_gt_surface,
 )
+from tools.dataset_contract.object_identity_contract import (
+    require_single_simulation_object,
+)
+
+
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1,)
 
 
 def _resolve(value: str) -> Path:
@@ -867,7 +873,7 @@ def main() -> None:
     started = time.perf_counter()
     global PROJECT_ROOT
     PROJECT_ROOT = args.project_root.resolve()
-    rigid_renderer.PROJECT_ROOT = PROJECT_ROOT
+    rigid_renderer.configure_project_root(PROJECT_ROOT)
     metadata_path = _resolve(str(args.metadata))
     first_frame_path = _resolve(str(args.first_frame))
     source_output = _resolve(str(args.source_output))
@@ -890,7 +896,7 @@ def main() -> None:
     rigid_renderer.clear_scene()
     rigid_renderer.setup_scene(render_config)
     materials = rigid_renderer.build_static_scene(metadata, visual)
-    dynamic_record = metadata["simulation"]["objects"][0]
+    dynamic_record = require_single_simulation_object(metadata, __name__)
     dynamic_object_id = str(
         dynamic_record.get("object_id", dynamic_record.get("id", ""))
     )
@@ -911,7 +917,7 @@ def main() -> None:
     bpy.context.view_layer.update()
 
     ground_id, ground_collider, ground_contract = _ground_contract(metadata)
-    interaction_ids = interaction_collider_ids(metadata)
+    interaction_ids = interaction_collider_ids(metadata, dynamic_object_id)
     descriptors = []
     for obj in bpy.context.scene.objects:
         if obj.type != "MESH":
