@@ -41,9 +41,6 @@ consume published dataset records and never feed generation.
   are reproducible stages used by the generator.
 - Asset inspection, contact-sheet, and comparison commands are maintenance
   tools; they do not define release semantics.
-- `finalize_sweep_groups.py`, `publish_sweep_release.py`, and specialized
-  extension publishers are historical replay tools. Versioned extension specs
-  live under `configs/history/` and are not active generation inputs.
 
 ## Active Contracts
 
@@ -177,13 +174,6 @@ passive-pinball, and marble-run schemas through their registered reviewed
 adapters. Unknown schemas and unsupported object counts are rejected instead of being sent
 through the generic simulator.
 
-## Historical Releases
-
-Historical source releases remain immutable in their frozen Git roots. Current
-code uses the declarative specialized backend and replacement publishers; see
-`docs/PHYSWEEP_ONE_OBJECT_RELEASE_LINEAGE.md` for exact provenance and replay
-instructions. Never rewrite a historical manifest to match the current checkout.
-
 ## Asset Ingestion Audit
 
 For authenticated Sketchfab downloads without placing a token in shell history:
@@ -274,10 +264,11 @@ reviewed shell edits and exports a separate, decimated static collision mesh.
 Near-horizontal faces in the reviewed floor band are removed so the analytic
 global floor remains the only floor contact authority.
 
-## Base Release View
+## Canonical One-object Release
 
-`tools.release.build_base_release_view` packages audited base records without recomputing
-physics or rendering. Every pipeline uses the same sample layout:
+The dataset-level generator publishes audited base and sweep records without
+recomputing physics during materialization. Every pipeline uses the same sample
+layout:
 
 ```text
 <family>/<scene_id>/
@@ -290,48 +281,22 @@ physics or rendering. Every pipeline uses the same sample layout:
 
 Shared fixtures and collision assets live in `fixtures/` and `fixture_assets/`.
 The release contains no symlinks, debug frames, adapter-only trajectory fields,
-or source metadata copies. Root manifests bind the format contracts, source
-release, fixtures, and attribution catalog. Both builders use
-`<project-root>/outputs/one_object` by default and derive the fixed `base/` and
-`sweep/` children from that single root. Relative `--release-root` values are
-always resolved against the project root, not the caller's working directory.
+or source metadata copies. `base/` and `sweep/` share one render-source binding;
+instance masks always live below that render root in `masks/`. The sweep adds
+`group_manifest.json` only for base-to-sweep navigation; physical values remain
+authoritative in each `metadata.json`.
 
 ```bash
-.venv/bin/python -m tools.release.build_base_release_view \
-  --release-project-root <frozen-project> \
-  --release-manifest datasets/<dataset>/release/manifest.json \
-  --release-root outputs/one_object \
-  --pipeline <name> <source-schema> <source-project> <render-root> <mask-root>
-```
-
-Repeat `--pipeline` for every source schema. The command refuses to overwrite an
-existing view and validates hashes, provenance, video, and masks before
-publishing. It excludes derived sweep samples. Verify an existing release with:
-
-```bash
-.venv/bin/python -m tools.release.build_base_release_view \
-  --verify-only --release-root outputs/one_object
-```
-
-`tools.release.build_sweep_release_view` writes only derived samples beside the canonical
-base view; the base and sweep output roots must be siblings. It uses the same
-sample layout and adds `group_manifest.json` for the
-base-to-sweep mapping. The index stores navigation keys only; physical values
-remain authoritative in each `metadata.json`. Builds are resumable and become
-visible only after full verification:
-
-```bash
-.venv/bin/python -m tools.release.build_sweep_release_view \
+.venv/bin/python -m tools.cli.build_one_object_dataset \
   --release-project-root <frozen-project> \
   --release-manifest datasets/<dataset>/release/manifest.json \
   --release-root outputs/one_object \
   --workers 64 --resume \
-  --pipeline <name> <source-schema> <source-project> <render-root> <mask-root>
+  --pipeline <name> <source-schema> <source-project> <render-root>
 ```
 
-At dataset level, `tools.cli.build_one_object_dataset` takes separate
-`--base-pipeline` and `--sweep-pipeline` bindings because those views are
-rendered into different immutable roots. A single shared binding is rejected.
+Repeat `--pipeline` for every source schema. Existing canonical views are
+verified and never overwritten.
 
 ## Audits
 

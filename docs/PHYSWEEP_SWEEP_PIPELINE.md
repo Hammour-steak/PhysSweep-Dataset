@@ -243,13 +243,12 @@ support transition; those motion-completion checks are advisory for sweep
 records only. Penetration, bounds, energy, collision-proxy, and runtime-parameter
 checks remain hard failures.
 
-Release admission is group-atomic. `tools/release/finalize_sweep_groups.py` joins the
-immutable sweep metadata manifest with the batch simulation manifest and
-publishes a group only when its canonical base and all twelve derived endpoint
-records pass their hard audits. One failed record rejects the complete
-thirteen-record group. The rejected-group report remains diagnostic input for
-deterministic, slot-preserving resampling; individual videos are never repaired,
-silently omitted, or replaced after rendering.
+Release admission is group-atomic. The active one-object source publisher joins
+the immutable sweep metadata and batch simulation manifests and admits a group
+only when its canonical base and all twelve derived endpoint records pass their
+hard audits. One failed record rejects the complete thirteen-record group;
+individual videos are never repaired, silently omitted, or replaced after
+rendering.
 
 The resolved scene format is object-count agnostic, but each active adapter
 declares its current capability: generic rigid, reviewed asset-proxy, and

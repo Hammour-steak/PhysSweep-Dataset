@@ -72,7 +72,7 @@ def generation_plan(root: Path, work_id: str, release_root: Path) -> dict[str, A
             "stage_and_render_base",
             "derive_and_audit_sweep",
             "publish_source_release",
-            "stage_and_render_derived_sweep",
+            "stage_and_render_sweep",
             "materialize_canonical_base_and_sweep",
             "verify_canonical_release",
         ],
@@ -358,39 +358,30 @@ def render_sweep(
 
 def release_specs(
     root: Path, layout: Layout
-) -> tuple[list[PipelineSpec], list[PipelineSpec]]:
+) -> list[PipelineSpec]:
     release = load_json(layout.source_release / "manifest.json")
     metadata = load_json(root / str(release["metadata_manifest"]))
     selected = {str(record["source_schema_version"]) for record in metadata["records"]}
-    definitions = {
-        GENERIC_SCHEMA: ("generic", "generic"),
+    branches = {
+        GENERIC_SCHEMA: "generic",
         **{
-            str(record["source_schema_version"]): (
-                str(record["sweep_branch"]),
-                str(record["sweep_branch"]),
-            )
+            str(record["source_schema_version"]): str(record["sweep_branch"])
             for record in load_specialized_backends(root)
         },
     }
-    missing = selected - set(definitions)
+    missing = selected - set(branches)
     if missing:
         raise ValueError(f"release contains unregistered source schemas: {sorted(missing)}")
-    base_specs = []
-    sweep_specs = []
+    specs = []
     for schema in sorted(selected):
-        family, branch = definitions[schema]
+        branch = branches[schema]
         sweep_root = (
             layout.sweep_render / branch / "bound"
             if schema == GENERIC_SCHEMA
             else layout.sweep_render / branch
         )
-        base_specs.append(
-            PipelineSpec(family, schema, root, sweep_root, sweep_root / "masks")
-        )
-        sweep_specs.append(
-            PipelineSpec(family, schema, root, sweep_root, sweep_root / "masks")
-        )
-    return base_specs, sweep_specs
+        specs.append(PipelineSpec(branch, schema, root, sweep_root))
+    return specs
 
 
 def parse_args() -> argparse.Namespace:
@@ -542,13 +533,12 @@ def main() -> None:
         gpus=args.gpus,
         resume=args.resume,
     )
-    base_specs, sweep_specs = release_specs(root, layout)
+    specs = release_specs(root, layout)
     result = publish_dataset(
         release_project_root=root,
         release_manifest=layout.source_release / "manifest.json",
         release_root=layout.canonical_release,
-        base_specs=base_specs,
-        sweep_specs=sweep_specs,
+        pipeline_specs=specs,
         workers=args.render_workers,
         resume=args.resume,
     )

@@ -67,7 +67,7 @@ class PipelineBoundaryTest(unittest.TestCase):
             ROOT / "tools/cli/build_one_object_dataset.py",
         )
         specs = module.pipeline_specs(
-            [("generic", "schema", "project", "render", "masks")]
+            [("generic", "schema", "project", "render")]
         )
         self.assertEqual(specs[0].name, "generic")
         self.assertEqual(specs[0].source_schema_version, "schema")
@@ -87,7 +87,7 @@ class PipelineBoundaryTest(unittest.TestCase):
                 "stage_and_render_base",
                 "derive_and_audit_sweep",
                 "publish_source_release",
-                "stage_and_render_derived_sweep",
+                "stage_and_render_sweep",
                 "materialize_canonical_base_and_sweep",
                 "verify_canonical_release",
             ],
@@ -155,16 +155,13 @@ class PipelineBoundaryTest(unittest.TestCase):
             expected_object_count=1,
         )
 
-    def test_base_and_sweep_render_sources_are_distinct(self):
+    def test_base_and_sweep_share_one_render_source_contract(self):
         module = load_module(
-            "dataset_distinct_render_entry",
+            "dataset_shared_render_entry",
             ROOT / "tools/cli/build_one_object_dataset.py",
         )
-        base_spec = module.pipeline_specs(
-            [("generic", "schema", "project", "base_render", "base_masks")]
-        )[0]
-        sweep_spec = module.pipeline_specs(
-            [("generic", "schema", "project", "sweep_render", "sweep_masks")]
+        spec = module.pipeline_specs(
+            [("generic", "schema", "project", "sweep_render")]
         )[0]
         with tempfile.TemporaryDirectory() as directory:
             release_root = Path(directory) / "one_object"
@@ -176,13 +173,12 @@ class PipelineBoundaryTest(unittest.TestCase):
                     release_project_root=Path(directory),
                     release_manifest=Path("release.json"),
                     release_root=release_root,
-                    base_specs=[base_spec],
-                    sweep_specs=[sweep_spec],
+                    pipeline_specs=[spec],
                     workers=2,
                     resume=False,
                 )
-        self.assertEqual(base.call_args.kwargs["pipeline_specs"], [base_spec])
-        self.assertEqual(sweep.call_args.kwargs["pipeline_specs"], [sweep_spec])
+        self.assertEqual(base.call_args.kwargs["pipeline_specs"], [spec])
+        self.assertEqual(sweep.call_args.kwargs["pipeline_specs"], [spec])
 
     def test_generator_publishes_sweep_baselines_as_canonical_bases(self):
         module = load_module(
@@ -224,14 +220,12 @@ class PipelineBoundaryTest(unittest.TestCase):
                     }
                 ],
             ):
-                base_specs, sweep_specs = module.release_specs(root, layout)
-        base_roots = {spec.name: spec.render_root for spec in base_specs}
-        sweep_roots = {spec.name: spec.render_root for spec in sweep_specs}
-        self.assertEqual(base_roots, sweep_roots)
+                specs = module.release_specs(root, layout)
+        roots = {spec.name: spec.render_root for spec in specs}
         self.assertEqual(
-            base_roots["generic"], layout.sweep_render / "generic" / "bound"
+            roots["generic"], layout.sweep_render / "generic" / "bound"
         )
-        self.assertEqual(base_roots["asset"], layout.sweep_render / "asset")
+        self.assertEqual(roots["asset"], layout.sweep_render / "asset")
 
     def test_bound_manifest_bootstraps_scene_export_without_published_dataset(self):
         module = load_module(

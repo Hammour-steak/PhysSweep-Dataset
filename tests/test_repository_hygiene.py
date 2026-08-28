@@ -68,15 +68,19 @@ class RepositoryHygieneTest(unittest.TestCase):
         )
         self.assertEqual(output.returncode, 1)
 
-    def test_versioned_release_replay_configs_are_quarantined(self) -> None:
+    def test_versioned_release_replay_configs_are_absent(self) -> None:
         versioned = [
             path
             for path in (ROOT / "configs").glob("*.json")
             if "release" in path.name and re.search(r"v\d+", path.name)
         ]
         self.assertEqual(versioned, [])
-        self.assertTrue(
-            (ROOT / "configs/history/marble_run_v5_release_extension.json").is_file()
+        history = ROOT / "configs/history"
+        self.assertEqual(
+            [path for path in history.rglob("*") if path.is_file()]
+            if history.exists()
+            else [],
+            [],
         )
 
     def test_tools_are_partitioned_by_responsibility(self) -> None:

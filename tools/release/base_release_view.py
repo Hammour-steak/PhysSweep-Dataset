@@ -46,7 +46,6 @@ VIEW_SCHEMA = "physweep_base_release_view_v14"
 PIPELINE_SCHEMA = "physweep_base_pipeline_view_v12"
 AUDIT_SCHEMA = "physweep_base_release_view_audit_v14"
 FIXTURE_CATALOG_SCHEMA = "physweep_static_fixture_catalog_v2"
-DEFAULT_RELEASE_ROOT = PROJECT_ROOT / "outputs" / "one_object"
 VIDEO_ENCODING_FIELDS = (
     "codec",
     "constant_rate_factor",
@@ -284,7 +283,6 @@ class PipelineSpec:
     source_schema_version: str
     project_root: Path
     render_root: Path
-    mask_root: Path
 
 
 def index_unique(
@@ -558,11 +556,6 @@ def validate_pipeline_specs(
                 if raw.render_root.is_absolute()
                 else (raw.project_root / raw.render_root).resolve()
             ),
-            mask_root=(
-                raw.mask_root.resolve()
-                if raw.mask_root.is_absolute()
-                else (raw.project_root / raw.mask_root).resolve()
-            ),
         )
         if spec.source_schema_version in by_schema:
             raise ValueError(f"duplicate pipeline schema: {spec.source_schema_version}")
@@ -570,8 +563,8 @@ def validate_pipeline_specs(
             raise ValueError(f"duplicate pipeline name: {spec.name}")
         if not spec.render_root.is_dir():
             raise FileNotFoundError(f"render root: {spec.render_root}")
-        if not spec.mask_root.is_dir():
-            raise FileNotFoundError(f"mask root: {spec.mask_root}")
+        if not (spec.render_root / "masks").is_dir():
+            raise FileNotFoundError(f"mask root: {spec.render_root / 'masks'}")
         by_schema[spec.source_schema_version] = spec
         names.add(spec.name)
     if not by_schema:
@@ -759,7 +752,7 @@ def render_sources(
     ):
         raise ValueError(f"render contract is incomplete: {scene_id}")
     render_contract["resolution"] = [int(value) for value in render_contract["resolution"]]
-    masks = spec.mask_root / scene_id
+    masks = spec.render_root / "masks" / scene_id
     if not masks.is_dir():
         raise FileNotFoundError(f"{scene_id} mask directory: {masks}")
     return {

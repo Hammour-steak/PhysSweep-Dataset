@@ -25,24 +25,6 @@ DEFAULT_CONFIG = Path("configs/datasets/one_object.json")
 CONFIG_SCHEMA = "physweep_dataset_build_v2"
 EXPECTED_OBJECT_COUNT = 1
 EXPECTED_CONFIG_KEYS = {"schema_version", "release_root", "object_count"}
-FORBIDDEN_KEYS = {
-    "cache_root",
-    "checkpoint",
-    "lora_rank",
-    "scene_tokens",
-    "training_steps",
-    "wan_repo",
-}
-
-
-def _walk_keys(value: Any) -> set[str]:
-    if isinstance(value, dict):
-        return set(value) | set().union(
-            *(_walk_keys(item) for item in value.values()), set()
-        )
-    if isinstance(value, list):
-        return set().union(*(_walk_keys(item) for item in value), set())
-    return set()
 
 
 def load_config(path: Path) -> dict[str, Any]:
@@ -55,18 +37,15 @@ def load_config(path: Path) -> dict[str, Any]:
         raise ValueError("one-object release_root must be outputs/one_object")
     if config.get("object_count") != EXPECTED_OBJECT_COUNT:
         raise ValueError("one-object dataset must contain exactly one object per sample")
-    forbidden = sorted(_walk_keys(config) & FORBIDDEN_KEYS)
-    if forbidden:
-        raise ValueError(f"model-only keys in dataset config: {', '.join(forbidden)}")
     return config
 
 
 def pipeline_specs(
-    values: Iterable[tuple[str, str, str, str, str]],
+    values: Iterable[tuple[str, str, str, str]],
 ) -> list[PipelineSpec]:
     return [
-        PipelineSpec(name, schema, Path(project), Path(render), Path(masks))
-        for name, schema, project, render, masks in values
+        PipelineSpec(name, schema, Path(project), Path(render))
+        for name, schema, project, render in values
     ]
 
 
@@ -75,14 +54,12 @@ def publish_dataset(
     release_project_root: Path,
     release_manifest: Path,
     release_root: Path,
-    base_specs: Iterable[PipelineSpec],
-    sweep_specs: Iterable[PipelineSpec],
+    pipeline_specs: Iterable[PipelineSpec],
     workers: int,
     resume: bool,
 ) -> dict[str, Any]:
     base_root, sweep_root = one_object_release_roots(release_root)
-    base_specs = list(base_specs)
-    sweep_specs = list(sweep_specs)
+    specs = list(pipeline_specs)
     if base_root.exists():
         base = verify_base_view(base_root, expected_object_count=EXPECTED_OBJECT_COUNT)
     else:
@@ -90,7 +67,7 @@ def publish_dataset(
             release_project_root=release_project_root,
             release_manifest=release_manifest,
             output=base_root,
-            pipeline_specs=base_specs,
+            pipeline_specs=specs,
             expected_object_count=EXPECTED_OBJECT_COUNT,
         )
     if sweep_root.exists():
@@ -105,7 +82,7 @@ def publish_dataset(
             release_manifest=release_manifest,
             base_root=base_root,
             output=sweep_root,
-            pipeline_specs=sweep_specs,
+            pipeline_specs=specs,
             workers=workers,
             resume=resume,
             expected_object_count=EXPECTED_OBJECT_COUNT,
@@ -135,16 +112,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--release-project-root", type=Path)
     parser.add_argument("--release-manifest", type=Path)
     parser.add_argument(
-        "--base-pipeline",
-        nargs=5,
+        "--pipeline",
+        nargs=4,
         action="append",
-        metavar=("NAME", "SOURCE_SCHEMA", "PROJECT_ROOT", "RENDER_ROOT", "MASK_ROOT"),
-    )
-    parser.add_argument(
-        "--sweep-pipeline",
-        nargs=5,
-        action="append",
-        metavar=("NAME", "SOURCE_SCHEMA", "PROJECT_ROOT", "RENDER_ROOT", "MASK_ROOT"),
+        metavar=("NAME", "SOURCE_SCHEMA", "PROJECT_ROOT", "RENDER_ROOT"),
     )
     parser.add_argument("--workers", type=int, default=32)
     parser.add_argument("--resume", action="store_true")
@@ -165,16 +136,13 @@ def main() -> None:
             raise SystemExit(
                 "--release-project-root and --release-manifest are required when publishing"
             )
-        if not args.base_pipeline or not args.sweep_pipeline:
-            raise SystemExit(
-                "at least one --base-pipeline and --sweep-pipeline are required"
-            )
+        if not args.pipeline:
+            raise SystemExit("at least one --pipeline is required")
         result = publish_dataset(
             release_project_root=args.release_project_root,
             release_manifest=args.release_manifest,
             release_root=release_root,
-            base_specs=pipeline_specs(args.base_pipeline),
-            sweep_specs=pipeline_specs(args.sweep_pipeline),
+            pipeline_specs=pipeline_specs(args.pipeline),
             workers=args.workers,
             resume=args.resume,
         )

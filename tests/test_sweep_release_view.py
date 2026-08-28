@@ -66,7 +66,7 @@ class SweepReleaseViewTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory)
             (work / "generic").mkdir()
-            spec = PipelineSpec("generic", "source_schema", work, work, work)
+            spec = PipelineSpec("generic", "source_schema", work, work)
             bindings = write_pipeline_manifests(
                 work=work,
                 specs={spec.source_schema_version: spec},
