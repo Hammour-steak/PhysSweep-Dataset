@@ -8,10 +8,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-
-def read_jsonl(path: Path) -> list[dict]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
-
+from tools.core.json_io import read_jsonl
 
 def main() -> None:
     parser = argparse.ArgumentParser()

@@ -9,6 +9,7 @@ import numpy as np
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 from tools.core.hashing import sha256_file as _sha256
+from tools.core.paths import project_relative_path
 from tools.dataset_contract.gt_scene_input import (
     DEFAULT_ENVIRONMENT_POINTS,
     DEFAULT_OBJECT_POINTS,
@@ -27,10 +28,6 @@ from tools.dataset_contract.schema import (
     SWEEP_AXES,
     validate_manifest,
 )
-
-
-def _relative(path: Path, root: Path) -> str:
-    return path.resolve().relative_to(root.resolve()).as_posix()
 
 
 def _split_for_scene(scene_id: str) -> str:
@@ -334,15 +331,17 @@ def _record(
         "base_scene_id": base_scene_id,
         "split": _split_for_scene(base_scene_id),
         "conditioning": {
-            "first_frame": _relative(first_frame, project_root),
-            "scene": _relative(scene_condition, project_root),
+            "first_frame": project_relative_path(project_root, first_frame),
+            "scene": project_relative_path(project_root, scene_condition),
             "scene_source": "simulation_gt",
             "text": caption,
             "physics": physics,
         },
         "target": {
-            "video": _relative(target_video, project_root),
-            "metadata": _relative(target_bound_metadata_path, project_root),
+            "video": project_relative_path(project_root, target_video),
+            "metadata": project_relative_path(
+                project_root, target_bound_metadata_path
+            ),
             "duration_s": float(time["duration_s"]),
             "fps": int(time["output_fps"]),
         },
@@ -360,14 +359,14 @@ def _record(
             "source_value": float(source["value"]),
         },
         "provenance": {
-            "base_bound_metadata": _relative(
-                base_bound_metadata_path, project_root
+            "base_bound_metadata": project_relative_path(
+                project_root, base_bound_metadata_path
             ),
             "base_source_metadata": str(source["parent"]),
-            "sweep_source_metadata": _relative(
-                source_sweep_metadata_path, project_root
+            "sweep_source_metadata": project_relative_path(
+                project_root, source_sweep_metadata_path
             ),
-            "trajectory": _relative(trajectory_path, project_root),
+            "trajectory": project_relative_path(project_root, trajectory_path),
             "trajectory_sha256": trajectory_sha256,
         },
     }
@@ -469,9 +468,11 @@ def compile_manifest(args) -> dict:
             scene_reports.append(
                 {
                     "scene_id": scene_id,
-                    "path": _relative(scene_condition, root),
+                    "path": project_relative_path(root, scene_condition),
                     "sha256": _sha256(scene_condition),
-                    "source_metadata": _relative(bound_metadata_path, root),
+                    "source_metadata": project_relative_path(
+                        root, bound_metadata_path
+                    ),
                     **scene_report,
                 }
             )
@@ -530,11 +531,11 @@ def compile_manifest(args) -> dict:
     summary = {
         "schema": MANIFEST_SCHEMA,
         "path_base": "physweep_project_root",
-        "manifest": _relative(manifest_path, root),
+        "manifest": project_relative_path(root, manifest_path),
         "manifest_sha256": _sha256(manifest_path),
-        "source_sweep_manifest": _relative(sweep_manifest_path, root),
+        "source_sweep_manifest": project_relative_path(root, sweep_manifest_path),
         "source_sweep_manifest_sha256": _sha256(sweep_manifest_path),
-        "sweep_config": _relative(config_path, root),
+        "sweep_config": project_relative_path(root, config_path),
         "sweep_config_sha256": _sha256(config_path),
         "base_scene_count": len(parents),
         "sample_count": sample_count,
@@ -558,8 +559,8 @@ def compile_manifest(args) -> dict:
             "environment_points": args.environment_points,
             "shared_once_per_base": True,
             "source": "simulation_gt_complete_object_complete_ground_plus_camera_first_hit_visible_non_ground_at_t0",
-            "source_root": _relative(scene_source_root, root),
-            "index": _relative(scene_index_path, root),
+            "source_root": project_relative_path(root, scene_source_root),
+            "index": project_relative_path(root, scene_index_path),
             "index_sha256": _sha256(scene_index_path),
             "approximation_count": 0,
             "approximations": [],

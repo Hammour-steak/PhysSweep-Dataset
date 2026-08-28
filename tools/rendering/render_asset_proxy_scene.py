@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 import math
@@ -33,7 +32,7 @@ from tools.assets.blender_asset_import import (  # pylint: disable=wrong-import-
     normalized_transform,
     selected_visual_meshes,
 )
-from tools.rendering.blender_scene import look_at
+from tools.rendering.blender_scene import look_at, parse_scene_render_args
 from tools.rendering.blender_render_settings import configure_render_engine
 from tools.dataset_contract.immutable_scene_contract import validate_simulation_record
 from tools.assets.static_support_proxy import blender_import_static_support_visual
@@ -52,18 +51,6 @@ def configure_project_root(root: Path) -> Path:
     global PROJECT_ROOT
     PROJECT_ROOT = root.resolve()
     return PROJECT_ROOT
-
-
-def blender_args() -> argparse.Namespace:
-    values = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--metadata", type=Path, required=True)
-    parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
-    parser.add_argument("--video-path", type=Path)
-    parser.add_argument("--inspection-frame-dir", type=Path)
-    parser.add_argument("--mask-only", action="store_true")
-    parser.add_argument("--instance-mask-dir", type=Path)
-    return parser.parse_args(values)
 
 
 def resolve(value: str) -> Path:
@@ -945,7 +932,9 @@ def render(
 
 
 if __name__ == "__main__":
-    args = blender_args()
+    args = parse_scene_render_args(
+        __doc__, project_root=PROJECT_ROOT, include_masks=True
+    )
     configure_project_root(args.root)
     render(
         args.metadata.resolve(),

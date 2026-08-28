@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from tools.core.paths import resolve_project_path as resolve
 from tools.sampling.sample_asset_proxy_scenes import proxy_volume_fill_ratio
 from tools.sampling.sample_one_object_scene_matrix import (
     MATRIX_PATH,
@@ -93,10 +94,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--overwrite", action="store_true")
     return parser.parse_args()
-
-
-def resolve(root: Path, path: Path) -> Path:
-    return path.resolve() if path.is_absolute() else (root / path).resolve()
 
 
 def main() -> None:

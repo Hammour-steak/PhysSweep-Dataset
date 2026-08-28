@@ -12,6 +12,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 from tools.core.hashing import sha256_file as _sha256
+from tools.core.paths import project_relative_path
 from tools.dataset_contract.gt_scene_input import (
     DEFAULT_ENVIRONMENT_POINTS,
     DEFAULT_OBJECT_POINTS,
@@ -23,10 +24,6 @@ from tools.dataset_contract.schema import iter_jsonl
 
 DEFAULT_BLENDER = Path("runtime/blender-3.4.0-linux-x64/blender")
 DEFAULT_EXPORTER = Path("tools/training_export/export_gt_initial_surface.py")
-
-
-def _relative(path: Path, root: Path) -> str:
-    return path.resolve().relative_to(root.resolve()).as_posix()
 
 
 def _base_records(path: Path) -> list[dict]:
@@ -222,13 +219,16 @@ def main() -> None:
     if args.source_bound_manifest is not None:
         bound_manifest = (root / args.source_bound_manifest).resolve()
         records = _base_records_from_bound_manifest(bound_manifest)
-        source = {"kind": "bound_manifest", "path": _relative(bound_manifest, root)}
+        source = {
+            "kind": "bound_manifest",
+            "path": project_relative_path(root, bound_manifest),
+        }
     else:
         source_dataset = (root / args.source_dataset).resolve()
         records = _base_records(source_dataset / "manifest.jsonl")
         source = {
             "kind": "published_dataset",
-            "path": _relative(source_dataset / "manifest.jsonl", root),
+            "path": project_relative_path(root, source_dataset / "manifest.jsonl"),
         }
     if args.scene_id:
         requested = set(args.scene_id)
@@ -283,11 +283,11 @@ def main() -> None:
         records_out.append(
             {
                 **result,
-                "source": _relative(paths["source"], root),
+                "source": project_relative_path(root, paths["source"]),
                 "source_sha256": _sha256(paths["source"]),
-                "model": _relative(paths["model"], root),
+                "model": project_relative_path(root, paths["model"]),
                 "model_sha256": _sha256(paths["model"]),
-                "report": _relative(paths["report"], root),
+                "report": project_relative_path(root, paths["report"]),
             }
         )
     manifest = {

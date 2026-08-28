@@ -11,6 +11,7 @@ from pathlib import Path
 
 from tools.core.blender_runtime import blender_world_bounds as world_bounds
 from tools.core.blender_runtime import clear_blender_scene as clear_scene
+from tools.core.blender_runtime import look_at
 
 
 def args_from_blender() -> argparse.Namespace:
@@ -22,10 +23,6 @@ def args_from_blender() -> argparse.Namespace:
     parser.add_argument("--ids-file", type=Path)
     parser.add_argument("--views", type=int, choices=(1, 3), default=1)
     return parser.parse_args(values)
-
-
-def look_at(obj, target) -> None:
-    obj.rotation_euler = (target - obj.location).to_track_quat("-Z", "Y").to_euler()
 
 
 def proxy_material():

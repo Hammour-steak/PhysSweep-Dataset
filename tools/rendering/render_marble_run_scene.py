@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 import sys
@@ -31,21 +30,13 @@ from tools.physics.generate_marble_run_scene import (  # pylint: disable=wrong-i
 )
 from tools.dataset_contract.immutable_scene_contract import validate_simulation_record
 from tools.assets.blender_asset_import import clear_scene
-from tools.rendering.blender_scene import look_at
+from tools.rendering.blender_scene import (
+    add_bound_lights,
+    look_at,
+    parse_scene_render_args,
+)
 from tools.dataset_contract.trajectory_contract import adapter_trajectory_view
 from tools.rendering.video_encoding import configure_h264_output, normalize_h264_container
-
-
-
-
-def blender_args() -> argparse.Namespace:
-    values = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--metadata", type=Path, required=True)
-    parser.add_argument("--video-path", type=Path)
-    parser.add_argument("--inspection-frame-dir", type=Path)
-    return parser.parse_args(values)
-
 
 def material(name: str, rgba: list[float], metallic: float = 0.0) -> Any:
     result = bpy.data.materials.new(name)
@@ -176,19 +167,6 @@ def add_camera(binding: dict[str, Any]) -> dict[str, Any]:
     look_at(camera, mathutils.Vector(binding["target_m"]))
     bpy.context.scene.camera = camera
     return dict(binding)
-
-
-def add_lights(metadata: dict[str, Any]) -> None:
-    target = mathutils.Vector(metadata["camera"]["target_m"])
-    for binding in metadata["render"]["lights"]:
-        light_data = bpy.data.lights.new(str(binding["id"]), str(binding["type"]))
-        light_data.energy = float(binding["energy_w"])
-        light_data.size = float(binding["size_m"])
-        light_data.color = tuple(float(value) for value in binding["color_rgb"])
-        light = bpy.data.objects.new(str(binding["id"]), light_data)
-        bpy.context.collection.objects.link(light)
-        light.location = tuple(float(value) for value in binding["position_m"])
-        look_at(light, target)
 
 
 def configure_scene(metadata: dict[str, Any]) -> None:
@@ -336,7 +314,7 @@ def render(
     fixture_objects = add_fixture(metadata)
     marble = add_marble(metadata, trajectory)
     camera = add_camera(metadata["camera"])
-    add_lights(metadata)
+    add_bound_lights(metadata)
     scene = bpy.context.scene
     frame_dir = (
         frame_dir_override.resolve()
@@ -399,5 +377,5 @@ def render(
 
 
 if __name__ == "__main__":
-    args = blender_args()
+    args = parse_scene_render_args(__doc__)
     render(args.metadata, args.video_path, args.inspection_frame_dir)

@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import argparse
 import json
 import sys
 import time
@@ -36,7 +35,7 @@ from tools.rendering.render_asset_proxy_scene import (  # pylint: disable=wrong-
 )
 from tools.dataset_contract.immutable_scene_contract import validate_simulation_record
 from tools.assets.blender_asset_import import clear_scene
-from tools.rendering.blender_scene import look_at
+from tools.rendering.blender_scene import look_at, parse_scene_render_args
 from tools.rendering.video_encoding import configure_h264_output, normalize_h264_container
 from tools.dataset_contract.trajectory_contract import adapter_trajectory_view
 from tools.rendering.specialized_render_evidence import (
@@ -44,18 +43,6 @@ from tools.rendering.specialized_render_evidence import (
     render_instance_masks,
     render_implementation,
 )
-
-
-def blender_args() -> argparse.Namespace:
-    values = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--metadata", type=Path, required=True)
-    parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
-    parser.add_argument("--video-path", type=Path)
-    parser.add_argument("--inspection-frame-dir", type=Path)
-    parser.add_argument("--mask-only", action="store_true")
-    parser.add_argument("--instance-mask-dir", type=Path)
-    return parser.parse_args(values)
 
 
 def add_camera(binding: dict[str, Any]) -> dict[str, Any]:
@@ -292,7 +279,9 @@ def render(
 
 
 if __name__ == "__main__":
-    args = blender_args()
+    args = parse_scene_render_args(
+        __doc__, project_root=PROJECT_ROOT, include_masks=True
+    )
     PROJECT_ROOT = args.root.resolve()
     configure_project_root(PROJECT_ROOT)
     render(

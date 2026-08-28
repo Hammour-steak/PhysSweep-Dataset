@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from tools.core.blender_runtime import clear_blender_scene
+from tools.core.blender_runtime import clear_blender_scene, look_at
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
@@ -122,10 +122,6 @@ def compare_signatures(before: dict[str, Any], after: dict[str, Any]) -> float:
     if maximum_error > 1.0e-5:
         raise ValueError(f"repair changed world bounds: {maximum_error}")
     return maximum_error
-
-
-def look_at(obj, target) -> None:
-    obj.rotation_euler = (target - obj.location).to_track_quat("-Z", "Y").to_euler()
 
 
 def render_review(meshes, output: Path) -> list[str]:

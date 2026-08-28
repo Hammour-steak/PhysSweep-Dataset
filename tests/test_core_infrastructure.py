@@ -24,6 +24,7 @@ from tools.core.paths import (
     resolve_project_path_within_root,
     safe_scene_id,
 )
+from tools.rendering.blender_scene import parse_scene_render_args
 
 
 class CoreInfrastructureTest(unittest.TestCase):
@@ -34,6 +35,36 @@ class CoreInfrastructureTest(unittest.TestCase):
             ["blender", "--background", "--", "--input", "scene.json"],
         ):
             self.assertEqual(blender_argv(), ["--input", "scene.json"])
+
+    def test_shared_scene_renderer_arguments_preserve_both_contracts(self) -> None:
+        with mock.patch.object(
+            sys,
+            "argv",
+            [
+                "blender",
+                "--background",
+                "--",
+                "--metadata",
+                "scene.json",
+                "--root",
+                "project",
+                "--mask-only",
+            ],
+        ):
+            args = parse_scene_render_args(
+                "test", project_root=Path("default"), include_masks=True
+            )
+            self.assertEqual(args.metadata, Path("scene.json"))
+            self.assertEqual(args.root, Path("project"))
+            self.assertTrue(args.mask_only)
+        with mock.patch.object(
+            sys,
+            "argv",
+            ["blender", "--", "--metadata", "scene.json"],
+        ):
+            args = parse_scene_render_args("test")
+            self.assertEqual(args.metadata, Path("scene.json"))
+            self.assertFalse(hasattr(args, "root"))
         with mock.patch.object(sys, "argv", ["script.py", "--input", "scene.json"]):
             self.assertEqual(blender_argv(), ["--input", "scene.json"])
 

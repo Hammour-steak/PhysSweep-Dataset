@@ -55,3 +55,12 @@ def blender_world_bounds(objects: Iterable[Any]) -> tuple[Any, Any]:
     if not found:
         raise ValueError("cannot measure bounds from empty Blender geometry")
     return low, high
+
+
+def look_at(obj: Any, target: Any) -> None:
+    """Aim a Blender object at a world-space target."""
+
+    import mathutils  # pylint: disable=import-outside-toplevel
+
+    direction = mathutils.Vector(target) - obj.location
+    obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()

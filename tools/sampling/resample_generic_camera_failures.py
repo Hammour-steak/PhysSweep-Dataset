@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from tools.core.paths import resolve_project_path as resolve
 from tools.sampling.sample_one_object_scene_matrix import (
     generic_retry_seed,
     load_json,
@@ -20,10 +21,6 @@ from tools.sampling.sample_one_object_scene_matrix import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
-def resolve(root: Path, path: Path) -> Path:
-    return path.resolve() if path.is_absolute() else (root / path).resolve()
 
 
 def parse_args() -> argparse.Namespace:
