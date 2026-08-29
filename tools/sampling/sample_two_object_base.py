@@ -11,7 +11,7 @@ from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json, write_json
 from tools.dataset_contract.object_identity_contract import attach_object_identity
 from tools.motion_rules.two_object import apply_two_object_motion
-from tools.sampling.object_pair import compile_object_pair_scene
+from tools.sampling.object_collection import compile_object_collection_scene
 from tools.sampling.two_object_scene import bind_two_object_scene
 
 
@@ -20,7 +20,7 @@ DATASET_ID = "physweep_two_object"
 DEFAULT_MATRIX = PROJECT_ROOT / "configs" / "two_object_sampling_matrix.json"
 _MATRIX_FIELDS = {
     "schema_version",
-    "object_pair",
+    "objects",
     "candidate_pool",
     "coverage_plan",
     "shared_physics",
@@ -46,7 +46,7 @@ _OBJECT_ELIGIBILITY_FIELDS = {
     "geometry_type",
     "require_isotropic_geometry",
     "scale_bins",
-    "visual_identity_key",
+    "visual_profile_key",
     "distinct_source_scenes",
 }
 _HOST_ELIGIBILITY_FIELDS = {
@@ -64,7 +64,6 @@ _COVERAGE_PLAN_FIELDS = {
     "schema_version",
     "seed",
     "role_ordered_scale_pairs",
-    "visual_identity_relations",
     "replicates_per_cell",
     "selection_policy",
 }
@@ -86,14 +85,26 @@ _POLICY_FIELDS = {
 
 def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
     if set(matrix) != _MATRIX_FIELDS or (
-        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v2"
+        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v3"
     ):
         raise ValueError("unsupported two-object sampling matrix")
-    pair = matrix.get("object_pair")
-    if not isinstance(pair, dict) or set(pair) != {"schema_version", "roles"}:
-        raise ValueError("two-object matrix lacks an object-pair contract")
-    if pair.get("schema_version") != "physweep_object_pair_v1":
-        raise ValueError("unsupported object-pair contract")
+    objects = matrix.get("objects")
+    if not isinstance(objects, dict) or set(objects) != {"schema_version", "roles"}:
+        raise ValueError("two-object matrix lacks an object collection")
+    if objects.get("schema_version") != "physweep_object_collection_v1":
+        raise ValueError("unsupported object collection")
+    roles = objects.get("roles")
+    if (
+        not isinstance(roles, list)
+        or len(roles) != 2
+        or any(
+            not isinstance(role, dict) or set(role) != {"object_id"}
+            for role in roles
+        )
+        or len({str(role["object_id"]).strip() for role in roles}) != 2
+        or any(not str(role["object_id"]).strip() for role in roles)
+    ):
+        raise ValueError("two-object roles must contain two unique object ids")
     candidate_pool = matrix.get("candidate_pool")
     if (
         not isinstance(candidate_pool, dict)
@@ -114,7 +125,7 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         or eligibility.get("body_model") != "rigid_body"
         or eligibility.get("geometry_type") != "sphere"
         or eligibility.get("require_isotropic_geometry") is not True
-        or eligibility.get("visual_identity_key") != "visual_profile.id"
+        or eligibility.get("visual_profile_key") != "visual_profile.id"
         or eligibility.get("distinct_source_scenes") is not True
     ):
         raise ValueError("two-object object-eligibility contract is invalid")
@@ -182,9 +193,6 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         or actual_pairs != expected_pairs
     ):
         raise ValueError("two-object ordered scale pairs must cover the full product")
-    relations = coverage.get("visual_identity_relations")
-    if relations != ["same_visual_profile", "different_visual_profile"]:
-        raise ValueError("two-object visual identity relations are invalid")
     selection = coverage.get("selection_policy")
     if not isinstance(selection, dict) or (
         set(selection) != {*_SELECTION_POLICY, "maximum_object_source_reuse"}
@@ -239,10 +247,10 @@ def build_two_object_scene(
         if object_templates is not None
         else (host_template, host_template)
     )
-    pair_scene = compile_object_pair_scene(
+    pair_scene = compile_object_collection_scene(
         host_template,
         sources,
-        matrix["object_pair"]["roles"],
+        matrix["objects"]["roles"],
     )
     scene = apply_two_object_motion(
         pair_scene,
@@ -341,7 +349,7 @@ def main() -> None:
             }
         )
     object_ids = [
-        str(role["object_id"]) for role in matrix["object_pair"]["roles"]
+        str(role["object_id"]) for role in matrix["objects"]["roles"]
     ]
     object_sources = [
         {

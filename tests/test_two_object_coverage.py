@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from tools.core.hashing import sha256_file
+from tools.sampling.object_collection import compile_object_collection_scene
 from tools.sampling.sample_two_object_base import _validated_intents
 from tools.sampling.sample_two_object_coverage import (
     _axis_counts,
@@ -38,25 +39,19 @@ class TwoObjectCoverageTests(unittest.TestCase):
     def test_matrix_declares_complete_ordered_cartesian_coverage(self) -> None:
         matrix = load_matrix()
         cells, full_count = coverage_cells(matrix)
-        self.assertEqual(full_count, 324)
-        self.assertEqual(len(cells), 324)
+        self.assertEqual(full_count, 162)
+        self.assertEqual(len(cells), 162)
         counts = _axis_counts(cells)
-        self.assertEqual(set(counts["motion"].values()), {36})
-        self.assertEqual(set(counts["ordered_scale_pair"].values()), {36})
-        self.assertEqual(
-            set(counts["visual_identity_relation"].values()), {162}
-        )
-        self.assertEqual(set(counts["scene_class"].values()), {162})
+        self.assertEqual(set(counts["motion"].values()), {18})
+        self.assertEqual(set(counts["ordered_scale_pair"].values()), {18})
+        self.assertEqual(set(counts["scene_class"].values()), {81})
 
     def test_balanced_smoke_prefix_covers_every_axis(self) -> None:
         cells, full_count = coverage_cells(load_matrix(), 72)
-        self.assertEqual(full_count, 324)
+        self.assertEqual(full_count, 162)
         counts = _axis_counts(cells)
         self.assertEqual(set(counts["motion"].values()), {8})
         self.assertEqual(set(counts["ordered_scale_pair"].values()), {8})
-        self.assertEqual(
-            set(counts["visual_identity_relation"].values()), {36}
-        )
         self.assertEqual(set(counts["scene_class"].values()), {36})
 
     def test_matrix_rejects_missing_scale_cell_and_weakened_uniqueness(self) -> None:
@@ -84,7 +79,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "host-eligibility"):
             _validated_intents(bounded_host)
 
-    def test_source_selection_obeys_scale_identity_and_uniqueness(self) -> None:
+    def test_source_selection_obeys_scale_and_uniqueness(self) -> None:
         matrix = load_matrix()
         cells, _ = coverage_cells(matrix, 18)
         objects = []
@@ -131,11 +126,97 @@ class TwoObjectCoverageTests(unittest.TestCase):
             self.assertEqual(left["scale_bin"], cell["object_a_scale_bin"])
             self.assertEqual(right["scale_bin"], cell["object_b_scale_bin"])
             self.assertEqual(
-                left["visual_profile_id"] == right["visual_profile_id"],
-                cell["visual_identity_relation"] == "same_visual_profile",
+                selection["host"]["scene_class"], cell["scene_class"]
+            )
+
+    def test_source_selection_allows_matching_size_and_appearance(self) -> None:
+        cell = {
+            "cell_id": "same_size_and_appearance",
+            "object_a_scale_bin": "small",
+            "object_b_scale_bin": "small",
+            "scene_class": "ground_flat",
+        }
+        objects = [
+            {
+                "metadata": {},
+                "source": {"scene_id": f"object_{index}"},
+                "scale_bin": "small",
+                "visual_profile_id": "shared_profile",
+            }
+            for index in range(2)
+        ]
+        hosts = [
+            {
+                "metadata": {},
+                "source": {"scene_id": "host"},
+                "scene_class": "ground_flat",
+                "visual_profile_id": "host_profile",
+                "visual_type": "procedural_room",
+            }
+        ]
+        selected, _ = select_coverage_sources(
+            [cell], objects, hosts, load_matrix()
+        )
+        left, right = selected[0]["objects"]
+        self.assertEqual(left["scale_bin"], right["scale_bin"])
+        self.assertEqual(
+            left["visual_profile_id"], right["visual_profile_id"]
+        )
+
+    def test_object_collection_preserves_appearance_for_three_objects(self) -> None:
+        def candidate(index: int) -> dict:
+            material = {
+                "record": {
+                    "asset_source": "unit",
+                    "asset_id": f"material_{index}",
+                    "path": f"materials/{index}",
+                },
+                "texture_scale": 1.0 + index,
+                "semantic_color_mix": 0.05 * index,
+            }
+            return {
+                "schema_version": "physweep_pybullet_rigid_metadata_v1",
+                "scene_id": f"source_{index}",
+                "simulation": {
+                    "objects": [
+                        {
+                            "object_id": "object_a",
+                            "body_model": "rigid_body",
+                            "semantic_type": f"source object {index}",
+                            "visual_profile": {
+                                "id": f"profile_{index}",
+                                "material_policy": "source_or_bound_fallback",
+                            },
+                        }
+                    ]
+                },
+                "semantic_sampling": {
+                    "five_dimensions": {
+                        "foreground_object": {
+                            "semantic_category": "sphere",
+                            "scale_bin": "medium",
+                            "uniform_scale": 1.0,
+                        }
+                    }
+                },
+                "appearance": {"materials": {"dynamic_object": material}},
+            }
+
+        sources = [candidate(index) for index in range(3)]
+        original_sources = copy.deepcopy(sources)
+        host = copy.deepcopy(sources[0])
+        roles = [{"object_id": f"object_{index}"} for index in range(3)]
+        scene = compile_object_collection_scene(host, sources, roles)
+        self.assertEqual(sources, original_sources)
+        for index, role in enumerate(roles):
+            object_id = role["object_id"]
+            self.assertEqual(
+                scene["simulation"]["objects"][index]["visual_profile"],
+                sources[index]["simulation"]["objects"][0]["visual_profile"],
             )
             self.assertEqual(
-                selection["host"]["scene_class"], cell["scene_class"]
+                scene["appearance"]["materials"]["dynamic_objects"][object_id],
+                sources[index]["appearance"]["materials"]["dynamic_object"],
             )
 
     def test_released_base_manifest_pins_generation_manifest(self) -> None:

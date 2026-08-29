@@ -25,7 +25,6 @@ from tools.sampling.sample_two_object_base import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-_IDENTITY_RELATIONS = {"same_visual_profile", "different_visual_profile"}
 
 
 def _rank(seed: int, *parts: object) -> str:
@@ -37,7 +36,6 @@ def _axis_counts(cells: Sequence[dict[str, Any]]) -> dict[str, dict[str, int]]:
     fields = {
         "motion": "motion_id",
         "ordered_scale_pair": "scale_pair_id",
-        "visual_identity_relation": "visual_identity_relation",
         "scene_class": "scene_class",
     }
     return {
@@ -55,7 +53,6 @@ def _balanced_cell_order(
     axis_fields = (
         "motion_id",
         "scale_pair_id",
-        "visual_identity_relation",
         "scene_class",
     )
     levels = {
@@ -94,10 +91,9 @@ def coverage_cells(
     coverage = matrix["coverage_plan"]
     scene_classes = matrix["scene_compatibility"]["allowed_scene_classes"]
     cells = []
-    for intent, scale_pair, relation, scene_class, replicate_index in product(
+    for intent, scale_pair, scene_class, replicate_index in product(
         intents,
         coverage["role_ordered_scale_pairs"],
-        coverage["visual_identity_relations"],
         scene_classes,
         range(int(coverage["replicates_per_cell"])),
     ):
@@ -105,7 +101,6 @@ def coverage_cells(
             [
                 str(intent["id"]),
                 str(scale_pair["id"]),
-                str(relation),
                 str(scene_class),
                 f"r{replicate_index:02d}",
             ]
@@ -117,7 +112,6 @@ def coverage_cells(
                 "scale_pair_id": str(scale_pair["id"]),
                 "object_a_scale_bin": str(scale_pair["object_a"]),
                 "object_b_scale_bin": str(scale_pair["object_b"]),
-                "visual_identity_relation": str(relation),
                 "scene_class": str(scene_class),
                 "replicate_index": replicate_index,
             }
@@ -266,7 +260,7 @@ def released_source_pool(
                     visual_type = str(scene_visual.get("visual_type", ""))
                     if not visual_id or not visual_type:
                         raise ValueError(
-                            "eligible two-object host lacks visual identity"
+                            "eligible two-object host lacks a visual profile"
                         )
                     hosts.append(
                         {
@@ -306,7 +300,7 @@ def released_source_pool(
         scale_bin = str(foreground.get("scale_bin", ""))
         visual_profile_id = str(obj.get("visual_profile", {}).get("id", ""))
         if scale_bin not in allowed_scale_bins or not visual_profile_id:
-            raise ValueError("eligible sphere lacks scale or visual identity")
+            raise ValueError("eligible sphere lacks scale or a visual profile")
         objects.append(
             {
                 "metadata": metadata,
@@ -371,9 +365,6 @@ def select_coverage_sources(
     for cell in cells:
         left_pool = objects_by_scale.get(str(cell["object_a_scale_bin"]), [])
         right_pool = objects_by_scale.get(str(cell["object_b_scale_bin"]), [])
-        relation = str(cell["visual_identity_relation"])
-        if relation not in _IDENTITY_RELATIONS:
-            raise ValueError(f"unsupported visual identity relation: {relation}")
 
         def object_key(record: dict[str, Any], role: str) -> tuple[int, int, str]:
             source_id = str(record["source"]["scene_id"])
@@ -394,11 +385,6 @@ def select_coverage_sources(
             ):
                 right_id = str(right["source"]["scene_id"])
                 if left_id == right_id or object_use[right_id] >= maximum_reuse:
-                    continue
-                same_profile = (
-                    left["visual_profile_id"] == right["visual_profile_id"]
-                )
-                if same_profile != (relation == "same_visual_profile"):
                     continue
                 unordered_pair = tuple(sorted((left_id, right_id)))
                 if unordered_pair in used_pairs:
@@ -474,7 +460,7 @@ def build_coverage_scenes(
     """Compile selected sources and attach the minimal per-scene coverage fact."""
 
     scenes = []
-    role_ids = [str(role["object_id"]) for role in matrix["object_pair"]["roles"]]
+    role_ids = [str(role["object_id"]) for role in matrix["objects"]["roles"]]
     for sample_index, selection in enumerate(selections, start=1):
         cell = selection["cell"]
         host = copy.deepcopy(selection["host"]["metadata"])
@@ -482,7 +468,6 @@ def build_coverage_scenes(
             [
                 f"physweep2scene_{sample_index:06d}",
                 str(cell["scale_pair_id"]),
-                str(cell["visual_identity_relation"]),
                 str(cell["scene_class"]),
             ]
         )

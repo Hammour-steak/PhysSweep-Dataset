@@ -1,18 +1,10 @@
 {
-  "schema_version": "physweep_two_object_sampling_matrix_v2",
-  "object_pair": {
-    "schema_version": "physweep_object_pair_v1",
+  "schema_version": "physweep_two_object_sampling_matrix_v3",
+  "objects": {
+    "schema_version": "physweep_object_collection_v1",
     "roles": [
-      {
-        "object_id": "object_a",
-        "semantic_label": "red sphere",
-        "semantic_color_srgb": [0.82, 0.18, 0.12, 1.0]
-      },
-      {
-        "object_id": "object_b",
-        "semantic_label": "blue sphere",
-        "semantic_color_srgb": [0.10, 0.32, 0.86, 1.0]
-      }
+      {"object_id": "object_a"},
+      {"object_id": "object_b"}
     ]
   },
   "candidate_pool": {
@@ -28,7 +20,7 @@
       "geometry_type": "sphere",
       "require_isotropic_geometry": true,
       "scale_bins": ["small", "medium", "large"],
-      "visual_identity_key": "visual_profile.id",
+      "visual_profile_key": "visual_profile.id",
       "distinct_source_scenes": true
     },
     "host_eligibility": {
@@ -55,10 +47,6 @@
       {"id": "large_to_small", "object_a": "large", "object_b": "small"},
       {"id": "large_to_medium", "object_a": "large", "object_b": "medium"},
       {"id": "large_to_large", "object_a": "large", "object_b": "large"}
-    ],
-    "visual_identity_relations": [
-      "same_visual_profile",
-      "different_visual_profile"
     ],
     "replicates_per_cell": 1,
     "selection_policy": {

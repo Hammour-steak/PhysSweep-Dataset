@@ -595,14 +595,20 @@ class PyBulletSimulationTests(unittest.TestCase):
             ],
         )
         identity = scene["object_identity"]
+        source_mention = (
+            "the "
+            + str(template["simulation"]["objects"][0]["semantic_type"])
+            .replace("_", " ")
+            .strip()
+        )
         self.assertEqual(
             [record["text"] for record in identity["text"]["object_mentions"]],
-            ["the red sphere", "the blue sphere"],
+            [source_mention, source_mention],
         )
         self.assertEqual(
             identity["text"]["caption"],
             (
-                "the red sphere and the blue sphere collide while moving "
+                f"{source_mention} and {source_mention} collide while moving "
                 "toward each other."
             ),
         )
@@ -1091,7 +1097,7 @@ class PyBulletSimulationTests(unittest.TestCase):
             set(scene["appearance"]["materials"]["dynamic_objects"]),
             {"object_a", "object_b"},
         )
-        with self.assertRaisesRegex(ValueError, "exactly two candidates"):
+        with self.assertRaisesRegex(ValueError, "one role per candidate"):
             build_two_object_scene(
                 host,
                 load_json(ROOT / "configs/two_object_sampling_matrix.json"),
