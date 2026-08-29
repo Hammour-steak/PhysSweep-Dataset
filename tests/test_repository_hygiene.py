@@ -197,6 +197,53 @@ class RepositoryHygieneTest(unittest.TestCase):
                 )
         self.assertEqual(findings, [])
 
+    def test_dataset_generation_does_not_depend_on_training_exports(self) -> None:
+        findings = []
+        for package in (
+            "assets",
+            "cli",
+            "core",
+            "dataset_contract",
+            "motion_rules",
+            "physics",
+            "release",
+            "rendering",
+            "sampling",
+        ):
+            for path in (ROOT / "tools" / package).rglob("*.py"):
+                tree = ast.parse(path.read_text(encoding="utf-8"))
+                for node in ast.walk(tree):
+                    modules = []
+                    if isinstance(node, ast.Import):
+                        modules = [alias.name for alias in node.names]
+                    elif isinstance(node, ast.ImportFrom) and node.module:
+                        modules = [node.module]
+                    findings.extend(
+                        f"{path.relative_to(ROOT)}: {module}"
+                        for module in modules
+                        if module == "tools.training_export"
+                        or module.startswith("tools.training_export.")
+                    )
+        self.assertEqual(findings, [])
+
+    def test_one_object_and_training_helpers_do_not_pollute_dataset_contract(self) -> None:
+        modules = {
+            "coordinate_frames.py",
+            "gt_scene_input.py",
+            "point_trajectory.py",
+            "prompt_contract.py",
+            "semantic_coverage.py",
+        }
+        for name in modules:
+            with self.subTest(module=name):
+                self.assertFalse((ROOT / "tools" / "dataset_contract" / name).exists())
+        for name in modules - {"semantic_coverage.py"}:
+            with self.subTest(training_module=name):
+                self.assertTrue((ROOT / "tools" / "training_export" / name).is_file())
+        self.assertTrue(
+            (ROOT / "tools" / "sampling" / "one_object_semantic_coverage.py").is_file()
+        )
+
     def test_release_libraries_are_not_command_line_entry_points(self) -> None:
         for relative in (
             "tools/release/base_release_view.py",

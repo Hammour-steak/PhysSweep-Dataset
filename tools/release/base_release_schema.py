@@ -557,25 +557,12 @@ def _compact_semantics(source: Mapping[str, Any]) -> dict[str, Any]:
     dimensions = _mapping(semantic_sampling.get("five_dimensions"))
     if dimensions:
         motion = _mapping(dimensions.get("motion"))
-        foreground = _mapping(dimensions.get("foreground_object"))
         support = _mapping(dimensions.get("support_interaction"))
         observation = _mapping(dimensions.get("camera_observation"))
         appearance = _mapping(dimensions.get("appearance_lighting"))
         return {
             "motion": _without_none(
                 {key: motion.get(key) for key in ("family", "subtype", "direction", "trajectory_extent")}
-            ),
-            "object": _without_none(
-                {
-                    key: foreground.get(key)
-                    for key in (
-                        "object_type",
-                        "semantic_category",
-                        "shape",
-                        "scale_bin",
-                        "uniform_scale",
-                    )
-                }
             ),
             "support": _without_none(
                 {
@@ -616,6 +603,48 @@ def _compact_semantics(source: Mapping[str, Any]) -> dict[str, Any]:
             "description": source.get("dynamic_asset_name"),
         }
     )
+
+
+def _compact_generic_object_annotations(
+    source: Mapping[str, Any], object_ids: list[str]
+) -> dict[str, dict[str, Any]]:
+    """Normalize legacy 1obj or explicit multi-object sampling semantics."""
+
+    dimensions = _mapping(
+        _mapping(source.get("semantic_sampling")).get("five_dimensions")
+    )
+    singular = dimensions.get("foreground_object")
+    plural = dimensions.get("foreground_objects")
+    if singular is not None and plural is not None:
+        raise ValueError("generic source declares singular and plural object semantics")
+    if plural is None:
+        if len(object_ids) != 1 or not isinstance(singular, Mapping):
+            raise ValueError(
+                "generic multi-object source requires foreground_objects semantics"
+            )
+        records = [{"object_id": object_ids[0], **dict(singular)}]
+    else:
+        if not isinstance(plural, list) or not plural:
+            raise ValueError("foreground_objects semantics must be a non-empty list")
+        records = [_mapping(value) for value in plural]
+
+    by_id: dict[str, dict[str, Any]] = {}
+    for record in records:
+        object_id = str(record.get("object_id", ""))
+        if not object_id or object_id in by_id:
+            raise ValueError("generic object semantics contain missing or duplicate ids")
+        compact = _without_none(
+            {
+                key: record.get(key)
+                for key in ("semantic_category", "scale_bin", "uniform_scale")
+            }
+        )
+        if set(compact) != {"semantic_category", "scale_bin", "uniform_scale"}:
+            raise ValueError(f"generic semantic annotations differ for {object_id}")
+        by_id[object_id] = compact
+    if list(by_id) != object_ids:
+        raise ValueError("generic object semantic order differs from the object axis")
+    return by_id
 
 
 def _compact_environment(source: Mapping[str, Any]) -> dict[str, Any] | None:
@@ -1039,16 +1068,22 @@ def _build_sample_metadata(
         visual["lighting"] = lighting
 
     semantics = _compact_semantics(source)
-    annotations = semantics.pop("object", None)
+    annotations_by_id: dict[str, dict[str, Any]] = {}
     if family == "generic":
-        if not isinstance(annotations, dict):
-            raise ValueError("generic semantic annotations are missing")
-        annotations.pop("object_type", None)
-        annotations.pop("shape", None)
-        if set(annotations) != {"semantic_category", "scale_bin", "uniform_scale"}:
-            raise ValueError("generic semantic annotations differ")
-    elif annotations is not None:
-        raise ValueError("non-generic sample has singular semantic annotations")
+        annotations_by_id = _compact_generic_object_annotations(
+            source, [str(record["object_id"]) for record in objects]
+        )
+    else:
+        dimensions = _mapping(
+            _mapping(source.get("semantic_sampling")).get("five_dimensions")
+        )
+        if (
+            "foreground_object" in dimensions
+            or "foreground_objects" in dimensions
+        ):
+            raise ValueError(
+                "non-generic sample declares generic object annotations"
+            )
     semantic_objects = []
     for physics_object in objects:
         object_id = str(physics_object["object_id"])
@@ -1056,8 +1091,8 @@ def _build_sample_metadata(
             "object_id": object_id,
             "semantic_label": labels[object_id],
         }
-        if annotations is not None:
-            semantic_object.update(copy.deepcopy(annotations))
+        if object_id in annotations_by_id:
+            semantic_object.update(copy.deepcopy(annotations_by_id[object_id]))
         semantic_objects.append(semantic_object)
     semantics["objects"] = semantic_objects
     appearance = semantics.get("appearance")

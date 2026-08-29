@@ -13,7 +13,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 from tools.core.hashing import sha256_file as _sha256
 from tools.core.paths import project_relative_path
-from tools.dataset_contract.gt_scene_input import (
+from tools.training_export.gt_scene_input import (
     DEFAULT_ENVIRONMENT_POINTS,
     DEFAULT_OBJECT_POINTS,
     inspect_gt_surface,

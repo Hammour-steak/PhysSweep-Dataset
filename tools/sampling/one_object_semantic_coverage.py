@@ -6,7 +6,7 @@ from collections import Counter
 from typing import Any
 
 
-def semantic_coverage_counts(
+def one_object_semantic_coverage_counts(
     scenes: list[dict[str, Any]],
 ) -> dict[str, dict[str, int]]:
     """Summarize the five semantic sampling dimensions without sampler imports."""

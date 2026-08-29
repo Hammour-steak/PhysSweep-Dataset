@@ -234,6 +234,7 @@ class PhysicsSweepTests(unittest.TestCase):
                 0,
                 {},
                 registry,
+                target_object_index=0,
             )
         self.assertEqual(
             derived["sweep"]["source_schema_version"],
@@ -293,6 +294,7 @@ class PhysicsSweepTests(unittest.TestCase):
                 4,
                 {},
                 {},
+                target_object_index=0,
             )
         self.assertEqual(derived["sweep"]["base_value"], 0.92)
         self.assertEqual(derived["sweep"]["allowed_domain"], [0.3, 1.0])
@@ -354,6 +356,7 @@ class PhysicsSweepTests(unittest.TestCase):
                         level_index,
                         {},
                         {},
+                        target_object_index=0,
                     )
                     if level_index == derived["sweep"]["base_level_index"]:
                         if axis != config["canonical_base_axis"]:
@@ -441,6 +444,7 @@ class PhysicsSweepTests(unittest.TestCase):
                         level_index,
                         {},
                         {},
+                        target_object_index=0,
                     )
                     if level_index == derived["sweep"]["base_level_index"]:
                         if axis != config["canonical_base_axis"]:
@@ -505,6 +509,7 @@ class PhysicsSweepTests(unittest.TestCase):
                 0,
                 {},
                 {},
+                target_object_index=0,
             )
             self.assertEqual(derived["sweep"]["axis"], "contact_friction")
         self.assertEqual(base, original)
@@ -609,6 +614,7 @@ class PhysicsSweepTests(unittest.TestCase):
                     0,
                     {},
                     {},
+                    target_object_index=0,
                 )
                 self.assertEqual(derived["sweep"]["axis"], axis)
                 self.assertEqual(

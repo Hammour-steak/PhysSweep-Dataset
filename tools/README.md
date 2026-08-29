@@ -16,10 +16,12 @@ Asset download, conversion, and proxy-building tools additionally require
   2obj rules belong in a parallel `motion_rules/two_object` package.
 - `physics`: simulation, geometry, trajectory audits, and specialized backends.
 - `rendering`: visual binding, Blender rendering, video encoding, and visual QA.
-- `dataset_contract`: published sample schemas and object/trajectory contracts.
+- `dataset_contract`: source and published dataset schemas, identity, and physical
+  trajectory contracts.
 - `release`: immutable base/sweep packaging and provenance audits.
 - `cli`: dataset-level orchestration only.
-- `training_export`: derived training views; never an input to dataset generation.
+- `training_export`: derived prompts, point tracks, scene conditions, and training
+  views; never an input to dataset generation.
 - `native`: small compiled runtime helpers used by render workers.
 
 The `tools` root contains no executable modules. Core geometry has no motion-name

@@ -18,6 +18,7 @@ from tools.release.base_release_schema import (
     build_sweep_metadata,
     build_mask_manifest,
     canonical_trajectory,
+    _compact_generic_object_annotations,
     _dynamic_material_extras,
     sha256,
     validate_base_metadata,
@@ -27,6 +28,50 @@ from tools.release.base_release_schema import (
 
 
 class BaseReleaseSchemaTests(unittest.TestCase):
+    def test_generic_semantics_bind_each_object_explicitly(self) -> None:
+        source = {
+            "semantic_sampling": {
+                "five_dimensions": {
+                    "foreground_objects": [
+                        {
+                            "object_id": "object_a",
+                            "semantic_category": "box",
+                            "scale_bin": "small",
+                            "uniform_scale": 0.8,
+                        },
+                        {
+                            "object_id": "object_b",
+                            "semantic_category": "ball",
+                            "scale_bin": "medium",
+                            "uniform_scale": 1.0,
+                        },
+                    ]
+                }
+            }
+        }
+        annotations = _compact_generic_object_annotations(
+            source, ["object_a", "object_b"]
+        )
+        self.assertEqual(list(annotations), ["object_a", "object_b"])
+        self.assertEqual(annotations["object_b"]["semantic_category"], "ball")
+        with self.assertRaisesRegex(ValueError, "order differs"):
+            _compact_generic_object_annotations(source, ["object_b", "object_a"])
+
+    def test_generic_multi_object_semantics_reject_singular_1obj_field(self) -> None:
+        source = {
+            "semantic_sampling": {
+                "five_dimensions": {
+                    "foreground_object": {
+                        "semantic_category": "box",
+                        "scale_bin": "small",
+                        "uniform_scale": 0.8,
+                    }
+                }
+            }
+        }
+        with self.assertRaisesRegex(ValueError, "requires foreground_objects"):
+            _compact_generic_object_annotations(source, ["object_a", "object_b"])
+
     def test_adapter_specific_material_defaults_do_not_cross_pipelines(self) -> None:
         backend = {
             "asset_proxy_rules": {

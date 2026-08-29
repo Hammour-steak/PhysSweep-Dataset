@@ -42,8 +42,8 @@ from tools.motion_rules.one_object.ballistic import (
     bounce_observation_contract as grouped_bounce_observation_contract,
 )
 from tools.dataset_contract.object_identity_contract import attach_object_identity
-from tools.dataset_contract.semantic_coverage import (
-    semantic_coverage_counts as manifest_counts,
+from tools.sampling.one_object_semantic_coverage import (
+    one_object_semantic_coverage_counts as manifest_counts,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]

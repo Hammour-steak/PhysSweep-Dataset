@@ -8,7 +8,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 
-from tools.dataset_contract.point_trajectory import (
+from tools.training_export.point_trajectory import (
     POINT_COUNT,
     build_point_trajectory,
     rigid_points_from_poses,

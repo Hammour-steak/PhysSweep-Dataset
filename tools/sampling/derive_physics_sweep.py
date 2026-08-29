@@ -432,7 +432,8 @@ def derive_one(
     level_index: int,
     profiles: dict[str, Any],
     registry: dict[str, Any],
-    target_object_index: int = 0,
+    *,
+    target_object_index: int,
 ) -> dict[str, Any]:
     max_objects = int(config.get("max_dynamic_objects", 3))
     validate_base(

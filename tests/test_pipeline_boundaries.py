@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from tools.dataset_contract.gt_scene_input import interaction_collider_ids
+from tools.training_export.gt_scene_input import interaction_collider_ids
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -400,7 +400,7 @@ class PipelineBoundaryTest(unittest.TestCase):
 
     def test_method_specific_trajectory_rasterization_is_absent(self):
         source = (
-            ROOT / "tools/dataset_contract/point_trajectory.py"
+            ROOT / "tools/training_export/point_trajectory.py"
         ).read_text(encoding="utf-8")
         self.assertNotIn("rasterize_projected_tracks", source)
         self.assertNotIn("cover_center_crop_coordinates", source)

@@ -27,7 +27,7 @@ if str(PROJECT_ROOT) not in sys.path:
 from tools.rendering import render_pybullet_rigid as rigid_renderer
 from tools.core.blender_runtime import blender_argv as _argv
 from tools.core.hashing import sha256_file as _sha256
-from tools.dataset_contract.gt_scene_input import (
+from tools.training_export.gt_scene_input import (
     DEFAULT_ENVIRONMENT_POINTS,
     DEFAULT_OBJECT_POINTS,
     ENVIRONMENT_SURFACE_POLICY,

@@ -11,18 +11,18 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 from tools.core.hashing import sha256_file as _sha256
 from tools.core.paths import project_relative_path
 from tools.core.sweep_values import SWEEP_LEVEL_COUNT, sweep_group_size
-from tools.dataset_contract.gt_scene_input import (
+from tools.training_export.gt_scene_input import (
     DEFAULT_ENVIRONMENT_POINTS,
     DEFAULT_OBJECT_POINTS,
     MODEL_SCENE_SCHEMA,
     compile_model_scene_condition,
     inspect_model_scene_condition,
 )
-from tools.dataset_contract.prompt_contract import (
+from tools.training_export.prompt_contract import (
     PROMPT_TEMPLATE_VERSION,
     build_training_prompt,
 )
-from tools.dataset_contract.coordinate_frames import transform_world_vector_to_camera
+from tools.training_export.coordinate_frames import transform_world_vector_to_camera
 from tools.dataset_contract.schema import (
     MANIFEST_SCHEMA,
     SAMPLE_SCHEMA,
