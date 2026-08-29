@@ -9,6 +9,7 @@ from typing import Any
 import numpy as np
 
 from tools.dataset_contract.object_identity_contract import (
+    require_simulation_objects,
     require_single_simulation_object,
 )
 from tools.motion_rules.one_object import MotionAuditContext, audit_motion
@@ -18,7 +19,7 @@ from tools.motion_rules.one_object.common import (
 )
 from tools.physics.physics_invariants import PROXY_SHAPE_CODE, additional_physics_invariants
 
-SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1,)
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2)
 
 
 def _horizontal_displacement(positions: np.ndarray) -> float:
@@ -214,7 +215,16 @@ def audit_support_transition_contract(
 
 
 def audit_trajectory(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]) -> dict[str, Any]:
-    obj = require_single_simulation_object(metadata, __name__)
+    objects = require_simulation_objects(
+        metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
+    )
+    if len(objects) == 2:
+        from tools.motion_rules.two_object import (  # pylint: disable=import-outside-toplevel
+            audit_pair_collision,
+        )
+
+        return audit_pair_collision(metadata, trajectory)
+    obj = objects[0]
     object_id = str(obj["object_id"])
     positions = np.asarray(trajectory[f"{object_id}__position_m"], dtype=np.float64)
     velocities = np.asarray(trajectory[f"{object_id}__linear_velocity_m_s"], dtype=np.float64)
@@ -627,41 +637,55 @@ def compact_advisory_ids(audit: dict[str, Any]) -> list[str]:
 
 
 def validate_trajectory_contract(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]) -> None:
-    obj = require_single_simulation_object(metadata, __name__)
-    object_id = str(obj["object_id"])
-    required = {
-        "time_s",
-        f"{object_id}__position_m",
-        f"{object_id}__quaternion_wxyz",
-        f"{object_id}__linear_velocity_m_s",
-        f"{object_id}__angular_velocity_rad_s",
-        f"{object_id}__aabb_min_m",
-        f"{object_id}__aabb_max_m",
-        f"{object_id}__primary_support_contact_count",
-        f"{object_id}__all_contact_count",
-        f"{object_id}__minimum_contact_distance_m",
-        f"{object_id}__total_normal_force_n",
-        f"{object_id}__maximum_coulomb_friction_utilization",
-    }
-    required_collider_id = obj["expected_motion"].get(
-        "required_collider_contact_id"
+    objects = require_simulation_objects(
+        metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
     )
-    if required_collider_id:
-        required.add(
-            f"{object_id}__collider_contact_count__{required_collider_id}"
+    object_ids = [str(obj["object_id"]) for obj in objects]
+    required = {"time_s"}
+    runtime_required: set[str] = set()
+    for obj in objects:
+        object_id = str(obj["object_id"])
+        required.update(
+            {
+                f"{object_id}__position_m",
+                f"{object_id}__quaternion_wxyz",
+                f"{object_id}__linear_velocity_m_s",
+                f"{object_id}__angular_velocity_rad_s",
+                f"{object_id}__aabb_min_m",
+                f"{object_id}__aabb_max_m",
+                f"{object_id}__primary_support_contact_count",
+                f"{object_id}__all_contact_count",
+                f"{object_id}__minimum_contact_distance_m",
+                f"{object_id}__total_normal_force_n",
+                f"{object_id}__maximum_coulomb_friction_utilization",
+            }
+        )
+        required_collider_id = obj["expected_motion"].get(
+            "required_collider_contact_id"
+        )
+        if required_collider_id:
+            required.add(
+                f"{object_id}__collider_contact_count__{required_collider_id}"
+            )
+        required.update(
+            f"{object_id}__object_contact_count__{other_object_id}"
+            for other_object_id in object_ids
+            if other_object_id != object_id
+        )
+        runtime_required.update(
+            {
+                f"{object_id}__runtime_dynamics",
+                f"{object_id}__runtime_inertia_diagonal_kg_m2",
+                f"{object_id}__runtime_support_dynamics",
+                f"{object_id}__runtime_proxy_shape_codes",
+                f"{object_id}__runtime_proxy_dimensions_m",
+                f"{object_id}__runtime_proxy_positions_m",
+                f"{object_id}__runtime_proxy_quaternions_xyzw",
+            }
         )
     missing = required.difference(trajectory)
     if missing:
         raise ValueError(f"trajectory is missing keys: {sorted(missing)}")
-    runtime_required = {
-        f"{object_id}__runtime_dynamics",
-        f"{object_id}__runtime_inertia_diagonal_kg_m2",
-        f"{object_id}__runtime_support_dynamics",
-        f"{object_id}__runtime_proxy_shape_codes",
-        f"{object_id}__runtime_proxy_dimensions_m",
-        f"{object_id}__runtime_proxy_positions_m",
-        f"{object_id}__runtime_proxy_quaternions_xyzw",
-    }
     runtime_missing = runtime_required.difference(trajectory)
     if runtime_missing:
         raise ValueError(

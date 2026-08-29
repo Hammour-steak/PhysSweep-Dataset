@@ -8,6 +8,9 @@ from dataclasses import dataclass
 from typing import Any
 
 
+PROXY_SHAPE_CODE = {"box": 1, "cuboid": 1, "sphere": 2, "cylinder": 3}
+
+
 @dataclass(frozen=True)
 class SupportGeometryPolicy:
     """Object-count-neutral scene features requested by a motion rule."""

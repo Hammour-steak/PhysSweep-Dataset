@@ -40,6 +40,9 @@ from tools.sampling.sample_pybullet_base import (  # noqa: E402
     sampling_manifest_rule_sources,
 )
 from tools.physics.simulate_pybullet_rigid import simulate  # noqa: E402
+from tools.sampling.sample_two_object_base import (  # noqa: E402
+    build_two_sphere_collision,
+)
 
 
 class PyBulletSimulationTests(unittest.TestCase):
@@ -557,6 +560,123 @@ class PyBulletSimulationTests(unittest.TestCase):
         self.assertEqual(set(first), set(second))
         for key in first:
             self.assertTrue(np.array_equal(first[key], second[key]), key)
+
+    def test_two_sphere_collision_is_repeatable_and_object_complete(self) -> None:
+        template = self.without_incidental_environment(self.rolling_stress_scene)
+        scene = build_two_sphere_collision(
+            template,
+            load_json(ROOT / "configs/two_object_sampling.json"),
+        )
+        first, first_audit = simulate(scene)
+        second, second_audit = simulate(scene)
+        self.assertTrue(first_audit["passed"], first_audit)
+        self.assertEqual(first_audit, second_audit)
+        self.assertEqual(set(first), set(second))
+        for key in first:
+            self.assertTrue(np.array_equal(first[key], second[key]), key)
+        object_ids = [
+            str(record["object_id"])
+            for record in scene["simulation"]["objects"]
+        ]
+        self.assertEqual(object_ids, ["object_a", "object_b"])
+        foreground = scene["semantic_sampling"]["five_dimensions"][
+            "foreground_objects"
+        ]
+        self.assertEqual(
+            [set(record) for record in foreground],
+            [
+                {"object_id", "semantic_category", "scale_bin", "uniform_scale"},
+                {"object_id", "semantic_category", "scale_bin", "uniform_scale"},
+            ],
+        )
+        identity = scene["object_identity"]
+        self.assertEqual(
+            [record["text"] for record in identity["text"]["object_mentions"]],
+            ["the red sphere", "the blue sphere"],
+        )
+        self.assertEqual(
+            identity["text"]["caption"],
+            "the red sphere and the blue sphere collide with each other.",
+        )
+        midpoint_xy = np.mean(
+            [
+                record["initial_state"]["position_m"][:2]
+                for record in scene["simulation"]["objects"]
+            ],
+            axis=0,
+        )
+        self.assertTrue(
+            np.allclose(
+                midpoint_xy,
+                scene["environment_binding"]["placement"]["scene_anchor_m"][:2],
+                atol=1.0e-6,
+                rtol=0.0,
+            )
+        )
+        for object_id, other_object_id in (
+            ("object_a", "object_b"),
+            ("object_b", "object_a"),
+        ):
+            self.assertEqual(
+                first[f"{object_id}__position_m"].shape,
+                (scene["simulation"]["time"]["frame_count"], 3),
+            )
+            self.assertGreater(
+                int(
+                    np.max(
+                        first[
+                            f"{object_id}__object_contact_count__{other_object_id}"
+                        ]
+                    )
+                ),
+                0,
+            )
+        camera = solve_camera(scene, first, self.rules)
+        self.assertEqual(camera["solver_version"], "joint_motion_structure_camera_v1")
+        diagnostics = camera["diagnostics"]
+        self.assertEqual(diagnostics["object_count"], 2)
+        self.assertGreaterEqual(
+            diagnostics["pair_collision_projected_separation_to_span_ratio"],
+            0.65,
+        )
+        self.assertEqual(
+            list(diagnostics["per_object_visibility"]),
+            ["object_a", "object_b"],
+        )
+        derived_camera_scene = copy.deepcopy(scene)
+        derived_camera_scene["scene_id"] += "__derived_camera_test"
+        derived_camera_scene["sweep"] = {
+            "kind": "sweep",
+            "parent_scene_id": scene["scene_id"],
+            "parameter": "mass_kg",
+        }
+        self.assertEqual(
+            solve_camera(derived_camera_scene, first, self.rules),
+            camera,
+        )
+        inelastic_sweep = copy.deepcopy(scene)
+        inelastic_sweep["scene_id"] += "__inelastic_sweep_test"
+        inelastic_sweep["simulation"]["objects"][0]["material"][
+            "contact_restitution"
+        ] = 0.0
+        inelastic_sweep["sweep"] = {
+            "kind": "sweep",
+            "parameter": "contact_restitution",
+        }
+        inelastic_trajectory, inelastic_audit = simulate(inelastic_sweep)
+        self.assertTrue(inelastic_audit["passed"], inelastic_audit)
+        self.assertIn(
+            "pair_post_contact_separation",
+            {record["id"] for record in inelastic_audit["advisories"]},
+        )
+        wrong_axis = copy.deepcopy(inelastic_sweep)
+        wrong_axis["sweep"]["parameter"] = "mass_kg"
+        strict_audit = audit_trajectory(wrong_axis, inelastic_trajectory)
+        self.assertFalse(strict_audit["passed"])
+        self.assertNotIn(
+            "pair_post_contact_separation",
+            {record["id"] for record in strict_audit["advisories"]},
+        )
 
     def test_runtime_proxy_dimension_tampering_is_rejected(self) -> None:
         scene = self.scene_by_motion["drop_fall_1obj"]

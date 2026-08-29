@@ -7,8 +7,7 @@ from typing import Any
 
 import numpy as np
 
-
-PROXY_SHAPE_CODE = {"box": 1, "cuboid": 1, "sphere": 2, "cylinder": 3}
+from tools.core.rigid_geometry import PROXY_SHAPE_CODE
 
 
 def runtime_collision_descriptors(

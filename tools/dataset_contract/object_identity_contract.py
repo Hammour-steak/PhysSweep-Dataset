@@ -153,6 +153,7 @@ def _motion_phrase(metadata: Mapping[str, Any]) -> str:
         "single_ball_free_roll": "rolls freely across the support",
         "single_ball_rail_rebound": "rebounds from the rail",
         "three_ball_collision": "collides with the other balls",
+        "two_sphere_collision_2obj": "collide with each other",
     }
     return phrases.get(family, f"moves in the {family.replace('_', ' ')} scenario")
 

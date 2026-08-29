@@ -260,7 +260,7 @@ class ResolvedSimulationSceneTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "frame count"):
             compile_resolved_scene(metadata, Path("."))
 
-    def test_generic_adapter_declares_one_object_limit(self):
+    def test_generic_adapter_declares_two_object_limit(self):
         metadata = self.generic_metadata()
         second = copy.deepcopy(metadata["simulation"]["objects"][0])
         second["object_id"] = "object_b"
@@ -268,7 +268,23 @@ class ResolvedSimulationSceneTests(unittest.TestCase):
         metadata["object_identity"]["objects"].append(
             {"object_id": "object_b", "role": "dynamic"}
         )
-        with self.assertRaisesRegex(ValueError, "does not support 2"):
+        scene = compile_resolved_scene(metadata, Path("."))
+        self.assertEqual(
+            scene["backend_binding"]["supported_dynamic_object_counts"],
+            [1, 2],
+        )
+        self.assertEqual(
+            [record["object_id"] for record in scene["objects"]],
+            ["object_a", "object_b"],
+        )
+
+        third = copy.deepcopy(second)
+        third["object_id"] = "object_c"
+        metadata["simulation"]["objects"].append(third)
+        metadata["object_identity"]["objects"].append(
+            {"object_id": "object_c", "role": "dynamic"}
+        )
+        with self.assertRaisesRegex(ValueError, "does not support 3"):
             compile_resolved_scene(metadata, Path("."))
 
     def test_non_finite_material_is_rejected(self):

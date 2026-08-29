@@ -208,7 +208,7 @@ def _generic_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
             "backend_id": "pybullet_rigid",
             "adapter_id": "generic_rigid_v1",
             "capability": "rigid_objects_with_analytic_or_exact_static_support",
-            "supported_dynamic_object_counts": [1],
+            "supported_dynamic_object_counts": [1, 2],
         },
         "time": copy.deepcopy(simulation["time"]),
         "world": copy.deepcopy(simulation["world"]),

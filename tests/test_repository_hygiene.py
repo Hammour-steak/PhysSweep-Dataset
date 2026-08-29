@@ -334,12 +334,7 @@ class RepositoryHygieneTest(unittest.TestCase):
 
     def test_object_count_boundaries_are_explicit(self) -> None:
         adapters = (
-            "tools/physics/rigid_trajectory.py",
-            "tools/physics/simulate_pybullet_rigid.py",
             "tools/assets/environment_collision.py",
-            "tools/rendering/bind_pybullet_visuals.py",
-            "tools/rendering/camera_solver.py",
-            "tools/rendering/render_pybullet_rigid.py",
             "tools/training_export/export_gt_initial_surface.py",
         )
         for relative in adapters:
@@ -356,6 +351,28 @@ class RepositoryHygieneTest(unittest.TestCase):
                     )
                 ]
                 self.assertEqual(declarations, [(1,)])
+
+        two_object_adapters = (
+            "tools/physics/rigid_trajectory.py",
+            "tools/physics/simulate_pybullet_rigid.py",
+            "tools/rendering/bind_pybullet_visuals.py",
+            "tools/rendering/camera_solver.py",
+            "tools/rendering/render_pybullet_rigid.py",
+        )
+        for relative in two_object_adapters:
+            with self.subTest(module=relative):
+                tree = ast.parse((ROOT / relative).read_text(encoding="utf-8"))
+                declarations = [
+                    ast.literal_eval(node.value)
+                    for node in tree.body
+                    if isinstance(node, ast.Assign)
+                    and any(
+                        isinstance(target, ast.Name)
+                        and target.id == "SUPPORTED_DYNAMIC_OBJECT_COUNTS"
+                        for target in node.targets
+                    )
+                ]
+                self.assertEqual(declarations, [(1, 2)])
 
         validation = ast.parse(
             (ROOT / "tools/release/sweep_validation.py").read_text(

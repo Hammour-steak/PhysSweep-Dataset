@@ -33,7 +33,7 @@ from tools.assets.environment_collision import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1,)
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2)
 
 
 def create_box_body(pb: Any, collider: dict[str, Any]) -> int:
@@ -133,6 +133,7 @@ def capture_frame(
             contact_interval["maximum_coulomb_friction_utilization"]
         ),
         "collider_contact_counts": dict(contact_interval["collider_contact_counts"]),
+        "object_contact_counts": dict(contact_interval["object_contact_counts"]),
     }
 
 
@@ -142,14 +143,22 @@ def contact_interval_record(
     static_bodies: dict[str, int],
     dynamic_friction: float,
     static_friction_by_body: dict[int, float],
+    other_dynamic_bodies: dict[str, int],
+    dynamic_friction_by_body: dict[int, float],
 ) -> dict[str, Any]:
     contacts = list(pb.getContactPoints(bodyA=body))
     collider_ids = {body_id: collider_id for collider_id, body_id in static_bodies.items()}
     collider_contact_counts = {collider_id: 0 for collider_id in static_bodies}
+    object_ids = {body_id: object_id for object_id, body_id in other_dynamic_bodies.items()}
+    object_contact_counts = {object_id: 0 for object_id in other_dynamic_bodies}
     for record in contacts:
-        collider_id = collider_ids.get(int(record[2]))
+        other_body = int(record[2])
+        collider_id = collider_ids.get(other_body)
         if collider_id is not None:
             collider_contact_counts[collider_id] += 1
+        other_object_id = object_ids.get(other_body)
+        if other_object_id is not None:
+            object_contact_counts[other_object_id] += 1
     distances = [float(record[8]) for record in contacts]
     forces = [float(record[9]) for record in contacts]
     return {
@@ -158,13 +167,18 @@ def contact_interval_record(
         "minimum_contact_distance_m": min(distances) if distances else 0.0,
         "total_normal_force_n": sum(forces),
         "maximum_coulomb_friction_utilization": maximum_coulomb_utilization(
-            contacts, dynamic_friction, static_friction_by_body
+            contacts,
+            dynamic_friction,
+            {**static_friction_by_body, **dynamic_friction_by_body},
         ),
         "collider_contact_counts": collider_contact_counts,
+        "object_contact_counts": object_contact_counts,
     }
 
 
-def empty_contact_interval(static_bodies: dict[str, int]) -> dict[str, Any]:
+def empty_contact_interval(
+    static_bodies: dict[str, int], other_dynamic_bodies: dict[str, int]
+) -> dict[str, Any]:
     return {
         "primary_support_contact_count": 0,
         "all_contact_count": 0,
@@ -173,6 +187,9 @@ def empty_contact_interval(static_bodies: dict[str, int]) -> dict[str, Any]:
         "maximum_coulomb_friction_utilization": 0.0,
         "collider_contact_counts": {
             collider_id: 0 for collider_id in static_bodies
+        },
+        "object_contact_counts": {
+            object_id: 0 for object_id in other_dynamic_bodies
         },
     }
 
@@ -204,6 +221,10 @@ def merge_contact_intervals(target: dict[str, Any], source: dict[str, Any]) -> N
         target["collider_contact_counts"][collider_id] = max(
             int(target["collider_contact_counts"][collider_id]), int(count)
         )
+    for object_id, count in source["object_contact_counts"].items():
+        target["object_contact_counts"][object_id] = max(
+            int(target["object_contact_counts"][object_id]), int(count)
+        )
 
 
 def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
@@ -216,9 +237,8 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
     objects = require_simulation_objects(
         metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
     )
-    if objects[0]["body_model"] != "rigid_body":
-        raise ValueError("PyBullet rigid v1 requires exactly one rigid body")
-    obj = objects[0]
+    if any(obj["body_model"] != "rigid_body" for obj in objects):
+        raise ValueError("PyBullet rigid v1 requires rigid-body objects")
 
     simulation = metadata["simulation"]
     time_config = simulation["time"]
@@ -227,13 +247,14 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
     if nominal_simulation_hz % output_fps != 0:
         raise ValueError("simulation_hz must be divisible by output_fps")
     exact_static_binding = simulation["support"].get("exact_static_binding")
-    contact_mode = str(
-        obj.get("expected_motion", {}).get("contact_mode", "")
-    )
+    contact_modes = {
+        str(obj.get("expected_motion", {}).get("contact_mode", ""))
+        for obj in objects
+    }
     # Concave static meshes need a finer step only during ballistic impact.
     integration_substep_factor = (
         2
-        if exact_static_binding is not None and contact_mode == "ballistic_then_contact"
+        if exact_static_binding is not None and "ballistic_then_contact" in contact_modes
         else 1
     )
     simulation_hz = nominal_simulation_hz * integration_substep_factor
@@ -320,22 +341,42 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
             )
             static_bodies[collider_id] = environment_body
             static_friction_by_body[environment_body] = support_friction
-        dynamic = objects[0]
-        object_id = str(dynamic["object_id"])
-        body = create_dynamic_body(pb, dynamic)
-        dynamics_info = pb.getDynamicsInfo(body, -1)
-        runtime_proxy = runtime_collision_descriptors(pb, body)
-        runtime_dynamics = np.asarray(
-            [
-                dynamics_info[0],
-                dynamics_info[1],
-                dynamics_info[5],
-                dynamics_info[6],
-                dynamics_info[7],
-            ],
-            dtype=np.float64,
-        )
-        runtime_inertia = np.asarray(dynamics_info[2], dtype=np.float64)
+        object_by_id = {str(obj["object_id"]): obj for obj in objects}
+        if len(object_by_id) != len(objects):
+            raise ValueError("dynamic object ids must be unique")
+        dynamic_bodies = {
+            object_id: create_dynamic_body(pb, obj)
+            for object_id, obj in object_by_id.items()
+        }
+        other_dynamic_bodies_by_object = {
+            object_id: {
+                other_id: other_body
+                for other_id, other_body in dynamic_bodies.items()
+                if other_id != object_id
+            }
+            for object_id in dynamic_bodies
+        }
+        dynamic_friction_by_body = {
+            dynamic_bodies[object_id]: float(obj["material"]["contact_friction"])
+            for object_id, obj in object_by_id.items()
+        }
+        runtime_by_object: dict[str, dict[str, Any]] = {}
+        for object_id, body in dynamic_bodies.items():
+            dynamics_info = pb.getDynamicsInfo(body, -1)
+            runtime_by_object[object_id] = {
+                "proxy": runtime_collision_descriptors(pb, body),
+                "dynamics": np.asarray(
+                    [
+                        dynamics_info[0],
+                        dynamics_info[1],
+                        dynamics_info[5],
+                        dynamics_info[6],
+                        dynamics_info[7],
+                    ],
+                    dtype=np.float64,
+                ),
+                "inertia": np.asarray(dynamics_info[2], dtype=np.float64),
+            }
         runtime_support_dynamics = np.asarray(
             [
                 [
@@ -346,62 +387,82 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
             ],
             dtype=np.float64,
         )
-        records: list[dict[str, Any]] = []
+        records_by_object: dict[str, list[dict[str, Any]]] = {
+            object_id: [] for object_id in object_by_id
+        }
         pb.performCollisionDetection()
         initial_environment_contacts = [
             contact
+            for body in dynamic_bodies.values()
             for environment_body in environment_bodies.values()
             for contact in pb.getContactPoints(bodyA=body, bodyB=environment_body)
+        ]
+        dynamic_body_items = list(dynamic_bodies.items())
+        initial_object_contacts = [
+            contact
+            for index, (_, body_a) in enumerate(dynamic_body_items)
+            for _, body_b in dynamic_body_items[index + 1 :]
+            for contact in pb.getContactPoints(bodyA=body_a, bodyB=body_b)
         ]
         maximum_initial_penetration = float(
             metadata["qa"]["limits"]["maximum_initial_penetration_m"]
         )
         if any(
             float(contact[8]) < -maximum_initial_penetration
-            for contact in initial_environment_contacts
+            for contact in initial_environment_contacts + initial_object_contacts
         ):
-            raise ValueError("dynamic object initially penetrates the environment proxy")
-        initial_interval = empty_contact_interval(static_bodies)
-        merge_contact_intervals(
-            initial_interval,
-            contact_interval_record(
-                pb,
-                body,
-                static_bodies,
-                float(dynamic["material"]["contact_friction"]),
-                static_friction_by_body,
-            ),
-        )
-        records.append(capture_frame(pb, body, initial_interval))
+            raise ValueError("dynamic objects initially penetrate another collision body")
+        for object_id, body in dynamic_bodies.items():
+            other_bodies = other_dynamic_bodies_by_object[object_id]
+            initial_interval = empty_contact_interval(static_bodies, other_bodies)
+            merge_contact_intervals(
+                initial_interval,
+                contact_interval_record(
+                    pb,
+                    body,
+                    static_bodies,
+                    float(object_by_id[object_id]["material"]["contact_friction"]),
+                    static_friction_by_body,
+                    other_bodies,
+                    dynamic_friction_by_body,
+                ),
+            )
+            records_by_object[object_id].append(
+                capture_frame(pb, body, initial_interval)
+            )
         for _frame in range(1, frame_count):
-            interval = empty_contact_interval(static_bodies)
+            intervals = {
+                object_id: empty_contact_interval(
+                    static_bodies, other_dynamic_bodies_by_object[object_id]
+                )
+                for object_id in dynamic_bodies
+            }
             for _ in range(steps_per_frame):
                 pb.stepSimulation()
-                merge_contact_intervals(
-                    interval,
-                    contact_interval_record(
-                        pb,
-                        body,
-                        static_bodies,
-                        float(dynamic["material"]["contact_friction"]),
-                        static_friction_by_body,
-                    ),
+                for object_id, body in dynamic_bodies.items():
+                    merge_contact_intervals(
+                        intervals[object_id],
+                        contact_interval_record(
+                            pb,
+                            body,
+                            static_bodies,
+                            float(
+                                object_by_id[object_id]["material"]["contact_friction"]
+                            ),
+                            static_friction_by_body,
+                            other_dynamic_bodies_by_object[object_id],
+                            dynamic_friction_by_body,
+                        ),
+                    )
+            for object_id, body in dynamic_bodies.items():
+                records_by_object[object_id].append(
+                    capture_frame(pb, body, intervals[object_id])
                 )
-            records.append(capture_frame(pb, body, interval))
     finally:
         pb.disconnect(client)
 
     trajectory: dict[str, np.ndarray] = {
         "time_s": np.arange(frame_count, dtype=np.float64) / float(output_fps),
-        f"{object_id}__runtime_dynamics": runtime_dynamics,
-        f"{object_id}__runtime_inertia_diagonal_kg_m2": runtime_inertia,
-        f"{object_id}__runtime_support_dynamics": runtime_support_dynamics,
-        f"{object_id}__runtime_proxy_shape_codes": runtime_proxy["shape_codes"],
-        f"{object_id}__runtime_proxy_dimensions_m": runtime_proxy["dimensions_m"],
-        f"{object_id}__runtime_proxy_positions_m": runtime_proxy["positions_m"],
-        f"{object_id}__runtime_proxy_quaternions_xyzw": runtime_proxy[
-            "quaternions_xyzw"
-        ],
     }
     vector_keys = (
         "position_m",
@@ -417,23 +478,58 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
         "maximum_coulomb_friction_utilization",
     )
     scalar_int_keys = ("primary_support_contact_count", "all_contact_count")
-    for key in vector_keys:
-        trajectory[f"{object_id}__{key}"] = np.asarray(
-            [record[key] for record in records], dtype=np.float64
-        )
-    for key in scalar_float_keys:
-        trajectory[f"{object_id}__{key}"] = np.asarray(
-            [record[key] for record in records], dtype=np.float64
-        )
-    for key in scalar_int_keys:
-        trajectory[f"{object_id}__{key}"] = np.asarray(
-            [record[key] for record in records], dtype=np.int32
-        )
-    for collider_id in static_bodies:
-        trajectory[f"{object_id}__collider_contact_count__{collider_id}"] = np.asarray(
-            [record["collider_contact_counts"][collider_id] for record in records],
-            dtype=np.int32,
-        )
+    for object_id in object_by_id:
+        runtime = runtime_by_object[object_id]
+        runtime_proxy = runtime["proxy"]
+        trajectory[f"{object_id}__runtime_dynamics"] = runtime["dynamics"]
+        trajectory[f"{object_id}__runtime_inertia_diagonal_kg_m2"] = runtime[
+            "inertia"
+        ]
+        trajectory[f"{object_id}__runtime_support_dynamics"] = runtime_support_dynamics
+        trajectory[f"{object_id}__runtime_proxy_shape_codes"] = runtime_proxy[
+            "shape_codes"
+        ]
+        trajectory[f"{object_id}__runtime_proxy_dimensions_m"] = runtime_proxy[
+            "dimensions_m"
+        ]
+        trajectory[f"{object_id}__runtime_proxy_positions_m"] = runtime_proxy[
+            "positions_m"
+        ]
+        trajectory[f"{object_id}__runtime_proxy_quaternions_xyzw"] = runtime_proxy[
+            "quaternions_xyzw"
+        ]
+        records = records_by_object[object_id]
+        for key in vector_keys:
+            trajectory[f"{object_id}__{key}"] = np.asarray(
+                [record[key] for record in records], dtype=np.float64
+            )
+        for key in scalar_float_keys:
+            trajectory[f"{object_id}__{key}"] = np.asarray(
+                [record[key] for record in records], dtype=np.float64
+            )
+        for key in scalar_int_keys:
+            trajectory[f"{object_id}__{key}"] = np.asarray(
+                [record[key] for record in records], dtype=np.int32
+            )
+        for collider_id in static_bodies:
+            trajectory[
+                f"{object_id}__collider_contact_count__{collider_id}"
+            ] = np.asarray(
+                [record["collider_contact_counts"][collider_id] for record in records],
+                dtype=np.int32,
+            )
+        for other_object_id in object_by_id:
+            if other_object_id == object_id:
+                continue
+            trajectory[
+                f"{object_id}__object_contact_count__{other_object_id}"
+            ] = np.asarray(
+                [
+                    record["object_contact_counts"][other_object_id]
+                    for record in records
+                ],
+                dtype=np.int32,
+            )
     validate_trajectory_contract(metadata, trajectory)
     audit = audit_trajectory(metadata, trajectory)
     return trajectory, audit

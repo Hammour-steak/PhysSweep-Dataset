@@ -27,7 +27,7 @@ from tools.core.blender_runtime import blender_argv, clear_blender_scene
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
 from tools.dataset_contract.object_identity_contract import (
-    require_single_simulation_object,
+    require_simulation_objects,
 )
 from tools.rendering import render_sketchfab_background_compositions as composition
 from tools.rendering.appearance_adaptation import (
@@ -39,7 +39,7 @@ from tools.assets.static_support_proxy import blender_import_static_support_visu
 from tools.rendering.video_encoding import configure_h264_output, normalize_h264_container
 from tools.dataset_contract.trajectory_contract import object_trajectory_view
 
-SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1,)
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2)
 
 
 def configure_project_root(root: Path) -> Path:
@@ -323,8 +323,14 @@ def _create_dynamic_mesh(record: dict[str, Any], material: Any) -> Any:
     obj["physweep_source_animation_baked_frame"] = 0
     obj["physweep_collision_extent_m"] = target.tolist()
     obj["physweep_visual_extent_m"] = predicted.tolist()
-    if not obj.data.materials:
+    material_policy = str(profile.get("material_policy", "source_or_bound_fallback"))
+    if material_policy == "bound_role_override":
+        obj.data.materials.clear()
         obj.data.materials.append(material)
+    elif material_policy == "source_or_bound_fallback" and not obj.data.materials:
+        obj.data.materials.append(material)
+    elif material_policy != "source_or_bound_fallback":
+        raise ValueError(f"unsupported dynamic material policy: {material_policy}")
     return obj
 
 
@@ -764,47 +770,77 @@ def build_static_scene(
     add_area_light("key_area", visual["environment"]["key_light"])
     add_area_light("fill_area", visual["environment"]["fill_light"])
     apply_hdri(visual["hdri"])
-    record = require_single_simulation_object(metadata, __name__)
-    dynamic_size = record["geometry"]["size_m"]
+    records = require_simulation_objects(
+        metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
+    )
+    dynamic_bindings = material_bindings.get("dynamic_objects")
+    if len(records) == 1:
+        dynamic_bindings = {
+            str(records[0]["object_id"]): material_bindings["dynamic_object"]
+        }
+    if not isinstance(dynamic_bindings, dict):
+        raise ValueError("multi-object render metadata lacks dynamic object materials")
+    expected_ids = [str(record["object_id"]) for record in records]
+    if list(dynamic_bindings) != expected_ids:
+        raise ValueError("dynamic material order differs from simulation objects")
+    dynamic_materials = {
+        object_id: material_from_binding(
+            f"physweep_dynamic_{object_id}",
+            dynamic_bindings[object_id],
+            [
+                float(value)
+                for value in records[index]["geometry"]["size_m"]
+            ],
+        )
+        for index, object_id in enumerate(expected_ids)
+    }
     return {
-        "dynamic_object": material_from_binding(
-            "physweep_dynamic_object",
-            material_bindings["dynamic_object"],
-            [float(value) for value in dynamic_size],
-        ),
+        "dynamic_objects": dynamic_materials,
         "support_objects": support_objects,
     }
 
 
 def add_dynamic_animation(
-    metadata: dict[str, Any], trajectory: dict[str, np.ndarray], material: Any
-) -> Any:
-    record = require_single_simulation_object(metadata, __name__)
-    object_id = str(record["object_id"])
-    positions = np.asarray(trajectory[f"{object_id}__position_m"], dtype=np.float64)
-    quaternions = np.asarray(
-        trajectory[f"{object_id}__quaternion_wxyz"], dtype=np.float64
+    metadata: dict[str, Any],
+    trajectory: dict[str, np.ndarray],
+    materials: dict[str, Any],
+) -> list[Any]:
+    records = require_simulation_objects(
+        metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
     )
-    obj = create_dynamic_primitive(record, material)
     object_identity = metadata.get("object_identity", {})
     mask_records = object_identity.get("instance_masks", {}).get("objects", {})
-    mask_record = mask_records.get(object_id, {})
-    obj.pass_index = int(mask_record.get("instance_id", 1))
-    obj["physweep_object_id"] = object_id
-    obj["physweep_mask_instance_id"] = obj.pass_index
-    obj.rotation_mode = "QUATERNION"
     frame_start = int(metadata["visualization"]["render"]["frame_start"])
-    for index, (position, quaternion) in enumerate(zip(positions, quaternions)):
-        frame = frame_start + index
-        obj.location = tuple(float(value) for value in position)
-        obj.rotation_quaternion = tuple(float(value) for value in quaternion)
-        obj.keyframe_insert(data_path="location", frame=frame)
-        obj.keyframe_insert(data_path="rotation_quaternion", frame=frame)
-    if obj.animation_data and obj.animation_data.action:
-        for curve in obj.animation_data.action.fcurves:
-            for point in curve.keyframe_points:
-                point.interpolation = "LINEAR"
-    return obj
+    dynamic_objects = []
+    for record in records:
+        object_id = str(record["object_id"])
+        if object_id not in materials:
+            raise ValueError(f"missing dynamic material for {object_id}")
+        positions = np.asarray(
+            trajectory[f"{object_id}__position_m"], dtype=np.float64
+        )
+        quaternions = np.asarray(
+            trajectory[f"{object_id}__quaternion_wxyz"], dtype=np.float64
+        )
+        obj = create_dynamic_primitive(record, materials[object_id])
+        obj.name = f"dynamic_{object_id}"
+        mask_record = mask_records.get(object_id, {})
+        obj.pass_index = int(mask_record.get("instance_id", len(dynamic_objects) + 1))
+        obj["physweep_object_id"] = object_id
+        obj["physweep_mask_instance_id"] = obj.pass_index
+        obj.rotation_mode = "QUATERNION"
+        for index, (position, quaternion) in enumerate(zip(positions, quaternions)):
+            frame = frame_start + index
+            obj.location = tuple(float(value) for value in position)
+            obj.rotation_quaternion = tuple(float(value) for value in quaternion)
+            obj.keyframe_insert(data_path="location", frame=frame)
+            obj.keyframe_insert(data_path="rotation_quaternion", frame=frame)
+        if obj.animation_data and obj.animation_data.action:
+            for curve in obj.animation_data.action.fcurves:
+                for point in curve.keyframe_points:
+                    point.interpolation = "LINEAR"
+        dynamic_objects.append(obj)
+    return dynamic_objects
 
 
 def validate_instance_mask_output(
@@ -868,16 +904,15 @@ def validate_instance_mask_output(
 
 
 def render_unoccluded_instance_masks(
-    render: dict[str, Any], metadata: dict[str, Any], dynamic: Any
+    render: dict[str, Any], metadata: dict[str, Any], dynamic_objects: list[Any]
 ) -> dict[str, Any]:
     """Render a conservative silhouette tube using the bound camera and trajectory."""
     mask_dir = resolve_project_path(str(render["instance_mask_dir"]))
-    record = require_single_simulation_object(metadata, __name__)
-    object_id = str(record["object_id"])
-    object_dir = mask_dir / object_id
-    object_dir.mkdir(parents=True, exist_ok=True)
-    for stale_mask in object_dir.glob("frame_*.png"):
-        stale_mask.unlink()
+    records = require_simulation_objects(
+        metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
+    )
+    if len(records) != len(dynamic_objects):
+        raise ValueError("dynamic render objects differ from simulation objects")
     scene = bpy.context.scene
     scene.render.use_compositing = False
     scene.use_nodes = False
@@ -887,9 +922,6 @@ def render_unoccluded_instance_masks(
     scene.render.image_settings.color_depth = "8"
     if scene.render.engine == "BLENDER_EEVEE":
         scene.eevee.taa_render_samples = 1
-    for obj in scene.objects:
-        if obj.type in {"MESH", "CURVE", "SURFACE", "META", "FONT"}:
-            obj.hide_render = obj != dynamic
     material = bpy.data.materials.new("physweep_motion_mask")
     material.use_nodes = True
     nodes = material.node_tree.nodes
@@ -900,23 +932,32 @@ def render_unoccluded_instance_masks(
     emission.inputs["Strength"].default_value = 1.0
     output = nodes.new("ShaderNodeOutputMaterial")
     links.new(emission.outputs["Emission"], output.inputs["Surface"])
-    dynamic.data.materials.clear()
-    dynamic.data.materials.append(material)
-    scene.render.filepath = str(object_dir / "frame_")
-    scene.frame_set(int(render["frame_start"]))
-    bpy.ops.render.render(animation=True)
+    object_outputs = {}
+    for record, dynamic in zip(records, dynamic_objects):
+        object_id = str(record["object_id"])
+        object_dir = mask_dir / object_id
+        object_dir.mkdir(parents=True, exist_ok=True)
+        for stale_mask in object_dir.glob("frame_*.png"):
+            stale_mask.unlink()
+        for obj in scene.objects:
+            if obj.type in {"MESH", "CURVE", "SURFACE", "META", "FONT"}:
+                obj.hide_render = obj != dynamic
+        dynamic.data.materials.clear()
+        dynamic.data.materials.append(material)
+        scene.render.filepath = str(object_dir / "frame_")
+        scene.frame_set(int(render["frame_start"]))
+        bpy.ops.render.render(animation=True)
+        object_outputs[object_id] = {
+            "instance_id": int(dynamic.pass_index),
+            "directory": str(object_dir),
+        }
     return {
         "encoding": "rgba_alpha_antialiased_silhouette_mask",
         "occlusion_policy": "unoccluded_dynamic_silhouette",
         "path_layout": "object_id_subdirectories",
         "directory": str(mask_dir),
         "filename_pattern": "frame_{frame:04d}.png",
-        "objects": {
-            object_id: {
-                "instance_id": int(dynamic.pass_index),
-                "directory": str(object_dir),
-            }
-        },
+        "objects": object_outputs,
     }
 
 
@@ -1071,13 +1112,15 @@ def render(
     clear_blender_scene(("meshes", "curves", "materials", "cameras", "lights"))
     setup_scene(render_config)
     materials = build_static_scene(metadata, visual)
-    dynamic = add_dynamic_animation(metadata, trajectory, materials["dynamic_object"])
-    if dynamic is None:
-        raise RuntimeError("dynamic object was not created")
+    dynamic_objects = add_dynamic_animation(
+        metadata, trajectory, materials["dynamic_objects"]
+    )
+    if not dynamic_objects:
+        raise RuntimeError("dynamic objects were not created")
     if mask_only:
         scene = bpy.context.scene
         instance_mask_output = render_unoccluded_instance_masks(
-            render_config, metadata, dynamic
+            render_config, metadata, dynamic_objects
         )
         instance_mask_output["validation"] = validate_instance_mask_output(
             instance_mask_output,
@@ -1122,7 +1165,7 @@ def render(
         return record
     lighting_adaptation = apply_material_lightness_adaptation(
         bpy.context.scene,
-        [dynamic],
+        dynamic_objects,
         materials["support_objects"],
     )
     if first_frame_only:
@@ -1142,7 +1185,7 @@ def render(
         normalize_h264_container(video_path)
         video_sha = sha256(video_path)
         instance_mask_output = render_unoccluded_instance_masks(
-            render_config, metadata, dynamic
+            render_config, metadata, dynamic_objects
         )
         mask_validation = validate_instance_mask_output(
             instance_mask_output,

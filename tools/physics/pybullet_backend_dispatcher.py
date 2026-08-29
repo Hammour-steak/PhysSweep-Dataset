@@ -104,7 +104,11 @@ def _generic(scene: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str, An
         if "__" not in key:
             continue
         suffix = key.split("__", 1)[1]
-        if suffix in render_suffixes or suffix.startswith("collider_contact_count__"):
+        if (
+            suffix in render_suffixes
+            or suffix.startswith("collider_contact_count__")
+            or suffix.startswith("object_contact_count__")
+        ):
             normalized[f"adapter__{key}"] = value
     return normalized, audit
 

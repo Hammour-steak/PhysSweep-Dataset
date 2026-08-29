@@ -16,7 +16,7 @@ from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic as write_json
 from tools.dataset_contract.object_identity_contract import (
     attach_object_identity,
-    require_single_simulation_object,
+    require_simulation_objects,
 )
 
 from tools.assets.environment_collision import validate_environment_binding
@@ -25,15 +25,20 @@ from tools.dataset_contract.trajectory_contract import object_trajectory_view
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 ACTIVE_RULES_PATH = PROJECT_ROOT / "configs/one_object_sampling_rules.json"
-SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1,)
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2)
 
 from tools.rendering.camera_solver import solve_camera
 
 def shadow_readable_lighting(metadata: dict[str, Any]) -> dict[str, Any]:
-    obj = require_single_simulation_object(metadata, __name__)
-    object_size = np.asarray(obj["geometry"]["size_m"], dtype=np.float64)
-    footprint_m = float(max(object_size[0], object_size[1]))
-    thickness_m = float(min(object_size))
+    objects = require_simulation_objects(
+        metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
+    )
+    object_sizes = [
+        np.asarray(obj["geometry"]["size_m"], dtype=np.float64)
+        for obj in objects
+    ]
+    footprint_m = max(float(max(size[0], size[1])) for size in object_sizes)
+    thickness_m = min(float(min(size)) for size in object_sizes)
     key_size_m = float(np.clip(4.5 * footprint_m, 0.95, 1.60))
     key_energy_w = min(460.0, 160.0 * key_size_m**2)
     fill_energy_w = min(55.0, 0.18 * key_energy_w)

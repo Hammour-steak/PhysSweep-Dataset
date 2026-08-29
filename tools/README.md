@@ -12,8 +12,9 @@ Asset download, conversion, and proxy-building tools additionally require
 - `assets`: acquisition, curation, proxies, and static scene assets.
 - `core`: object-count-neutral I/O, hashing, path, rigid, and camera geometry.
 - `sampling`: base selection, sweep derivation, and deterministic resampling.
-- `motion_rules/one_object`: 1obj motion, audit, and support-geometry policy;
-  2obj rules belong in a parallel `motion_rules/two_object` package.
+- `motion_rules/one_object`: 1obj motion, audit, and support-geometry policy.
+- `motion_rules/two_object`: interaction-specific 2obj audits; currently the
+  deterministic two-sphere collision reference rule.
 - `physics`: simulation, geometry, trajectory audits, and specialized backends.
 - `rendering`: visual binding, Blender rendering, video encoding, and visual QA.
 - `dataset_contract`: source and published dataset schemas, identity, and physical
@@ -27,11 +28,11 @@ Asset download, conversion, and proxy-building tools additionally require
 The `tools` root contains no executable modules. Core geometry has no motion-name
 branches. Object identity, dense trajectories, source release validation,
 release layout, and per-target sweep grouping are object-count aware: a base has
-`1 + 12 * object_count` source records. The active generic simulator, trajectory
-auditor, environment binder, camera solver, Blender renderer, and GT exporter
-still declare `(1,)`; 2obj development must add real adapters rather than route
-two objects through them. Sampling may call physics backends, but physics and
-release modules never import samplers. Training exports consume releases only.
+`1 + 12 * object_count` source records. The generic simulator, trajectory
+auditor, camera solver, visual binder, and Blender renderer declare `(1, 2)`.
+Environment collision generation and the training GT exporter remain explicitly
+1obj. Sampling may call physics backends, but physics and release modules never
+import samplers. Training exports consume releases only.
 
 ## Entry Points
 
@@ -80,6 +81,28 @@ Sampling freezes object, support, environment, camera request, materials, and
 all physical parameters. Simulation consumes that metadata and writes a hashed
 trajectory. Visual binding solves the camera but reuses the already frozen
 environment visual/collision pose.
+
+## Two-object Reference Slice
+
+The bounded 2obj development entry point reuses one reviewed 1obj sphere scene
+as a frozen asset, support, environment, and render template. It creates two
+ordered identities, a declared pair collision, and one-factor sweeps for both
+targets. It is a reference slice, not a production 2obj dataset generator.
+
+```bash
+.venv/bin/python -m tools.sampling.sample_two_object_base \
+  --template <reviewed-sphere-metadata.json> \
+  --config configs/two_object_sampling.json \
+  --output outputs/two_object_smoke/base/metadata.json
+
+.venv/bin/python -m tools.sampling.derive_physics_sweep \
+  --base outputs/two_object_smoke/base/metadata.json \
+  --output-dir outputs/two_object_smoke/sweep
+```
+
+The current slice yields one base plus 24 derived records. The shared generic
+physics, camera, render, identity, canonical trajectory, and release packaging
+paths consume both objects; per-object masks use `masks/<object_id>/`.
 
 ## Render Staging
 
