@@ -612,16 +612,24 @@ def collect_inputs(
     if base_manifest is not None:
         base_manifest = under_root(base_manifest)
         manifest = load_json(base_manifest)
-        records = manifest.get("records")
-        if not isinstance(records, list):
-            raise ValueError("base manifest has no records list")
-        declared_count = int(manifest.get("sample_count", len(records)))
-        if declared_count != len(records):
-            raise ValueError("base manifest sample count does not match records")
-        for record in records:
-            metadata_path = record.get("metadata_path")
+        schema = str(manifest.get("schema_version", ""))
+        entry_key = (
+            "samples"
+            if schema == "physweep_pybullet_base_manifest_v1"
+            else "records"
+        )
+        entries = manifest.get(entry_key)
+        if not isinstance(entries, list):
+            raise ValueError(f"base manifest has no {entry_key} list")
+        declared_count = int(manifest.get("sample_count", len(entries)))
+        if declared_count != len(entries):
+            raise ValueError(
+                f"base manifest sample count does not match {entry_key}"
+            )
+        for entry in entries:
+            metadata_path = entry.get("metadata_path")
             if not metadata_path:
-                raise ValueError("base manifest record has no metadata_path")
+                raise ValueError("base manifest entry has no metadata_path")
             paths.append(root / str(metadata_path))
     if base:
         paths.extend(under_root(path) for path in base)

@@ -177,6 +177,29 @@ class PhysicsSweepTests(unittest.TestCase):
             inputs = collect_inputs(root, None, None, manifest)
         self.assertEqual(inputs, sorted([first.resolve(), second.resolve()]))
 
+    def test_sampler_base_manifest_uses_declared_samples(self):
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory(dir=root) as temp:
+            temp_path = Path(temp)
+            metadata = temp_path / "scene" / "metadata.json"
+            metadata.parent.mkdir(parents=True)
+            metadata.write_text("{}", encoding="utf-8")
+            manifest = temp_path / "manifest.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "physweep_pybullet_base_manifest_v1",
+                        "sample_count": 1,
+                        "samples": [
+                            {"metadata_path": str(metadata.relative_to(root))}
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            inputs = collect_inputs(root, None, None, manifest)
+        self.assertEqual(inputs, [metadata.resolve()])
+
     def test_manifest_input_cannot_be_mixed_with_directory_scanning(self):
         root = Path(__file__).resolve().parents[1]
         with self.assertRaisesRegex(ValueError, "not both"):

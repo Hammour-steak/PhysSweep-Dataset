@@ -1,0 +1,140 @@
+{
+  "schema_version": "physweep_two_object_sampling_matrix_v1",
+  "object_pair": {
+    "schema_version": "physweep_object_pair_v1",
+    "roles": [
+      {
+        "object_id": "object_a",
+        "semantic_label": "red sphere",
+        "semantic_color_srgb": [0.82, 0.18, 0.12, 1.0]
+      },
+      {
+        "object_id": "object_b",
+        "semantic_label": "blue sphere",
+        "semantic_color_srgb": [0.10, 0.32, 0.86, 1.0]
+      }
+    ]
+  },
+  "shared_physics": {
+    "schema_version": "physweep_two_object_shared_physics_v1",
+    "contact_friction": 0.04,
+    "contact_restitution": 0.65,
+    "minimum_support_contact_fraction": 0.60,
+    "interaction_audit": {
+      "minimum_initial_clearance_m": 0.08,
+      "minimum_pre_contact_closing_speed_m_s": 0.18,
+      "maximum_first_contact_time_s": 1.25
+    }
+  },
+  "pair_observation": {
+    "maximum_camera_side_deviation_degrees": 8.0,
+    "minimum_collision_projected_separation_to_span_ratio": 0.65
+  },
+  "motion_intents": [
+    {
+      "id": "surface_hit_rest_2obj",
+      "interaction_class": "interacting",
+      "kinematic_regime": "supported_supported",
+      "layout": "planned_supported_contact",
+      "object_motions": ["roll_or_slide_1obj", "rest"],
+      "linear_velocity_m_s": [[0.72, 0.0, 0.0], [0.0, 0.0, 0.0]],
+      "minimum_displacement_m": [0.18, 0.0],
+      "contact_time_s": 0.72,
+      "impact_offset_ratio": 0.0
+    },
+    {
+      "id": "surface_head_on_2obj",
+      "interaction_class": "interacting",
+      "kinematic_regime": "supported_supported",
+      "layout": "planned_supported_contact",
+      "object_motions": ["roll_or_slide_1obj", "roll_or_slide_1obj"],
+      "linear_velocity_m_s": [[0.72, 0.0, 0.0], [-0.12, 0.0, 0.0]],
+      "minimum_displacement_m": [0.18, 0.06],
+      "contact_time_s": 0.619048,
+      "impact_offset_ratio": 0.0
+    },
+    {
+      "id": "surface_crossing_2obj",
+      "interaction_class": "interacting",
+      "kinematic_regime": "supported_supported",
+      "layout": "planned_supported_contact",
+      "object_motions": ["roll_or_slide_1obj", "roll_or_slide_1obj"],
+      "linear_velocity_m_s": [[0.60, 0.0, 0.0], [0.0, -0.55, 0.0]],
+      "minimum_displacement_m": [0.16, 0.14],
+      "contact_time_s": 0.65,
+      "impact_offset_ratio": 0.30
+    },
+    {
+      "id": "surface_catch_up_2obj",
+      "interaction_class": "interacting",
+      "kinematic_regime": "supported_supported",
+      "layout": "planned_supported_contact",
+      "object_motions": ["roll_or_slide_1obj", "roll_or_slide_1obj"],
+      "linear_velocity_m_s": [[0.85, 0.0, 0.0], [0.26, 0.0, 0.0]],
+      "minimum_displacement_m": [0.20, 0.10],
+      "contact_time_s": 0.75,
+      "impact_offset_ratio": 0.0
+    },
+    {
+      "id": "air_drop_hit_supported_2obj",
+      "interaction_class": "interacting",
+      "kinematic_regime": "airborne_supported",
+      "layout": "vertical_airborne_contact",
+      "object_motions": ["drop_fall_1obj", "rest"],
+      "linear_velocity_m_s": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+      "minimum_displacement_m": [0.35, 0.0],
+      "airborne_surface_gap_m": 0.52
+    },
+    {
+      "id": "air_projectile_hit_supported_2obj",
+      "interaction_class": "interacting",
+      "kinematic_regime": "airborne_supported",
+      "layout": "ballistic_airborne_contact",
+      "object_motions": ["arc_projectile_1obj", "rest"],
+      "linear_velocity_m_s": [[0.80, 0.0, 0.50], [0.0, 0.0, 0.0]],
+      "minimum_displacement_m": [0.35, 0.0],
+      "contact_time_s": 0.20,
+      "contact_elevation_degrees": 12.0
+    },
+    {
+      "id": "surface_single_independent_2obj",
+      "interaction_class": "independent",
+      "kinematic_regime": "supported_supported",
+      "layout": "parallel_supported_independent",
+      "object_motions": ["roll_or_slide_1obj", "rest"],
+      "linear_velocity_m_s": [[0.62, 0.0, 0.0], [0.0, 0.0, 0.0]],
+      "minimum_displacement_m": [0.25, 0.0],
+      "initial_x_offset_m": [-0.35, 0.15],
+      "lateral_clearance_m": 0.32
+    },
+    {
+      "id": "surface_dual_independent_2obj",
+      "interaction_class": "independent",
+      "kinematic_regime": "supported_supported",
+      "layout": "parallel_supported_independent",
+      "object_motions": ["roll_or_slide_1obj", "roll_or_slide_1obj"],
+      "linear_velocity_m_s": [[0.58, 0.0, 0.0], [-0.48, 0.0, 0.0]],
+      "minimum_displacement_m": [0.22, 0.18],
+      "initial_x_offset_m": [-0.35, 0.35],
+      "lateral_clearance_m": 0.32
+    },
+    {
+      "id": "air_supported_independent_2obj",
+      "interaction_class": "independent",
+      "kinematic_regime": "airborne_supported",
+      "layout": "separated_airborne_supported_independent",
+      "object_motions": ["drop_fall_1obj", "rest"],
+      "linear_velocity_m_s": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+      "minimum_displacement_m": [0.35, 0.0],
+      "airborne_surface_gap_m": 0.52,
+      "lateral_clearance_m": 0.30
+    }
+  ],
+  "policy": {
+    "post_contact_outcome_is_not_preclassified": true,
+    "one_factor_sweep_keeps_both_initial_states_fixed": true,
+    "camera_and_scene_expansion_deferred": true,
+    "initial_contact_is_deferred": true,
+    "airborne_airborne_is_deferred": true
+  }
+}

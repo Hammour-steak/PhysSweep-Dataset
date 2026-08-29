@@ -153,7 +153,17 @@ def _motion_phrase(metadata: Mapping[str, Any]) -> str:
         "single_ball_free_roll": "rolls freely across the support",
         "single_ball_rail_rebound": "rebounds from the rail",
         "three_ball_collision": "collides with the other balls",
-        "two_sphere_collision_2obj": "collide with each other",
+        "surface_hit_rest_2obj": "collide after one moves toward the other",
+        "surface_head_on_2obj": "collide while moving toward each other",
+        "surface_crossing_2obj": "collide along crossing surface paths",
+        "surface_catch_up_2obj": "collide while moving in the same direction",
+        "air_drop_hit_supported_2obj": "collide as one falls toward the other",
+        "air_projectile_hit_supported_2obj": (
+            "collide as one travels through the air"
+        ),
+        "surface_single_independent_2obj": "do not contact each other",
+        "surface_dual_independent_2obj": "do not contact each other",
+        "air_supported_independent_2obj": "do not contact each other",
     }
     return phrases.get(family, f"moves in the {family.replace('_', ' ')} scenario")
 

@@ -12,6 +12,15 @@ PAIR_SIZE = 2
 _ANNOTATION_KEYS = ("semantic_category", "scale_bin", "uniform_scale")
 
 
+def _is_canonical_base(metadata: Mapping[str, Any]) -> bool:
+    sweep = metadata.get("sweep")
+    if sweep is None:
+        return False
+    if not isinstance(sweep, Mapping) or sweep.get("kind") != "base":
+        raise ValueError("object candidates must be unswept or canonical bases")
+    return True
+
+
 def _role_record(role: Mapping[str, Any]) -> dict[str, Any]:
     if set(role) != {
         "object_id",
@@ -42,6 +51,7 @@ def _source_parts(
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     if metadata.get("schema_version") != "physweep_pybullet_rigid_metadata_v1":
         raise ValueError("object candidates must use rigid metadata v1")
+    _is_canonical_base(metadata)
     simulation = metadata.get("simulation")
     if not isinstance(simulation, Mapping):
         raise ValueError("object candidate lacks a simulation record")
@@ -98,6 +108,7 @@ def compile_object_pair_scene(
     scene = copy.deepcopy(host_template)
     if scene.get("schema_version") != "physweep_pybullet_rigid_metadata_v1":
         raise ValueError("object-pair host must use rigid metadata v1")
+    canonical_host = _is_canonical_base(scene)
     simulation = scene.get("simulation")
     if not isinstance(simulation, dict):
         raise ValueError("object-pair host lacks a simulation record")
@@ -144,5 +155,8 @@ def compile_object_pair_scene(
     simulation["objects"] = objects
     five_dimensions["foreground_objects"] = foreground_objects
     materials["dynamic_objects"] = dynamic_materials
+    if canonical_host and str(scene["scene_id"]).endswith("__base"):
+        scene["scene_id"] = str(scene["scene_id"])[: -len("__base")]
+    scene.pop("sweep", None)
     scene.pop("object_identity", None)
     return scene

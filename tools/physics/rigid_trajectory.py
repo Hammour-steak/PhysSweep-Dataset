@@ -220,10 +220,10 @@ def audit_trajectory(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]
     )
     if len(objects) == 2:
         from tools.motion_rules.two_object import (  # pylint: disable=import-outside-toplevel
-            audit_pair_collision,
+            audit_pair_motion,
         )
 
-        return audit_pair_collision(metadata, trajectory)
+        return audit_pair_motion(metadata, trajectory)
     obj = objects[0]
     object_id = str(obj["object_id"])
     positions = np.asarray(trajectory[f"{object_id}__position_m"], dtype=np.float64)

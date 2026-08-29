@@ -41,7 +41,8 @@ from tools.sampling.sample_pybullet_base import (  # noqa: E402
 )
 from tools.physics.simulate_pybullet_rigid import simulate  # noqa: E402
 from tools.sampling.sample_two_object_base import (  # noqa: E402
-    build_two_object_reference,
+    build_two_object_matrix,
+    build_two_object_scene,
 )
 
 
@@ -561,11 +562,12 @@ class PyBulletSimulationTests(unittest.TestCase):
         for key in first:
             self.assertTrue(np.array_equal(first[key], second[key]), key)
 
-    def test_two_sphere_collision_is_repeatable_and_object_complete(self) -> None:
+    def test_two_object_head_on_is_repeatable_and_object_complete(self) -> None:
         template = self.without_incidental_environment(self.rolling_stress_scene)
-        scene = build_two_object_reference(
+        scene = build_two_object_scene(
             template,
-            load_json(ROOT / "configs/two_object_sampling.json"),
+            load_json(ROOT / "configs/two_object_sampling_matrix.json"),
+            "surface_head_on_2obj",
         )
         first, first_audit = simulate(scene)
         second, second_audit = simulate(scene)
@@ -596,19 +598,26 @@ class PyBulletSimulationTests(unittest.TestCase):
         )
         self.assertEqual(
             identity["text"]["caption"],
-            "the red sphere and the blue sphere collide with each other.",
+            (
+                "the red sphere and the blue sphere collide while moving "
+                "toward each other."
+            ),
         )
-        midpoint_xy = np.mean(
+        initial_midpoint_xy = np.mean(
             [
                 record["initial_state"]["position_m"][:2]
                 for record in scene["simulation"]["objects"]
             ],
             axis=0,
         )
+        bounds = scene["simulation"]["support"]["safe_surface_bounds"]
+        support_center_xy = np.asarray(
+            [np.mean(bounds["x"]), np.mean(bounds["y"])], dtype=np.float64
+        )
         self.assertTrue(
             np.allclose(
-                midpoint_xy,
-                scene["environment_binding"]["placement"]["scene_anchor_m"][:2],
+                initial_midpoint_xy,
+                support_center_xy,
                 atol=1.0e-6,
                 rtol=0.0,
             )
@@ -665,20 +674,116 @@ class PyBulletSimulationTests(unittest.TestCase):
         }
         inelastic_trajectory, inelastic_audit = simulate(inelastic_sweep)
         self.assertTrue(inelastic_audit["passed"], inelastic_audit)
-        self.assertIn(
-            "pair_post_contact_separation",
-            {record["id"] for record in inelastic_audit["advisories"]},
-        )
-        wrong_axis = copy.deepcopy(inelastic_sweep)
-        wrong_axis["sweep"]["parameter"] = "mass_kg"
-        strict_audit = audit_trajectory(wrong_axis, inelastic_trajectory)
-        self.assertFalse(strict_audit["passed"])
-        self.assertNotIn(
-            "pair_post_contact_separation",
-            {record["id"] for record in strict_audit["advisories"]},
-        )
+        self.assertEqual(inelastic_audit["advisories"], [])
 
-    def test_two_sphere_collision_composes_independent_object_sources(self) -> None:
+    def test_two_object_motion_matrix_contact_contracts(self) -> None:
+        host = self.without_incidental_environment(self.rolling_stress_scene)
+        matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
+        scenes = build_two_object_matrix(host, matrix)
+        self.assertEqual(len(scenes), 9)
+        self.assertEqual(
+            [
+                scene["simulation"]["interaction"]["motion_pattern"]
+                for scene in scenes
+            ],
+            [
+                "surface_hit_rest_2obj",
+                "surface_head_on_2obj",
+                "surface_crossing_2obj",
+                "surface_catch_up_2obj",
+                "air_drop_hit_supported_2obj",
+                "air_projectile_hit_supported_2obj",
+                "surface_single_independent_2obj",
+                "surface_dual_independent_2obj",
+                "air_supported_independent_2obj",
+            ],
+        )
+        self.assertEqual(
+            [scene["sample_index"] for scene in scenes], list(range(1, 10))
+        )
+        classes = [
+            scene["simulation"]["interaction"]["interaction_class"]
+            for scene in scenes
+        ]
+        self.assertEqual(classes.count("interacting"), 6)
+        self.assertEqual(classes.count("independent"), 3)
+        semantics = {
+            scene["simulation"]["interaction"]["motion_pattern"]: scene[
+                "semantic_sampling"
+            ]["five_dimensions"]["motion"]
+            for scene in scenes
+        }
+        self.assertIsNone(
+            semantics["surface_hit_rest_2obj"]["trajectory_angle_degrees"]
+        )
+        self.assertEqual(
+            semantics["surface_head_on_2obj"]["trajectory_angle_degrees"],
+            180.0,
+        )
+        self.assertEqual(
+            semantics["surface_crossing_2obj"]["trajectory_angle_degrees"],
+            90.0,
+        )
+        self.assertEqual(
+            semantics["surface_catch_up_2obj"]["trajectory_angle_degrees"],
+            0.0,
+        )
+        self.assertEqual(
+            semantics["surface_crossing_2obj"]["impact_offset_ratio"], 0.30
+        )
+        with self.assertRaisesRegex(ValueError, "may not be repeated"):
+            build_two_object_matrix(
+                host,
+                matrix,
+                motion_ids=["surface_head_on_2obj", "surface_head_on_2obj"],
+            )
+        for scene in scenes:
+            with self.subTest(scene_id=scene["scene_id"]):
+                trajectory, audit = simulate(scene)
+                self.assertTrue(audit["passed"], audit)
+                interaction = scene["simulation"]["interaction"]
+                object_a, object_b = interaction["object_ids"]
+                contacts = trajectory[
+                    f"{object_a}__object_contact_count__{object_b}"
+                ]
+                contact_occurred = bool(np.any(contacts > 0))
+                self.assertEqual(
+                    contact_occurred,
+                    interaction["interaction_class"] == "interacting",
+                )
+                self.assertEqual(
+                    audit["metrics"]["motion_pattern"],
+                    interaction["motion_pattern"],
+                )
+
+    def test_two_object_independent_contract_rejects_pair_contact(self) -> None:
+        host = self.without_incidental_environment(self.rolling_stress_scene)
+        matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
+        scene = build_two_object_scene(
+            host, matrix, "surface_head_on_2obj"
+        )
+        trajectory, _ = simulate(scene)
+        declared_independent = copy.deepcopy(scene)
+        interaction = declared_independent["simulation"]["interaction"]
+        interaction["type"] = "pairwise_independent"
+        interaction["interaction_class"] = "independent"
+        interaction["contact_requirement"] = "must_not_contact"
+        declared_independent["semantic_sampling"]["five_dimensions"]["motion"][
+            "interaction_class"
+        ] = "independent"
+        object_ids = interaction["object_ids"]
+        for index, obj in enumerate(declared_independent["simulation"]["objects"]):
+            expected = obj["expected_motion"]
+            expected.pop("required_object_contact_id")
+            expected["forbidden_object_contact_id"] = object_ids[1 - index]
+        audit = audit_trajectory(declared_independent, trajectory)
+        self.assertFalse(audit["passed"])
+        failed = {
+            record["id"] for record in audit["checks"] if not record["passed"]
+        }
+        self.assertIn("forbidden_pair_collision", failed)
+
+    def test_two_object_scene_composes_independent_object_sources(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)
         host_object = host["simulation"]["objects"][0]
         host_visual_id = str(host_object["visual_profile"]["id"])
@@ -702,17 +807,32 @@ class PyBulletSimulationTests(unittest.TestCase):
             ),
         )
         secondary_object = secondary["simulation"]["objects"][0]
+        host["sweep"] = {
+            "kind": "base",
+            "resolved_object_physics": [
+                {
+                    "object_id": "object_a",
+                    "object_index": 0,
+                    "material": copy.deepcopy(host_object["material"]),
+                }
+            ],
+        }
+        host["scene_id"] += "__base"
         original_host = copy.deepcopy(host)
         original_secondary = copy.deepcopy(secondary)
 
-        scene = build_two_object_reference(
+        scene = build_two_object_scene(
             host,
-            load_json(ROOT / "configs/two_object_sampling.json"),
+            load_json(ROOT / "configs/two_object_sampling_matrix.json"),
+            "surface_head_on_2obj",
             (secondary, host),
             sample_index=7,
         )
 
         objects = scene["simulation"]["objects"]
+        self.assertEqual(scene["dataset_id"], "physweep_two_object")
+        self.assertNotIn("__base__", scene["scene_id"])
+        self.assertNotIn("sweep", scene)
         self.assertEqual(
             [obj["visual_profile"]["id"] for obj in objects],
             [
@@ -730,9 +850,8 @@ class PyBulletSimulationTests(unittest.TestCase):
             objects[0]["material"]["mass_kg"],
             secondary_object["material"]["mass_kg"],
         )
-        anchor_x, anchor_y = host["environment_binding"]["placement"][
-            "scene_anchor_m"
-        ][:2]
+        bounds = host["simulation"]["support"]["safe_surface_bounds"]
+        anchor_x, anchor_y = np.mean(bounds["x"]), np.mean(bounds["y"])
         midpoint_x = 0.5 * sum(obj["initial_state"]["position_m"][0] for obj in objects)
         self.assertAlmostEqual(midpoint_x, anchor_x)
         self.assertAlmostEqual(objects[0]["initial_state"]["position_m"][1], anchor_y)
@@ -748,10 +867,20 @@ class PyBulletSimulationTests(unittest.TestCase):
             {"object_a", "object_b"},
         )
         with self.assertRaisesRegex(ValueError, "exactly two candidates"):
-            build_two_object_reference(
+            build_two_object_scene(
                 host,
-                load_json(ROOT / "configs/two_object_sampling.json"),
+                load_json(ROOT / "configs/two_object_sampling_matrix.json"),
+                "surface_head_on_2obj",
                 (),
+            )
+        derived_source = copy.deepcopy(secondary)
+        derived_source["sweep"] = {"kind": "sweep"}
+        with self.assertRaisesRegex(ValueError, "unswept or canonical bases"):
+            build_two_object_scene(
+                host,
+                load_json(ROOT / "configs/two_object_sampling_matrix.json"),
+                "surface_head_on_2obj",
+                (derived_source, host),
             )
 
     def test_runtime_proxy_dimension_tampering_is_rejected(self) -> None:
