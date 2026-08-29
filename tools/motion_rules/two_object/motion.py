@@ -15,6 +15,7 @@ _SHARED_FIELDS = {
     "schema_version",
     "contact_friction",
     "contact_restitution",
+    "initial_support_clearance_m",
     "minimum_support_contact_fraction",
     "interaction_audit",
 }
@@ -73,7 +74,6 @@ _LAYOUT_CONTRACT = {
     ),
 }
 _NUMERICAL_EPSILON = 1.0e-8
-_SUPPORT_CLEARANCE_M = 0.0005
 _SUPPORT_EDGE_MARGIN_M = 0.02
 _MAXIMUM_IMPACT_OFFSET_RATIO = 0.80
 
@@ -203,10 +203,10 @@ def _support_center(bounds: dict[str, Any]) -> np.ndarray:
 
 
 def _supported_positions_z(
-    support: dict[str, Any], radii: list[float]
+    support: dict[str, Any], radii: list[float], clearance_m: float
 ) -> list[float]:
     surface_z = float(support["surface_center_z_m"])
-    return [surface_z + radius + _SUPPORT_CLEARANCE_M for radius in radii]
+    return [surface_z + radius + clearance_m for radius in radii]
 
 
 def _planned_supported_contact(
@@ -419,7 +419,12 @@ def apply_two_object_motion(
         raise ValueError("the initial two-object matrix requires a flat support")
     bounds = support["safe_surface_bounds"]
     center = _support_center(bounds)
-    support_z = _supported_positions_z(support, radii)
+    support_clearance = positive_vector(
+        [shared["initial_support_clearance_m"]],
+        1,
+        "two-object initial support clearance",
+    )[0]
+    support_z = _supported_positions_z(support, radii, support_clearance)
     velocities = np.asarray(
         [
             finite_vector(value, 3, f"{object_ids[index]} linear velocity")

@@ -770,6 +770,12 @@ class PyBulletSimulationTests(unittest.TestCase):
                         "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio"
                     ],
                 )
+                self.assertLessEqual(
+                    abs(diagnostics["side_view_deviation_degrees"]),
+                    scene["simulation"]["interaction"][
+                        "maximum_camera_side_deviation_degrees"
+                    ],
+                )
 
     def test_two_object_camera_tries_both_sides_of_the_motion_axis(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)

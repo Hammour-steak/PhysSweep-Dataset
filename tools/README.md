@@ -82,52 +82,47 @@ all physical parameters. Simulation consumes that metadata and writes a hashed
 trajectory. Visual binding solves the camera but reuses the already frozen
 environment visual/collision pose.
 
-## Two-object Reference Slice
+## Two-object Candidate Matrix
 
-The bounded 2obj development entry point separates the frozen host scene, two
-reviewed object candidates, and a nine-row initial-state matrix. Object
-candidates retain their existing visual assets and collision proxies. Six rows
-require pair contact and three require no pair contact. Post-contact outcomes
-are observed rather than preclassified. Flat reviewed scenes are rebound around
-the pair side view, and one camera is frozen only after it passes every member
-of the two-object one-factor group. This remains a bounded reference slice, not
-a production 2obj release generator.
+The 2obj candidate sampler reuses released 1obj metadata, visual assets, and
+collision proxies. Its 324 cells are the Cartesian product of nine frozen
+motions, nine role-ordered size pairs, two visual-identity relations, and two
+flat scene classes. Selection is deterministic, hash-bound, and balanced for
+prefix validation runs. This is not yet a production 2obj release.
 
 ```bash
-.venv/bin/python -m tools.sampling.sample_two_object_base \
-  --template <reviewed-sphere-metadata.json> \
-  --object-a-template <reviewed-sphere-a-metadata.json> \
-  --object-b-template <reviewed-sphere-b-metadata.json> \
-  --matrix configs/two_object_sampling_matrix.json \
-  --output-dir outputs/two_object_smoke/base
+.venv/bin/python -m tools.sampling.sample_two_object_coverage \
+  --released-base-manifest outputs/one_object/base/manifest.json \
+  --source-root <one-object-generation-root> \
+  --source-manifest <release/metadata_manifest.json> \
+  --limit 72 --output-dir outputs/two_object_validation/base
 
 .venv/bin/python -m tools.physics.run_pybullet_batch \
-  --manifest outputs/two_object_smoke/base/manifest.json \
-  --output-root outputs/two_object_smoke/base/physics --workers 9
+  --manifest outputs/two_object_validation/base/manifest.json \
+  --output-root outputs/two_object_validation/base/physics --workers 9
 
 .venv/bin/python -m tools.sampling.derive_physics_sweep \
-  --base-manifest outputs/two_object_smoke/base/manifest.json \
-  --output-dir outputs/two_object_smoke/sweep/metadata
+  --base-manifest outputs/two_object_validation/base/manifest.json \
+  --output-dir outputs/two_object_validation/sweep/metadata
 
 .venv/bin/python -m tools.physics.run_pybullet_batch \
-  --manifest outputs/two_object_smoke/sweep/metadata/manifest.json \
-  --output-root outputs/two_object_smoke/sweep/physics --workers 20
+  --manifest outputs/two_object_validation/sweep/metadata/manifest.json \
+  --output-root outputs/two_object_validation/sweep/physics --workers 20
 
 .venv/bin/python -m tools.rendering.bind_pybullet_visuals \
-  --manifest outputs/two_object_smoke/base/physics/manifest.json \
-  --camera-group-manifest outputs/two_object_smoke/sweep/physics/manifest.json \
-  --output-root outputs/two_object_smoke/base/bound --workers 9
+  --manifest outputs/two_object_validation/base/physics/manifest.json \
+  --camera-group-manifest outputs/two_object_validation/sweep/physics/manifest.json \
+  --output-root outputs/two_object_validation/base/bound --workers 9
 
 .venv/bin/python -m tools.rendering.bind_physics_sweep_visuals \
-  --sweep-manifest outputs/two_object_smoke/sweep/physics/manifest.json \
-  --base-bound-manifest outputs/two_object_smoke/base/bound/bound_manifest.json \
-  --output-root outputs/two_object_smoke/sweep/bound
+  --sweep-manifest outputs/two_object_validation/sweep/physics/manifest.json \
+  --base-bound-manifest outputs/two_object_validation/base/bound/bound_manifest.json \
+  --output-root outputs/two_object_validation/sweep/bound
 ```
 
-Omitting the two object-template arguments intentionally reuses the host object
-for both roles. `--motion-id` may select a matrix subset; omission builds all
-nine rows. Shared physics, identity, canonical trajectory, and release
-packaging consume both objects. Per-object masks use `masks/<object_id>/`.
+Omit `--limit` for all 324 cells. Post-contact outcomes are measured rather
+than preclassified. One camera is frozen only after all 25 members of a
+two-object one-factor group pass; masks use `masks/<object_id>/`.
 
 ## Render Staging
 

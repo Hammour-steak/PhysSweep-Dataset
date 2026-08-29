@@ -325,8 +325,19 @@ def _create_dynamic_mesh(record: dict[str, Any], material: Any) -> Any:
     obj["physweep_visual_extent_m"] = predicted.tolist()
     material_policy = str(profile.get("material_policy", "source_or_bound_fallback"))
     if material_policy == "bound_role_override":
+        if obj.data.has_custom_normals:
+            bpy.ops.mesh.customdata_custom_splitnormals_clear()
+        bpy.ops.object.mode_set(mode="EDIT")
+        bpy.ops.mesh.select_all(action="SELECT")
+        bpy.ops.mesh.normals_make_consistent(inside=False)
+        bpy.ops.object.mode_set(mode="OBJECT")
+        for polygon in obj.data.polygons:
+            polygon.use_smooth = True
         obj.data.materials.clear()
         obj.data.materials.append(material)
+        for polygon in obj.data.polygons:
+            polygon.material_index = 0
+        obj.data.update()
     elif material_policy == "source_or_bound_fallback" and not obj.data.materials:
         obj.data.materials.append(material)
     elif material_policy != "source_or_bound_fallback":

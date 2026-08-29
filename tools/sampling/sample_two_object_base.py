@@ -21,11 +21,60 @@ DEFAULT_MATRIX = PROJECT_ROOT / "configs" / "two_object_sampling_matrix.json"
 _MATRIX_FIELDS = {
     "schema_version",
     "object_pair",
+    "candidate_pool",
+    "coverage_plan",
     "shared_physics",
     "pair_observation",
     "scene_compatibility",
     "motion_intents",
     "policy",
+}
+_CANDIDATE_POOL_FIELDS = {
+    "schema_version",
+    "source_release",
+    "object_eligibility",
+    "host_eligibility",
+}
+_SOURCE_RELEASE_FIELDS = {
+    "released_base_manifest_schema_version",
+    "generation_manifest_schema_version",
+    "generation_metadata_schema_version",
+    "sample_kind",
+}
+_OBJECT_ELIGIBILITY_FIELDS = {
+    "body_model",
+    "geometry_type",
+    "require_isotropic_geometry",
+    "scale_bins",
+    "visual_identity_key",
+    "distinct_source_scenes",
+}
+_HOST_ELIGIBILITY_FIELDS = {
+    "support_shape",
+    "required_collider_roles",
+    "allowed_collider_roles",
+    "camera_envelope_policy",
+}
+_MOTION_NEUTRAL_HOST_ROLES = {
+    "primary_support",
+    "support_structure",
+    "environment_floor",
+}
+_COVERAGE_PLAN_FIELDS = {
+    "schema_version",
+    "seed",
+    "role_ordered_scale_pairs",
+    "visual_identity_relations",
+    "replicates_per_cell",
+    "selection_policy",
+}
+_SELECTION_POLICY = {
+    "source_pair_uniqueness": "unordered_without_replacement",
+    "host_uniqueness": "without_replacement",
+    "host_must_differ_from_object_sources": True,
+    "object_visual_profile_coverage": "all_eligible",
+    "host_visual_profile_coverage": "all_eligible",
+    "deterministic_ranking": "sha256_seeded",
 }
 _POLICY_FIELDS = {
     "post_contact_outcome_is_not_preclassified",
@@ -37,7 +86,7 @@ _POLICY_FIELDS = {
 
 def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
     if set(matrix) != _MATRIX_FIELDS or (
-        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v1"
+        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v2"
     ):
         raise ValueError("unsupported two-object sampling matrix")
     pair = matrix.get("object_pair")
@@ -45,6 +94,111 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         raise ValueError("two-object matrix lacks an object-pair contract")
     if pair.get("schema_version") != "physweep_object_pair_v1":
         raise ValueError("unsupported object-pair contract")
+    candidate_pool = matrix.get("candidate_pool")
+    if (
+        not isinstance(candidate_pool, dict)
+        or set(candidate_pool) != _CANDIDATE_POOL_FIELDS
+        or candidate_pool.get("schema_version")
+        != "physweep_two_object_candidate_pool_v1"
+    ):
+        raise ValueError("two-object candidate-pool contract is incomplete")
+    source = candidate_pool.get("source_release")
+    if not isinstance(source, dict) or set(source) != _SOURCE_RELEASE_FIELDS:
+        raise ValueError("two-object source-release contract is incomplete")
+    if any(not isinstance(value, str) or not value for value in source.values()):
+        raise ValueError("two-object source-release values must be nonempty strings")
+    eligibility = candidate_pool.get("object_eligibility")
+    if (
+        not isinstance(eligibility, dict)
+        or set(eligibility) != _OBJECT_ELIGIBILITY_FIELDS
+        or eligibility.get("body_model") != "rigid_body"
+        or eligibility.get("geometry_type") != "sphere"
+        or eligibility.get("require_isotropic_geometry") is not True
+        or eligibility.get("visual_identity_key") != "visual_profile.id"
+        or eligibility.get("distinct_source_scenes") is not True
+    ):
+        raise ValueError("two-object object-eligibility contract is invalid")
+    scale_bins = eligibility.get("scale_bins")
+    if (
+        not isinstance(scale_bins, list)
+        or not scale_bins
+        or any(not isinstance(value, str) or not value for value in scale_bins)
+        or len(scale_bins) != len(set(scale_bins))
+    ):
+        raise ValueError("two-object scale bins are invalid")
+    host_eligibility = candidate_pool.get("host_eligibility")
+    if (
+        not isinstance(host_eligibility, dict)
+        or set(host_eligibility) != _HOST_ELIGIBILITY_FIELDS
+        or host_eligibility.get("support_shape") != "rectangular_slab"
+        or host_eligibility.get("camera_envelope_policy") != "unbounded_only"
+    ):
+        raise ValueError("two-object host-eligibility contract is invalid")
+    required_roles = host_eligibility.get("required_collider_roles")
+    allowed_roles = host_eligibility.get("allowed_collider_roles")
+    if (
+        required_roles != ["primary_support"]
+        or not isinstance(allowed_roles, list)
+        or len(allowed_roles) != len(set(allowed_roles))
+        or set(allowed_roles) != _MOTION_NEUTRAL_HOST_ROLES
+    ):
+        raise ValueError("two-object hosts must use motion-neutral colliders")
+    coverage = matrix.get("coverage_plan")
+    if (
+        not isinstance(coverage, dict)
+        or set(coverage) != _COVERAGE_PLAN_FIELDS
+        or coverage.get("schema_version")
+        != "physweep_two_object_coverage_plan_v1"
+    ):
+        raise ValueError("two-object coverage plan is incomplete")
+    seed = coverage.get("seed")
+    replicates = coverage.get("replicates_per_cell")
+    if (
+        isinstance(seed, bool)
+        or not isinstance(seed, int)
+        or seed < 0
+        or isinstance(replicates, bool)
+        or not isinstance(replicates, int)
+        or replicates < 1
+    ):
+        raise ValueError("two-object coverage seed and replicates are invalid")
+    scale_pairs = coverage.get("role_ordered_scale_pairs")
+    if not isinstance(scale_pairs, list) or any(
+        not isinstance(record, dict)
+        or set(record) != {"id", "object_a", "object_b"}
+        for record in scale_pairs
+    ):
+        raise ValueError("two-object ordered scale pairs are invalid")
+    pair_ids = [str(record["id"]) for record in scale_pairs]
+    actual_pairs = {
+        (str(record["object_a"]), str(record["object_b"]))
+        for record in scale_pairs
+    }
+    expected_pairs = {(left, right) for left in scale_bins for right in scale_bins}
+    if (
+        any(not pair_id for pair_id in pair_ids)
+        or len(pair_ids) != len(set(pair_ids))
+        or len(actual_pairs) != len(scale_pairs)
+        or actual_pairs != expected_pairs
+    ):
+        raise ValueError("two-object ordered scale pairs must cover the full product")
+    relations = coverage.get("visual_identity_relations")
+    if relations != ["same_visual_profile", "different_visual_profile"]:
+        raise ValueError("two-object visual identity relations are invalid")
+    selection = coverage.get("selection_policy")
+    if not isinstance(selection, dict) or (
+        set(selection) != {*_SELECTION_POLICY, "maximum_object_source_reuse"}
+    ):
+        raise ValueError("two-object selection policy is incomplete")
+    if any(selection.get(key) != value for key, value in _SELECTION_POLICY.items()):
+        raise ValueError("two-object selection policy may not be weakened")
+    maximum_reuse = selection.get("maximum_object_source_reuse")
+    if (
+        isinstance(maximum_reuse, bool)
+        or not isinstance(maximum_reuse, int)
+        or maximum_reuse < 1
+    ):
+        raise ValueError("two-object source reuse limit is invalid")
     policy = matrix.get("policy")
     if not isinstance(policy, dict) or set(policy) != _POLICY_FIELDS:
         raise ValueError("two-object sampling policy is incomplete")

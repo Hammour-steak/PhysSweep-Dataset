@@ -1,5 +1,5 @@
 {
-  "schema_version": "physweep_two_object_sampling_matrix_v1",
+  "schema_version": "physweep_two_object_sampling_matrix_v2",
   "object_pair": {
     "schema_version": "physweep_object_pair_v1",
     "roles": [
@@ -15,10 +15,67 @@
       }
     ]
   },
+  "candidate_pool": {
+    "schema_version": "physweep_two_object_candidate_pool_v1",
+    "source_release": {
+      "released_base_manifest_schema_version": "physweep_base_release_view_v14",
+      "generation_manifest_schema_version": "physweep_release_metadata_manifest_v2",
+      "generation_metadata_schema_version": "physweep_pybullet_rigid_metadata_v1",
+      "sample_kind": "base"
+    },
+    "object_eligibility": {
+      "body_model": "rigid_body",
+      "geometry_type": "sphere",
+      "require_isotropic_geometry": true,
+      "scale_bins": ["small", "medium", "large"],
+      "visual_identity_key": "visual_profile.id",
+      "distinct_source_scenes": true
+    },
+    "host_eligibility": {
+      "support_shape": "rectangular_slab",
+      "required_collider_roles": ["primary_support"],
+      "allowed_collider_roles": [
+        "primary_support",
+        "support_structure",
+        "environment_floor"
+      ],
+      "camera_envelope_policy": "unbounded_only"
+    }
+  },
+  "coverage_plan": {
+    "schema_version": "physweep_two_object_coverage_plan_v1",
+    "seed": 20260829,
+    "role_ordered_scale_pairs": [
+      {"id": "small_to_small", "object_a": "small", "object_b": "small"},
+      {"id": "small_to_medium", "object_a": "small", "object_b": "medium"},
+      {"id": "small_to_large", "object_a": "small", "object_b": "large"},
+      {"id": "medium_to_small", "object_a": "medium", "object_b": "small"},
+      {"id": "medium_to_medium", "object_a": "medium", "object_b": "medium"},
+      {"id": "medium_to_large", "object_a": "medium", "object_b": "large"},
+      {"id": "large_to_small", "object_a": "large", "object_b": "small"},
+      {"id": "large_to_medium", "object_a": "large", "object_b": "medium"},
+      {"id": "large_to_large", "object_a": "large", "object_b": "large"}
+    ],
+    "visual_identity_relations": [
+      "same_visual_profile",
+      "different_visual_profile"
+    ],
+    "replicates_per_cell": 1,
+    "selection_policy": {
+      "source_pair_uniqueness": "unordered_without_replacement",
+      "host_uniqueness": "without_replacement",
+      "maximum_object_source_reuse": 2,
+      "host_must_differ_from_object_sources": true,
+      "object_visual_profile_coverage": "all_eligible",
+      "host_visual_profile_coverage": "all_eligible",
+      "deterministic_ranking": "sha256_seeded"
+    }
+  },
   "shared_physics": {
     "schema_version": "physweep_two_object_shared_physics_v1",
     "contact_friction": 0.04,
     "contact_restitution": 0.65,
+    "initial_support_clearance_m": 0.003,
     "minimum_support_contact_fraction": 0.60,
     "interaction_audit": {
       "minimum_initial_clearance_m": 0.08,

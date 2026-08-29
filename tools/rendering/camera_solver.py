@@ -521,6 +521,7 @@ def _solve_two_object_camera(
             "minimum_initial_object_span_ndc": minimum_object_span,
             "minimum_initial_object_visible_fraction": 1.0,
             "initial_object_center_margin_ndc": envelope_margin,
+            "initial_object_corner_margin_ndc": envelope_margin,
             "maximum_initial_object_span_ndc": maximum_envelope_span,
             "soft_maximum_focus_span_ndc": preferred_envelope_span,
             "maximum_focus_span_ndc": maximum_envelope_span,
@@ -1349,14 +1350,18 @@ def solve_camera(
         and str(composition.get("review_status")) == "approved"
         else {}
     )
-    maximum_local_azimuth_deviation = (
-        float(reviewed_camera["maximum_local_azimuth_deviation_degrees"])
-        if reviewed_camera
-        else (
-            float(request["maximum_local_azimuth_deviation_degrees"])
-            if request.get("maximum_local_azimuth_deviation_degrees") is not None
-            else None
+    azimuth_deviation_limits = [
+        float(value)
+        for value in (
+            request.get("maximum_local_azimuth_deviation_degrees"),
+            reviewed_camera.get("maximum_local_azimuth_deviation_degrees")
+            if reviewed_camera
+            else None,
         )
+        if value is not None
+    ]
+    maximum_local_azimuth_deviation = (
+        min(azimuth_deviation_limits) if azimuth_deviation_limits else None
     )
     reviewed_preferred_elevation = (
         float(reviewed_camera["preferred_elevation_degrees"])
@@ -1419,8 +1424,13 @@ def solve_camera(
     initial_object_center_margin = float(
         request.get("initial_object_center_margin_ndc", 0.05)
     )
+    initial_object_corner_margin = float(
+        request.get("initial_object_corner_margin_ndc", 0.0)
+    )
     if not 0.0 <= initial_object_center_margin < 0.5:
         raise ValueError("initial object center margin must be in [0, 0.5)")
+    if not 0.0 <= initial_object_corner_margin < 0.5:
+        raise ValueError("initial object corner margin must be in [0, 0.5)")
     soft_maximum_focus_span = float(request["soft_maximum_focus_span_ndc"])
     maximum_focus_span = float(request["maximum_focus_span_ndc"])
     focus_span_penalty_weight = float(request["focus_span_penalty_weight"])
@@ -1680,10 +1690,14 @@ def solve_camera(
                     )
                     initial_corner_inside = np.logical_and.reduce(
                         [
-                            projected_initial_corners[:, 0] >= 0.0,
-                            projected_initial_corners[:, 0] <= 1.0,
-                            projected_initial_corners[:, 1] >= 0.0,
-                            projected_initial_corners[:, 1] <= 1.0,
+                            projected_initial_corners[:, 0]
+                            >= initial_object_corner_margin,
+                            projected_initial_corners[:, 0]
+                            <= 1.0 - initial_object_corner_margin,
+                            projected_initial_corners[:, 1]
+                            >= initial_object_corner_margin,
+                            projected_initial_corners[:, 1]
+                            <= 1.0 - initial_object_corner_margin,
                             projected_initial_corners[:, 2] > 0.1,
                         ]
                     )
@@ -1970,7 +1984,11 @@ def solve_camera(
             ),
         )
         best = ranked_pool[0]
-        camera_variant_index = quality_pool.index(best)
+        camera_variant_index = next(
+            index
+            for index, candidate in enumerate(quality_pool)
+            if candidate is best
+        )
     if not best["admissible"]:
         largest_object = max(candidates, key=lambda record: record["object_span"])
         closest_to_object_threshold = min(
