@@ -192,7 +192,7 @@ def load_base_groups(
     return groups
 
 
-def validate_groups(
+def validate_release_groups(
     sweep_records: list[dict[str, Any]],
     base_by_source: dict[str, dict[str, Any]],
     base_groups: dict[str, dict[str, Any]],
@@ -515,7 +515,7 @@ def build_view(
         output.parent,
         expected_object_count=expected_object_count,
     )
-    group_by_scene = validate_groups(
+    group_by_scene = validate_release_groups(
         sweep_records,
         base_by_source,
         base_groups,

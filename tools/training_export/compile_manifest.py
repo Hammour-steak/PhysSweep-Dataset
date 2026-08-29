@@ -18,7 +18,7 @@ from tools.training_export.gt_scene_input import (
     compile_model_scene_condition,
     inspect_model_scene_condition,
 )
-from tools.training_export.prompt_contract import (
+from tools.training_export.one_object_prompt_contract import (
     PROMPT_TEMPLATE_VERSION,
     build_training_prompt,
 )

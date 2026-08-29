@@ -25,6 +25,16 @@ PROVENANCE_FROZEN_INFRASTRUCTURE = {
 
 class RepositoryHygieneTest(unittest.TestCase):
     @staticmethod
+    def imported_modules(path: Path) -> list[str]:
+        modules = []
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Import):
+                modules.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                modules.append(node.module)
+        return modules
+
+    @staticmethod
     def public_files() -> list[Path]:
         output = subprocess.check_output(
             ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
@@ -125,76 +135,46 @@ class RepositoryHygieneTest(unittest.TestCase):
         }
         findings = []
         for path in (ROOT / "tools" / "core").glob("*.py"):
-            tree = ast.parse(path.read_text(encoding="utf-8"))
-            for node in ast.walk(tree):
-                modules = []
-                if isinstance(node, ast.Import):
-                    modules = [alias.name for alias in node.names]
-                elif isinstance(node, ast.ImportFrom) and node.module:
-                    modules = [node.module]
-                for module in modules:
-                    if any(
-                        module == item or module.startswith(item + ".")
-                        for item in forbidden
-                    ):
-                        findings.append(f"{path.name}: {module}")
+            for module in self.imported_modules(path):
+                if any(
+                    module == item or module.startswith(item + ".")
+                    for item in forbidden
+                ):
+                    findings.append(f"{path.name}: {module}")
         self.assertEqual(findings, [])
 
     def test_contracts_and_motion_rules_depend_only_on_core(self) -> None:
         findings = []
         for package in ("dataset_contract", "motion_rules"):
             for path in (ROOT / "tools" / package).rglob("*.py"):
-                tree = ast.parse(path.read_text(encoding="utf-8"))
-                for node in ast.walk(tree):
-                    modules = []
-                    if isinstance(node, ast.Import):
-                        modules = [alias.name for alias in node.names]
-                    elif isinstance(node, ast.ImportFrom) and node.module:
-                        modules = [node.module]
-                    for module in modules:
-                        if not module.startswith("tools."):
-                            continue
-                        dependency = module.split(".", 2)[1]
-                        if dependency not in {package, "core"}:
-                            findings.append(
-                                f"{path.relative_to(ROOT)}: {module}"
-                            )
+                for module in self.imported_modules(path):
+                    if not module.startswith("tools."):
+                        continue
+                    dependency = module.split(".", 2)[1]
+                    if dependency not in {package, "core"}:
+                        findings.append(f"{path.relative_to(ROOT)}: {module}")
         self.assertEqual(findings, [])
 
     def test_physics_does_not_depend_on_sampling(self) -> None:
         findings = []
         for path in (ROOT / "tools" / "physics").glob("*.py"):
-            tree = ast.parse(path.read_text(encoding="utf-8"))
-            for node in ast.walk(tree):
-                modules = []
-                if isinstance(node, ast.Import):
-                    modules = [alias.name for alias in node.names]
-                elif isinstance(node, ast.ImportFrom) and node.module:
-                    modules = [node.module]
-                findings.extend(
-                    f"{path.name}: {module}"
-                    for module in modules
-                    if module == "tools.sampling"
-                    or module.startswith("tools.sampling.")
-                )
+            findings.extend(
+                f"{path.name}: {module}"
+                for module in self.imported_modules(path)
+                if module == "tools.sampling"
+                or module.startswith("tools.sampling.")
+            )
         self.assertEqual(findings, [])
 
     def test_release_does_not_depend_on_sampling(self) -> None:
         findings = []
         for path in (ROOT / "tools" / "release").glob("*.py"):
-            tree = ast.parse(path.read_text(encoding="utf-8"))
-            for node in ast.walk(tree):
-                modules = []
-                if isinstance(node, ast.Import):
-                    modules = [alias.name for alias in node.names]
-                elif isinstance(node, ast.ImportFrom) and node.module:
-                    modules = [node.module]
-                findings.extend(
-                    f"{path.name}: {module}"
-                    for module in modules
-                    if module == "tools.sampling"
-                    or module.startswith("tools.sampling.")
-                )
+            findings.extend(
+                f"{path.name}: {module}"
+                for module in self.imported_modules(path)
+                if module == "tools.sampling"
+                or module.startswith("tools.sampling.")
+            )
         self.assertEqual(findings, [])
 
     def test_dataset_generation_does_not_depend_on_training_exports(self) -> None:
@@ -211,33 +191,32 @@ class RepositoryHygieneTest(unittest.TestCase):
             "sampling",
         ):
             for path in (ROOT / "tools" / package).rglob("*.py"):
-                tree = ast.parse(path.read_text(encoding="utf-8"))
-                for node in ast.walk(tree):
-                    modules = []
-                    if isinstance(node, ast.Import):
-                        modules = [alias.name for alias in node.names]
-                    elif isinstance(node, ast.ImportFrom) and node.module:
-                        modules = [node.module]
-                    findings.extend(
-                        f"{path.relative_to(ROOT)}: {module}"
-                        for module in modules
-                        if module == "tools.training_export"
-                        or module.startswith("tools.training_export.")
-                    )
+                findings.extend(
+                    f"{path.relative_to(ROOT)}: {module}"
+                    for module in self.imported_modules(path)
+                    if module == "tools.training_export"
+                    or module.startswith("tools.training_export.")
+                )
         self.assertEqual(findings, [])
 
     def test_one_object_and_training_helpers_do_not_pollute_dataset_contract(self) -> None:
-        modules = {
+        legacy_modules = {
             "coordinate_frames.py",
             "gt_scene_input.py",
             "point_trajectory.py",
             "prompt_contract.py",
             "semantic_coverage.py",
         }
-        for name in modules:
+        for name in legacy_modules:
             with self.subTest(module=name):
                 self.assertFalse((ROOT / "tools" / "dataset_contract" / name).exists())
-        for name in modules - {"semantic_coverage.py"}:
+        training_modules = {
+            "coordinate_frames.py",
+            "gt_scene_input.py",
+            "one_object_prompt_contract.py",
+            "point_trajectory.py",
+        }
+        for name in training_modules:
             with self.subTest(training_module=name):
                 self.assertTrue((ROOT / "tools" / "training_export" / name).is_file())
         self.assertTrue(
@@ -269,19 +248,12 @@ class RepositoryHygieneTest(unittest.TestCase):
     def test_assets_do_not_depend_on_rendering(self) -> None:
         findings = []
         for path in (ROOT / "tools" / "assets").glob("*.py"):
-            tree = ast.parse(path.read_text(encoding="utf-8"))
-            for node in ast.walk(tree):
-                modules = []
-                if isinstance(node, ast.Import):
-                    modules = [alias.name for alias in node.names]
-                elif isinstance(node, ast.ImportFrom) and node.module:
-                    modules = [node.module]
-                findings.extend(
-                    f"{path.name}: {module}"
-                    for module in modules
-                    if module == "tools.rendering"
-                    or module.startswith("tools.rendering.")
-                )
+            findings.extend(
+                f"{path.name}: {module}"
+                for module in self.imported_modules(path)
+                if module == "tools.rendering"
+                or module.startswith("tools.rendering.")
+            )
         self.assertEqual(findings, [])
 
     def test_shared_infrastructure_has_no_exact_function_copies(self) -> None:

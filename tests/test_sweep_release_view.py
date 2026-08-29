@@ -19,7 +19,7 @@ from tools.release.sweep_release_view import (
     sibling_release_roots,
     sweep_descriptor,
     sweep_sort_key,
-    validate_groups,
+    validate_release_groups,
 )
 
 
@@ -43,17 +43,19 @@ class SweepReleaseViewTests(unittest.TestCase):
         base_by_source = {"source/base.json": {"scene_id": "group_a"}}
         base_groups = {"group_a": {"family": "generic"}}
         records = self.records()
-        mapping = validate_groups(
+        mapping = validate_release_groups(
             records, base_by_source, base_groups, object_count=1
         )
         self.assertEqual(set(mapping.values()), {"group_a"})
         with self.assertRaisesRegex(ValueError, "one-factor group"):
-            validate_groups(
+            validate_release_groups(
                 records[:-1], base_by_source, base_groups, object_count=1
             )
         records[1]["scene_id"] = records[0]["scene_id"]
         with self.assertRaisesRegex(ValueError, "duplicate sweep scene id"):
-            validate_groups(records, base_by_source, base_groups, object_count=1)
+            validate_release_groups(
+                records, base_by_source, base_groups, object_count=1
+            )
 
     def test_sweep_descriptor_rejects_base_level(self) -> None:
         record = self.records()[0]
