@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 import tempfile
 import unittest
 from pathlib import Path
@@ -16,6 +17,7 @@ from tools.rendering.bind_pybullet_visuals import (  # noqa: E402
     resolve_render_request,
 )
 from tools.rendering.camera_solver import (  # noqa: E402
+    audit_two_object_camera,
     camera_inside_structural_envelope,
     camera_occlusion_colliders,
     camera_target_centers,
@@ -23,6 +25,7 @@ from tools.rendering.camera_solver import (  # noqa: E402
     segment_intersects_box,
     segments_intersect_box,
     solve_camera,
+    solve_two_object_camera_group,
     support_context_points,
     unoccluded_fraction,
 )
@@ -641,13 +644,24 @@ class PyBulletSimulationTests(unittest.TestCase):
                 0,
             )
         camera = solve_camera(scene, first, self.rules)
-        self.assertEqual(camera["solver_version"], "joint_motion_structure_camera_v1")
+        self.assertEqual(
+            camera["solver_version"],
+            "joint_full_motion_envelope_camera_v1",
+        )
         diagnostics = camera["diagnostics"]
         self.assertEqual(diagnostics["object_count"], 2)
-        self.assertGreaterEqual(
-            diagnostics["pair_collision_projected_separation_to_span_ratio"],
-            0.65,
+        self.assertEqual(
+            diagnostics["joint_motion_envelope_visible_fraction"], 1.0
         )
+        self.assertGreaterEqual(
+            diagnostics[
+                "pair_keyframe_projected_center_separation_to_radius_sum_ratio"
+            ],
+            scene["simulation"]["interaction"][
+                "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio"
+            ],
+        )
+        self.assertEqual(diagnostics["pair_keyframe_kind"], "first_contact")
         self.assertEqual(
             list(diagnostics["per_object_visibility"]),
             ["object_a", "object_b"],
@@ -670,11 +684,138 @@ class PyBulletSimulationTests(unittest.TestCase):
         ] = 0.0
         inelastic_sweep["sweep"] = {
             "kind": "sweep",
+            "parent_scene_id": scene["scene_id"],
             "parameter": "contact_restitution",
         }
         inelastic_trajectory, inelastic_audit = simulate(inelastic_sweep)
         self.assertTrue(inelastic_audit["passed"], inelastic_audit)
         self.assertEqual(inelastic_audit["advisories"], [])
+        inherited_diagnostics = audit_two_object_camera(
+            inelastic_sweep, inelastic_trajectory, camera
+        )
+        self.assertEqual(
+            inherited_diagnostics["joint_motion_envelope_visible_fraction"],
+            1.0,
+        )
+        group_camera = solve_two_object_camera_group(
+            scene,
+            [
+                (derived_camera_scene, first),
+                (inelastic_sweep, inelastic_trajectory),
+            ],
+            self.rules,
+        )
+        self.assertEqual(
+            group_camera["solver_version"],
+            "joint_full_motion_envelope_group_camera_v1",
+        )
+        self.assertEqual(
+            group_camera["diagnostics"]["camera_group"]["member_count"], 2
+        )
+        for member, member_trajectory in (
+            (derived_camera_scene, first),
+            (inelastic_sweep, inelastic_trajectory),
+        ):
+            self.assertEqual(
+                audit_two_object_camera(
+                    member, member_trajectory, group_camera
+                )["joint_motion_envelope_visible_fraction"],
+                1.0,
+            )
+
+    def test_two_object_camera_supports_heterogeneous_sphere_scales(self) -> None:
+        host = self.without_incidental_environment(self.rolling_stress_scene)
+        matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
+        spheres = [
+            scene
+            for scene in self.candidates
+            if scene["simulation"]["objects"][0]["geometry"]["type"]
+            == "sphere"
+        ]
+        smallest = min(
+            spheres,
+            key=lambda scene: scene["simulation"]["objects"][0]["geometry"][
+                "size_m"
+            ][0],
+        )
+        largest = max(
+            spheres,
+            key=lambda scene: scene["simulation"]["objects"][0]["geometry"][
+                "size_m"
+            ][0],
+        )
+        for sources in ((smallest, largest), (largest, smallest)):
+            with self.subTest(
+                object_ids=[
+                    source["simulation"]["objects"][0]["visual_profile"]["id"]
+                    for source in sources
+                ]
+            ):
+                scene = build_two_object_scene(
+                    host, matrix, "surface_head_on_2obj", sources
+                )
+                trajectory, audit = simulate(scene)
+                self.assertTrue(audit["passed"], audit)
+                camera = solve_camera(scene, trajectory, self.rules)
+                diagnostics = camera["diagnostics"]
+                self.assertEqual(
+                    diagnostics["joint_motion_envelope_visible_fraction"],
+                    1.0,
+                )
+                self.assertGreaterEqual(
+                    diagnostics[
+                        "pair_keyframe_projected_center_separation_to_radius_sum_ratio"
+                    ],
+                    scene["simulation"]["interaction"][
+                        "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio"
+                    ],
+                )
+
+    def test_two_object_camera_tries_both_sides_of_the_motion_axis(self) -> None:
+        host = self.without_incidental_environment(self.rolling_stress_scene)
+        matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
+        scene = build_two_object_scene(host, matrix, "surface_head_on_2obj")
+        trajectory, audit = simulate(scene)
+        self.assertTrue(audit["passed"], audit)
+        preferred = solve_camera(scene, trajectory, self.rules)
+        blocked = copy.deepcopy(scene)
+        binding = blocked["environment_binding"]
+        binding["visual_objects"] = []
+        binding["colliders"] = []
+        camera_position = np.asarray(preferred["position_m"], dtype=np.float64)
+        camera_target = np.asarray(preferred["target_m"], dtype=np.float64)
+        outward = camera_position[:2] - camera_target[:2]
+        outward /= np.linalg.norm(outward)
+        wall_center = camera_target[:2] + 0.5 * outward
+        wall_yaw = math.degrees(math.atan2(outward[1], outward[0])) - 90.0
+        wall = {
+            "id": "preferred_side_camera_blocker",
+            "primitive": "box",
+            "role": "room_wall",
+            "material_role": "back_wall",
+            "size_m": [6.0, 0.10, 4.0],
+            "position_m": [float(wall_center[0]), float(wall_center[1]), 2.0],
+            "rotation_euler_degrees": [0.0, 0.0, wall_yaw],
+            "visible": True,
+            "collision_enabled": True,
+            "occludes_camera": True,
+        }
+        binding["visual_objects"].append(copy.deepcopy(wall))
+        binding["colliders"].append(wall)
+        binding["binding_sha256"] = binding_sha256(binding)
+        alternate = solve_camera(blocked, trajectory, self.rules)
+        self.assertTrue(
+            alternate["diagnostics"]["pair_side_candidate_failures"]
+        )
+        preferred_azimuth = preferred["diagnostics"][
+            "pair_selected_side_azimuth_degrees"
+        ]
+        alternate_azimuth = alternate["diagnostics"][
+            "pair_selected_side_azimuth_degrees"
+        ]
+        self.assertAlmostEqual(
+            abs(alternate_azimuth - preferred_azimuth), 180.0, places=6
+        )
 
     def test_two_object_motion_matrix_contact_contracts(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)
@@ -755,6 +896,70 @@ class PyBulletSimulationTests(unittest.TestCase):
                     audit["metrics"]["motion_pattern"],
                     interaction["motion_pattern"],
                 )
+                camera = solve_camera(scene, trajectory, self.rules)
+                diagnostics = camera["diagnostics"]
+                self.assertEqual(
+                    camera["solver_version"],
+                    "joint_full_motion_envelope_camera_v1",
+                )
+                self.assertEqual(
+                    diagnostics["joint_motion_envelope_visible_fraction"],
+                    1.0,
+                )
+                expected_keyframe_kind = (
+                    "first_contact"
+                    if interaction["interaction_class"] == "interacting"
+                    else "closest_approach"
+                )
+                self.assertEqual(
+                    diagnostics["pair_keyframe_kind"], expected_keyframe_kind
+                )
+                expected_lower = np.min(
+                    np.stack(
+                        [
+                            trajectory[f"{object_id}__aabb_min_m"]
+                            for object_id in interaction["object_ids"]
+                        ]
+                    ),
+                    axis=(0, 1),
+                )
+                expected_upper = np.max(
+                    np.stack(
+                        [
+                            trajectory[f"{object_id}__aabb_max_m"]
+                            for object_id in interaction["object_ids"]
+                        ]
+                    ),
+                    axis=(0, 1),
+                )
+                self.assertTrue(
+                    np.allclose(
+                        diagnostics["joint_motion_envelope_world_bounds_m"][
+                            "min"
+                        ],
+                        expected_lower,
+                        atol=1.0e-6,
+                        rtol=0.0,
+                    )
+                )
+                self.assertTrue(
+                    np.allclose(
+                        diagnostics["joint_motion_envelope_world_bounds_m"][
+                            "max"
+                        ],
+                        expected_upper,
+                        atol=1.0e-6,
+                        rtol=0.0,
+                    )
+                )
+                for visibility in diagnostics["per_object_visibility"].values():
+                    self.assertEqual(
+                        visibility["full_motion_aabb_visible_fraction"], 1.0
+                    )
+                    self.assertGreaterEqual(
+                        visibility["median_span_ndc"],
+                        interaction["minimum_per_object_median_span_ndc"],
+                    )
 
     def test_two_object_independent_contract_rejects_pair_contact(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)
@@ -856,8 +1061,22 @@ class PyBulletSimulationTests(unittest.TestCase):
         self.assertAlmostEqual(midpoint_x, anchor_x)
         self.assertAlmostEqual(objects[0]["initial_state"]["position_m"][1], anchor_y)
         self.assertEqual(scene["sample_index"], 7)
-        self.assertEqual(
+        self.assertNotEqual(
             scene["environment_binding"], host["environment_binding"]
+        )
+        self.assertEqual(
+            scene["environment_binding"]["profile_id"],
+            host["environment_binding"]["profile_id"],
+        )
+        self.assertEqual(
+            scene["simulation"]["interaction"]["scene_compatibility"],
+            {
+                "schema_version": "physweep_two_object_scene_compatibility_v1",
+                "scene_class": host["simulation"]["support"]["scene_class"],
+                "environment_binding_policy": (
+                    "recompiled_for_preferred_pair_side"
+                ),
+            },
         )
         self.assertEqual(scene["simulation"]["support"], host["simulation"]["support"])
         self.assertEqual(host, original_host)

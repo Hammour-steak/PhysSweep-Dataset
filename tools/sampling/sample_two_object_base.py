@@ -12,6 +12,7 @@ from tools.core.json_io import read_json, write_json
 from tools.dataset_contract.object_identity_contract import attach_object_identity
 from tools.motion_rules.two_object import apply_two_object_motion
 from tools.sampling.object_pair import compile_object_pair_scene
+from tools.sampling.two_object_scene import bind_two_object_scene
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -22,13 +23,13 @@ _MATRIX_FIELDS = {
     "object_pair",
     "shared_physics",
     "pair_observation",
+    "scene_compatibility",
     "motion_intents",
     "policy",
 }
 _POLICY_FIELDS = {
     "post_contact_outcome_is_not_preclassified",
     "one_factor_sweep_keeps_both_initial_states_fixed",
-    "camera_and_scene_expansion_deferred",
     "initial_contact_is_deferred",
     "airborne_airborne_is_deferred",
 }
@@ -95,6 +96,7 @@ def build_two_object_scene(
         matrix["pair_observation"],
         matches[0],
     )
+    scene = bind_two_object_scene(scene, matrix["scene_compatibility"])
     scene["dataset_id"] = DATASET_ID
     scene["dataset_stage"] = "two_object_base_candidate"
     scene["sample_index"] = resolved_index

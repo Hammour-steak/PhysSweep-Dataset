@@ -21,13 +21,16 @@ from tools.dataset_contract.object_identity_contract import (
 
 from tools.assets.environment_collision import validate_environment_binding
 from tools.dataset_contract.trajectory_contract import object_trajectory_view
+from tools.rendering.camera_solver import (
+    solve_camera,
+    solve_two_object_camera_group,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 ACTIVE_RULES_PATH = PROJECT_ROOT / "configs/one_object_sampling_rules.json"
 SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2)
 
-from tools.rendering.camera_solver import solve_camera
 
 def shadow_readable_lighting(metadata: dict[str, Any]) -> dict[str, Any]:
     objects = require_simulation_objects(
@@ -145,6 +148,7 @@ def bind_scene(
     rules: dict[str, Any],
     resolution: tuple[int, int] | None,
     samples: int | None,
+    camera_group_samples: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     metadata = load_json(metadata_path)
     resolution, samples = resolve_render_request(metadata, resolution, samples)
@@ -173,7 +177,23 @@ def bind_scene(
     with np.load(trajectory_path) as source:
         trajectory = {key: source[key] for key in source.files}
     trajectory = object_trajectory_view(metadata, trajectory)
-    camera = solve_camera(metadata, trajectory, rules)
+    if camera_group_samples is None:
+        camera = solve_camera(metadata, trajectory, rules)
+    else:
+        camera_group = []
+        for sample in camera_group_samples:
+            member_metadata = load_json(Path(sample["metadata_path"]))
+            with np.load(sample["trajectory_path"]) as source:
+                member_trajectory = {
+                    key: source[key] for key in source.files
+                }
+            camera_group.append(
+                (
+                    member_metadata,
+                    object_trajectory_view(member_metadata, member_trajectory),
+                )
+            )
+        camera = solve_two_object_camera_group(metadata, camera_group, rules)
     environment = frozen_environment_binding(metadata, camera)
     support_static_objects = copy.deepcopy(
         metadata["simulation"]["support"]["colliders"]
@@ -375,6 +395,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--limit", type=int)
     parser.add_argument("--workers", type=int, default=1)
+    parser.add_argument(
+        "--camera-group-manifest",
+        type=Path,
+        help=(
+            "Audited sweep-physics manifest used to freeze one camera over "
+            "each complete two-object one-factor group."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -446,6 +474,88 @@ def binding_samples(
     return source, result
 
 
+def two_object_camera_groups(
+    root: Path,
+    manifest_path: Path,
+    expected_parent_ids: set[str],
+) -> dict[str, list[dict[str, str]]]:
+    """Load audited sweep trajectories grouped by their frozen base scene."""
+
+    resolved = (
+        manifest_path if manifest_path.is_absolute() else root / manifest_path
+    ).resolve()
+    resolved.relative_to(root)
+    manifest = load_json(resolved)
+    records = manifest.get("records")
+    if (
+        manifest.get("schema_version") != "physweep_pybullet_batch_record_v1"
+        or not isinstance(records, list)
+        or int(manifest.get("sample_count", -1)) != len(records)
+        or int(manifest.get("passed_count", -1)) != len(records)
+        or int(manifest.get("rejected_count", -1)) != 0
+        or int(manifest.get("error_count", -1)) != 0
+    ):
+        raise ValueError("camera-group manifest is not a fully audited batch")
+    groups: dict[str, list[dict[str, str]]] = {}
+    seen_scene_ids = set()
+    for record in records:
+        scene_id = str(record.get("scene_id", ""))
+        if (
+            not scene_id
+            or scene_id in seen_scene_ids
+            or not record.get("ok")
+            or not record.get("audit_passed")
+        ):
+            raise ValueError("camera-group manifest contains an invalid record")
+        seen_scene_ids.add(scene_id)
+        declared_metadata = Path(str(record["metadata_path"]))
+        declared_trajectory = Path(str(record["trajectory_path"]))
+        metadata_path = (
+            declared_metadata
+            if declared_metadata.is_absolute()
+            else root / declared_metadata
+        ).resolve()
+        trajectory_path = (
+            declared_trajectory
+            if declared_trajectory.is_absolute()
+            else root / declared_trajectory
+        ).resolve()
+        metadata_path.relative_to(root)
+        trajectory_path.relative_to(root)
+        if (
+            sha256(metadata_path) != str(record["metadata_sha256"])
+            or sha256(trajectory_path) != str(record["trajectory_sha256"])
+        ):
+            raise ValueError(f"camera-group record changed after audit: {scene_id}")
+        metadata = load_json(metadata_path)
+        sweep = metadata.get("sweep")
+        if (
+            str(metadata.get("scene_id", "")) != scene_id
+            or not isinstance(sweep, dict)
+            or not sweep.get("parent_scene_id")
+        ):
+            raise ValueError(f"camera-group member lacks sweep identity: {scene_id}")
+        parent_id = str(sweep["parent_scene_id"])
+        if parent_id in expected_parent_ids:
+            groups.setdefault(parent_id, []).append(
+                {
+                    "metadata_path": str(metadata_path),
+                    "trajectory_path": str(trajectory_path),
+                    "kind": str(sweep.get("kind", "")),
+                }
+            )
+    missing = sorted(expected_parent_ids.difference(groups))
+    if missing:
+        raise ValueError(f"camera-group manifest lacks base scenes: {missing[:3]}")
+    for parent_id, group in groups.items():
+        kinds = [sample["kind"] for sample in group]
+        if len(group) < 2 or kinds.count("base") != 1:
+            raise ValueError(
+                f"camera group is not a base plus derived sweeps: {parent_id}"
+            )
+    return groups
+
+
 def main() -> None:
     args = parse_args()
     root = args.root.resolve()
@@ -456,6 +566,19 @@ def main() -> None:
     output_root = args.output_root.resolve()
     if args.limit is not None:
         samples = samples[: args.limit]
+    camera_groups = None
+    camera_group_manifest_path = None
+    if args.camera_group_manifest is not None:
+        camera_group_manifest_path = (
+            args.camera_group_manifest
+            if args.camera_group_manifest.is_absolute()
+            else root / args.camera_group_manifest
+        ).resolve()
+        camera_groups = two_object_camera_groups(
+            root,
+            camera_group_manifest_path,
+            {str(sample["scene_id"]) for sample in samples},
+        )
     def sample_path(sample: dict[str, Any], key: str, fallback: Path) -> Path:
         value = sample.get(key)
         if value is None:
@@ -481,6 +604,11 @@ def main() -> None:
             rules,
             args.resolution,
             args.samples,
+            (
+                None
+                if camera_groups is None
+                else camera_groups[str(sample["scene_id"])]
+            ),
         )
         for sample in samples
     ]
@@ -506,6 +634,11 @@ def main() -> None:
         "sample_count": len(records),
         "samples": records,
     }
+    if camera_group_manifest_path is not None:
+        bound_manifest["camera_group_manifest"] = {
+            "path": str(camera_group_manifest_path.relative_to(root)),
+            "sha256": sha256(camera_group_manifest_path),
+        }
     write_json(output_root / "bound_manifest.json", bound_manifest)
     print(f"bound manifest: {output_root / 'bound_manifest.json'}")
     print(f"samples: {len(records)}")

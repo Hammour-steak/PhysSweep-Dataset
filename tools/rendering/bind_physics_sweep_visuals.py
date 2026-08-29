@@ -10,6 +10,8 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic as write_json
@@ -17,6 +19,8 @@ from tools.core.paths import (
     project_relative_path as root_relative,
     resolve_project_path_within_root as project_path,
 )
+from tools.dataset_contract.trajectory_contract import object_trajectory_view
+from tools.rendering.camera_solver import audit_two_object_camera
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -120,15 +124,35 @@ def bind_one(
         "sha256": sha256(simulation_record_path),
     }
     bound["visualization"] = copy.deepcopy(parent_metadata["visualization"])
+    objects = sweep.get("simulation", {}).get("objects", [])
+    if isinstance(objects, list) and len(objects) == 2:
+        inherited_camera = bound["visualization"]["camera"]
+        if inherited_camera.get("solver_version") != (
+            "joint_full_motion_envelope_group_camera_v1"
+        ):
+            raise ValueError(
+                f"two-object sweep lacks a group-envelope camera: {scene_id}"
+            )
+        with np.load(trajectory_path) as source:
+            trajectory = {key: source[key] for key in source.files}
+        trajectory = object_trajectory_view(sweep, trajectory)
+        inherited_camera["diagnostics"].update(
+            audit_two_object_camera(sweep, trajectory, inherited_camera)
+        )
     bound["visualization"]["binding_version"] = (
         "physweep_pybullet_sweep_visual_binding_v1"
     )
-    bound["visualization"]["camera_inheritance"] = {
+    camera_inheritance = {
         "policy": "copied_from_parent_base",
         "parent_scene_id": parent_scene_id,
         "parent_bound_metadata_path": root_relative(root, parent_bound_path),
         "parent_bound_metadata_sha256": sha256(parent_bound_path),
     }
+    if isinstance(objects, list) and len(objects) == 2:
+        camera_inheritance["derived_trajectory_camera_audit"] = (
+            "joint_full_motion_envelope_camera_v1"
+        )
+    bound["visualization"]["camera_inheritance"] = camera_inheritance
     render = bound["visualization"]["render"]
     render["video_path"] = root_relative(
         root, published_root / "videos" / f"{scene_id}.mp4"

@@ -24,8 +24,18 @@ _AUDIT_FIELDS = {
     "maximum_first_contact_time_s",
 }
 _OBSERVATION_FIELDS = {
+    "schema_version",
     "maximum_camera_side_deviation_degrees",
-    "minimum_collision_projected_separation_to_span_ratio",
+    "preferred_camera_elevation_degrees",
+    "minimum_camera_elevation_degrees",
+    "maximum_camera_elevation_degrees",
+    "maximum_camera_distance_m",
+    "maximum_camera_distance_above_minimum_m",
+    "full_motion_envelope_margin_ndc",
+    "preferred_full_motion_envelope_span_ndc",
+    "minimum_per_object_median_span_ndc",
+    "minimum_per_object_unoccluded_fraction",
+    "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio",
 }
 _COMMON_INTENT_FIELDS = {
     "id",
@@ -92,18 +102,66 @@ def _validate_contracts(
     )
     if set(observation) != _OBSERVATION_FIELDS:
         raise ValueError("two-object observation fields are incomplete")
-    camera_side_deviation, projected_separation_ratio = finite_vector(
+    if (
+        observation.get("schema_version")
+        != "physweep_two_object_camera_observation_v1"
+    ):
+        raise ValueError("unsupported two-object camera observation")
+    (
+        camera_side_deviation,
+        preferred_elevation,
+        minimum_elevation,
+        maximum_elevation,
+        maximum_camera_distance,
+        maximum_distance_above_minimum,
+        envelope_margin,
+        preferred_envelope_span,
+        minimum_object_span,
+        minimum_unoccluded_fraction,
+        projected_separation_ratio,
+    ) = finite_vector(
         [
             observation["maximum_camera_side_deviation_degrees"],
+            observation["preferred_camera_elevation_degrees"],
+            observation["minimum_camera_elevation_degrees"],
+            observation["maximum_camera_elevation_degrees"],
+            observation["maximum_camera_distance_m"],
+            observation["maximum_camera_distance_above_minimum_m"],
+            observation["full_motion_envelope_margin_ndc"],
+            observation["preferred_full_motion_envelope_span_ndc"],
+            observation["minimum_per_object_median_span_ndc"],
+            observation["minimum_per_object_unoccluded_fraction"],
             observation[
-                "minimum_collision_projected_separation_to_span_ratio"
+                "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio"
             ],
         ],
-        2,
+        11,
         "two-object observation values",
     )
-    if not 0.0 <= camera_side_deviation <= 45.0:
-        raise ValueError("camera side deviation must lie in [0, 45] degrees")
+    if not 0.0 < camera_side_deviation <= 45.0:
+        raise ValueError("camera side deviation must lie in (0, 45] degrees")
+    if not (
+        0.0
+        < minimum_elevation
+        <= preferred_elevation
+        <= maximum_elevation
+        < 90.0
+    ):
+        raise ValueError("two-object camera elevations are invalid")
+    if (
+        maximum_camera_distance <= 0.0
+        or maximum_distance_above_minimum <= 0.0
+        or maximum_distance_above_minimum >= maximum_camera_distance
+    ):
+        raise ValueError("two-object camera distance limits are invalid")
+    if not 0.0 <= envelope_margin < 0.20:
+        raise ValueError("full-motion envelope margin must lie in [0, 0.20)")
+    if not 0.0 < preferred_envelope_span <= 1.0 - 2.0 * envelope_margin:
+        raise ValueError("preferred full-motion envelope span is invalid")
+    if not 0.0 < minimum_object_span <= preferred_envelope_span:
+        raise ValueError("minimum per-object span is invalid")
+    if not 0.0 < minimum_unoccluded_fraction <= 1.0:
+        raise ValueError("minimum per-object unoccluded fraction is invalid")
     if not 0.0 < projected_separation_ratio <= 1.0:
         raise ValueError("projected separation ratio must lie in (0, 1]")
     layout = str(intent.get("layout", ""))

@@ -1,16 +1,17 @@
-"""Deterministic camera geometry and search for the generic one-object binder."""
+"""Deterministic camera geometry and search for rigid-object binders."""
 
 from __future__ import annotations
 
 import copy
 import hashlib
 import math
-from typing import Any
+from typing import Any, Sequence
 
 import numpy as np
 
 from tools.core.camera_geometry import (
     camera_azimuth_offsets,
+    deterministic_pair_side_azimuths,
     inclined_surface_side_readability,
 )
 from tools.dataset_contract.object_identity_contract import (
@@ -33,32 +34,78 @@ def _aabb_corners(lower: np.ndarray, upper: np.ndarray) -> np.ndarray:
     )
 
 
-def _solve_two_object_camera(
-    metadata: dict[str, Any],
-    trajectory: dict[str, np.ndarray],
-    rules: dict[str, Any],
-) -> dict[str, Any]:
-    """Frame the joint trajectory, then enforce visibility for each object."""
+def _trajectory_aabb_corners(
+    lower: np.ndarray, upper: np.ndarray
+) -> np.ndarray:
+    if (
+        lower.ndim != 2
+        or lower.shape[1] != 3
+        or upper.shape != lower.shape
+        or not np.isfinite(lower).all()
+        or not np.isfinite(upper).all()
+        or bool(np.any(lower > upper))
+    ):
+        raise ValueError("trajectory AABBs must be finite ordered (F, 3) arrays")
+    return np.stack(
+        [
+            np.column_stack(
+                [
+                    lower[:, axis] if bit == 0 else upper[:, axis]
+                    for axis, bit in enumerate(bits)
+                ]
+            )
+            for bits in (
+                (0, 0, 0),
+                (0, 0, 1),
+                (0, 1, 0),
+                (0, 1, 1),
+                (1, 0, 0),
+                (1, 0, 1),
+                (1, 1, 0),
+                (1, 1, 1),
+            )
+        ],
+        axis=1,
+    )
 
+
+def _frame_visibility_mask(
+    projected: np.ndarray, margin_ndc: float
+) -> np.ndarray:
+    return np.logical_and.reduce(
+        [
+            projected[..., 0] >= margin_ndc,
+            projected[..., 0] <= 1.0 - margin_ndc,
+            projected[..., 1] >= margin_ndc,
+            projected[..., 1] <= 1.0 - margin_ndc,
+            projected[..., 2] > 0.1,
+        ]
+    )
+
+
+def _projected_span(points: np.ndarray) -> float:
+    return max(float(np.ptp(points[:, 0])), float(np.ptp(points[:, 1])))
+
+
+def _two_object_camera_state(
+    metadata: dict[str, Any], trajectory: dict[str, np.ndarray]
+) -> tuple[
+    list[dict[str, Any]],
+    list[str],
+    dict[str, Any],
+    str,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+]:
     objects = require_simulation_objects(metadata, (2,), __name__)
     object_ids = [str(obj["object_id"]) for obj in objects]
     interaction = metadata["simulation"].get("interaction")
     if not isinstance(interaction, dict):
         raise ValueError("joint camera requires simulation.interaction")
-    maximum_side_deviation = float(
-        interaction["maximum_camera_side_deviation_degrees"]
-    )
-    if (
-        not np.isfinite(maximum_side_deviation)
-        or not 0.0 < maximum_side_deviation <= 45.0
-    ):
-        raise ValueError("camera side deviation must lie in (0, 45]")
-    sweep = metadata.get("sweep")
-    camera_group_id = str(metadata["scene_id"])
-    if isinstance(sweep, dict):
-        parent_id = sweep.get("parent_scene_id")
-        if parent_id:
-            camera_group_id = str(parent_id)
+    interaction_class = str(interaction.get("interaction_class", ""))
+    if interaction_class not in {"interacting", "independent"}:
+        raise ValueError("joint camera requires a declared interaction class")
     positions = np.stack(
         [
             np.asarray(trajectory[f"{object_id}__position_m"], dtype=np.float64)
@@ -80,27 +127,161 @@ def _solve_two_object_camera(
         ],
         axis=1,
     )
-    virtual_id = "camera_joint_dynamic_envelope"
-    virtual_metadata = copy.deepcopy(metadata)
-    virtual_metadata["scene_id"] = camera_group_id
-    virtual_object = copy.deepcopy(objects[0])
-    virtual_object["object_id"] = virtual_id
-    virtual_object["geometry"] = {
-        "type": "cuboid",
-        "size_m": (upper[0].max(axis=0) - lower[0].min(axis=0)).tolist(),
+    if (
+        positions.ndim != 3
+        or positions.shape[1:] != (2, 3)
+        or positions.shape != lower.shape
+        or positions.shape != upper.shape
+        or positions.shape[0] < 2
+        or not np.isfinite(positions).all()
+        or not np.isfinite(lower).all()
+        or not np.isfinite(upper).all()
+        or bool(np.any(lower > upper))
+    ):
+        raise ValueError("joint camera trajectories must be finite ordered arrays")
+    return (
+        objects,
+        object_ids,
+        interaction,
+        interaction_class,
+        positions,
+        lower,
+        upper,
+    )
+
+
+def _two_object_observation_contract(
+    interaction: dict[str, Any],
+) -> dict[str, float]:
+    values = {
+        "maximum_side_deviation": float(
+            interaction["maximum_camera_side_deviation_degrees"]
+        ),
+        "minimum_elevation": float(
+            interaction["minimum_camera_elevation_degrees"]
+        ),
+        "preferred_elevation": float(
+            interaction["preferred_camera_elevation_degrees"]
+        ),
+        "maximum_elevation": float(
+            interaction["maximum_camera_elevation_degrees"]
+        ),
+        "maximum_camera_distance": float(interaction["maximum_camera_distance_m"]),
+        "maximum_distance_above_minimum": float(
+            interaction["maximum_camera_distance_above_minimum_m"]
+        ),
+        "envelope_margin": float(interaction["full_motion_envelope_margin_ndc"]),
+        "preferred_envelope_span": float(
+            interaction["preferred_full_motion_envelope_span_ndc"]
+        ),
+        "minimum_object_span": float(
+            interaction["minimum_per_object_median_span_ndc"]
+        ),
+        "minimum_unoccluded": float(
+            interaction["minimum_per_object_unoccluded_fraction"]
+        ),
+        "minimum_keyframe_separation_ratio": float(
+            interaction[
+                "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio"
+            ]
+        ),
     }
-    virtual_metadata["simulation"]["objects"] = [virtual_object]
-    virtual_metadata["camera_request"]["observation"]["focus_event"] = {
-        "type": "fraction",
-        "fraction": 1.0,
-    }
-    virtual_metadata["camera_request"][
-        "maximum_local_azimuth_deviation_degrees"
-    ] = maximum_side_deviation
-    virtual_trajectory = dict(trajectory)
-    virtual_trajectory[f"{virtual_id}__position_m"] = positions.mean(axis=1)
-    virtual_trajectory[f"{virtual_id}__aabb_min_m"] = lower.min(axis=1)
-    virtual_trajectory[f"{virtual_id}__aabb_max_m"] = upper.max(axis=1)
+    if not all(np.isfinite(value) for value in values.values()):
+        raise ValueError("joint camera observation values must be finite")
+    if not 0.0 < values["maximum_side_deviation"] <= 45.0:
+        raise ValueError("camera side deviation must lie in (0, 45]")
+    if not (
+        0.0
+        < values["minimum_elevation"]
+        <= values["preferred_elevation"]
+        <= values["maximum_elevation"]
+        < 90.0
+    ):
+        raise ValueError("joint camera elevations are invalid")
+    if (
+        values["maximum_camera_distance"] <= 0.0
+        or values["maximum_distance_above_minimum"] <= 0.0
+        or values["maximum_distance_above_minimum"]
+        >= values["maximum_camera_distance"]
+    ):
+        raise ValueError("joint camera distance limits are invalid")
+    maximum_envelope_span = 1.0 - 2.0 * values["envelope_margin"]
+    if (
+        not 0.0 <= values["envelope_margin"] < 0.20
+        or not 0.0
+        < values["preferred_envelope_span"]
+        <= maximum_envelope_span
+        or not 0.0
+        < values["minimum_object_span"]
+        <= values["preferred_envelope_span"]
+        or not 0.0 < values["minimum_unoccluded"] <= 1.0
+        or not 0.0 < values["minimum_keyframe_separation_ratio"] <= 1.0
+    ):
+        raise ValueError("joint full-motion envelope constraints are invalid")
+    values["maximum_envelope_span"] = maximum_envelope_span
+    return values
+
+
+def _camera_group_id(metadata: dict[str, Any]) -> str:
+    sweep = metadata.get("sweep")
+    if not isinstance(sweep, dict):
+        return str(metadata["scene_id"])
+    parent_id = sweep.get("parent_scene_id")
+    if parent_id:
+        return str(parent_id)
+    return str(metadata["scene_id"])
+
+
+def audit_two_object_camera(
+    metadata: dict[str, Any],
+    trajectory: dict[str, np.ndarray],
+    camera: dict[str, Any],
+) -> dict[str, Any]:
+    """Audit one fixed camera against both complete object trajectories."""
+
+    (
+        objects,
+        object_ids,
+        interaction,
+        interaction_class,
+        positions,
+        lower,
+        upper,
+    ) = _two_object_camera_state(metadata, trajectory)
+    contract = _two_object_observation_contract(interaction)
+    position = np.asarray(camera["position_m"], dtype=np.float64)
+    target = np.asarray(camera["target_m"], dtype=np.float64)
+    lens = float(camera["focal_length_mm"])
+    sensor_width = float(camera["sensor_width_mm"])
+    if (
+        position.shape != (3,)
+        or target.shape != (3,)
+        or not np.isfinite(position).all()
+        or not np.isfinite(target).all()
+        or not np.isfinite(lens)
+        or not np.isfinite(sensor_width)
+        or lens <= 0.0
+        or sensor_width <= 0.0
+    ):
+        raise ValueError("joint camera parameters must be finite and positive")
+    view_vector = position - target
+    distance = float(np.linalg.norm(view_vector))
+    horizontal_distance = float(np.linalg.norm(view_vector[:2]))
+    if distance <= 1.0e-8 or horizontal_distance <= 1.0e-8:
+        raise ValueError("joint camera view vector is degenerate")
+    elevation = math.degrees(math.atan2(float(view_vector[2]), horizontal_distance))
+    if not (
+        contract["minimum_elevation"] - 1.0e-6
+        <= elevation
+        <= contract["maximum_elevation"] + 1.0e-6
+    ):
+        raise ValueError(
+            f"joint camera elevation is outside the contract: {elevation:.6f}"
+        )
+    if distance > contract["maximum_camera_distance"] + 1.0e-6:
+        raise ValueError(
+            f"joint camera exceeds its distance limit: {distance:.6f}"
+        )
     approach_axis = np.asarray(interaction["approach_axis_xy"], dtype=np.float64)
     if approach_axis.shape != (2,) or not np.isfinite(approach_axis).all():
         raise ValueError("pair interaction requires a finite approach_axis_xy")
@@ -108,69 +289,74 @@ def _solve_two_object_camera(
     if approach_norm <= 1.0e-8:
         raise ValueError("pair interaction approach axis must be nonzero")
     approach_axis /= approach_norm
-    approach_degrees = math.degrees(math.atan2(approach_axis[1], approach_axis[0]))
-    scene_digest = hashlib.sha256(
-        f"joint-camera-side:{camera_group_id}".encode("utf-8")
-    ).digest()
-    side = -1.0 if scene_digest[0] % 2 else 1.0
-    preferred_azimuth = approach_degrees + side * 90.0
-    joint_rules = copy.deepcopy(rules)
-    profile = str(virtual_metadata["camera_request"]["profile"])
-    matching_profiles = [
-        record
-        for record in joint_rules["axes"]["camera_axis"]
-        if str(record["label"]) == profile
-    ]
-    if len(matching_profiles) != 1:
-        raise ValueError(f"joint camera profile is not unique: {profile}")
-    matching_profiles[0]["overrides"]["view_rule"]["azimuth_degrees"] = (
-        preferred_azimuth
+    horizontal_view = view_vector[:2] / horizontal_distance
+    side_deviation = math.degrees(
+        math.asin(float(np.clip(abs(horizontal_view @ approach_axis), 0.0, 1.0)))
     )
-    camera = solve_camera(virtual_metadata, virtual_trajectory, joint_rules)
+    if side_deviation > contract["maximum_side_deviation"] + 1.0e-6:
+        raise ValueError(
+            "joint camera is not sufficiently side-on: "
+            f"deviation={side_deviation:.6f}"
+        )
 
-    position = np.asarray(camera["position_m"], dtype=np.float64)
-    target = np.asarray(camera["target_m"], dtype=np.float64)
-    lens = float(camera["focal_length_mm"])
-    sensor_width = float(camera["sensor_width_mm"])
     aspect = 16.0 / 9.0
+    envelope_margin = contract["envelope_margin"]
     blockers = camera_occlusion_colliders(metadata)
-    request = metadata["camera_request"]
-    minimum_full_visible = float(
-        request["minimum_full_trajectory_center_visible_fraction"]
+    envelope_lower = lower.min(axis=(0, 1))
+    envelope_upper = upper.max(axis=(0, 1))
+    envelope_corners = _aabb_corners(envelope_lower, envelope_upper)
+    projected_envelope = project_points(
+        envelope_corners, position, target, lens, sensor_width, aspect
     )
-    minimum_initial_visible = float(
-        request.get("minimum_initial_object_visible_fraction", 0.75)
-    )
-    minimum_unoccluded = float(
-        request.get("minimum_full_trajectory_unoccluded_fraction", 0.70)
-    )
+    envelope_visible = _frame_visibility_mask(projected_envelope, envelope_margin)
+    envelope_visible_fraction = float(envelope_visible.mean())
+    if not bool(envelope_visible.all()):
+        raise ValueError(
+            "joint camera does not contain the complete full-motion envelope: "
+            f"visible_fraction={envelope_visible_fraction:.6f}"
+        )
+    envelope_projected_span = _projected_span(projected_envelope)
     per_object: dict[str, dict[str, float]] = {}
     for object_index, object_id in enumerate(object_ids):
-        projected = project_points(
+        projected_centers = project_points(
             positions[:, object_index], position, target, lens, sensor_width, aspect
         )
-        center_visible = float(image_center_visibility_mask(projected).mean())
-        initial_projected = project_points(
-            _aabb_corners(lower[0, object_index], upper[0, object_index]),
+        center_visible = float(
+            _frame_visibility_mask(projected_centers, envelope_margin).mean()
+        )
+        object_corners = _trajectory_aabb_corners(
+            lower[:, object_index], upper[:, object_index]
+        )
+        projected_corners = project_points(
+            object_corners.reshape(-1, 3),
             position,
             target,
             lens,
             sensor_width,
             aspect,
+        ).reshape(object_corners.shape)
+        aabb_visible = _frame_visibility_mask(projected_corners, envelope_margin)
+        aabb_visible_fraction = float(aabb_visible.mean())
+        projected_spans = np.maximum(
+            np.ptp(projected_corners[..., 0], axis=1),
+            np.ptp(projected_corners[..., 1], axis=1),
         )
-        initial_visible = float(image_center_visibility_mask(initial_projected).mean())
+        median_span = float(np.median(projected_spans))
         static_unoccluded = unoccluded_fraction(
             position, positions[:, object_index], blockers
         )
         per_object[object_id] = {
             "full_center_visible_fraction": center_visible,
-            "initial_visible_fraction": initial_visible,
+            "full_motion_aabb_visible_fraction": aabb_visible_fraction,
+            "initial_aabb_visible_fraction": float(aabb_visible[0].mean()),
+            "initial_span_ndc": float(projected_spans[0]),
+            "median_span_ndc": median_span,
             "static_unoccluded_fraction": static_unoccluded,
         }
         if (
-            center_visible < minimum_full_visible
-            or initial_visible < minimum_initial_visible
-            or static_unoccluded < minimum_unoccluded
+            not bool(aabb_visible.all())
+            or median_span < contract["minimum_object_span"]
+            or static_unoccluded < contract["minimum_unoccluded"]
         ):
             raise ValueError(
                 f"joint camera violates per-object visibility for {object_id}: "
@@ -181,67 +367,409 @@ def _solve_two_object_camera(
         trajectory[f"{object_ids[0]}__object_contact_count__{object_ids[1]}"],
         dtype=np.int32,
     )
+    if pair_contacts.shape != (positions.shape[0],):
+        raise ValueError("pair-contact trajectory length is inconsistent")
     collision_indices = np.flatnonzero(pair_contacts > 0)
-    if not collision_indices.size:
-        raise ValueError("joint camera requires the declared pair collision")
-    collision_index = int(collision_indices[0])
-    collision_projection = project_points(
-        positions[collision_index], position, target, lens, sensor_width, aspect
+    if interaction_class == "interacting":
+        if not collision_indices.size:
+            raise ValueError("joint camera requires the declared pair collision")
+        pair_keyframe = int(collision_indices[0])
+        pair_keyframe_kind = "first_contact"
+    else:
+        if collision_indices.size:
+            raise ValueError("independent joint camera received a pair collision")
+        pair_keyframe = int(
+            np.argmin(np.linalg.norm(positions[:, 1] - positions[:, 0], axis=1))
+        )
+        pair_keyframe_kind = "closest_approach"
+    keyframe_projection = project_points(
+        positions[pair_keyframe], position, target, lens, sensor_width, aspect
     )
-    if not bool(image_center_visibility_mask(collision_projection).all()):
-        raise ValueError("joint camera does not contain both collision centers")
-    projected_collision_separation = float(
-        np.linalg.norm(collision_projection[1, :2] - collision_projection[0, :2])
+    if not bool(_frame_visibility_mask(keyframe_projection, envelope_margin).all()):
+        raise ValueError("joint camera does not contain both pair keyframe centers")
+    projected_keyframe_separation = float(
+        np.linalg.norm(keyframe_projection[1, :2] - keyframe_projection[0, :2])
     )
     separation_direction = (
-        collision_projection[1, :2] - collision_projection[0, :2]
-    ) / max(projected_collision_separation, 1.0e-8)
-    collision_spans = []
-    for object_index in range(2):
-        projected_corners = project_points(
-            _aabb_corners(
-                lower[collision_index, object_index],
-                upper[collision_index, object_index],
-            ),
-            position,
-            target,
-            lens,
-            sensor_width,
-            aspect,
-        )
-        collision_spans.append(
-            float(np.ptp(projected_corners[:, :2] @ separation_direction))
-        )
-    collision_separation_ratio = projected_collision_separation / max(
-        min(collision_spans), 1.0e-8
+        keyframe_projection[1, :2] - keyframe_projection[0, :2]
+    ) / max(projected_keyframe_separation, 1.0e-8)
+    direction_scale = math.sqrt(
+        float(separation_direction[0]) ** 2
+        + (aspect * float(separation_direction[1])) ** 2
     )
-    minimum_collision_separation_ratio = float(
-        interaction["minimum_collision_projected_separation_to_span_ratio"]
+    keyframe_projected_radii = []
+    for object_index, obj in enumerate(objects):
+        geometry = obj.get("geometry", {})
+        size = np.asarray(geometry.get("size_m"), dtype=np.float64)
+        if (
+            geometry.get("type") != "sphere"
+            or size.shape != (3,)
+            or not np.isfinite(size).all()
+            or bool(np.any(size <= 0.0))
+            or not np.allclose(size, size[0], atol=1.0e-8, rtol=0.0)
+        ):
+            raise ValueError("joint pair-keyframe visibility requires spheres")
+        depth = float(keyframe_projection[object_index, 2])
+        keyframe_projected_radii.append(
+            (lens / sensor_width)
+            * (0.5 * float(size[0]))
+            * direction_scale
+            / depth
+        )
+    keyframe_separation_ratio = projected_keyframe_separation / max(
+        sum(keyframe_projected_radii), 1.0e-8
     )
-    if (
-        not np.isfinite(minimum_collision_separation_ratio)
-        or minimum_collision_separation_ratio <= 0.0
-    ):
-        raise ValueError("collision separation ratio must be positive")
-    if collision_separation_ratio < minimum_collision_separation_ratio:
+    if keyframe_separation_ratio < contract["minimum_keyframe_separation_ratio"]:
         raise ValueError(
-            "joint camera collapses the two objects at collision: "
-            f"ratio={collision_separation_ratio:.6f}"
+            "joint camera visually overlaps the two objects at the pair keyframe: "
+            f"ratio={keyframe_separation_ratio:.6f}"
         )
-    camera["solver_version"] = "joint_motion_structure_camera_v1"
-    camera["diagnostics"]["object_count"] = 2
-    camera["diagnostics"]["per_object_visibility"] = per_object
-    camera["diagnostics"]["pair_collision_frame"] = collision_index
-    camera["diagnostics"]["pair_collision_projected_center_separation_ndc"] = round(
-        projected_collision_separation, 6
+    return {
+        "object_count": 2,
+        "per_object_visibility": per_object,
+        "joint_motion_envelope_world_bounds_m": {
+            "min": [round(float(value), 6) for value in envelope_lower],
+            "max": [round(float(value), 6) for value in envelope_upper],
+        },
+        "joint_motion_envelope_visible_fraction": round(
+            envelope_visible_fraction, 6
+        ),
+        "joint_motion_envelope_span_ndc": round(envelope_projected_span, 6),
+        "pair_keyframe_kind": pair_keyframe_kind,
+        "pair_keyframe_index": pair_keyframe,
+        "pair_keyframe_projected_center_separation_ndc": round(
+            projected_keyframe_separation, 6
+        ),
+        "pair_keyframe_projected_center_separation_to_radius_sum_ratio": round(
+            keyframe_separation_ratio, 6
+        ),
+        "pair_keyframe_projected_silhouette_radii_ndc": [
+            round(value, 6) for value in keyframe_projected_radii
+        ],
+        "side_view_deviation_degrees": round(side_deviation, 6),
+        "camera_elevation_degrees": round(elevation, 6),
+        "camera_distance_m": round(distance, 6),
+    }
+
+
+def _solve_two_object_camera(
+    metadata: dict[str, Any],
+    trajectory: dict[str, np.ndarray],
+    rules: dict[str, Any],
+    *,
+    audit_members: Sequence[
+        tuple[dict[str, Any], dict[str, np.ndarray]]
+    ] = (),
+) -> dict[str, Any]:
+    """Frame and audit the complete spatiotemporal envelope of both objects."""
+
+    (
+        objects,
+        object_ids,
+        interaction,
+        interaction_class,
+        positions,
+        lower,
+        upper,
+    ) = _two_object_camera_state(metadata, trajectory)
+    contract = _two_object_observation_contract(interaction)
+    maximum_side_deviation = contract["maximum_side_deviation"]
+    minimum_elevation = contract["minimum_elevation"]
+    preferred_elevation = contract["preferred_elevation"]
+    maximum_elevation = contract["maximum_elevation"]
+    maximum_camera_distance = contract["maximum_camera_distance"]
+    maximum_distance_above_minimum = contract["maximum_distance_above_minimum"]
+    envelope_margin = contract["envelope_margin"]
+    preferred_envelope_span = contract["preferred_envelope_span"]
+    minimum_object_span = contract["minimum_object_span"]
+    maximum_envelope_span = contract["maximum_envelope_span"]
+    camera_group_id = _camera_group_id(metadata)
+    joint_lower = lower.min(axis=1)
+    joint_upper = upper.max(axis=1)
+    envelope_lower = joint_lower.min(axis=0)
+    envelope_upper = joint_upper.max(axis=0)
+    envelope_size = envelope_upper - envelope_lower
+    if bool(np.any(envelope_size <= 0.0)):
+        raise ValueError("joint full-motion envelope must have positive size")
+    envelope_center = 0.5 * (envelope_lower + envelope_upper)
+    virtual_id = "camera_joint_dynamic_envelope"
+    virtual_metadata = copy.deepcopy(metadata)
+    virtual_metadata["scene_id"] = camera_group_id
+    virtual_object = copy.deepcopy(objects[0])
+    virtual_object["object_id"] = virtual_id
+    virtual_object["geometry"] = {
+        "type": "cuboid",
+        "size_m": envelope_size.tolist(),
+    }
+    virtual_metadata["simulation"]["objects"] = [virtual_object]
+    virtual_request = virtual_metadata["camera_request"]
+    joint_observation = virtual_request["observation"]
+    joint_observation.update(
+        {
+            "intent": "joint_full_motion_envelope",
+            "focus_event": {"type": "fraction", "fraction": 1.0},
+            "structure_context": "horizontal_surface",
+            "preferred_object_span_ndc": preferred_envelope_span,
+            "minimum_median_object_span_ndc": minimum_object_span,
+        }
     )
-    camera["diagnostics"]["pair_collision_projected_separation_to_span_ratio"] = (
-        round(collision_separation_ratio, 6)
+    virtual_request.update(
+        {
+            "minimum_full_trajectory_center_visible_fraction": 1.0,
+            "minimum_primary_trajectory_center_visible_fraction": 1.0,
+            "full_trajectory_camera_target_blend": 1.0,
+            "minimum_initial_object_span_ndc": minimum_object_span,
+            "minimum_initial_object_visible_fraction": 1.0,
+            "initial_object_center_margin_ndc": envelope_margin,
+            "maximum_initial_object_span_ndc": maximum_envelope_span,
+            "soft_maximum_focus_span_ndc": preferred_envelope_span,
+            "maximum_focus_span_ndc": maximum_envelope_span,
+            "minimum_camera_elevation_degrees": minimum_elevation,
+            "maximum_camera_elevation_degrees": maximum_elevation,
+            "maximum_camera_distance_m": maximum_camera_distance,
+            "maximum_camera_distance_above_minimum_m": (
+                maximum_distance_above_minimum
+            ),
+            "maximum_local_azimuth_deviation_degrees": maximum_side_deviation,
+            "minimum_primary_trajectory_unoccluded_fraction": 0.0,
+            "minimum_full_trajectory_unoccluded_fraction": 0.0,
+            "allow_partial_exit": False,
+        }
     )
-    camera["diagnostics"]["pair_preferred_side_azimuth_degrees"] = round(
-        preferred_azimuth, 6
+    virtual_trajectory = dict(trajectory)
+    virtual_trajectory[f"{virtual_id}__position_m"] = np.tile(
+        envelope_center, (positions.shape[0], 1)
     )
+    virtual_trajectory[f"{virtual_id}__aabb_min_m"] = np.tile(
+        envelope_lower, (positions.shape[0], 1)
+    )
+    virtual_trajectory[f"{virtual_id}__aabb_max_m"] = np.tile(
+        envelope_upper, (positions.shape[0], 1)
+    )
+    approach_axis = np.asarray(interaction["approach_axis_xy"], dtype=np.float64)
+    if approach_axis.shape != (2,) or not np.isfinite(approach_axis).all():
+        raise ValueError("pair interaction requires a finite approach_axis_xy")
+    approach_norm = float(np.linalg.norm(approach_axis))
+    if approach_norm <= 1.0e-8:
+        raise ValueError("pair interaction approach axis must be nonzero")
+    approach_axis /= approach_norm
+    profile = str(virtual_metadata["camera_request"]["profile"])
+    failures = []
+    camera = None
+    selected_azimuth = None
+    selected_member_diagnostics: list[dict[str, Any]] = []
+    for candidate_azimuth in deterministic_pair_side_azimuths(
+        camera_group_id, approach_axis
+    ):
+        joint_rules = copy.deepcopy(rules)
+        matching_profiles = [
+            record
+            for record in joint_rules["axes"]["camera_axis"]
+            if str(record["label"]) == profile
+        ]
+        if len(matching_profiles) != 1:
+            raise ValueError(f"joint camera profile is not unique: {profile}")
+        matching_profiles[0]["overrides"]["view_rule"]["azimuth_degrees"] = (
+            candidate_azimuth
+        )
+        matching_profiles[0]["overrides"]["view_rule"]["elevation_degrees"] = (
+            preferred_elevation
+        )
+        try:
+            candidate = solve_camera(
+                virtual_metadata, virtual_trajectory, joint_rules
+            )
+            candidate_diagnostics = audit_two_object_camera(
+                metadata, trajectory, candidate
+            )
+            member_diagnostics = []
+            for member_metadata, member_trajectory in audit_members:
+                try:
+                    member_diagnostics.append(
+                        audit_two_object_camera(
+                            member_metadata, member_trajectory, candidate
+                        )
+                    )
+                except ValueError as error:
+                    raise ValueError(
+                        "camera group member failed: "
+                        f"{member_metadata['scene_id']}: {error}"
+                    ) from error
+        except ValueError as error:
+            failures.append(f"azimuth={candidate_azimuth:.6f}: {error}")
+            continue
+        camera = candidate
+        camera["diagnostics"].update(candidate_diagnostics)
+        selected_azimuth = candidate_azimuth
+        selected_member_diagnostics = member_diagnostics
+        break
+    if camera is None or selected_azimuth is None:
+        raise ValueError(
+            "joint camera could not solve either side; " + " | ".join(failures)
+        )
+    camera["solver_version"] = (
+        "joint_full_motion_envelope_group_camera_v1"
+        if audit_members
+        else "joint_full_motion_envelope_camera_v1"
+    )
+    camera["diagnostics"]["pair_selected_side_azimuth_degrees"] = round(
+        selected_azimuth, 6
+    )
+    camera["diagnostics"]["pair_side_candidate_failures"] = failures
+    if audit_members:
+        representative = selected_member_diagnostics[0]
+        camera["diagnostics"].update(
+            {
+                key: value
+                for key, value in representative.items()
+                if key.startswith("pair_keyframe_")
+            }
+        )
+        camera["diagnostics"]["camera_group"] = {
+            "group_id": camera_group_id,
+            "member_count": len(audit_members),
+            "all_members_audited": True,
+            "minimum_joint_motion_envelope_visible_fraction": min(
+                record["joint_motion_envelope_visible_fraction"]
+                for record in selected_member_diagnostics
+            ),
+            "minimum_per_object_median_span_ndc": {
+                object_id: round(
+                    min(
+                        record["per_object_visibility"][object_id][
+                            "median_span_ndc"
+                        ]
+                        for record in selected_member_diagnostics
+                    ),
+                    6,
+                )
+                for object_id in object_ids
+            },
+            "minimum_per_object_unoccluded_fraction": {
+                object_id: round(
+                    min(
+                        record["per_object_visibility"][object_id][
+                            "static_unoccluded_fraction"
+                        ]
+                        for record in selected_member_diagnostics
+                    ),
+                    6,
+                )
+                for object_id in object_ids
+            },
+        }
     return camera
+
+
+def solve_two_object_camera_group(
+    metadata: dict[str, Any],
+    members: Sequence[tuple[dict[str, Any], dict[str, np.ndarray]]],
+    rules: dict[str, Any],
+) -> dict[str, Any]:
+    """Freeze one camera that passes every trajectory in a one-factor group."""
+
+    if not members:
+        raise ValueError("two-object camera group has no members")
+    base_objects, base_ids, base_interaction, base_class, *_ = (
+        _two_object_camera_state(metadata, members[0][1])
+    )
+    base_contract = _two_object_observation_contract(base_interaction)
+    group_id = _camera_group_id(metadata)
+    base_camera_request = metadata["camera_request"]
+    base_support = metadata["simulation"]["support"]
+    binding_sha256 = str(
+        metadata.get("environment_binding", {}).get("binding_sha256", "")
+    )
+    if not binding_sha256:
+        raise ValueError("two-object camera group lacks an environment binding")
+    base_static_objects = [
+        {
+            "object_id": obj["object_id"],
+            "geometry": obj["geometry"],
+            "initial_state": obj["initial_state"],
+        }
+        for obj in base_objects
+    ]
+    normalized = []
+    seen_members = set()
+    for member_metadata, member_trajectory in sorted(
+        members,
+        key=lambda item: (
+            item[0].get("sweep", {}).get("kind") != "base",
+            str(item[0]["scene_id"]),
+        ),
+    ):
+        member_id = str(member_metadata["scene_id"])
+        if member_id in seen_members:
+            raise ValueError(f"duplicate camera group member: {member_id}")
+        seen_members.add(member_id)
+        (
+            member_objects,
+            member_ids,
+            member_interaction,
+            member_class,
+            *_,
+        ) = _two_object_camera_state(member_metadata, member_trajectory)
+        member_static_objects = [
+            {
+                "object_id": obj["object_id"],
+                "geometry": obj["geometry"],
+                "initial_state": obj["initial_state"],
+            }
+            for obj in member_objects
+        ]
+        if (
+            _camera_group_id(member_metadata) != group_id
+            or member_ids != base_ids
+            or member_class != base_class
+            or member_static_objects != base_static_objects
+            or member_metadata["camera_request"] != base_camera_request
+            or member_metadata["simulation"]["support"] != base_support
+            or _two_object_observation_contract(member_interaction)
+            != base_contract
+            or not np.allclose(
+                member_interaction["approach_axis_xy"],
+                base_interaction["approach_axis_xy"],
+                atol=1.0e-12,
+                rtol=0.0,
+            )
+            or str(
+                member_metadata.get("environment_binding", {}).get(
+                    "binding_sha256", ""
+                )
+            )
+            != binding_sha256
+        ):
+            raise ValueError(
+                f"incompatible two-object camera group member: {member_id}"
+            )
+        normalized.append((member_metadata, member_trajectory))
+
+    trajectory_keys = [
+        key
+        for object_id in base_ids
+        for key in (
+            f"{object_id}__position_m",
+            f"{object_id}__aabb_min_m",
+            f"{object_id}__aabb_max_m",
+        )
+    ]
+    trajectory_keys.append(
+        f"{base_ids[0]}__object_contact_count__{base_ids[1]}"
+    )
+    aggregate = {
+        key: np.concatenate(
+            [trajectory[key] for _, trajectory in normalized], axis=0
+        )
+        for key in trajectory_keys
+    }
+    return _solve_two_object_camera(
+        metadata,
+        aggregate,
+        rules,
+        audit_members=normalized,
+    )
+
 
 def project_points(
     points: np.ndarray,

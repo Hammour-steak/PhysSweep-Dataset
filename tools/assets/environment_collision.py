@@ -10,12 +10,13 @@ from typing import Any
 from tools.core.hashing import sha256_file as sha256
 from tools.core.hashing import sha256_json_binding as binding_sha256
 from tools.dataset_contract.object_identity_contract import (
+    require_simulation_objects,
     require_single_simulation_object,
 )
 
 
 BINDING_VERSION = "physweep_environment_binding_v3"
-SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1,)
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2)
 
 
 def camera_azimuth_degrees(
@@ -50,14 +51,12 @@ def _box(
     }
 
 
-def dynamic_back_wall_clearance_m(
-    metadata: dict[str, Any], outward: list[float]
+def _object_back_wall_clearance_m(
+    simulation: dict[str, Any],
+    obj: dict[str, Any],
+    outward: list[float],
 ) -> float:
-    """Conservative no-contact distance for motion directed toward a room wall."""
-
-    simulation = metadata["simulation"]
     duration = simulation.get("time", {}).get("duration_s")
-    obj = require_single_simulation_object(metadata, __name__)
     if duration is None:
         return 0.0
     velocity = obj.get("initial_state", {}).get("linear_velocity_m_s")
@@ -90,14 +89,22 @@ def dynamic_back_wall_clearance_m(
     return post_slope_speed * float(duration) + planar_radius + 0.25
 
 
-def dynamic_motion_lane(
-    metadata: dict[str, Any],
-) -> dict[str, Any] | None:
-    """Return a conservative planar capsule for set-piece clearance."""
+def dynamic_back_wall_clearance_m(
+    metadata: dict[str, Any], outward: list[float]
+) -> float:
+    """Conservative no-contact distance for motion directed toward a room wall."""
 
-    simulation = metadata["simulation"]
+    return _object_back_wall_clearance_m(
+        metadata["simulation"],
+        require_single_simulation_object(metadata, __name__),
+        outward,
+    )
+
+
+def _object_motion_lane(
+    simulation: dict[str, Any], obj: dict[str, Any]
+) -> dict[str, Any] | None:
     duration = simulation.get("time", {}).get("duration_s")
-    obj = require_single_simulation_object(metadata, __name__)
     if duration is None:
         return None
     state = obj.get("initial_state", {})
@@ -129,6 +136,39 @@ def dynamic_motion_lane(
         "length_m": post_slope_speed * float(duration),
         "radius_m": math.hypot(float(size[0]), float(size[1])) / 2.0 + 0.12,
     }
+
+
+def dynamic_motion_lane(
+    metadata: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Return a conservative planar capsule for set-piece clearance."""
+
+    return _object_motion_lane(
+        metadata["simulation"],
+        require_single_simulation_object(metadata, __name__),
+    )
+
+
+def _two_object_back_wall_clearance_m(
+    metadata: dict[str, Any], outward: list[float]
+) -> float:
+    simulation = metadata["simulation"]
+    return max(
+        (
+            _object_back_wall_clearance_m(simulation, obj, outward)
+            for obj in require_simulation_objects(metadata, (2,), __name__)
+        ),
+        default=0.0,
+    )
+
+
+def _two_object_motion_lanes(metadata: dict[str, Any]) -> list[dict[str, Any]]:
+    simulation = metadata["simulation"]
+    return [
+        lane
+        for obj in require_simulation_objects(metadata, (2,), __name__)
+        if (lane := _object_motion_lane(simulation, obj)) is not None
+    ]
 
 
 def clear_set_piece_from_motion_lane(
@@ -171,18 +211,38 @@ def clear_set_piece_from_motion_lane(
 
 
 def compile_environment_binding(
-    metadata: dict[str, Any], camera_axis: list[dict[str, Any]]
+    metadata: dict[str, Any],
+    camera_axis: list[dict[str, Any]],
+    *,
+    azimuth_override_degrees: float | None = None,
 ) -> dict[str, Any]:
-    """Freeze one environment's visual and collision geometry before simulation."""
+    """Freeze an environment around one or two dynamic objects."""
 
     scene_visual = metadata["appearance"]["scene_visual"]
     camera_profile = str(metadata["camera_request"]["profile"])
-    azimuth_degrees = camera_azimuth_degrees(camera_axis, camera_profile)
+    azimuth_degrees = (
+        camera_azimuth_degrees(camera_axis, camera_profile)
+        if azimuth_override_degrees is None
+        else float(azimuth_override_degrees)
+    )
+    if not math.isfinite(azimuth_degrees):
+        raise ValueError("environment camera azimuth must be finite")
     azimuth = math.radians(azimuth_degrees)
     outward = [math.cos(azimuth), math.sin(azimuth)]
     lateral = [-outward[1], outward[0]]
-    obj = require_single_simulation_object(metadata, __name__)
-    initial_position = obj["initial_state"]["position_m"]
+    objects = require_simulation_objects(
+        metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
+    )
+    initial_positions = [obj["initial_state"]["position_m"] for obj in objects]
+    initial_position = [
+        sum(float(position[axis]) for position in initial_positions) / len(objects)
+        for axis in range(3)
+    ]
+    action_anchor_rule = (
+        "initial_object_xy"
+        if len(objects) == 1
+        else "initial_dynamic_object_centroid_xy"
+    )
     scene_class = str(metadata["simulation"]["support"]["scene_class"])
     composition = scene_visual.get("composition")
     integrated_ground = (
@@ -196,7 +256,6 @@ def compile_environment_binding(
                 f"integrated ground environment cannot host {scene_class}"
             )
         anchor_xy = [float(initial_position[0]), float(initial_position[1])]
-        action_anchor_rule = "initial_object_xy"
         scene_anchor = [anchor_xy[0], anchor_xy[1], 0.0]
         if (
             bool(scene_visual.get("wall_enabled", False))
@@ -213,7 +272,6 @@ def compile_environment_binding(
             float(initial_position[1]),
             0.0,
         ]
-        action_anchor_rule = "initial_object_xy"
     wall_distance = 0.0 if integrated_ground else float(
         scene_visual["back_wall_distance_m"]
     )
@@ -222,7 +280,11 @@ def compile_environment_binding(
     dynamic_clearance = (
         0.0
         if integrated_ground
-        else dynamic_back_wall_clearance_m(metadata, outward)
+        else (
+            dynamic_back_wall_clearance_m(metadata, outward)
+            if len(objects) == 1
+            else _two_object_back_wall_clearance_m(metadata, outward)
+        )
     )
     wall_distance = max(wall_distance, dynamic_clearance)
     wall_center = [
@@ -232,7 +294,12 @@ def compile_environment_binding(
     wall_yaw = azimuth_degrees - 90.0
     visual_objects: list[dict[str, Any]] = []
     colliders: list[dict[str, Any]] = []
-    motion_lane = dynamic_motion_lane(metadata)
+    motion_lanes = (
+        [dynamic_motion_lane(metadata)]
+        if len(objects) == 1
+        else _two_object_motion_lanes(metadata)
+    )
+    motion_lanes = [lane for lane in motion_lanes if lane is not None]
 
     if not integrated_ground and bool(scene_visual.get("wall_enabled", True)):
         wall = _box(
@@ -313,12 +380,21 @@ def compile_environment_binding(
             + lateral[1] * lateral_offset
             + outward[1] * outward_offset,
         ]
-        center, lane_shift = clear_set_piece_from_motion_lane(
-            center,
-            [float(piece["size_m"][0]), float(piece["size_m"][1])],
-            motion_lane,
-            lateral_offset,
-        )
+        original_center = list(center)
+        lane_shift = 0.0
+        for motion_lane in motion_lanes:
+            center, shift = clear_set_piece_from_motion_lane(
+                center,
+                [float(piece["size_m"][0]), float(piece["size_m"][1])],
+                motion_lane,
+                lateral_offset,
+            )
+            if len(objects) == 1:
+                lane_shift = shift
+        if len(objects) == 2:
+            lane_shift = math.hypot(
+                center[0] - original_center[0], center[1] - original_center[1]
+            )
         record = _box(
             collider_id=f"environment_piece_{piece['id']}",
             role="room_detail",

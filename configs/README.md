@@ -13,8 +13,9 @@ not select another file when an argument is omitted.
 `two_object_sampling_matrix.json` is the bounded 2obj development matrix. It
 declares six interacting and three independent initial-state intents. Object
 candidates are supplied separately from reviewed 1obj metadata, so the matrix
-does not duplicate asset or proxy definitions. Camera and scene expansion are
-explicitly deferred; this is not yet a production release configuration.
+does not duplicate asset or proxy definitions. It also freezes flat-scene
+admission and full two-object group-envelope camera thresholds. It is still a
+bounded reference configuration, not a production release matrix.
 
 See `docs/PHYSWEEP_ASSET_PIPELINE.md` for asset admission and
 `docs/PHYSWEEP_SAMPLING_ARCHITECTURE.md` for generation.

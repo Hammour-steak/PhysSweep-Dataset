@@ -27,8 +27,22 @@
     }
   },
   "pair_observation": {
+    "schema_version": "physweep_two_object_camera_observation_v1",
     "maximum_camera_side_deviation_degrees": 8.0,
-    "minimum_collision_projected_separation_to_span_ratio": 0.65
+    "preferred_camera_elevation_degrees": 28.0,
+    "minimum_camera_elevation_degrees": 18.0,
+    "maximum_camera_elevation_degrees": 42.0,
+    "maximum_camera_distance_m": 6.0,
+    "maximum_camera_distance_above_minimum_m": 4.5,
+    "full_motion_envelope_margin_ndc": 0.03,
+    "preferred_full_motion_envelope_span_ndc": 0.45,
+    "minimum_per_object_median_span_ndc": 0.065,
+    "minimum_per_object_unoccluded_fraction": 0.70,
+    "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio": 0.75
+  },
+  "scene_compatibility": {
+    "schema_version": "physweep_two_object_scene_compatibility_v1",
+    "allowed_scene_classes": ["ground_flat", "raised_flat"]
   },
   "motion_intents": [
     {
@@ -92,7 +106,7 @@
       "layout": "ballistic_airborne_contact",
       "object_motions": ["arc_projectile_1obj", "rest"],
       "linear_velocity_m_s": [[0.80, 0.0, 0.50], [0.0, 0.0, 0.0]],
-      "minimum_displacement_m": [0.35, 0.0],
+      "minimum_displacement_m": [0.15, 0.0],
       "contact_time_s": 0.20,
       "contact_elevation_degrees": 12.0
     },
@@ -133,7 +147,6 @@
   "policy": {
     "post_contact_outcome_is_not_preclassified": true,
     "one_factor_sweep_keeps_both_initial_states_fixed": true,
-    "camera_and_scene_expansion_deferred": true,
     "initial_contact_is_deferred": true,
     "airborne_airborne_is_deferred": true
   }

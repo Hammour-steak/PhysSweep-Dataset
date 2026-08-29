@@ -88,8 +88,10 @@ The bounded 2obj development entry point separates the frozen host scene, two
 reviewed object candidates, and a nine-row initial-state matrix. Object
 candidates retain their existing visual assets and collision proxies. Six rows
 require pair contact and three require no pair contact. Post-contact outcomes
-are observed rather than preclassified. Camera and scene expansion come next;
-this is not a production 2obj dataset generator.
+are observed rather than preclassified. Flat reviewed scenes are rebound around
+the pair side view, and one camera is frozen only after it passes every member
+of the two-object one-factor group. This remains a bounded reference slice, not
+a production 2obj release generator.
 
 ```bash
 .venv/bin/python -m tools.sampling.sample_two_object_base \
@@ -99,6 +101,10 @@ this is not a production 2obj dataset generator.
   --matrix configs/two_object_sampling_matrix.json \
   --output-dir outputs/two_object_smoke/base
 
+.venv/bin/python -m tools.physics.run_pybullet_batch \
+  --manifest outputs/two_object_smoke/base/manifest.json \
+  --output-root outputs/two_object_smoke/base/physics --workers 9
+
 .venv/bin/python -m tools.sampling.derive_physics_sweep \
   --base-manifest outputs/two_object_smoke/base/manifest.json \
   --output-dir outputs/two_object_smoke/sweep/metadata
@@ -106,6 +112,16 @@ this is not a production 2obj dataset generator.
 .venv/bin/python -m tools.physics.run_pybullet_batch \
   --manifest outputs/two_object_smoke/sweep/metadata/manifest.json \
   --output-root outputs/two_object_smoke/sweep/physics --workers 20
+
+.venv/bin/python -m tools.rendering.bind_pybullet_visuals \
+  --manifest outputs/two_object_smoke/base/physics/manifest.json \
+  --camera-group-manifest outputs/two_object_smoke/sweep/physics/manifest.json \
+  --output-root outputs/two_object_smoke/base/bound --workers 9
+
+.venv/bin/python -m tools.rendering.bind_physics_sweep_visuals \
+  --sweep-manifest outputs/two_object_smoke/sweep/physics/manifest.json \
+  --base-bound-manifest outputs/two_object_smoke/base/bound/bound_manifest.json \
+  --output-root outputs/two_object_smoke/sweep/bound
 ```
 
 Omitting the two object-template arguments intentionally reuses the host object

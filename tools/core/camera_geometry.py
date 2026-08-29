@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import math
 from collections.abc import Sequence
 
@@ -52,6 +53,26 @@ def inclined_surface_side_readability(azimuth_degrees: float) -> float:
     """Return side-view strength for ramps whose uphill tangent is local +Y."""
 
     return abs(math.cos(math.radians(float(azimuth_degrees))))
+
+
+def deterministic_pair_side_azimuths(
+    scene_id: str, approach_axis_xy: Sequence[float]
+) -> tuple[float, float]:
+    """Return both side-on pair views in deterministic preference order."""
+
+    if len(approach_axis_xy) != 2:
+        raise ValueError("pair approach axis must contain two components")
+    x, y = [float(value) for value in approach_axis_xy]
+    norm = math.hypot(x, y)
+    if not math.isfinite(norm) or norm <= 1.0e-8:
+        raise ValueError("pair approach axis must be finite and nonzero")
+    approach_degrees = math.degrees(math.atan2(y / norm, x / norm))
+    digest = hashlib.sha256(
+        f"joint-camera-side:{scene_id}".encode("utf-8")
+    ).digest()
+    preferred_side = -1.0 if digest[0] % 2 else 1.0
+    preferred = approach_degrees + preferred_side * 90.0
+    return preferred, preferred + 180.0
 
 
 def camera_corridor_admits_inclined_surface(

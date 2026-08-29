@@ -334,7 +334,6 @@ class RepositoryHygieneTest(unittest.TestCase):
 
     def test_object_count_boundaries_are_explicit(self) -> None:
         adapters = (
-            "tools/assets/environment_collision.py",
             "tools/training_export/export_gt_initial_surface.py",
         )
         for relative in adapters:
@@ -353,6 +352,7 @@ class RepositoryHygieneTest(unittest.TestCase):
                 self.assertEqual(declarations, [(1,)])
 
         two_object_adapters = (
+            "tools/assets/environment_collision.py",
             "tools/physics/rigid_trajectory.py",
             "tools/physics/simulate_pybullet_rigid.py",
             "tools/rendering/bind_pybullet_visuals.py",
