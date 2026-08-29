@@ -17,6 +17,7 @@ from tools.rendering.bind_pybullet_visuals import (  # noqa: E402
     resolve_render_request,
 )
 from tools.rendering.camera_solver import (  # noqa: E402
+    _two_object_elevation_candidates,
     audit_two_object_camera,
     camera_inside_structural_envelope,
     camera_occlusion_colliders,
@@ -652,7 +653,7 @@ class PyBulletSimulationTests(unittest.TestCase):
         camera = solve_camera(scene, first, self.rules)
         self.assertEqual(
             camera["solver_version"],
-            "joint_full_motion_envelope_camera_v1",
+            "joint_full_motion_envelope_camera_v2",
         )
         diagnostics = camera["diagnostics"]
         self.assertEqual(diagnostics["object_count"], 2)
@@ -713,7 +714,7 @@ class PyBulletSimulationTests(unittest.TestCase):
         )
         self.assertEqual(
             group_camera["solver_version"],
-            "joint_full_motion_envelope_group_camera_v1",
+            "joint_full_motion_envelope_group_camera_v2",
         )
         self.assertEqual(
             group_camera["diagnostics"]["camera_group"]["member_count"], 2
@@ -816,8 +817,9 @@ class PyBulletSimulationTests(unittest.TestCase):
         binding["colliders"].append(wall)
         binding["binding_sha256"] = binding_sha256(binding)
         alternate = solve_camera(blocked, trajectory, self.rules)
-        self.assertTrue(
-            alternate["diagnostics"]["pair_side_candidate_failures"]
+        self.assertGreater(
+            alternate["diagnostics"]["pair_camera_candidate_failure_count"],
+            0,
         )
         preferred_azimuth = preferred["diagnostics"][
             "pair_selected_side_azimuth_degrees"
@@ -828,6 +830,17 @@ class PyBulletSimulationTests(unittest.TestCase):
         self.assertAlmostEqual(
             abs(alternate_azimuth - preferred_azimuth), 180.0, places=6
         )
+
+    def test_two_object_camera_uses_contract_interior_elevations(self) -> None:
+        candidates = _two_object_elevation_candidates(
+            {
+                "minimum_elevation": 18.0,
+                "preferred_elevation": 28.0,
+                "maximum_elevation": 42.0,
+            }
+        )
+        self.assertEqual(candidates, (28.0, 35.0, 23.0, 38.5, 20.5))
+        self.assertTrue(all(18.0 < value < 42.0 for value in candidates))
 
     def test_two_object_motion_matrix_contact_contracts(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)
@@ -884,6 +897,34 @@ class PyBulletSimulationTests(unittest.TestCase):
         self.assertEqual(
             semantics["surface_crossing_2obj"]["impact_offset_ratio"], 0.30
         )
+        drop_scene = next(
+            scene
+            for scene in scenes
+            if scene["simulation"]["interaction"]["motion_pattern"]
+            == "air_drop_hit_supported_2obj"
+        )
+        drop_object, supported_object = drop_scene["simulation"]["objects"]
+        drop_position = drop_object["initial_state"]["position_m"]
+        supported_position = supported_object["initial_state"]["position_m"]
+        drop_velocity = drop_object["initial_state"]["linear_velocity_m_s"]
+        drop_radius = 0.5 * float(drop_object["geometry"]["size_m"][2])
+        support_height = float(
+            drop_scene["simulation"]["support"]["surface_center_z_m"]
+        )
+        approach = drop_scene["simulation"]["interaction"][
+            "approach_axis_xyz"
+        ]
+        self.assertGreater(drop_position[2] - support_height - drop_radius, 0.70)
+        horizontal_separation = abs(
+            drop_position[0] - supported_position[0]
+        )
+        self.assertGreater(horizontal_separation, 0.03)
+        self.assertLess(horizontal_separation, 0.20)
+        self.assertGreater(drop_velocity[0], 0.0)
+        self.assertEqual(drop_velocity[2], 0.0)
+        self.assertGreater(abs(approach[0]), 0.05)
+        self.assertLess(abs(approach[0]), 0.20)
+        self.assertLess(approach[2], -0.95)
         with self.assertRaisesRegex(ValueError, "may not be repeated"):
             build_two_object_matrix(
                 host,
@@ -912,7 +953,7 @@ class PyBulletSimulationTests(unittest.TestCase):
                 diagnostics = camera["diagnostics"]
                 self.assertEqual(
                     camera["solver_version"],
-                    "joint_full_motion_envelope_camera_v1",
+                    "joint_full_motion_envelope_camera_v2",
                 )
                 self.assertEqual(
                     diagnostics["joint_motion_envelope_visible_fraction"],

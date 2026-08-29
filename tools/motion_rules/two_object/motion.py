@@ -49,7 +49,6 @@ _COMMON_INTENT_FIELDS = {
 }
 _LAYOUT_FIELDS = {
     "planned_supported_contact": {"contact_time_s", "impact_offset_ratio"},
-    "vertical_airborne_contact": {"airborne_surface_gap_m"},
     "ballistic_airborne_contact": {
         "contact_time_s",
         "contact_elevation_degrees",
@@ -65,7 +64,6 @@ _LAYOUT_FIELDS = {
 }
 _LAYOUT_CONTRACT = {
     "planned_supported_contact": ("interacting", "supported_supported"),
-    "vertical_airborne_contact": ("interacting", "airborne_supported"),
     "ballistic_airborne_contact": ("interacting", "airborne_supported"),
     "parallel_supported_independent": ("independent", "supported_supported"),
     "separated_airborne_supported_independent": (
@@ -248,27 +246,6 @@ def _planned_supported_contact(
     )
 
 
-def _vertical_airborne_contact(
-    center: np.ndarray,
-    support_z: list[float],
-    radii: list[float],
-    intent: dict[str, Any],
-) -> tuple[np.ndarray, np.ndarray]:
-    gap = positive_vector(
-        [intent["airborne_surface_gap_m"]],
-        1,
-        "airborne pair surface gap",
-    )[0]
-    positions = np.asarray(
-        [
-            [center[0], center[1], support_z[1] + radii[0] + radii[1] + gap],
-            [center[0], center[1], support_z[1]],
-        ],
-        dtype=np.float64,
-    )
-    return positions, np.asarray([0.0, 0.0, -1.0], dtype=np.float64)
-
-
 def _ballistic_airborne_contact(
     scene: dict[str, Any],
     center: np.ndarray,
@@ -440,10 +417,6 @@ def apply_two_object_motion(
             center, radii, velocities, intent
         )
         positions = np.column_stack([positions_xy, support_z])
-    elif layout == "vertical_airborne_contact":
-        positions, approach_axis = _vertical_airborne_contact(
-            center, support_z, radii, intent
-        )
     elif layout == "ballistic_airborne_contact":
         positions, approach_axis = _ballistic_airborne_contact(
             scene, center, support_z, radii, velocities, intent

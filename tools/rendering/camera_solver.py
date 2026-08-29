@@ -222,6 +222,24 @@ def _two_object_observation_contract(
     return values
 
 
+def _two_object_elevation_candidates(
+    contract: dict[str, float],
+) -> tuple[float, ...]:
+    """Try the preferred elevation, then deterministic interior alternatives."""
+
+    preferred = contract["preferred_elevation"]
+    minimum = contract["minimum_elevation"]
+    maximum = contract["maximum_elevation"]
+    candidates = (
+        preferred,
+        0.5 * (preferred + maximum),
+        0.5 * (preferred + minimum),
+        0.25 * preferred + 0.75 * maximum,
+        0.25 * preferred + 0.75 * minimum,
+    )
+    return tuple(dict.fromkeys(candidates))
+
+
 def _camera_group_id(metadata: dict[str, Any]) -> str:
     sweep = metadata.get("sweep")
     if not isinstance(sweep, dict):
@@ -558,65 +576,75 @@ def _solve_two_object_camera(
     failures = []
     camera = None
     selected_azimuth = None
+    selected_elevation = None
     selected_member_diagnostics: list[dict[str, Any]] = []
-    for candidate_azimuth in deterministic_pair_side_azimuths(
+    side_azimuths = deterministic_pair_side_azimuths(
         camera_group_id, approach_axis
-    ):
-        joint_rules = copy.deepcopy(rules)
-        matching_profiles = [
-            record
-            for record in joint_rules["axes"]["camera_axis"]
-            if str(record["label"]) == profile
-        ]
-        if len(matching_profiles) != 1:
-            raise ValueError(f"joint camera profile is not unique: {profile}")
-        matching_profiles[0]["overrides"]["view_rule"]["azimuth_degrees"] = (
-            candidate_azimuth
-        )
-        matching_profiles[0]["overrides"]["view_rule"]["elevation_degrees"] = (
-            preferred_elevation
-        )
-        try:
-            candidate = solve_camera(
-                virtual_metadata, virtual_trajectory, joint_rules
-            )
-            candidate_diagnostics = audit_two_object_camera(
-                metadata, trajectory, candidate
-            )
-            member_diagnostics = []
-            for member_metadata, member_trajectory in audit_members:
-                try:
-                    member_diagnostics.append(
-                        audit_two_object_camera(
-                            member_metadata, member_trajectory, candidate
+    )
+    for candidate_elevation in _two_object_elevation_candidates(contract):
+        for candidate_azimuth in side_azimuths:
+            joint_rules = copy.deepcopy(rules)
+            matching_profiles = [
+                record
+                for record in joint_rules["axes"]["camera_axis"]
+                if str(record["label"]) == profile
+            ]
+            if len(matching_profiles) != 1:
+                raise ValueError(f"joint camera profile is not unique: {profile}")
+            view_rule = matching_profiles[0]["overrides"]["view_rule"]
+            view_rule["azimuth_degrees"] = candidate_azimuth
+            view_rule["elevation_degrees"] = candidate_elevation
+            try:
+                candidate = solve_camera(
+                    virtual_metadata, virtual_trajectory, joint_rules
+                )
+                candidate_diagnostics = audit_two_object_camera(
+                    metadata, trajectory, candidate
+                )
+                member_diagnostics = []
+                for member_metadata, member_trajectory in audit_members:
+                    try:
+                        member_diagnostics.append(
+                            audit_two_object_camera(
+                                member_metadata, member_trajectory, candidate
+                            )
                         )
-                    )
-                except ValueError as error:
-                    raise ValueError(
-                        "camera group member failed: "
-                        f"{member_metadata['scene_id']}: {error}"
-                    ) from error
-        except ValueError as error:
-            failures.append(f"azimuth={candidate_azimuth:.6f}: {error}")
-            continue
-        camera = candidate
-        camera["diagnostics"].update(candidate_diagnostics)
-        selected_azimuth = candidate_azimuth
-        selected_member_diagnostics = member_diagnostics
-        break
-    if camera is None or selected_azimuth is None:
+                    except ValueError as error:
+                        raise ValueError(
+                            "camera group member failed: "
+                            f"{member_metadata['scene_id']}: {error}"
+                        ) from error
+            except ValueError as error:
+                failures.append(
+                    f"azimuth={candidate_azimuth:.6f},"
+                    f"elevation={candidate_elevation:.6f}: {error}"
+                )
+                continue
+            camera = candidate
+            camera["diagnostics"].update(candidate_diagnostics)
+            selected_azimuth = candidate_azimuth
+            selected_elevation = candidate_elevation
+            selected_member_diagnostics = member_diagnostics
+            break
+        if camera is not None:
+            break
+    if camera is None or selected_azimuth is None or selected_elevation is None:
         raise ValueError(
-            "joint camera could not solve either side; " + " | ".join(failures)
+            "joint camera could not solve a contract candidate; "
+            + " | ".join(failures)
         )
     camera["solver_version"] = (
-        "joint_full_motion_envelope_group_camera_v1"
+        "joint_full_motion_envelope_group_camera_v2"
         if audit_members
-        else "joint_full_motion_envelope_camera_v1"
+        else "joint_full_motion_envelope_camera_v2"
     )
     camera["diagnostics"]["pair_selected_side_azimuth_degrees"] = round(
         selected_azimuth, 6
     )
-    camera["diagnostics"]["pair_side_candidate_failures"] = failures
+    camera["diagnostics"]["pair_selected_elevation_degrees"] = round(
+        selected_elevation, 6
+    )
+    camera["diagnostics"]["pair_camera_candidate_failure_count"] = len(failures)
     if audit_members:
         representative = selected_member_diagnostics[0]
         camera["diagnostics"].update(

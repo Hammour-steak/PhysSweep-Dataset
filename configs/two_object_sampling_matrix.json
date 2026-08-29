@@ -138,11 +138,12 @@
       "id": "air_drop_hit_supported_2obj",
       "interaction_class": "interacting",
       "kinematic_regime": "airborne_supported",
-      "layout": "vertical_airborne_contact",
+      "layout": "ballistic_airborne_contact",
       "object_motions": ["drop_fall_1obj", "rest"],
-      "linear_velocity_m_s": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
-      "minimum_displacement_m": [0.35, 0.0],
-      "airborne_surface_gap_m": 0.52
+      "linear_velocity_m_s": [[0.04, 0.0, 0.0], [0.0, 0.0, 0.0]],
+      "minimum_displacement_m": [0.40, 0.0],
+      "contact_time_s": 0.35,
+      "contact_elevation_degrees": 85.0
     },
     {
       "id": "air_projectile_hit_supported_2obj",
