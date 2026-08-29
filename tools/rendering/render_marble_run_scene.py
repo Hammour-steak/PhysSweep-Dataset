@@ -36,7 +36,11 @@ from tools.rendering.blender_scene import (
     parse_scene_render_args,
 )
 from tools.dataset_contract.trajectory_contract import adapter_trajectory_view
-from tools.rendering.video_encoding import configure_h264_output, normalize_h264_container
+from tools.rendering.video_encoding import (
+    configure_h264_output,
+    normalize_h264_container,
+    require_render_finished,
+)
 
 def material(name: str, rgba: list[float], metallic: float = 0.0) -> Any:
     result = bpy.data.materials.new(name)
@@ -346,8 +350,14 @@ def render(
         fps=int(metadata["simulation"]["time"]["output_fps"]),
         frame_count=int(metadata["simulation"]["time"]["frame_count"]),
     )
-    bpy.ops.render.render(animation=True)
-    normalize_h264_container(video_path)
+    require_render_finished(
+        bpy.ops.render.render(animation=True),
+        label=f"video animation render for {metadata['scene_id']}",
+    )
+    normalize_h264_container(
+        video_path,
+        expected_frame_count=scene.frame_end - scene.frame_start + 1,
+    )
     instance_mask_output = render_instance_masks(
         metadata, marble, fixture_objects, frame_dir, mask_root_override
     )

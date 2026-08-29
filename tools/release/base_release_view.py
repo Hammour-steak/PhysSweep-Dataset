@@ -41,6 +41,7 @@ from tools.release.base_release_schema import (
     write_json,
 )
 from tools.release.layout import dataset_directory_name
+from tools.rendering.video_encoding import require_video_frame_count
 
 
 VIEW_SCHEMA = "physweep_base_release_view_v14"
@@ -267,6 +268,21 @@ OBJECT_IDENTITY_CONTRACT = {
     "training_object_axis": "fixed_length_3_created_by_downstream_compiler",
     "training_padding_policy": "missing_slots_have_object_valid_false",
 }
+
+
+def expected_video_frame_count(time: Mapping[str, Any]) -> int:
+    duration_s = float(time["duration_s"])
+    output_fps = int(time["output_fps"])
+    if duration_s <= 0.0 or output_fps <= 0:
+        raise ValueError("video time contract must be positive")
+    expected = int(round(duration_s * output_fps)) + 1
+    declared = time.get("frame_count")
+    if declared is not None and int(declared) != expected:
+        raise ValueError(
+            f"declared frame count differs from duration/fps: "
+            f"declared={declared} expected={expected}"
+        )
+    return expected
 
 
 @dataclass(frozen=True)
@@ -718,6 +734,10 @@ def render_sources(
     )
     source_metadata = load_json(metadata)
     resolved_scene = load_json(resolved_scene_path)
+    require_video_frame_count(
+        video,
+        expected_video_frame_count(resolved_scene["time"]),
+    )
     render_config = source_metadata.get("render_request") or source_metadata.get(
         "render"
     )
@@ -1176,6 +1196,10 @@ def verify_view(
             )
             if video.is_symlink():
                 raise ValueError(f"video must be materialized: {scene_id}")
+            require_video_frame_count(
+                video,
+                expected_video_frame_count(metadata["physics"]["time"]),
+            )
             validate_mask_artifacts(sample, metadata)
             if {path.name for path in sample.iterdir()} != SAMPLE_ENTRIES:
                 raise ValueError(f"unexpected base sample files: {scene_id}")

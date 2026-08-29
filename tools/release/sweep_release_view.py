@@ -35,6 +35,7 @@ from tools.release.base_release_view import (
     PipelineSpec,
     collect_sample_attribution,
     enforce_object_count,
+    expected_video_frame_count,
     index_unique,
     index_unique_string,
     load_json,
@@ -50,6 +51,7 @@ from tools.release.base_release_view import (
     write_pipeline_manifests,
     write_release_catalogs,
 )
+from tools.rendering.video_encoding import require_video_frame_count
 from tools.release.layout import dataset_directory_name
 from tools.release.sweep_validation import validate_target_sweep_grid
 
@@ -1009,6 +1011,10 @@ def verify_view(
             )
             if video.is_symlink():
                 raise ValueError(f"sweep video must be materialized: {scene_id}")
+            require_video_frame_count(
+                video,
+                expected_video_frame_count(metadata["physics"]["time"]),
+            )
             validate_mask_artifacts(sample, metadata)
             if {path.name for path in sample.iterdir()} != SAMPLE_ENTRIES:
                 raise ValueError(f"unexpected sweep sample files: {scene_id}")

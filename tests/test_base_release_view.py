@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -22,6 +24,29 @@ from tools.release.layout import release_roots
 def write_json(path: Path, value: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(value), encoding="utf-8")
+
+
+def make_video(path: Path) -> None:
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-nostdin",
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=blue:s=64x64:r=1:d=2",
+            "-frames:v",
+            "2",
+            "-codec:v",
+            "libx264",
+            "-y",
+            str(path),
+        ],
+        check=True,
+    )
 
 
 class BaseReleaseViewTests(unittest.TestCase):
@@ -55,6 +80,10 @@ class BaseReleaseViewTests(unittest.TestCase):
             self.assertEqual(base, project_root / "outputs" / name / "base")
             self.assertEqual(sweep, project_root / "outputs" / name / "sweep")
 
+    @unittest.skipUnless(
+        shutil.which("ffmpeg") and shutil.which("ffprobe"),
+        "ffmpeg/ffprobe are unavailable",
+    )
     def test_base_release_is_canonical_hash_checked_and_non_overwriting(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -216,7 +245,7 @@ class BaseReleaseViewTests(unittest.TestCase):
                 frame_root.mkdir(parents=True)
                 video = render_root / "videos" / f"{scene_id}.mp4"
                 video.parent.mkdir(parents=True)
-                video.write_bytes(f"video:{scene_id}".encode("utf-8"))
+                make_video(video)
                 videos.append(video)
                 mask = render_root / "masks" / scene_id / "ball"
                 mask.mkdir(parents=True)

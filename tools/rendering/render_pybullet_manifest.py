@@ -19,6 +19,7 @@ from tools.rendering.blender_worker_environment import (
     build_egl_device_selector,
     isolated_blender_environment,
 )
+from tools.rendering.video_encoding import video_has_expected_frame_count
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -217,18 +218,19 @@ def reusable_render_record(
     video_path = project_path(root, render["video_path"])
     if output_root not in video_path.parents:
         raise ValueError("video must remain below the render output root")
+    expected_frame_count = int(render["frame_end"]) - int(render["frame_start"]) + 1
     if not (
         project_path(root, str(record.get("video_path"))) == video_path
         and video_path.is_file()
         and video_path.stat().st_size > 0
         and str(record.get("video_sha256")) == sha256(video_path)
+        and video_has_expected_frame_count(video_path, expected_frame_count)
     ):
         return False
     mask_output = record.get("instance_mask_output")
     validation = mask_output.get("validation") if isinstance(mask_output, dict) else None
     if not isinstance(validation, dict):
         return False
-    expected_frame_count = int(render["frame_end"]) - int(render["frame_start"]) + 1
     for object_id, object_record in mask_output.get("objects", {}).items():
         report = validation.get("objects", {}).get(str(object_id))
         object_dir = project_path(root, object_record["directory"])

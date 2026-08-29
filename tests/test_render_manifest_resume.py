@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -402,7 +403,14 @@ class RenderManifestResumeTests(unittest.TestCase):
                     "render_manifest.json",
                 )
 
-    def test_asset_record_requires_verified_egl_provenance(self) -> None:
+    @patch(
+        "tools.rendering.render_asset_proxy_manifest.video_has_expected_frame_count",
+        return_value=True,
+    )
+    def test_asset_record_requires_verified_egl_provenance(
+        self,
+        _video_frame_count: object,
+    ) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             output = root / "outputs/run/asset"
@@ -483,7 +491,14 @@ class RenderManifestResumeTests(unittest.TestCase):
                 )
             )
 
-    def test_generic_record_requires_complete_masks_and_hashes(self) -> None:
+    @patch(
+        "tools.rendering.render_pybullet_manifest.video_has_expected_frame_count",
+        return_value=True,
+    )
+    def test_generic_record_requires_complete_masks_and_hashes(
+        self,
+        _video_frame_count: object,
+    ) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             output = root / "outputs/run/generic"

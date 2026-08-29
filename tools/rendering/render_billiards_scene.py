@@ -36,7 +36,11 @@ from tools.rendering.render_asset_proxy_scene import (  # pylint: disable=wrong-
 from tools.dataset_contract.immutable_scene_contract import validate_simulation_record
 from tools.assets.blender_asset_import import clear_scene
 from tools.rendering.blender_scene import look_at, parse_scene_render_args
-from tools.rendering.video_encoding import configure_h264_output, normalize_h264_container
+from tools.rendering.video_encoding import (
+    configure_h264_output,
+    normalize_h264_container,
+    require_render_finished,
+)
 from tools.dataset_contract.trajectory_contract import adapter_trajectory_view
 from tools.rendering.specialized_render_evidence import (
     render_instance_mask_record,
@@ -238,8 +242,14 @@ def render(
         frame_count=int(metadata["physics"]["frame_count"]),
     )
     render_samples = int(scene.eevee.taa_render_samples)
-    bpy.ops.render.render(animation=True)
-    normalize_h264_container(video_path)
+    require_render_finished(
+        bpy.ops.render.render(animation=True),
+        label=f"video animation render for {metadata['scene_id']}",
+    )
+    normalize_h264_container(
+        video_path,
+        expected_frame_count=scene.frame_end - scene.frame_start + 1,
+    )
     mask_path = metadata["object_identity"]["instance_masks"].get("path")
     instance_mask_output = None
     if instance_mask_dir is not None or (

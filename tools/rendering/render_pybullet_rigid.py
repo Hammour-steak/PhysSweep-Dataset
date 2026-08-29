@@ -36,7 +36,11 @@ from tools.rendering.appearance_adaptation import (
 )
 from tools.rendering.blender_render_settings import configure_render_engine
 from tools.assets.static_support_proxy import blender_import_static_support_visual
-from tools.rendering.video_encoding import configure_h264_output, normalize_h264_container
+from tools.rendering.video_encoding import (
+    configure_h264_output,
+    normalize_h264_container,
+    require_render_finished,
+)
 from tools.dataset_contract.trajectory_contract import object_trajectory_view
 
 SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2)
@@ -957,7 +961,10 @@ def render_unoccluded_instance_masks(
         dynamic.data.materials.append(material)
         scene.render.filepath = str(object_dir / "frame_")
         scene.frame_set(int(render["frame_start"]))
-        bpy.ops.render.render(animation=True)
+        require_render_finished(
+            bpy.ops.render.render(animation=True),
+            label=f"instance-mask animation render for {object_id}",
+        )
         object_outputs[object_id] = {
             "instance_id": int(dynamic.pass_index),
             "directory": str(object_dir),
@@ -1192,8 +1199,14 @@ def render(
         mask_validation = None
     else:
         bpy.context.scene.frame_set(int(render_config["frame_start"]))
-        bpy.ops.render.render(animation=True)
-        normalize_h264_container(video_path)
+        require_render_finished(
+            bpy.ops.render.render(animation=True),
+            label=f"video animation render for {metadata['scene_id']}",
+        )
+        normalize_h264_container(
+            video_path,
+            expected_frame_count=expected_frames,
+        )
         video_sha = sha256(video_path)
         instance_mask_output = render_unoccluded_instance_masks(
             render_config, metadata, dynamic_objects

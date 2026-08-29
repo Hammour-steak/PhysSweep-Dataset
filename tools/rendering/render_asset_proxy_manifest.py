@@ -20,6 +20,7 @@ from tools.rendering.blender_worker_environment import (
     build_egl_device_selector,
     isolated_blender_environment,
 )
+from tools.rendering.video_encoding import video_has_expected_frame_count
 from tools.physics.specialized_backend_registry import specialized_by_pipeline
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -424,6 +425,7 @@ def reusable_render_record(
         and project_path(root, str(render_record.get("video_path"))) == video_path
         and str(render_record.get("video_sha256")) == sha256(video_path)
         and video_path.stat().st_size > 0
+        and video_has_expected_frame_count(video_path, frame_count)
         and inspection_frames == expected_frames
         and all(
             frame.parent == frame_dir
