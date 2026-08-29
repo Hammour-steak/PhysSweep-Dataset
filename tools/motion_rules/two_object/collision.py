@@ -2,11 +2,39 @@
 
 from __future__ import annotations
 
+import copy
 from typing import Any
 
 import numpy as np
 
-from tools.core.rigid_geometry import PROXY_SHAPE_CODE
+from tools.core.rigid_geometry import (
+    PROXY_SHAPE_CODE,
+    finite_vector,
+    positive_vector,
+)
+
+
+_RULE_FIELDS = {
+    "schema_version",
+    "reference_motion",
+    "initial_surface_gap_m",
+    "initial_velocity_x_m_s",
+    "contact_friction",
+    "contact_restitution",
+    "minimum_displacement_m",
+    "minimum_support_contact_fraction",
+    "interaction_audit",
+}
+_AUDIT_FIELDS = {
+    "minimum_initial_clearance_m",
+    "minimum_approach_axis_alignment",
+    "minimum_pre_contact_closing_speed_m_s",
+    "maximum_first_contact_time_s",
+    "minimum_post_contact_separation_m",
+    "maximum_collision_window_momentum_change_fraction",
+    "maximum_camera_side_deviation_degrees",
+    "minimum_collision_projected_separation_to_span_ratio",
+}
 
 
 def _first_true(values: np.ndarray) -> int | None:
@@ -27,6 +55,151 @@ def _surface_gap(
     radius_a = 0.5 * float(np.max(size_a))
     radius_b = 0.5 * float(np.max(size_b))
     return np.linalg.norm(positions_b - positions_a, axis=1) - radius_a - radius_b
+
+
+def apply_two_sphere_collision(
+    pair_scene: dict[str, Any], config: dict[str, Any]
+) -> dict[str, Any]:
+    """Place and configure an ordered pair of independently selected spheres."""
+
+    if set(config) != _RULE_FIELDS or (
+        config.get("schema_version") != "physweep_two_sphere_collision_v1"
+    ):
+        raise ValueError("unsupported two-sphere collision rule")
+    interaction_audit = config.get("interaction_audit")
+    if (
+        not isinstance(interaction_audit, dict)
+        or set(interaction_audit) != _AUDIT_FIELDS
+    ):
+        raise ValueError("two-sphere collision audit fields are incomplete")
+    scene = copy.deepcopy(pair_scene)
+    objects = scene.get("simulation", {}).get("objects", [])
+    if len(objects) != 2 or any(not isinstance(obj, dict) for obj in objects):
+        raise ValueError("two-sphere collision requires one ordered object pair")
+    object_ids = [str(obj.get("object_id", "")) for obj in objects]
+    if any(not object_id for object_id in object_ids) or len(set(object_ids)) != 2:
+        raise ValueError("two-sphere collision object ids must be unique")
+
+    radii = []
+    for obj in objects:
+        geometry = obj.get("geometry", {})
+        if geometry.get("type") != "sphere":
+            raise ValueError("two-sphere collision requires sphere candidates")
+        dimensions = positive_vector(
+            geometry["size_m"], 3, f"{obj['object_id']} sphere dimensions"
+        )
+        if max(dimensions) - min(dimensions) > 1.0e-8:
+            raise ValueError("sphere candidate dimensions must be isotropic")
+        radii.append(0.5 * dimensions[0])
+
+    support = scene["simulation"]["support"]
+    slope = float(support["surface_frame"]["slope_angle_degrees"])
+    if abs(slope) > 1.0e-8:
+        raise ValueError("two-sphere collision requires a flat support")
+    bounds = support["safe_surface_bounds"]
+    placement = scene.get("environment_binding", {}).get("placement", {})
+    if placement.get("action_anchor_rule") == "initial_object_xy":
+        scene_anchor = finite_vector(
+            placement["scene_anchor_m"][:2], 2, "environment scene anchor"
+        )
+        center_x, center_y = scene_anchor
+    else:
+        center_x = 0.5 * (float(bounds["x"][0]) + float(bounds["x"][1]))
+        center_y = 0.5 * (float(bounds["y"][0]) + float(bounds["y"][1]))
+
+    surface_gap = finite_vector(
+        [config["initial_surface_gap_m"]], 1, "initial sphere surface gap"
+    )[0]
+    if surface_gap <= 0.0:
+        raise ValueError("initial sphere surface gap must be positive")
+    center_distance = radii[0] + radii[1] + surface_gap
+    positions_x = [center_x - 0.5 * center_distance, center_x + 0.5 * center_distance]
+    margin = 0.02
+    if (
+        positions_x[0] < float(bounds["x"][0]) + radii[0] + margin
+        or positions_x[1] > float(bounds["x"][1]) - radii[1] - margin
+        or center_y < float(bounds["y"][0]) + max(radii) + margin
+        or center_y > float(bounds["y"][1]) - max(radii) - margin
+    ):
+        raise ValueError("host support is too small for the selected object pair")
+    positions_z = [
+        float(support["surface_center_z_m"]) + radius + 0.0005
+        for radius in radii
+    ]
+    velocities_x = finite_vector(
+        config["initial_velocity_x_m_s"], 2, "two-object velocities"
+    )
+    if velocities_x[0] <= velocities_x[1]:
+        raise ValueError("two-object velocities must form a closing pair")
+
+    contact_friction, contact_restitution, minimum_displacement = finite_vector(
+        [
+            config["contact_friction"],
+            config["contact_restitution"],
+            config["minimum_displacement_m"],
+        ],
+        3,
+        "two-object physical rule values",
+    )
+    minimum_support_fraction = finite_vector(
+        [config["minimum_support_contact_fraction"]],
+        1,
+        "minimum support contact fraction",
+    )[0]
+    if contact_friction < 0.0:
+        raise ValueError("contact friction must be nonnegative")
+    if not 0.0 <= contact_restitution <= 1.0:
+        raise ValueError("contact restitution must lie in [0, 1]")
+    if minimum_displacement <= 0.0:
+        raise ValueError("minimum displacement must be positive")
+    if not 0.0 < minimum_support_fraction <= 1.0:
+        raise ValueError("minimum support contact fraction must lie in (0, 1]")
+
+    motion = str(config["reference_motion"])
+    scene["scene_id"] = f"{scene['scene_id']}__two_sphere_collision"
+    dimensions = scene["semantic_sampling"]["five_dimensions"]
+    dimensions["motion"] = {
+        "family": motion,
+        "subtype": "direct_pair_collision",
+        "direction": "positive_x",
+        "direction_angle_degrees": 0.0,
+        "trajectory_extent": "medium",
+        "initial_position_zone": "opposed_pair",
+    }
+    expected_common = {
+        "motion_family": motion,
+        "contact_mode": "supported_pair_collision",
+        "must_contact_primary_support": True,
+        "minimum_displacement_m": minimum_displacement,
+        "minimum_support_contact_fraction": minimum_support_fraction,
+    }
+    for index, obj in enumerate(objects):
+        material = copy.deepcopy(obj["material"])
+        material["contact_friction"] = contact_friction
+        material["contact_restitution"] = contact_restitution
+        obj["material"] = material
+        obj["initial_state"] = {
+            "pose_profile": "support_normal",
+            "position_m": [positions_x[index], center_y, positions_z[index]],
+            "orientation_quaternion_wxyz": [1.0, 0.0, 0.0, 0.0],
+            "linear_velocity_m_s": [velocities_x[index], 0.0, 0.0],
+            "angular_velocity_rad_s": [
+                0.0,
+                velocities_x[index] / radii[index],
+                0.0,
+            ],
+        }
+        obj["expected_motion"] = {
+            **expected_common,
+            "required_object_contact_id": object_ids[1 - index],
+        }
+    scene["simulation"]["interaction"] = {
+        "type": "pairwise_collision",
+        "object_ids": object_ids,
+        "approach_axis_xy": [1.0, 0.0],
+        **copy.deepcopy(interaction_audit),
+    }
+    return scene
 
 
 def audit_pair_collision(

@@ -84,14 +84,17 @@ environment visual/collision pose.
 
 ## Two-object Reference Slice
 
-The bounded 2obj development entry point reuses one reviewed 1obj sphere scene
-as a frozen asset, support, environment, and render template. It creates two
-ordered identities, a declared pair collision, and one-factor sweeps for both
-targets. It is a reference slice, not a production 2obj dataset generator.
+The bounded 2obj development entry point separates the frozen host scene, two
+reviewed object candidates, and the motion rule. Object candidates retain their
+existing visual assets and collision proxies; the host supplies support,
+environment, lighting, and camera request. It is a reference slice, not a
+production 2obj dataset generator.
 
 ```bash
 .venv/bin/python -m tools.sampling.sample_two_object_base \
   --template <reviewed-sphere-metadata.json> \
+  --object-a-template <reviewed-sphere-a-metadata.json> \
+  --object-b-template <reviewed-sphere-b-metadata.json> \
   --config configs/two_object_sampling.json \
   --output outputs/two_object_smoke/base/metadata.json
 
@@ -100,9 +103,11 @@ targets. It is a reference slice, not a production 2obj dataset generator.
   --output-dir outputs/two_object_smoke/sweep
 ```
 
-The current slice yields one base plus 24 derived records. The shared generic
-physics, camera, render, identity, canonical trajectory, and release packaging
-paths consume both objects; per-object masks use `masks/<object_id>/`.
+Omitting the two object-template arguments intentionally reuses the host object
+for both roles. The current slice yields one base plus 24 derived records. The
+shared generic physics, camera, render, identity, canonical trajectory, and
+release packaging paths consume both objects; per-object masks use
+`masks/<object_id>/`.
 
 ## Render Staging
 

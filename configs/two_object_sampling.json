@@ -1,20 +1,38 @@
 {
-  "schema_version": "physweep_two_object_sampling_v1",
-  "reference_motion": "two_sphere_collision_2obj",
-  "initial_surface_gap_m": 0.52,
-  "initial_velocity_x_m_s": [0.72, -0.12],
-  "contact_friction": 0.04,
-  "contact_restitution": 0.65,
-  "minimum_displacement_m": 0.12,
-  "minimum_support_contact_fraction": 0.70,
-  "interaction_audit": {
-    "minimum_initial_clearance_m": 0.50,
-    "minimum_approach_axis_alignment": 0.98,
-    "minimum_pre_contact_closing_speed_m_s": 0.30,
-    "maximum_first_contact_time_s": 1.5,
-    "minimum_post_contact_separation_m": 0.09,
-    "maximum_collision_window_momentum_change_fraction": 0.12,
-    "maximum_camera_side_deviation_degrees": 8.0,
-    "minimum_collision_projected_separation_to_span_ratio": 0.65
+  "schema_version": "physweep_two_object_reference_v1",
+  "object_pair": {
+    "schema_version": "physweep_object_pair_v1",
+    "roles": [
+      {
+        "object_id": "object_a",
+        "semantic_label": "red sphere",
+        "semantic_color_srgb": [0.82, 0.18, 0.12, 1.0]
+      },
+      {
+        "object_id": "object_b",
+        "semantic_label": "blue sphere",
+        "semantic_color_srgb": [0.10, 0.32, 0.86, 1.0]
+      }
+    ]
+  },
+  "motion_rule": {
+    "schema_version": "physweep_two_sphere_collision_v1",
+    "reference_motion": "two_sphere_collision_2obj",
+    "initial_surface_gap_m": 0.52,
+    "initial_velocity_x_m_s": [0.72, -0.12],
+    "contact_friction": 0.04,
+    "contact_restitution": 0.65,
+    "minimum_displacement_m": 0.12,
+    "minimum_support_contact_fraction": 0.70,
+    "interaction_audit": {
+      "minimum_initial_clearance_m": 0.50,
+      "minimum_approach_axis_alignment": 0.98,
+      "minimum_pre_contact_closing_speed_m_s": 0.30,
+      "maximum_first_contact_time_s": 1.5,
+      "minimum_post_contact_separation_m": 0.09,
+      "maximum_collision_window_momentum_change_fraction": 0.12,
+      "maximum_camera_side_deviation_degrees": 8.0,
+      "minimum_collision_projected_separation_to_span_ratio": 0.65
+    }
   }
 }

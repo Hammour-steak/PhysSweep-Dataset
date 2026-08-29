@@ -41,7 +41,7 @@ from tools.sampling.sample_pybullet_base import (  # noqa: E402
 )
 from tools.physics.simulate_pybullet_rigid import simulate  # noqa: E402
 from tools.sampling.sample_two_object_base import (  # noqa: E402
-    build_two_sphere_collision,
+    build_two_object_reference,
 )
 
 
@@ -563,7 +563,7 @@ class PyBulletSimulationTests(unittest.TestCase):
 
     def test_two_sphere_collision_is_repeatable_and_object_complete(self) -> None:
         template = self.without_incidental_environment(self.rolling_stress_scene)
-        scene = build_two_sphere_collision(
+        scene = build_two_object_reference(
             template,
             load_json(ROOT / "configs/two_object_sampling.json"),
         )
@@ -677,6 +677,82 @@ class PyBulletSimulationTests(unittest.TestCase):
             "pair_post_contact_separation",
             {record["id"] for record in strict_audit["advisories"]},
         )
+
+    def test_two_sphere_collision_composes_independent_object_sources(self) -> None:
+        host = self.without_incidental_environment(self.rolling_stress_scene)
+        host_object = host["simulation"]["objects"][0]
+        host_visual_id = str(host_object["visual_profile"]["id"])
+        spheres = [
+            scene
+            for scene in self.candidates
+            if scene["simulation"]["objects"][0]["geometry"]["type"]
+            == "sphere"
+            and str(
+                scene["simulation"]["objects"][0]["visual_profile"]["id"]
+            )
+            != host_visual_id
+        ]
+        self.assertTrue(spheres)
+        host_extent = float(host_object["geometry"]["size_m"][0])
+        secondary = min(
+            spheres,
+            key=lambda scene: abs(
+                float(scene["simulation"]["objects"][0]["geometry"]["size_m"][0])
+                - host_extent
+            ),
+        )
+        secondary_object = secondary["simulation"]["objects"][0]
+        original_host = copy.deepcopy(host)
+        original_secondary = copy.deepcopy(secondary)
+
+        scene = build_two_object_reference(
+            host,
+            load_json(ROOT / "configs/two_object_sampling.json"),
+            (secondary, host),
+            sample_index=7,
+        )
+
+        objects = scene["simulation"]["objects"]
+        self.assertEqual(
+            [obj["visual_profile"]["id"] for obj in objects],
+            [
+                secondary_object["visual_profile"]["id"],
+                host_object["visual_profile"]["id"],
+            ],
+        )
+        self.assertEqual(objects[0]["geometry"], secondary_object["geometry"])
+        self.assertEqual(objects[1]["geometry"], host_object["geometry"])
+        self.assertEqual(
+            objects[0]["collision_profile"],
+            secondary_object["collision_profile"],
+        )
+        self.assertEqual(
+            objects[0]["material"]["mass_kg"],
+            secondary_object["material"]["mass_kg"],
+        )
+        anchor_x, anchor_y = host["environment_binding"]["placement"][
+            "scene_anchor_m"
+        ][:2]
+        midpoint_x = 0.5 * sum(obj["initial_state"]["position_m"][0] for obj in objects)
+        self.assertAlmostEqual(midpoint_x, anchor_x)
+        self.assertAlmostEqual(objects[0]["initial_state"]["position_m"][1], anchor_y)
+        self.assertEqual(scene["sample_index"], 7)
+        self.assertEqual(
+            scene["environment_binding"], host["environment_binding"]
+        )
+        self.assertEqual(scene["simulation"]["support"], host["simulation"]["support"])
+        self.assertEqual(host, original_host)
+        self.assertEqual(secondary, original_secondary)
+        self.assertEqual(
+            set(scene["appearance"]["materials"]["dynamic_objects"]),
+            {"object_a", "object_b"},
+        )
+        with self.assertRaisesRegex(ValueError, "exactly two candidates"):
+            build_two_object_reference(
+                host,
+                load_json(ROOT / "configs/two_object_sampling.json"),
+                (),
+            )
 
     def test_runtime_proxy_dimension_tampering_is_rejected(self) -> None:
         scene = self.scene_by_motion["drop_fall_1obj"]
