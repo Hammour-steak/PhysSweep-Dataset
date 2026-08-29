@@ -93,6 +93,40 @@ class RepositoryHygieneTest(unittest.TestCase):
             [],
         )
 
+    def test_obsolete_generated_indexes_and_templates_are_absent(self) -> None:
+        for relative in (
+            "assets/indexes",
+            "assets/manifests/scene_asset_components_v1",
+            "templates/visual_donors_1object_v1",
+        ):
+            root = ROOT / relative
+            with self.subTest(relative=relative):
+                self.assertEqual(
+                    [path for path in root.rglob("*") if path.is_file()]
+                    if root.exists()
+                    else [],
+                    [],
+                )
+        self.assertFalse(
+            (
+                ROOT
+                / "assets"
+                / "material_curation"
+                / "polyhaven_curated_v2_1_manifest.csv"
+            ).exists()
+        )
+
+    def test_obsolete_component_inspection_pipeline_is_absent(self) -> None:
+        for relative in (
+            "tools/assets/audit_scene_asset_components.py",
+            "tools/assets/audit_scene_visual_assets.py",
+            "tools/assets/inspect_scene_asset_components.py",
+            "tools/assets/measure_asset_component_surfaces.py",
+            "tools/rendering/render_asset_component_partition.py",
+        ):
+            with self.subTest(relative=relative):
+                self.assertFalse((ROOT / relative).exists())
+
     def test_tools_are_partitioned_by_responsibility(self) -> None:
         expected = {
             "assets",
