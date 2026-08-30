@@ -448,9 +448,12 @@ def _normalise_records(metadata: Mapping[str, Any]) -> list[dict[str, Any]]:
     semantic_records = _as_list(
         _as_mapping(metadata.get("semantics")).get("objects")
     )
+    published_sample = metadata.get("sample_kind") in {"base", "sweep"}
     semantic_labels = {
-        str(record.get("object_id")): _public_object_label(
-            record.get("semantic_label")
+        str(record.get("object_id")): (
+            str(record.get("semantic_label")).strip().lower()
+            if published_sample
+            else _public_object_label(record.get("semantic_label"))
         )
         for record in semantic_records
         if isinstance(record, Mapping)

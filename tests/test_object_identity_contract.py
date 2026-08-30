@@ -161,6 +161,7 @@ class ObjectIdentityContractTests(unittest.TestCase):
 
     def test_published_one_object_metadata_recompiles_the_same_event_contract(self) -> None:
         metadata = {
+            "sample_kind": "base",
             "semantics": {
                 "objects": [
                     {"object_id": "object_a", "semantic_label": "soccer ball"}
@@ -181,6 +182,34 @@ class ObjectIdentityContractTests(unittest.TestCase):
                 "bounces on the wooden floor."
             ),
         )
+
+    def test_published_caption_preserves_the_canonical_surface_label(self) -> None:
+        metadata = {
+            "sample_kind": "base",
+            "semantics": {
+                "objects": [
+                    {
+                        "object_id": "object_a",
+                        "semantic_label": "four-way lug wrench",
+                    }
+                ],
+                "profile": "diagonal_push",
+            },
+            "physics": {
+                "fixture": {"id": "support_surface"},
+                "objects": [{"object_id": "object_a", "object_valid": True}],
+            },
+        }
+        attach_object_identity(metadata)
+        caption = metadata["object_identity"]["text"]["caption"]
+        self.assertEqual(
+            caption,
+            (
+                "the four-way lug wrench moves diagonally across the support "
+                "surface after an initial push."
+            ),
+        )
+        self.assertIn("the four-way lug wrench", caption)
 
     def test_published_asset_caption_hides_an_internal_fixture_id(self) -> None:
         metadata = {
