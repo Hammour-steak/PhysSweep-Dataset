@@ -60,7 +60,8 @@ def bind_two_object_scene(
     if not isinstance(interaction, dict):
         raise ValueError("two-object scene lacks an interaction contract")
     preferred_azimuth, _ = deterministic_pair_side_azimuths(
-        str(scene["scene_id"]), interaction["approach_axis_xy"]
+        str(scene["scene_id"]),
+        interaction["approach_axis_xyz"],
     )
     scene["environment_binding"] = compile_environment_binding(
         scene, [], azimuth_override_degrees=preferred_azimuth

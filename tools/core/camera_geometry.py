@@ -55,18 +55,30 @@ def inclined_surface_side_readability(azimuth_degrees: float) -> float:
     return abs(math.cos(math.radians(float(azimuth_degrees))))
 
 
+def pair_approach_axis_xy(
+    approach_axis_xyz: Sequence[float],
+) -> tuple[float, float]:
+    """Project one finite pair-approach axis onto the horizontal plane."""
+
+    if len(approach_axis_xyz) != 3:
+        raise ValueError("pair approach axis must contain three components")
+    x, y, z = [float(value) for value in approach_axis_xyz]
+    norm = math.hypot(x, y)
+    if (
+        not all(math.isfinite(value) for value in (x, y, z))
+        or norm <= 1.0e-8
+    ):
+        raise ValueError("pair approach axis needs a finite horizontal projection")
+    return x / norm, y / norm
+
+
 def deterministic_pair_side_azimuths(
-    scene_id: str, approach_axis_xy: Sequence[float]
+    scene_id: str, approach_axis_xyz: Sequence[float]
 ) -> tuple[float, float]:
     """Return both side-on pair views in deterministic preference order."""
 
-    if len(approach_axis_xy) != 2:
-        raise ValueError("pair approach axis must contain two components")
-    x, y = [float(value) for value in approach_axis_xy]
-    norm = math.hypot(x, y)
-    if not math.isfinite(norm) or norm <= 1.0e-8:
-        raise ValueError("pair approach axis must be finite and nonzero")
-    approach_degrees = math.degrees(math.atan2(y / norm, x / norm))
+    x, y = pair_approach_axis_xy(approach_axis_xyz)
+    approach_degrees = math.degrees(math.atan2(y, x))
     digest = hashlib.sha256(
         f"joint-camera-side:{scene_id}".encode("utf-8")
     ).digest()

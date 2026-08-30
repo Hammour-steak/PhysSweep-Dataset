@@ -1041,6 +1041,41 @@ class PyBulletSimulationTests(unittest.TestCase):
         }
         self.assertIn("forbidden_pair_collision", failed)
 
+    def test_two_object_audit_requires_explicit_pair_contract(self) -> None:
+        host = self.without_incidental_environment(self.rolling_stress_scene)
+        matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
+        scene = build_two_object_scene(
+            host, matrix, "surface_head_on_2obj"
+        )
+        trajectory, _ = simulate(scene)
+        self.assertNotIn(
+            "approach_axis_xy", scene["simulation"]["interaction"]
+        )
+        invalid_axis = copy.deepcopy(scene)
+        invalid_axis["simulation"]["interaction"]["approach_axis_xyz"] = [
+            0.0,
+            0.0,
+            1.0,
+        ]
+        with self.assertRaisesRegex(ValueError, "horizontal projection"):
+            audit_trajectory(invalid_axis, trajectory)
+        for field in (
+            "minimum_initial_clearance_m",
+            "maximum_first_contact_time_s",
+            "minimum_pre_contact_closing_speed_m_s",
+        ):
+            with self.subTest(field=field):
+                incomplete = copy.deepcopy(scene)
+                del incomplete["simulation"]["interaction"][field]
+                with self.assertRaises(KeyError):
+                    audit_trajectory(incomplete, trajectory)
+        missing_expectation = copy.deepcopy(scene)
+        del missing_expectation["simulation"]["objects"][0]["expected_motion"][
+            "minimum_displacement_m"
+        ]
+        with self.assertRaises(KeyError):
+            audit_trajectory(missing_expectation, trajectory)
+
     def test_two_object_scene_composes_independent_object_sources(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)
         host_object = host["simulation"]["objects"][0]

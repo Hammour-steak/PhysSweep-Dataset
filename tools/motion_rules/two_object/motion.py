@@ -523,11 +523,6 @@ def apply_two_object_motion(
         expected[relation_key] = object_ids[1 - index]
         obj["expected_motion"] = expected
 
-    approach_xy = approach_axis[:2]
-    if float(np.linalg.norm(approach_xy)) <= _NUMERICAL_EPSILON:
-        approach_xy = np.asarray([1.0, 0.0], dtype=np.float64)
-    else:
-        approach_xy = approach_xy / float(np.linalg.norm(approach_xy))
     motion_id = str(intent["id"])
     scene["scene_id"] = f"{scene['scene_id']}__{motion_id}"
     scene["semantic_sampling"]["five_dimensions"]["motion"] = {
@@ -551,7 +546,6 @@ def apply_two_object_motion(
         "contact_requirement": contact_requirement,
         "object_ids": object_ids,
         "approach_axis_xyz": approach_axis.tolist(),
-        "approach_axis_xy": approach_xy.tolist(),
         "impact_offset_ratio": float(intent.get("impact_offset_ratio", 0.0)),
         **copy.deepcopy(shared["interaction_audit"]),
         **copy.deepcopy(observation),

@@ -6,6 +6,7 @@ from typing import Any
 
 import numpy as np
 
+from tools.core.camera_geometry import pair_approach_axis_xy
 from tools.core.rigid_geometry import PROXY_SHAPE_CODE
 
 
@@ -319,7 +320,7 @@ def audit_pair_motion(
             float(angular_speed.max()),
             maximum_angular_speed,
         )
-        minimum_displacement = float(expected.get("minimum_displacement_m", 0.0))
+        minimum_displacement = float(expected["minimum_displacement_m"])
         path_length = _path_length(position)
         check(
             f"{object_id}__visible_motion",
@@ -327,7 +328,7 @@ def audit_pair_motion(
             path_length,
             minimum_displacement,
         )
-        if expected.get("must_contact_primary_support", False):
+        if bool(expected["must_contact_primary_support"]):
             check(
                 f"{object_id}__primary_support_contact",
                 bool(np.any(primary_contacts > 0)),
@@ -335,7 +336,7 @@ def audit_pair_motion(
                 "at least one frame",
             )
         minimum_support_fraction = float(
-            expected.get("minimum_support_contact_fraction", 0.0)
+            expected["minimum_support_contact_fraction"]
         )
         if minimum_support_fraction > 0.0:
             support_fraction = float(np.mean(primary_contacts > 0))
@@ -379,7 +380,7 @@ def audit_pair_motion(
         positions[object_id_a], positions[object_id_b], size_a, size_b
     )
     minimum_initial_clearance = float(
-        interaction.get("minimum_initial_clearance_m", 0.02)
+        interaction["minimum_initial_clearance_m"]
     )
     check(
         "pair_initial_clearance",
@@ -387,19 +388,10 @@ def audit_pair_motion(
         float(gap[0]),
         minimum_initial_clearance,
     )
-    approach_axis = np.asarray(
-        interaction["approach_axis_xyz"], dtype=np.float64
-    )
-    if (
-        approach_axis.shape != (3,)
-        or not np.isfinite(approach_axis).all()
-        or float(np.linalg.norm(approach_axis)) <= 1.0e-8
-    ):
-        raise ValueError("pair interaction requires a finite 3D approach axis")
-    approach_axis /= float(np.linalg.norm(approach_axis))
+    pair_approach_axis_xy(interaction["approach_axis_xyz"])
     if interacting and first_contact is not None:
         maximum_first_contact_time = float(
-            interaction.get("maximum_first_contact_time_s", time_s[-1])
+            interaction["maximum_first_contact_time_s"]
         )
         check(
             "pair_collision_time",
@@ -417,7 +409,7 @@ def audit_pair_motion(
         )
         closing_speed = -float(relative_velocity @ separation)
         minimum_closing_speed = float(
-            interaction.get("minimum_pre_contact_closing_speed_m_s", 0.05)
+            interaction["minimum_pre_contact_closing_speed_m_s"]
         )
         check(
             "pair_pre_contact_approach",

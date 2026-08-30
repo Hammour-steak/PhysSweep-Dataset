@@ -13,6 +13,7 @@ from tools.core.camera_geometry import (
     camera_azimuth_offsets,
     deterministic_pair_side_azimuths,
     inclined_surface_side_readability,
+    pair_approach_axis_xy,
 )
 from tools.dataset_contract.object_identity_contract import (
     require_simulation_objects,
@@ -300,13 +301,10 @@ def audit_two_object_camera(
         raise ValueError(
             f"joint camera exceeds its distance limit: {distance:.6f}"
         )
-    approach_axis = np.asarray(interaction["approach_axis_xy"], dtype=np.float64)
-    if approach_axis.shape != (2,) or not np.isfinite(approach_axis).all():
-        raise ValueError("pair interaction requires a finite approach_axis_xy")
-    approach_norm = float(np.linalg.norm(approach_axis))
-    if approach_norm <= 1.0e-8:
-        raise ValueError("pair interaction approach axis must be nonzero")
-    approach_axis /= approach_norm
+    approach_axis = np.asarray(
+        pair_approach_axis_xy(interaction["approach_axis_xyz"]),
+        dtype=np.float64,
+    )
     horizontal_view = view_vector[:2] / horizontal_distance
     side_deviation = math.degrees(
         math.asin(float(np.clip(abs(horizontal_view @ approach_axis), 0.0, 1.0)))
@@ -565,13 +563,6 @@ def _solve_two_object_camera(
     virtual_trajectory[f"{virtual_id}__aabb_max_m"] = np.tile(
         envelope_upper, (positions.shape[0], 1)
     )
-    approach_axis = np.asarray(interaction["approach_axis_xy"], dtype=np.float64)
-    if approach_axis.shape != (2,) or not np.isfinite(approach_axis).all():
-        raise ValueError("pair interaction requires a finite approach_axis_xy")
-    approach_norm = float(np.linalg.norm(approach_axis))
-    if approach_norm <= 1.0e-8:
-        raise ValueError("pair interaction approach axis must be nonzero")
-    approach_axis /= approach_norm
     profile = str(virtual_metadata["camera_request"]["profile"])
     failures = []
     camera = None
@@ -579,7 +570,7 @@ def _solve_two_object_camera(
     selected_elevation = None
     selected_member_diagnostics: list[dict[str, Any]] = []
     side_azimuths = deterministic_pair_side_azimuths(
-        camera_group_id, approach_axis
+        camera_group_id, interaction["approach_axis_xyz"]
     )
     for candidate_elevation in _two_object_elevation_candidates(contract):
         for candidate_azimuth in side_azimuths:
@@ -757,8 +748,8 @@ def solve_two_object_camera_group(
             or _two_object_observation_contract(member_interaction)
             != base_contract
             or not np.allclose(
-                member_interaction["approach_axis_xy"],
-                base_interaction["approach_axis_xy"],
+                member_interaction["approach_axis_xyz"],
+                base_interaction["approach_axis_xyz"],
                 atol=1.0e-12,
                 rtol=0.0,
             )
