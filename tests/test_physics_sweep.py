@@ -22,6 +22,11 @@ class PhysicsSweepTests(unittest.TestCase):
         derived = {
             "scene_id": "scene__sweep_object_a_mass_kg_02",
             "dataset_stage": "object_physics_sweep_candidate",
+            "semantic_sampling": {
+                "five_dimensions": {
+                    "motion": {"family": "roll_or_slide_1obj"}
+                }
+            },
             "sweep": {
                 "schema_version": "physweep_object_bound_sweep_v2",
                 "kind": "sweep",
@@ -220,6 +225,7 @@ class PhysicsSweepTests(unittest.TestCase):
             "dynamic_asset_name": "Bottle",
             "assets": {"dynamic_asset_id": "asset_a"},
             "physics": {
+                "motion_profile": "vertical_drop",
                 "mass_kg": 0.5,
                 "trajectory_path": "base/trajectory.npz",
                 "audit_path": "base/audit.json",
@@ -283,6 +289,7 @@ class PhysicsSweepTests(unittest.TestCase):
         base = {
             "schema_version": "physweep_billiards_scene_v4",
             "scene_id": "billiards_scene",
+            "semantics": {"profile": "single_ball_free_roll"},
             "physics": {
                 "ball_mass_kg": 0.17,
                 "backend_config": {"path": "configs/pybullet_backend.json"},
@@ -332,6 +339,7 @@ class PhysicsSweepTests(unittest.TestCase):
         base = {
             "schema_version": "physweep_billiards_scene_v4",
             "scene_id": "billiards_single_ball",
+            "semantics": {"profile": "single_ball_free_roll"},
             "physics": {
                 "ball_mass_kg": 0.17,
                 "backend_config": {"path": "configs/pybullet_backend.json"},
@@ -435,6 +443,7 @@ class PhysicsSweepTests(unittest.TestCase):
         base = {
             "schema_version": "physweep_marble_run_scene_v1",
             "scene_id": "marble_run",
+            "semantics": {"profile": "early_release_chain"},
             "simulation": {
                 "objects": [
                     {
@@ -500,6 +509,11 @@ class PhysicsSweepTests(unittest.TestCase):
             "schema_version": "physweep_pybullet_rigid_metadata_v1",
             "scene_id": "base_scene",
             "dataset_stage": "one_object_base_candidate",
+            "semantic_sampling": {
+                "five_dimensions": {
+                    "motion": {"family": "roll_or_slide_1obj"}
+                }
+            },
             "simulation": {
                 "objects": [
                     {
@@ -545,7 +559,16 @@ class PhysicsSweepTests(unittest.TestCase):
             "schema_version": "physweep_pybullet_rigid_metadata_v1",
             "scene_id": "two_object_scene",
             "dataset_stage": "two_object_base_candidate",
+            "semantic_sampling": {
+                "five_dimensions": {
+                    "motion": {"family": "surface_dual_independent_2obj"}
+                }
+            },
             "simulation": {
+                "support": {"semantic_type": "wood_floor"},
+                "interaction": {
+                    "motion_pattern": "surface_dual_independent_2obj"
+                },
                 "objects": [
                     {
                         "object_id": "obj_0",
@@ -607,6 +630,11 @@ class PhysicsSweepTests(unittest.TestCase):
             "schema_version": "physweep_pybullet_rigid_metadata_v1",
             "scene_id": "base_scene",
             "dataset_stage": "one_object_base_candidate",
+            "semantic_sampling": {
+                "five_dimensions": {
+                    "motion": {"family": "roll_or_slide_1obj"}
+                }
+            },
             "simulation": {
                 "objects": [
                     {
