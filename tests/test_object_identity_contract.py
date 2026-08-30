@@ -182,6 +182,29 @@ class ObjectIdentityContractTests(unittest.TestCase):
             ),
         )
 
+    def test_published_asset_caption_hides_an_internal_fixture_id(self) -> None:
+        metadata = {
+            "semantics": {
+                "objects": [
+                    {"object_id": "object_a", "semantic_label": "glass bottle"}
+                ],
+                "profile": "resting_push",
+            },
+            "physics": {
+                "fixture": {
+                    "id": "sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d"
+                },
+                "objects": [{"object_id": "object_a", "object_valid": True}],
+            },
+        }
+        attach_object_identity(metadata)
+        caption = metadata["object_identity"]["text"]["caption"]
+        self.assertEqual(
+            caption,
+            "the glass bottle moves across the support surface after an initial push.",
+        )
+        self.assertNotIn("sketchfab", caption)
+
     def test_asset_scene_uses_dynamic_asset_as_the_joined_object(self) -> None:
         metadata = {
             "assets": {

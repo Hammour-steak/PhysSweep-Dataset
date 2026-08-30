@@ -200,13 +200,17 @@ def _support_label(metadata: Mapping[str, Any]) -> str | None:
             "wood tabletop": "wooden tabletop",
         }
         label = _humanize(raw_support)
-        if re.search(r"(?:sketchfab|physassets)\s+[0-9a-f]{8,}", label):
+        if re.search(
+            r"(?:sketchfab\s+bg|physassets)\s+[0-9a-f]{8,}", label
+        ):
             return None
         return aliases.get(label, label)
     assets = _as_mapping(metadata.get("assets"))
     if assets.get("support_asset_id"):
         label = _humanize(assets["support_asset_id"])
-        if not re.search(r"(?:sketchfab|physassets)\s+[0-9a-f]{8,}", label):
+        if not re.search(
+            r"(?:sketchfab\s+bg|physassets)\s+[0-9a-f]{8,}", label
+        ):
             return label
     return None
 
