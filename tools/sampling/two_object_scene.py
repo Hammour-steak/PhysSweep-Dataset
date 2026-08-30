@@ -9,7 +9,7 @@ from tools.assets.environment_collision import (
     compile_environment_binding,
     validate_environment_binding,
 )
-from tools.core.camera_geometry import deterministic_pair_side_azimuths
+from tools.core.camera_geometry import pair_view_azimuth_degrees
 from tools.core.rigid_geometry import finite_vector
 
 
@@ -19,7 +19,7 @@ _CONTRACT_FIELDS = {"schema_version", "allowed_scene_classes"}
 def bind_two_object_scene(
     metadata: dict[str, Any], contract: dict[str, Any]
 ) -> dict[str, Any]:
-    """Admit one flat host and orient its environment to the pair side view."""
+    """Admit one flat host and orient it to the declared pair-relative view."""
 
     if set(contract) != _CONTRACT_FIELDS or contract.get("schema_version") != (
         "physweep_two_object_scene_compatibility_v1"
@@ -59,10 +59,17 @@ def bind_two_object_scene(
     interaction = scene["simulation"].get("interaction")
     if not isinstance(interaction, dict):
         raise ValueError("two-object scene lacks an interaction contract")
-    preferred_azimuth, _ = deterministic_pair_side_azimuths(
-        str(scene["scene_id"]),
+    preferred_azimuth = pair_view_azimuth_degrees(
         interaction["approach_axis_xyz"],
+        interaction["camera_relative_azimuth_degrees"],
     )
+    scene_visual = scene.get("appearance", {}).get("scene_visual")
+    if not isinstance(scene_visual, dict):
+        raise ValueError("two-object host lacks a scene visual")
+    scene_visual.pop("camera_context", None)
+    composition = scene_visual.get("composition")
+    if isinstance(composition, dict):
+        composition.pop("camera", None)
     scene["environment_binding"] = compile_environment_binding(
         scene, [], azimuth_override_degrees=preferred_azimuth
     )
@@ -70,6 +77,6 @@ def bind_two_object_scene(
     interaction["scene_compatibility"] = {
         "schema_version": contract["schema_version"],
         "scene_class": scene_class,
-        "environment_binding_policy": "recompiled_for_preferred_pair_side",
+        "environment_binding_policy": "recompiled_for_declared_pair_view",
     }
     return scene

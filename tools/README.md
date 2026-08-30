@@ -84,12 +84,15 @@ environment visual/collision pose.
 
 ## Two-object Candidate Matrix
 
-The 2obj candidate sampler reuses released 1obj metadata, object appearance,
-visual assets, and collision proxies. Its 162 cells are the Cartesian product
-of nine frozen motions, nine role-ordered size pairs, and two flat scene
-classes. Object color, texture, and size do not encode identity: the two
-objects may match or differ. Selection is deterministic, hash-bound, and
-balanced for prefix validation runs. This is not yet a production 2obj release.
+The 2obj candidate sampler reuses hash-bound released 1obj metadata, appearance,
+visual assets, and collision proxies. It admits generic primitives plus asset
+meshes whose proxies are exactly one centered, unrotated primitive; compound
+asset proxies remain explicitly deferred. The 1134 base cells cover nine
+frozen motions with their admitted ordered shape pairs, all nine ordered size
+pairs, and two flat scene classes. Six pair-relative camera families are
+balanced across all cells; the four ordered generic/asset source-family pairs
+are balanced wherever the requested shape/scale pools are feasible. Neither
+axis changes the base count. This is not yet a production 2obj release.
 
 ```bash
 .venv/bin/python -m tools.sampling.sample_two_object_coverage \
@@ -121,9 +124,9 @@ balanced for prefix validation runs. This is not yet a production 2obj release.
   --output-root outputs/two_object_validation/sweep/bound
 ```
 
-Omit `--limit` for all 162 cells. Post-contact outcomes are measured rather
-than preclassified. One camera is frozen only after all 25 members of a
-two-object one-factor group pass; masks use `masks/<object_id>/`.
+Omit `--limit` for all 1134 cells. Post-contact outcomes are measured rather
+than preclassified. One camera is frozen only after every member of a
+two-object one-factor group passes; masks use `masks/<object_id>/`.
 
 ## Render Staging
 

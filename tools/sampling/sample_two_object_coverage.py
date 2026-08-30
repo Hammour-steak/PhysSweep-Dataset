@@ -1,18 +1,15 @@
 #!/usr/bin/env python3
-"""Select and build the declared two-object coverage matrix from released 1obj metadata."""
+"""Build the declared two-object coverage matrix from released 1obj metadata."""
 
 from __future__ import annotations
 
 import argparse
 import copy
 import hashlib
-import os
 from collections import Counter
 from itertools import product
 from pathlib import Path
 from typing import Any, Sequence
-
-import numpy as np
 
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json, write_json
@@ -23,6 +20,7 @@ from tools.sampling.sample_two_object_base import (
     build_two_object_scene,
     compatible_shape_pair_ids,
 )
+from tools.sampling.two_object_sources import declared_within, released_source_pool
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -39,10 +37,13 @@ def _axis_counts(cells: Sequence[dict[str, Any]]) -> dict[str, dict[str, int]]:
         "ordered_shape_pair": "shape_pair_id",
         "ordered_scale_pair": "scale_pair_id",
         "scene_class": "scene_class",
+        "camera_view_family": "camera_view_family_id",
+        "source_family_pair": "source_family_pair_id",
     }
     return {
         label: dict(sorted(Counter(str(cell[field]) for cell in cells).items()))
         for label, field in fields.items()
+        if cells and all(field in cell for cell in cells)
     }
 
 
@@ -83,6 +84,59 @@ def _balanced_cell_order(
         for field in axis_fields:
             counts[field][str(selected[field])] += 1
     return ordered
+
+
+def _assign_camera_view_families(
+    cells: Sequence[dict[str, Any]],
+    view_families: Sequence[dict[str, Any]],
+    seed: int,
+) -> list[dict[str, Any]]:
+    """Balance views globally and within every existing coverage stratum."""
+
+    family_ids = [str(record["id"]) for record in view_families]
+    axis_fields = (
+        "motion_id",
+        "shape_pair_id",
+        "scale_pair_id",
+        "scene_class",
+    )
+    global_use: Counter[str] = Counter()
+    conditional_use: dict[str, dict[str, Counter[str]]] = {
+        field: {} for field in axis_fields
+    }
+    assigned = []
+    for original in cells:
+        cell = copy.deepcopy(original)
+        for field in axis_fields:
+            conditional_use[field].setdefault(str(cell[field]), Counter())
+
+        def score(family_id: str) -> tuple[int, int, int, int, str]:
+            conditional_ranges = []
+            current_conditional_use = []
+            for field in axis_fields:
+                counts = conditional_use[field][str(cell[field])]
+                hypothetical = [
+                    counts[candidate] + int(candidate == family_id)
+                    for candidate in family_ids
+                ]
+                conditional_ranges.append(max(hypothetical) - min(hypothetical))
+                current_conditional_use.append(counts[family_id])
+            return (
+                global_use[family_id],
+                sum(conditional_ranges),
+                max(conditional_ranges),
+                sum(current_conditional_use),
+                _rank(seed, "camera-view-family", cell["cell_id"], family_id),
+            )
+
+        family_id = min(family_ids, key=score)
+        global_use[family_id] += 1
+        for field in axis_fields:
+            conditional_use[field][str(cell[field])][family_id] += 1
+        cell["camera_view_family_id"] = family_id
+        cell["cell_id"] = "__".join([cell["cell_id"], family_id])
+        assigned.append(cell)
+    return assigned
 
 
 def coverage_cells(
@@ -131,10 +185,16 @@ def coverage_cells(
             )
     full_count = len(cells)
     if limit is not None and (
-        isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= full_count
+        isinstance(limit, bool)
+        or not isinstance(limit, int)
+        or not 1 <= limit <= full_count
     ):
         raise ValueError("two-object coverage limit is outside the full matrix")
-    ordered = _balanced_cell_order(cells, int(coverage["seed"]))
+    ordered = _assign_camera_view_families(
+        _balanced_cell_order(cells, int(coverage["seed"])),
+        coverage["camera_view_families"],
+        int(coverage["seed"]),
+    )
     return ordered if limit is None else ordered[:limit], full_count
 
 
@@ -142,257 +202,6 @@ def _resolved_within(root: Path, value: Path) -> Path:
     resolved = (value if value.is_absolute() else root / value).resolve()
     resolved.relative_to(root)
     return resolved
-
-
-def _declared_within(root: Path, value: Path) -> Path:
-    """Keep a declared relative path lexical while allowing reviewed symlinks."""
-
-    candidate = value if value.is_absolute() else root / value
-    absolute = Path(os.path.abspath(candidate))
-    absolute.relative_to(root)
-    return absolute
-
-
-def _source_reference(
-    source_root: Path,
-    record: dict[str, Any],
-    metadata: dict[str, Any],
-) -> dict[str, Any]:
-    return {
-        "scene_id": str(metadata["scene_id"]),
-        "path": _declared_within(source_root, Path(str(record["path"])))
-        .relative_to(source_root)
-        .as_posix(),
-        "sha256": str(record["metadata_sha256"]),
-    }
-
-
-def released_source_pool(
-    *,
-    root: Path,
-    released_base_manifest_path: Path,
-    source_root: Path,
-    source_manifest_path: Path,
-    matrix: dict[str, Any],
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
-    """Load eligible objects and hosts from the generation manifest named by 1obj."""
-
-    _validated_intents(matrix)
-    source_contract = matrix["candidate_pool"]["source_release"]
-    eligibility = matrix["candidate_pool"]["object_eligibility"]
-    host_eligibility = matrix["candidate_pool"]["host_eligibility"]
-    released_path = _resolved_within(root, released_base_manifest_path)
-    generation_path = _declared_within(source_root, source_manifest_path)
-    released = read_json(released_path)
-    generation = read_json(generation_path)
-    if released.get("schema_version") != source_contract[
-        "released_base_manifest_schema_version"
-    ]:
-        raise ValueError("released 1obj base manifest has the wrong schema")
-    provenance = released.get("provenance", {}).get(
-        "source_generation_release_metadata"
-    )
-    if not isinstance(provenance, dict) or (
-        provenance.get("schema_version")
-        != source_contract["generation_manifest_schema_version"]
-        or provenance.get("manifest_sha256") != sha256(generation_path)
-    ):
-        raise ValueError("released 1obj base does not name this generation manifest")
-    records = generation.get("records")
-    if (
-        generation.get("schema_version")
-        != source_contract["generation_manifest_schema_version"]
-        or generation.get("dataset_id") != released.get("dataset_id")
-        or not isinstance(records, list)
-        or int(generation.get("sample_count", -1)) != len(records)
-        or int(generation.get("group_count", -1))
-        != int(released.get("sample_count", -2))
-    ):
-        raise ValueError("generation manifest contradicts the released 1obj base")
-
-    base_records = [
-        record
-        for record in records
-        if str(record.get("kind")) == source_contract["sample_kind"]
-    ]
-    base_ids = [str(record.get("scene_id", "")) for record in base_records]
-    if (
-        len(base_records) != int(generation["group_count"])
-        or any(not value for value in base_ids)
-        or len(base_ids) != len(set(base_ids))
-    ):
-        raise ValueError("generation manifest has invalid canonical base records")
-
-    objects = []
-    hosts = []
-    rejected_host_role_count = 0
-    rejected_bounded_camera_host_count = 0
-    rejected_visual_type_host_count = 0
-    allowed_scenes = set(matrix["scene_compatibility"]["allowed_scene_classes"])
-    allowed_visual_types = set(host_eligibility["allowed_visual_types"])
-    expected_schema = source_contract["generation_metadata_schema_version"]
-    allowed_scale_bins = set(eligibility["scale_bins"])
-    family_geometry_types = {
-        str(record["geometry_type"])
-        for record in matrix["shape_families"]["families"]
-    }
-    for record in base_records:
-        if record.get("source_schema_version") != expected_schema:
-            continue
-        metadata_path = _declared_within(
-            source_root, Path(str(record["path"]))
-        )
-        if sha256(metadata_path) != str(record["metadata_sha256"]):
-            raise ValueError(
-                f"source metadata changed after release: {record['scene_id']}"
-            )
-        metadata = read_json(metadata_path)
-        if (
-            metadata.get("schema_version") != expected_schema
-            or str(metadata.get("scene_id", "")) != str(record["scene_id"])
-        ):
-            raise ValueError(
-                f"source metadata identity is invalid: {record['scene_id']}"
-            )
-        simulation_objects = metadata.get("simulation", {}).get("objects")
-        if not isinstance(simulation_objects, list) or len(simulation_objects) != 1:
-            raise ValueError("eligible 1obj metadata must contain one object")
-        obj = simulation_objects[0]
-        support = metadata["simulation"]["support"]
-        scene_class = str(support.get("scene_class", ""))
-        if scene_class in allowed_scenes:
-            roles = {
-                str(collider.get("role", ""))
-                for collider in support.get("colliders", [])
-                if isinstance(collider, dict)
-            }
-            required_roles = set(host_eligibility["required_collider_roles"])
-            allowed_roles = set(host_eligibility["allowed_collider_roles"])
-            if support.get("support_shape") == host_eligibility["support_shape"]:
-                motion_neutral = required_roles.issubset(roles) and roles.issubset(
-                    allowed_roles
-                )
-                camera_unbounded = support.get("camera_envelope") is None
-                if motion_neutral and camera_unbounded:
-                    scene_visual = metadata["appearance"]["scene_visual"]
-                    visual_id = str(scene_visual.get("id", ""))
-                    visual_type = str(scene_visual.get("visual_type", ""))
-                    if not visual_id or not visual_type:
-                        raise ValueError(
-                            "eligible two-object host lacks a visual profile"
-                        )
-                    if visual_type not in allowed_visual_types:
-                        rejected_visual_type_host_count += 1
-                    else:
-                        hosts.append(
-                            {
-                                "metadata": metadata,
-                                "source": _source_reference(
-                                    source_root, record, metadata
-                                ),
-                                "scene_class": scene_class,
-                                "visual_profile_id": visual_id,
-                                "visual_type": visual_type,
-                            }
-                        )
-                elif not motion_neutral:
-                    rejected_host_role_count += 1
-                else:
-                    rejected_bounded_camera_host_count += 1
-        geometry = obj.get("geometry", {})
-        geometry_type = str(geometry.get("type", ""))
-        collision = obj.get("collision_profile", {})
-        pose_profile = str(obj.get("initial_state", {}).get("pose_profile", ""))
-        if (
-            obj.get("body_model") != eligibility["body_model"]
-            or geometry_type not in family_geometry_types
-            or pose_profile != eligibility["required_pose_profile"]
-        ):
-            continue
-        size = np.asarray(geometry.get("size_m"), dtype=np.float64)
-        if (
-            size.shape != (3,)
-            or not np.isfinite(size).all()
-            or bool(np.any(size <= 0.0))
-            or (
-                geometry_type == "sphere"
-                and not np.allclose(size, size[0], atol=1.0e-8, rtol=0.0)
-            )
-            or (
-                geometry_type == "cylinder"
-                and not np.isclose(size[0], size[1], atol=1.0e-8, rtol=0.0)
-            )
-            or collision.get("type") != geometry_type
-        ):
-            raise ValueError("eligible object lacks a matching primitive proxy")
-        foreground = metadata.get("semantic_sampling", {}).get(
-            "five_dimensions", {}
-        ).get("foreground_object", {})
-        scale_bin = str(foreground.get("scale_bin", ""))
-        visual_profile_id = str(obj.get("visual_profile", {}).get("id", ""))
-        if scale_bin not in allowed_scale_bins or not visual_profile_id:
-            raise ValueError("eligible object lacks scale or a visual profile")
-        objects.append(
-            {
-                "metadata": metadata,
-                "source": _source_reference(source_root, record, metadata),
-                "shape_family_id": geometry_type,
-                "scale_bin": scale_bin,
-                "visual_profile_id": visual_profile_id,
-            }
-        )
-    if not objects or not hosts:
-        raise ValueError("released 1obj metadata yields no eligible 2obj sources")
-    audit = {
-        "released_base_count": len(base_records),
-        "eligible_object_count": len(objects),
-        "eligible_host_count": len(hosts),
-        "rejected_motion_specific_host_count": rejected_host_role_count,
-        "rejected_bounded_camera_host_count": (
-            rejected_bounded_camera_host_count
-        ),
-        "rejected_visual_type_host_count": rejected_visual_type_host_count,
-        "object_scale_bin_counts": dict(
-            sorted(Counter(record["scale_bin"] for record in objects).items())
-        ),
-        "object_shape_counts": dict(
-            sorted(
-                Counter(record["shape_family_id"] for record in objects).items()
-            )
-        ),
-        "object_shape_scale_counts": {
-            shape: dict(
-                sorted(
-                    Counter(
-                        record["scale_bin"]
-                        for record in objects
-                        if record["shape_family_id"] == shape
-                    ).items()
-                )
-            )
-            for shape in sorted(family_geometry_types)
-        },
-        "object_visual_profile_count": len(
-            {record["visual_profile_id"] for record in objects}
-        ),
-        "object_visual_profile_counts_by_shape": {
-            shape: len(
-                {
-                    record["visual_profile_id"]
-                    for record in objects
-                    if record["shape_family_id"] == shape
-                }
-            )
-            for shape in sorted(family_geometry_types)
-        },
-        "host_scene_class_counts": dict(
-            sorted(Counter(record["scene_class"] for record in hosts).items())
-        ),
-        "host_visual_profile_count": len(
-            {record["visual_profile_id"] for record in hosts}
-        ),
-    }
-    return objects, hosts, audit
 
 
 def select_coverage_sources(
@@ -411,32 +220,32 @@ def select_coverage_sources(
     maximum_host_reuse = int(
         plan["selection_policy"]["maximum_host_source_reuse"]
     )
-    objects_by_shape_scale: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    objects_by_family_shape_scale: dict[
+        tuple[str, str, str], list[dict[str, Any]]
+    ] = {}
     for record in objects:
-        key = (str(record["shape_family_id"]), str(record["scale_bin"]))
-        objects_by_shape_scale.setdefault(key, []).append(record)
+        key = (
+            str(record["source_family"]),
+            str(record["shape_family_id"]),
+            str(record["scale_bin"]),
+        )
+        objects_by_family_shape_scale.setdefault(key, []).append(record)
     hosts_by_scene: dict[str, list[dict[str, Any]]] = {}
     for record in hosts:
         hosts_by_scene.setdefault(str(record["scene_class"]), []).append(record)
 
     object_use: Counter[str] = Counter()
     object_profile_use: Counter[str] = Counter()
+    source_family_pair_use: Counter[str] = Counter()
+    camera_source_family_pair_use: Counter[tuple[str, str]] = Counter()
+    source_family_role_use: Counter[tuple[str, str]] = Counter()
     host_profile_use: Counter[str] = Counter()
     host_type_use: Counter[str] = Counter()
     used_pairs: set[tuple[str, str]] = set()
     host_use: Counter[str] = Counter()
     selected = []
     for cell in cells:
-        left_key = (
-            str(cell["object_a_shape"]),
-            str(cell["object_a_scale_bin"]),
-        )
-        right_key = (
-            str(cell["object_b_shape"]),
-            str(cell["object_b_scale_bin"]),
-        )
-        left_pool = objects_by_shape_scale.get(left_key, [])
-        right_pool = objects_by_shape_scale.get(right_key, [])
+        camera_view_family_id = str(cell["camera_view_family_id"])
 
         def object_key(record: dict[str, Any], role: str) -> tuple[int, int, str]:
             source_id = str(record["source"]["scene_id"])
@@ -447,27 +256,76 @@ def select_coverage_sources(
                 _rank(seed, cell["cell_id"], role, source_id),
             )
 
+        declared_source_pairs = sorted(
+            plan["role_ordered_source_family_pairs"],
+            key=lambda record: (
+                camera_source_family_pair_use[
+                    (camera_view_family_id, str(record["id"]))
+                ],
+                source_family_pair_use[str(record["id"])],
+                source_family_role_use[("object_a", str(record["object_a"]))]
+                + source_family_role_use[("object_b", str(record["object_b"]))],
+                _rank(seed, cell["cell_id"], "source-family", record["id"]),
+            ),
+        )
         pair = None
-        for left in sorted(left_pool, key=lambda value: object_key(value, "a")):
-            left_id = str(left["source"]["scene_id"])
-            if object_use[left_id] >= maximum_reuse:
-                continue
-            for right in sorted(
-                right_pool, key=lambda value: object_key(value, "b")
+        selected_source_pair = None
+        for source_pair in declared_source_pairs:
+            left_family = str(source_pair["object_a"])
+            right_family = str(source_pair["object_b"])
+            left_pool = objects_by_family_shape_scale.get(
+                (
+                    left_family,
+                    str(cell["object_a_shape"]),
+                    str(cell["object_a_scale_bin"]),
+                ),
+                [],
+            )
+            right_pool = objects_by_family_shape_scale.get(
+                (
+                    right_family,
+                    str(cell["object_b_shape"]),
+                    str(cell["object_b_scale_bin"]),
+                ),
+                [],
+            )
+            for left in sorted(
+                left_pool, key=lambda value: object_key(value, "a")
             ):
-                right_id = str(right["source"]["scene_id"])
-                if left_id == right_id or object_use[right_id] >= maximum_reuse:
+                left_id = str(left["source"]["scene_id"])
+                if object_use[left_id] >= maximum_reuse:
                     continue
-                unordered_pair = tuple(sorted((left_id, right_id)))
-                if unordered_pair in used_pairs:
-                    continue
-                pair = (left, right, unordered_pair)
-                break
+                for right in sorted(
+                    right_pool, key=lambda value: object_key(value, "b")
+                ):
+                    right_id = str(right["source"]["scene_id"])
+                    if left_id == right_id or object_use[right_id] >= maximum_reuse:
+                        continue
+                    unordered_pair = tuple(sorted((left_id, right_id)))
+                    if unordered_pair in used_pairs:
+                        continue
+                    pair = (left, right, unordered_pair)
+                    selected_source_pair = source_pair
+                    break
+                if pair is not None:
+                    break
             if pair is not None:
                 break
         if pair is None:
-            raise ValueError(f"cannot satisfy two-object source cell: {cell['cell_id']}")
+            raise ValueError(
+                f"cannot satisfy two-object source cell: {cell['cell_id']}"
+            )
+        if selected_source_pair is None:
+            raise AssertionError("selected source pair is missing")
         left, right, unordered_pair = pair
+        selected_cell = copy.deepcopy(cell)
+        selected_cell.update(
+            {
+                "source_family_pair_id": str(selected_source_pair["id"]),
+                "object_a_source_family": str(selected_source_pair["object_a"]),
+                "object_b_source_family": str(selected_source_pair["object_b"]),
+            }
+        )
         excluded_host_ids = {
             str(left["source"]["scene_id"]),
             str(right["source"]["scene_id"]),
@@ -495,6 +353,16 @@ def select_coverage_sources(
             ),
         )
         used_pairs.add(unordered_pair)
+        source_family_pair_use[str(selected_source_pair["id"])] += 1
+        camera_source_family_pair_use[
+            (camera_view_family_id, str(selected_source_pair["id"]))
+        ] += 1
+        source_family_role_use[
+            ("object_a", str(selected_source_pair["object_a"]))
+        ] += 1
+        source_family_role_use[
+            ("object_b", str(selected_source_pair["object_b"]))
+        ] += 1
         host_use[str(host["source"]["scene_id"])] += 1
         for record in (left, right):
             object_use[str(record["source"]["scene_id"])] += 1
@@ -503,7 +371,7 @@ def select_coverage_sources(
         host_type_use[str(host["visual_type"])] += 1
         selected.append(
             {
-                "cell": copy.deepcopy(cell),
+                "cell": selected_cell,
                 "host": host,
                 "objects": [left, right],
             }
@@ -532,6 +400,27 @@ def select_coverage_sources(
         "maximum_host_source_reuse": max(host_use.values()),
         "eligible_object_visual_profile_count": len(eligible_object_profiles),
         "selected_object_visual_profile_count": len(object_profile_use),
+        "selected_source_family_pair_counts": dict(
+            sorted(source_family_pair_use.items())
+        ),
+        "selected_camera_source_family_pair_counts": {
+            camera_family_id: {
+                str(source_pair["id"]): camera_source_family_pair_use[
+                    (camera_family_id, str(source_pair["id"]))
+                ]
+                for source_pair in plan["role_ordered_source_family_pairs"]
+            }
+            for camera_family_id in sorted(
+                {str(cell["camera_view_family_id"]) for cell in cells}
+            )
+        },
+        "selected_object_source_family_counts": dict(
+            sorted(
+                Counter(
+                    record["source_family"] for record in selected_objects
+                ).items()
+            )
+        ),
         "selected_object_shape_counts": dict(
             sorted(
                 Counter(
@@ -583,9 +472,10 @@ def build_coverage_scenes(
             str(cell["motion_id"]),
             [record["metadata"] for record in selection["objects"]],
             sample_index=sample_index,
+            camera_view_family_id=str(cell["camera_view_family_id"]),
         )
         scene["two_object_sampling"] = {
-            "schema_version": "physweep_two_object_coverage_cell_v1",
+            "schema_version": "physweep_two_object_coverage_cell_v2",
             "cell": copy.deepcopy(cell),
             "sources": {
                 "host": copy.deepcopy(selection["host"]["source"]),
@@ -619,7 +509,7 @@ def main() -> None:
     root = args.root.resolve()
     source_root = args.source_root.resolve()
     released_path = _resolved_within(root, args.released_base_manifest)
-    source_path = _declared_within(source_root, args.source_manifest)
+    source_path = declared_within(source_root, args.source_manifest)
     matrix_path = _resolved_within(root, args.matrix)
     output_dir = _resolved_within(root, args.output_dir)
     if output_dir.exists() and any(output_dir.iterdir()):
@@ -636,6 +526,7 @@ def main() -> None:
     selections, selection_audit = select_coverage_sources(
         cells, objects, hosts, matrix
     )
+    selected_cells = [selection["cell"] for selection in selections]
     scenes = build_coverage_scenes(selections, matrix)
     samples = []
     for scene in scenes:
@@ -675,11 +566,11 @@ def main() -> None:
             },
         },
         "coverage": {
-            "schema_version": "physweep_two_object_coverage_selection_v2",
+            "schema_version": "physweep_two_object_coverage_selection_v3",
             "full_cell_count": full_cell_count,
             "selected_cell_count": len(cells),
             "complete_cartesian_product": len(cells) == full_cell_count,
-            "axis_counts": _axis_counts(cells),
+            "axis_counts": _axis_counts(selected_cells),
             "source_pool_audit": source_audit,
             "selection_audit": selection_audit,
         },

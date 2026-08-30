@@ -87,6 +87,18 @@ def deterministic_pair_side_azimuths(
     return preferred, preferred + 180.0
 
 
+def pair_view_azimuth_degrees(
+    approach_axis_xyz: Sequence[float], relative_azimuth_degrees: float
+) -> float:
+    """Resolve a declared pair-relative view into one world-space azimuth."""
+
+    x, y = pair_approach_axis_xy(approach_axis_xyz)
+    relative = float(relative_azimuth_degrees)
+    if not math.isfinite(relative) or not -180.0 <= relative <= 180.0:
+        raise ValueError("pair-relative camera azimuth must lie in [-180, 180]")
+    return math.degrees(math.atan2(y, x)) + relative
+
+
 def camera_corridor_admits_inclined_surface(
     *,
     base_azimuth_degrees: float,

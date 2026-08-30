@@ -34,13 +34,13 @@ _MATRIX_FIELDS = {
 _CANDIDATE_POOL_FIELDS = {
     "schema_version",
     "source_release",
+    "object_source_families",
     "object_eligibility",
     "host_eligibility",
 }
 _SOURCE_RELEASE_FIELDS = {
     "released_base_manifest_schema_version",
     "generation_manifest_schema_version",
-    "generation_metadata_schema_version",
     "sample_kind",
 }
 _OBJECT_ELIGIBILITY_FIELDS = {
@@ -49,6 +49,8 @@ _OBJECT_ELIGIBILITY_FIELDS = {
     "scale_bins",
     "visual_profile_key",
     "distinct_source_scenes",
+    "asset_proxy_policy",
+    "asset_scale_bin_maximum_extent_m",
 }
 _HOST_ELIGIBILITY_FIELDS = {
     "support_shape",
@@ -67,6 +69,8 @@ _COVERAGE_PLAN_FIELDS = {
     "seed",
     "role_ordered_scale_pairs",
     "role_ordered_shape_pairs",
+    "camera_view_families",
+    "role_ordered_source_family_pairs",
     "replicates_per_cell",
     "selection_policy",
 }
@@ -75,6 +79,7 @@ _SELECTION_POLICY = {
     "host_uniqueness": "balanced_bounded_reuse",
     "host_must_differ_from_object_sources": True,
     "object_visual_profile_coverage": "balanced_eligible",
+    "object_source_family_coverage": "balanced_feasible_role_ordered_pairs",
     "host_visual_profile_coverage": "all_eligible",
     "deterministic_ranking": "sha256_seeded",
 }
@@ -88,7 +93,7 @@ _POLICY_FIELDS = {
 
 def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
     if set(matrix) != _MATRIX_FIELDS or (
-        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v4"
+        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v5"
     ):
         raise ValueError("unsupported two-object sampling matrix")
     objects = matrix.get("objects")
@@ -153,7 +158,7 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         not isinstance(candidate_pool, dict)
         or set(candidate_pool) != _CANDIDATE_POOL_FIELDS
         or candidate_pool.get("schema_version")
-        != "physweep_two_object_candidate_pool_v1"
+        != "physweep_two_object_candidate_pool_v2"
     ):
         raise ValueError("two-object candidate-pool contract is incomplete")
     source = candidate_pool.get("source_release")
@@ -161,6 +166,26 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         raise ValueError("two-object source-release contract is incomplete")
     if any(not isinstance(value, str) or not value for value in source.values()):
         raise ValueError("two-object source-release values must be nonempty strings")
+    source_families = candidate_pool.get("object_source_families")
+    if (
+        not isinstance(source_families, list)
+        or source_families
+        != [
+            {
+                "id": "generic",
+                "generation_metadata_schema_version": (
+                    "physweep_pybullet_rigid_metadata_v1"
+                ),
+            },
+            {
+                "id": "asset",
+                "generation_metadata_schema_version": (
+                    "physweep_asset_proxy_scene_v3"
+                ),
+            },
+        ]
+    ):
+        raise ValueError("two-object object-source families are invalid")
     eligibility = candidate_pool.get("object_eligibility")
     if (
         not isinstance(eligibility, dict)
@@ -169,6 +194,8 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         or eligibility.get("required_pose_profile") != "support_normal"
         or eligibility.get("visual_profile_key") != "visual_profile.id"
         or eligibility.get("distinct_source_scenes") is not True
+        or eligibility.get("asset_proxy_policy")
+        != "single_centered_unrotated_primitive_only"
     ):
         raise ValueError("two-object object-eligibility contract is invalid")
     scale_bins = eligibility.get("scale_bins")
@@ -179,6 +206,13 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         or len(scale_bins) != len(set(scale_bins))
     ):
         raise ValueError("two-object scale bins are invalid")
+    asset_scale_limits = eligibility.get("asset_scale_bin_maximum_extent_m")
+    if (
+        not isinstance(asset_scale_limits, dict)
+        or list(asset_scale_limits) != scale_bins
+        or asset_scale_limits != {"small": 0.18, "medium": 0.23, "large": None}
+    ):
+        raise ValueError("two-object asset scale-bin contract is invalid")
     host_eligibility = candidate_pool.get("host_eligibility")
     if (
         not isinstance(host_eligibility, dict)
@@ -205,7 +239,7 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         not isinstance(coverage, dict)
         or set(coverage) != _COVERAGE_PLAN_FIELDS
         or coverage.get("schema_version")
-        != "physweep_two_object_coverage_plan_v1"
+        != "physweep_two_object_coverage_plan_v2"
     ):
         raise ValueError("two-object coverage plan is incomplete")
     seed = coverage.get("seed")
@@ -262,6 +296,58 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         or actual_shape_pairs != expected_shape_pairs
     ):
         raise ValueError("two-object ordered shape pairs must cover the full product")
+    view_families = coverage.get("camera_view_families")
+    view_fields = {
+        "id",
+        "relative_azimuth_degrees",
+        "preferred_elevation_degrees",
+        "minimum_elevation_degrees",
+        "maximum_elevation_degrees",
+    }
+    if (
+        not isinstance(view_families, list)
+        or len(view_families) < 4
+        or any(
+            not isinstance(record, dict) or set(record) != view_fields
+            for record in view_families
+        )
+    ):
+        raise ValueError("two-object camera-view families are invalid")
+    view_ids = [str(record["id"]) for record in view_families]
+    if (
+        any(not value for value in view_ids)
+        or len(view_ids) != len(set(view_ids))
+        or any(
+            not -180.0 <= float(record["relative_azimuth_degrees"]) <= 180.0
+            or not 0.0
+            < float(record["minimum_elevation_degrees"])
+            <= float(record["preferred_elevation_degrees"])
+            <= float(record["maximum_elevation_degrees"])
+            < 90.0
+            for record in view_families
+        )
+    ):
+        raise ValueError("two-object camera-view family values are invalid")
+    source_pairs = coverage.get("role_ordered_source_family_pairs")
+    source_family_ids = [str(record["id"]) for record in source_families]
+    expected_source_pairs = {
+        (left, right) for left in source_family_ids for right in source_family_ids
+    }
+    if (
+        not isinstance(source_pairs, list)
+        or any(
+            not isinstance(record, dict)
+            or set(record) != {"id", "object_a", "object_b"}
+            for record in source_pairs
+        )
+        or len({str(record["id"]) for record in source_pairs}) != len(source_pairs)
+        or {
+            (str(record["object_a"]), str(record["object_b"]))
+            for record in source_pairs
+        }
+        != expected_source_pairs
+    ):
+        raise ValueError("two-object source-family pairs must cover the full product")
     selection = coverage.get("selection_policy")
     if not isinstance(selection, dict) or (
         set(selection)
@@ -377,12 +463,26 @@ def shape_pair_id(
     return matches[0]
 
 
+def camera_view_family(
+    matrix: dict[str, Any], family_id: str | None = None
+) -> dict[str, Any]:
+    """Resolve one declared pair-relative camera family."""
+
+    families = matrix["coverage_plan"]["camera_view_families"]
+    resolved_id = str(families[0]["id"]) if family_id is None else str(family_id)
+    matches = [record for record in families if str(record["id"]) == resolved_id]
+    if len(matches) != 1:
+        raise ValueError(f"unknown two-object camera-view family: {resolved_id}")
+    return matches[0]
+
+
 def build_two_object_scene(
     host_template: dict[str, Any],
     matrix: dict[str, Any],
     motion_id: str,
     object_templates: Sequence[dict[str, Any]] | None = None,
     sample_index: int | None = None,
+    camera_view_family_id: str | None = None,
 ) -> dict[str, Any]:
     """Compose two sources and apply one declared initial-state intent."""
 
@@ -420,6 +520,7 @@ def build_two_object_scene(
         matrix["shape_families"],
         matrix["shared_physics"],
         matrix["pair_observation"],
+        camera_view_family(matrix, camera_view_family_id),
         matches[0],
     )
     scene = bind_two_object_scene(scene, matrix["scene_compatibility"])

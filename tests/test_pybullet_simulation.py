@@ -17,6 +17,7 @@ from tools.rendering.bind_pybullet_visuals import (  # noqa: E402
     resolve_render_request,
 )
 from tools.rendering.camera_solver import (  # noqa: E402
+    _two_object_azimuth_candidates,
     _two_object_elevation_candidates,
     audit_two_object_camera,
     camera_inside_structural_envelope,
@@ -651,7 +652,7 @@ class PyBulletSimulationTests(unittest.TestCase):
         camera = solve_camera(scene, first, self.rules)
         self.assertEqual(
             camera["solver_version"],
-            "joint_full_motion_envelope_camera_v3",
+            "joint_full_motion_envelope_camera_v4",
         )
         diagnostics = camera["diagnostics"]
         self.assertEqual(diagnostics["object_count"], 2)
@@ -712,7 +713,7 @@ class PyBulletSimulationTests(unittest.TestCase):
         )
         self.assertEqual(
             group_camera["solver_version"],
-            "joint_full_motion_envelope_group_camera_v3",
+            "joint_full_motion_envelope_group_camera_v4",
         )
         self.assertEqual(
             group_camera["diagnostics"]["camera_group"]["member_count"], 2
@@ -776,13 +777,13 @@ class PyBulletSimulationTests(unittest.TestCase):
                     ],
                 )
                 self.assertLessEqual(
-                    abs(diagnostics["side_view_deviation_degrees"]),
+                    diagnostics["view_azimuth_deviation_degrees"],
                     scene["simulation"]["interaction"][
-                        "maximum_camera_side_deviation_degrees"
+                        "maximum_camera_view_azimuth_deviation_degrees"
                     ],
                 )
 
-    def test_two_object_camera_tries_both_sides_of_the_motion_axis(self) -> None:
+    def test_two_object_camera_does_not_escape_its_declared_view_family(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)
         matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
         scene = build_two_object_scene(host, matrix, "surface_head_on_2obj")
@@ -814,20 +815,8 @@ class PyBulletSimulationTests(unittest.TestCase):
         binding["visual_objects"].append(copy.deepcopy(wall))
         binding["colliders"].append(wall)
         binding["binding_sha256"] = binding_sha256(binding)
-        alternate = solve_camera(blocked, trajectory, self.rules)
-        self.assertGreater(
-            alternate["diagnostics"]["pair_camera_candidate_failure_count"],
-            0,
-        )
-        preferred_azimuth = preferred["diagnostics"][
-            "pair_selected_side_azimuth_degrees"
-        ]
-        alternate_azimuth = alternate["diagnostics"][
-            "pair_selected_side_azimuth_degrees"
-        ]
-        self.assertAlmostEqual(
-            abs(alternate_azimuth - preferred_azimuth), 180.0, places=6
-        )
+        with self.assertRaisesRegex(ValueError, "could not solve"):
+            solve_camera(blocked, trajectory, self.rules)
 
     def test_two_object_camera_uses_contract_interior_elevations(self) -> None:
         candidates = _two_object_elevation_candidates(
@@ -839,6 +828,27 @@ class PyBulletSimulationTests(unittest.TestCase):
         )
         self.assertEqual(candidates, (28.0, 35.0, 23.0, 38.5, 20.5))
         self.assertTrue(all(18.0 < value < 42.0 for value in candidates))
+
+    def test_two_object_camera_stays_within_one_declared_view_family(self) -> None:
+        interaction = {"approach_axis_xyz": [1.0, 0.0, 0.0]}
+        front = _two_object_azimuth_candidates(
+            interaction,
+            {
+                "relative_azimuth": 55.0,
+                "maximum_view_azimuth_deviation": 8.0,
+            },
+        )
+        rear = _two_object_azimuth_candidates(
+            interaction,
+            {
+                "relative_azimuth": 125.0,
+                "maximum_view_azimuth_deviation": 8.0,
+            },
+        )
+        self.assertEqual(front, (55.0, 62.999, 58.9995, 51.0005, 47.001))
+        self.assertEqual(rear, (125.0, 117.001, 121.0005, 128.9995, 132.999))
+        self.assertTrue(all(abs(value - 55.0) < 8.0 for value in front))
+        self.assertTrue(all(abs(value - 125.0) < 8.0 for value in rear))
 
     def test_two_object_motion_matrix_contact_contracts(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)
@@ -951,7 +961,7 @@ class PyBulletSimulationTests(unittest.TestCase):
                 diagnostics = camera["diagnostics"]
                 self.assertEqual(
                     camera["solver_version"],
-                    "joint_full_motion_envelope_camera_v3",
+                    "joint_full_motion_envelope_camera_v4",
                 )
                 self.assertEqual(
                     diagnostics["joint_motion_envelope_visible_fraction"],
@@ -1160,10 +1170,28 @@ class PyBulletSimulationTests(unittest.TestCase):
                 "schema_version": "physweep_two_object_scene_compatibility_v1",
                 "scene_class": host["simulation"]["support"]["scene_class"],
                 "environment_binding_policy": (
-                    "recompiled_for_preferred_pair_side"
+                    "recompiled_for_declared_pair_view"
                 ),
             },
         )
+        self.assertEqual(
+            scene["camera_request"]["schema_version"],
+            "physweep_two_object_camera_request_v1",
+        )
+        self.assertEqual(
+            scene["camera_request"]["observation"]["intent"],
+            "joint_full_motion_envelope",
+        )
+        self.assertEqual(
+            scene["camera_request"]["profile"],
+            scene["simulation"]["interaction"]["solver_profile_template_id"],
+        )
+        self.assertNotIn(
+            "camera_context", scene["appearance"]["scene_visual"]
+        )
+        composition = scene["appearance"]["scene_visual"].get("composition")
+        if isinstance(composition, dict):
+            self.assertNotIn("camera", composition)
         self.assertEqual(scene["simulation"]["support"], host["simulation"]["support"])
         self.assertEqual(host, original_host)
         self.assertEqual(secondary, original_secondary)

@@ -33,10 +33,10 @@ _AUDIT_FIELDS = {
 }
 _OBSERVATION_FIELDS = {
     "schema_version",
-    "maximum_camera_side_deviation_degrees",
-    "preferred_camera_elevation_degrees",
-    "minimum_camera_elevation_degrees",
-    "maximum_camera_elevation_degrees",
+    "solver_profile_template_id",
+    "focal_length_mm",
+    "maximum_camera_view_azimuth_deviation_degrees",
+    "minimum_camera_distance_m",
     "maximum_camera_distance_m",
     "maximum_camera_distance_above_minimum_m",
     "full_motion_envelope_margin_ndc",
@@ -44,6 +44,16 @@ _OBSERVATION_FIELDS = {
     "minimum_per_object_median_span_ndc",
     "minimum_per_object_unoccluded_fraction",
     "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio",
+    "minimum_support_context_visible_fraction",
+    "minimum_support_anchor_visible_fraction",
+    "minimum_support_anchor_unoccluded_fraction",
+}
+_VIEW_FAMILY_FIELDS = {
+    "id",
+    "relative_azimuth_degrees",
+    "preferred_elevation_degrees",
+    "minimum_elevation_degrees",
+    "maximum_elevation_degrees",
 }
 _COMMON_INTENT_FIELDS = {
     "id",
@@ -86,6 +96,7 @@ _MAXIMUM_IMPACT_OFFSET_RATIO = 0.80
 def _validate_contracts(
     shared: dict[str, Any],
     observation: dict[str, Any],
+    view_family: dict[str, Any],
     intent: dict[str, Any],
 ) -> str:
     if set(shared) != _SHARED_FIELDS or (
@@ -109,14 +120,13 @@ def _validate_contracts(
         raise ValueError("two-object observation fields are incomplete")
     if (
         observation.get("schema_version")
-        != "physweep_two_object_camera_observation_v1"
+        != "physweep_two_object_camera_observation_v2"
     ):
         raise ValueError("unsupported two-object camera observation")
     (
-        camera_side_deviation,
-        preferred_elevation,
-        minimum_elevation,
-        maximum_elevation,
+        focal_length,
+        camera_view_deviation,
+        minimum_camera_distance,
         maximum_camera_distance,
         maximum_distance_above_minimum,
         envelope_margin,
@@ -124,12 +134,14 @@ def _validate_contracts(
         minimum_object_span,
         minimum_unoccluded_fraction,
         projected_separation_ratio,
+        minimum_context_fraction,
+        minimum_anchor_fraction,
+        minimum_anchor_unoccluded_fraction,
     ) = finite_vector(
         [
-            observation["maximum_camera_side_deviation_degrees"],
-            observation["preferred_camera_elevation_degrees"],
-            observation["minimum_camera_elevation_degrees"],
-            observation["maximum_camera_elevation_degrees"],
+            observation["focal_length_mm"],
+            observation["maximum_camera_view_azimuth_deviation_degrees"],
+            observation["minimum_camera_distance_m"],
             observation["maximum_camera_distance_m"],
             observation["maximum_camera_distance_above_minimum_m"],
             observation["full_motion_envelope_margin_ndc"],
@@ -139,12 +151,35 @@ def _validate_contracts(
             observation[
                 "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio"
             ],
+            observation["minimum_support_context_visible_fraction"],
+            observation["minimum_support_anchor_visible_fraction"],
+            observation["minimum_support_anchor_unoccluded_fraction"],
         ],
-        11,
+        13,
         "two-object observation values",
     )
-    if not 0.0 < camera_side_deviation <= 45.0:
-        raise ValueError("camera side deviation must lie in (0, 45] degrees")
+    if not str(observation["solver_profile_template_id"]).strip():
+        raise ValueError("two-object camera solver profile is empty")
+    if focal_length <= 0.0:
+        raise ValueError("two-object camera focal length must be positive")
+    if not 0.0 < camera_view_deviation <= 45.0:
+        raise ValueError("camera view deviation must lie in (0, 45] degrees")
+    if set(view_family) != _VIEW_FAMILY_FIELDS:
+        raise ValueError("two-object camera-view family is incomplete")
+    relative_azimuth, preferred_elevation, minimum_elevation, maximum_elevation = (
+        finite_vector(
+            [
+                view_family["relative_azimuth_degrees"],
+                view_family["preferred_elevation_degrees"],
+                view_family["minimum_elevation_degrees"],
+                view_family["maximum_elevation_degrees"],
+            ],
+            4,
+            "two-object camera-view family values",
+        )
+    )
+    if not str(view_family["id"]).strip() or not -180.0 <= relative_azimuth <= 180.0:
+        raise ValueError("two-object camera-view family azimuth is invalid")
     if not (
         0.0
         < minimum_elevation
@@ -154,7 +189,8 @@ def _validate_contracts(
     ):
         raise ValueError("two-object camera elevations are invalid")
     if (
-        maximum_camera_distance <= 0.0
+        minimum_camera_distance <= 0.0
+        or minimum_camera_distance >= maximum_camera_distance
         or maximum_distance_above_minimum <= 0.0
         or maximum_distance_above_minimum >= maximum_camera_distance
     ):
@@ -169,6 +205,12 @@ def _validate_contracts(
         raise ValueError("minimum per-object unoccluded fraction is invalid")
     if not 0.0 < projected_separation_ratio <= 1.0:
         raise ValueError("projected separation ratio must lie in (0, 1]")
+    if not (
+        0.0 <= minimum_context_fraction <= 1.0
+        and 0.0 <= minimum_anchor_fraction <= 1.0
+        and 0.0 <= minimum_anchor_unoccluded_fraction <= 1.0
+    ):
+        raise ValueError("two-object support-context camera fractions are invalid")
     layout = str(intent.get("layout", ""))
     layout_fields = _LAYOUT_FIELDS.get(layout)
     if layout_fields is None or set(intent) != _COMMON_INTENT_FIELDS | layout_fields:
@@ -436,11 +478,12 @@ def apply_two_object_motion(
     shape_contract: dict[str, Any],
     shared: dict[str, Any],
     observation: dict[str, Any],
+    view_family: dict[str, Any],
     intent: dict[str, Any],
 ) -> dict[str, Any]:
     """Apply one declared initial-state intent without prescribing its outcome."""
 
-    layout = _validate_contracts(shared, observation, intent)
+    layout = _validate_contracts(shared, observation, view_family, intent)
     scene = copy.deepcopy(pair_scene)
     objects = scene.get("simulation", {}).get("objects", [])
     if len(objects) != 2 or any(not isinstance(obj, dict) for obj in objects):
@@ -617,7 +660,85 @@ def apply_two_object_motion(
         "object_ids": object_ids,
         "approach_axis_xyz": approach_axis.tolist(),
         "impact_offset_ratio": float(intent.get("impact_offset_ratio", 0.0)),
+        "camera_view_family_id": str(view_family["id"]),
+        "camera_relative_azimuth_degrees": float(
+            view_family["relative_azimuth_degrees"]
+        ),
+        "preferred_camera_elevation_degrees": float(
+            view_family["preferred_elevation_degrees"]
+        ),
+        "minimum_camera_elevation_degrees": float(
+            view_family["minimum_elevation_degrees"]
+        ),
+        "maximum_camera_elevation_degrees": float(
+            view_family["maximum_elevation_degrees"]
+        ),
         **copy.deepcopy(shared["interaction_audit"]),
         **copy.deepcopy(observation),
+    }
+    envelope_margin = float(observation["full_motion_envelope_margin_ndc"])
+    maximum_envelope_span = 1.0 - 2.0 * envelope_margin
+    scene["camera_request"] = {
+        "schema_version": "physweep_two_object_camera_request_v1",
+        "profile": str(observation["solver_profile_template_id"]),
+        "observation": {
+            "version": "physweep_two_object_camera_observation_request_v1",
+            "intent": "joint_full_motion_envelope",
+            "focus_event": {"type": "fraction", "fraction": 1.0},
+            "structure_context": "horizontal_surface",
+            "preferred_object_span_ndc": float(
+                observation["preferred_full_motion_envelope_span_ndc"]
+            ),
+            "minimum_median_object_span_ndc": float(
+                observation["minimum_per_object_median_span_ndc"]
+            ),
+            "minimum_anchor_visible_fraction": float(
+                observation["minimum_support_anchor_visible_fraction"]
+            ),
+            "minimum_anchor_unoccluded_fraction": float(
+                observation["minimum_support_anchor_unoccluded_fraction"]
+            ),
+        },
+        "focal_length_mm": float(observation["focal_length_mm"]),
+        "minimum_full_trajectory_center_visible_fraction": 1.0,
+        "minimum_primary_trajectory_center_visible_fraction": 1.0,
+        "full_trajectory_camera_target_blend": 1.0,
+        "minimum_initial_object_span_ndc": float(
+            observation["minimum_per_object_median_span_ndc"]
+        ),
+        "minimum_initial_object_visible_fraction": 1.0,
+        "initial_object_center_margin_ndc": envelope_margin,
+        "initial_object_corner_margin_ndc": envelope_margin,
+        "maximum_initial_object_span_ndc": maximum_envelope_span,
+        "minimum_support_context_visible_fraction": float(
+            observation["minimum_support_context_visible_fraction"]
+        ),
+        "minimum_primary_trajectory_unoccluded_fraction": 0.0,
+        "minimum_full_trajectory_unoccluded_fraction": 0.0,
+        "minimum_camera_distance_floor_m": float(
+            observation["minimum_camera_distance_m"]
+        ),
+        "minimum_camera_distance_offset_m": 0.0,
+        "minimum_camera_distance_support_diagonal_scale": 0.0,
+        "preferred_camera_distance_offset_m": 0.20,
+        "camera_distance_penalty_weight": 0.08,
+        "maximum_camera_distance_above_minimum_m": float(
+            observation["maximum_camera_distance_above_minimum_m"]
+        ),
+        "minimum_camera_elevation_degrees": float(
+            view_family["minimum_elevation_degrees"]
+        ),
+        "maximum_camera_elevation_degrees": float(
+            view_family["maximum_elevation_degrees"]
+        ),
+        "soft_maximum_focus_span_ndc": float(
+            observation["preferred_full_motion_envelope_span_ndc"]
+        ),
+        "maximum_focus_span_ndc": maximum_envelope_span,
+        "focus_span_penalty_weight": 0.12,
+        "maximum_camera_distance_m": float(
+            observation["maximum_camera_distance_m"]
+        ),
+        "allow_partial_exit": False,
     }
     return scene

@@ -11,9 +11,9 @@ import numpy as np
 
 from tools.core.camera_geometry import (
     camera_azimuth_offsets,
-    deterministic_pair_side_azimuths,
     inclined_surface_side_readability,
     pair_approach_axis_xy,
+    pair_view_azimuth_degrees,
 )
 from tools.dataset_contract.object_identity_contract import (
     require_simulation_objects,
@@ -153,10 +153,16 @@ def _two_object_camera_state(
 
 def _two_object_observation_contract(
     interaction: dict[str, Any],
-) -> dict[str, float]:
+) -> dict[str, Any]:
     values = {
-        "maximum_side_deviation": float(
-            interaction["maximum_camera_side_deviation_degrees"]
+        "view_family_id": str(interaction["camera_view_family_id"]),
+        "solver_profile_template_id": str(
+            interaction["solver_profile_template_id"]
+        ),
+        "focal_length_mm": float(interaction["focal_length_mm"]),
+        "relative_azimuth": float(interaction["camera_relative_azimuth_degrees"]),
+        "maximum_view_azimuth_deviation": float(
+            interaction["maximum_camera_view_azimuth_deviation_degrees"]
         ),
         "minimum_elevation": float(
             interaction["minimum_camera_elevation_degrees"]
@@ -167,6 +173,7 @@ def _two_object_observation_contract(
         "maximum_elevation": float(
             interaction["maximum_camera_elevation_degrees"]
         ),
+        "minimum_camera_distance": float(interaction["minimum_camera_distance_m"]),
         "maximum_camera_distance": float(interaction["maximum_camera_distance_m"]),
         "maximum_distance_above_minimum": float(
             interaction["maximum_camera_distance_above_minimum_m"]
@@ -186,11 +193,32 @@ def _two_object_observation_contract(
                 "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio"
             ]
         ),
+        "minimum_context_fraction": float(
+            interaction["minimum_support_context_visible_fraction"]
+        ),
+        "minimum_anchor_fraction": float(
+            interaction["minimum_support_anchor_visible_fraction"]
+        ),
+        "minimum_anchor_unoccluded": float(
+            interaction["minimum_support_anchor_unoccluded_fraction"]
+        ),
     }
-    if not all(np.isfinite(value) for value in values.values()):
+    string_keys = {"view_family_id", "solver_profile_template_id"}
+    numeric_values = [
+        value for key, value in values.items() if key not in string_keys
+    ]
+    if (
+        not values["view_family_id"]
+        or not values["solver_profile_template_id"]
+        or not all(np.isfinite(value) for value in numeric_values)
+    ):
         raise ValueError("joint camera observation values must be finite")
-    if not 0.0 < values["maximum_side_deviation"] <= 45.0:
-        raise ValueError("camera side deviation must lie in (0, 45]")
+    if not -180.0 <= values["relative_azimuth"] <= 180.0:
+        raise ValueError("pair-relative camera azimuth must lie in [-180, 180]")
+    if not 0.0 < values["maximum_view_azimuth_deviation"] <= 45.0:
+        raise ValueError("camera view azimuth deviation must lie in (0, 45]")
+    if values["focal_length_mm"] <= 0.0:
+        raise ValueError("joint camera focal length must be positive")
     if not (
         0.0
         < values["minimum_elevation"]
@@ -200,7 +228,8 @@ def _two_object_observation_contract(
     ):
         raise ValueError("joint camera elevations are invalid")
     if (
-        values["maximum_camera_distance"] <= 0.0
+        values["minimum_camera_distance"] <= 0.0
+        or values["minimum_camera_distance"] >= values["maximum_camera_distance"]
         or values["maximum_distance_above_minimum"] <= 0.0
         or values["maximum_distance_above_minimum"]
         >= values["maximum_camera_distance"]
@@ -217,6 +246,14 @@ def _two_object_observation_contract(
         <= values["preferred_envelope_span"]
         or not 0.0 < values["minimum_unoccluded"] <= 1.0
         or not 0.0 < values["minimum_keyframe_separation_ratio"] <= 1.0
+        or any(
+            not 0.0 <= values[key] <= 1.0
+            for key in (
+                "minimum_context_fraction",
+                "minimum_anchor_fraction",
+                "minimum_anchor_unoccluded",
+            )
+        )
     ):
         raise ValueError("joint full-motion envelope constraints are invalid")
     values["maximum_envelope_span"] = maximum_envelope_span
@@ -239,6 +276,33 @@ def _two_object_elevation_candidates(
         0.25 * preferred + 0.75 * minimum,
     )
     return tuple(dict.fromkeys(candidates))
+
+
+def _two_object_azimuth_candidates(
+    interaction: dict[str, Any], contract: dict[str, Any]
+) -> tuple[float, ...]:
+    """Stay inside one view family while preferring stronger pair readability."""
+
+    requested = pair_view_azimuth_degrees(
+        interaction["approach_axis_xyz"], contract["relative_azimuth"]
+    )
+    relative = float(contract["relative_azimuth"])
+    side_target = 90.0 if relative >= 0.0 else -90.0
+    toward_side = side_target - relative
+    if abs(toward_side) <= 1.0e-8:
+        return (requested,)
+    maximum_deviation = float(contract["maximum_view_azimuth_deviation"])
+    serialization_margin = min(1.0e-3, 0.01 * maximum_deviation)
+    extent = min(maximum_deviation - serialization_margin, abs(toward_side))
+    direction = math.copysign(1.0, toward_side)
+    offsets = (
+        0.0,
+        direction * extent,
+        direction * 0.5 * extent,
+        -direction * 0.5 * extent,
+        -direction * extent,
+    )
+    return tuple(requested + value for value in dict.fromkeys(offsets))
 
 
 def _camera_group_id(metadata: dict[str, Any]) -> str:
@@ -268,6 +332,21 @@ def audit_two_object_camera(
         upper,
     ) = _two_object_camera_state(metadata, trajectory)
     contract = _two_object_observation_contract(interaction)
+    pair_request = metadata.get("camera_request")
+    if (
+        not isinstance(pair_request, dict)
+        or pair_request.get("schema_version")
+        != "physweep_two_object_camera_request_v1"
+        or str(pair_request.get("profile", ""))
+        != contract["solver_profile_template_id"]
+        or not math.isclose(
+            float(pair_request.get("focal_length_mm", math.nan)),
+            contract["focal_length_mm"],
+            abs_tol=1.0e-12,
+            rel_tol=0.0,
+        )
+    ):
+        raise ValueError("joint camera request contradicts its pair contract")
     position = np.asarray(camera["position_m"], dtype=np.float64)
     target = np.asarray(camera["target_m"], dtype=np.float64)
     lens = float(camera["focal_length_mm"])
@@ -302,17 +381,25 @@ def audit_two_object_camera(
             f"joint camera exceeds its distance limit: {distance:.6f}"
         )
     approach_axis = np.asarray(
-        pair_approach_axis_xy(interaction["approach_axis_xyz"]),
-        dtype=np.float64,
+        pair_approach_axis_xy(interaction["approach_axis_xyz"]), dtype=np.float64
     )
     horizontal_view = view_vector[:2] / horizontal_distance
-    side_deviation = math.degrees(
-        math.asin(float(np.clip(abs(horizontal_view @ approach_axis), 0.0, 1.0)))
+    actual_azimuth = math.degrees(
+        math.atan2(float(horizontal_view[1]), float(horizontal_view[0]))
     )
-    if side_deviation > contract["maximum_side_deviation"] + 1.0e-6:
+    requested_azimuth = pair_view_azimuth_degrees(
+        interaction["approach_axis_xyz"], contract["relative_azimuth"]
+    )
+    view_azimuth_deviation = abs(
+        (actual_azimuth - requested_azimuth + 180.0) % 360.0 - 180.0
+    )
+    if (
+        view_azimuth_deviation
+        > contract["maximum_view_azimuth_deviation"] + 1.0e-6
+    ):
         raise ValueError(
-            "joint camera is not sufficiently side-on: "
-            f"deviation={side_deviation:.6f}"
+            "joint camera is outside its declared view family: "
+            f"deviation={view_azimuth_deviation:.6f}"
         )
 
     aspect = 16.0 / 9.0
@@ -508,7 +595,8 @@ def audit_two_object_camera(
         "pair_keyframe_projected_silhouette_radii_ndc": [
             round(value, 6) for value in keyframe_projected_radii
         ],
-        "side_view_deviation_degrees": round(side_deviation, 6),
+        "camera_view_family_id": contract["view_family_id"],
+        "view_azimuth_deviation_degrees": round(view_azimuth_deviation, 6),
         "camera_elevation_degrees": round(elevation, 6),
         "camera_distance_m": round(distance, 6),
     }
@@ -535,7 +623,9 @@ def _solve_two_object_camera(
         upper,
     ) = _two_object_camera_state(metadata, trajectory)
     contract = _two_object_observation_contract(interaction)
-    maximum_side_deviation = contract["maximum_side_deviation"]
+    maximum_view_azimuth_deviation = contract[
+        "maximum_view_azimuth_deviation"
+    ]
     minimum_elevation = contract["minimum_elevation"]
     preferred_elevation = contract["preferred_elevation"]
     maximum_elevation = contract["maximum_elevation"]
@@ -557,6 +647,11 @@ def _solve_two_object_camera(
     virtual_id = "camera_joint_dynamic_envelope"
     virtual_metadata = copy.deepcopy(metadata)
     virtual_metadata["scene_id"] = camera_group_id
+    scene_visual = virtual_metadata["appearance"]["scene_visual"]
+    scene_visual.pop("camera_context", None)
+    composition = scene_visual.get("composition")
+    if isinstance(composition, dict):
+        composition.pop("camera", None)
     virtual_object = copy.deepcopy(objects[0])
     virtual_object["object_id"] = virtual_id
     virtual_object["geometry"] = {
@@ -565,6 +660,8 @@ def _solve_two_object_camera(
     }
     virtual_metadata["simulation"]["objects"] = [virtual_object]
     virtual_request = virtual_metadata["camera_request"]
+    virtual_request["profile"] = contract["solver_profile_template_id"]
+    virtual_request["focal_length_mm"] = contract["focal_length_mm"]
     joint_observation = virtual_request["observation"]
     joint_observation.update(
         {
@@ -573,6 +670,12 @@ def _solve_two_object_camera(
             "structure_context": "horizontal_surface",
             "preferred_object_span_ndc": preferred_envelope_span,
             "minimum_median_object_span_ndc": minimum_object_span,
+            "minimum_anchor_visible_fraction": contract[
+                "minimum_anchor_fraction"
+            ],
+            "minimum_anchor_unoccluded_fraction": contract[
+                "minimum_anchor_unoccluded"
+            ],
         }
     )
     virtual_request.update(
@@ -582,6 +685,9 @@ def _solve_two_object_camera(
             "full_trajectory_camera_target_blend": 1.0,
             "minimum_initial_object_span_ndc": minimum_object_span,
             "minimum_initial_object_visible_fraction": 1.0,
+            "minimum_support_context_visible_fraction": contract[
+                "minimum_context_fraction"
+            ],
             "initial_object_center_margin_ndc": envelope_margin,
             "initial_object_corner_margin_ndc": envelope_margin,
             "maximum_initial_object_span_ndc": maximum_envelope_span,
@@ -590,10 +696,17 @@ def _solve_two_object_camera(
             "minimum_camera_elevation_degrees": minimum_elevation,
             "maximum_camera_elevation_degrees": maximum_elevation,
             "maximum_camera_distance_m": maximum_camera_distance,
+            "minimum_camera_distance_floor_m": contract[
+                "minimum_camera_distance"
+            ],
+            "minimum_camera_distance_offset_m": 0.0,
+            "minimum_camera_distance_support_diagonal_scale": 0.0,
             "maximum_camera_distance_above_minimum_m": (
                 maximum_distance_above_minimum
             ),
-            "maximum_local_azimuth_deviation_degrees": maximum_side_deviation,
+            "maximum_local_azimuth_deviation_degrees": (
+                maximum_view_azimuth_deviation
+            ),
             "minimum_primary_trajectory_unoccluded_fraction": 0.0,
             "minimum_full_trajectory_unoccluded_fraction": 0.0,
             "allow_partial_exit": False,
@@ -615,11 +728,12 @@ def _solve_two_object_camera(
     selected_azimuth = None
     selected_elevation = None
     selected_member_diagnostics: list[dict[str, Any]] = []
-    side_azimuths = deterministic_pair_side_azimuths(
-        camera_group_id, interaction["approach_axis_xyz"]
+    requested_azimuth = pair_view_azimuth_degrees(
+        interaction["approach_axis_xyz"], contract["relative_azimuth"]
     )
+    azimuth_candidates = _two_object_azimuth_candidates(interaction, contract)
     for candidate_elevation in _two_object_elevation_candidates(contract):
-        for candidate_azimuth in side_azimuths:
+        for candidate_azimuth in azimuth_candidates:
             joint_rules = copy.deepcopy(rules)
             matching_profiles = [
                 record
@@ -667,23 +781,41 @@ def _solve_two_object_camera(
             break
         if camera is not None:
             break
-    if camera is None or selected_azimuth is None or selected_elevation is None:
+    if (
+        camera is None
+        or selected_azimuth is None
+        or selected_elevation is None
+    ):
         raise ValueError(
             "joint camera could not solve a contract candidate; "
             + " | ".join(failures)
         )
     camera["solver_version"] = (
-        "joint_full_motion_envelope_group_camera_v3"
+        "joint_full_motion_envelope_group_camera_v4"
         if audit_members
-        else "joint_full_motion_envelope_camera_v3"
+        else "joint_full_motion_envelope_camera_v4"
     )
-    camera["diagnostics"]["pair_selected_side_azimuth_degrees"] = round(
+    camera["diagnostics"]["pair_camera_view_family_id"] = contract[
+        "view_family_id"
+    ]
+    camera["diagnostics"]["pair_requested_relative_azimuth_degrees"] = round(
+        contract["relative_azimuth"], 6
+    )
+    camera["diagnostics"]["pair_selected_view_azimuth_degrees"] = round(
         selected_azimuth, 6
+    )
+    camera["diagnostics"]["pair_selected_relative_azimuth_degrees"] = round(
+        contract["relative_azimuth"]
+        + (selected_azimuth - requested_azimuth),
+        6,
     )
     camera["diagnostics"]["pair_selected_elevation_degrees"] = round(
         selected_elevation, 6
     )
     camera["diagnostics"]["pair_camera_candidate_failure_count"] = len(failures)
+    camera["diagnostics"]["pair_envelope_span_target_ndc"] = round(
+        preferred_envelope_span, 6
+    )
     if audit_members:
         representative = selected_member_diagnostics[0]
         camera["diagnostics"].update(

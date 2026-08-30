@@ -1,5 +1,5 @@
 {
-  "schema_version": "physweep_two_object_sampling_matrix_v4",
+  "schema_version": "physweep_two_object_sampling_matrix_v5",
   "objects": {
     "schema_version": "physweep_object_collection_v1",
     "roles": [
@@ -77,19 +77,34 @@
     ]
   },
   "candidate_pool": {
-    "schema_version": "physweep_two_object_candidate_pool_v1",
+    "schema_version": "physweep_two_object_candidate_pool_v2",
     "source_release": {
       "released_base_manifest_schema_version": "physweep_base_release_view_v14",
       "generation_manifest_schema_version": "physweep_release_metadata_manifest_v2",
-      "generation_metadata_schema_version": "physweep_pybullet_rigid_metadata_v1",
       "sample_kind": "base"
     },
+    "object_source_families": [
+      {
+        "id": "generic",
+        "generation_metadata_schema_version": "physweep_pybullet_rigid_metadata_v1"
+      },
+      {
+        "id": "asset",
+        "generation_metadata_schema_version": "physweep_asset_proxy_scene_v3"
+      }
+    ],
     "object_eligibility": {
       "body_model": "rigid_body",
       "required_pose_profile": "support_normal",
       "scale_bins": ["small", "medium", "large"],
       "visual_profile_key": "visual_profile.id",
-      "distinct_source_scenes": true
+      "distinct_source_scenes": true,
+      "asset_proxy_policy": "single_centered_unrotated_primitive_only",
+      "asset_scale_bin_maximum_extent_m": {
+        "small": 0.18,
+        "medium": 0.23,
+        "large": null
+      }
     },
     "host_eligibility": {
       "support_shape": "rectangular_slab",
@@ -104,7 +119,7 @@
     }
   },
   "coverage_plan": {
-    "schema_version": "physweep_two_object_coverage_plan_v1",
+    "schema_version": "physweep_two_object_coverage_plan_v2",
     "seed": 20260829,
     "role_ordered_scale_pairs": [
       {"id": "small_to_small", "object_a": "small", "object_b": "small"},
@@ -128,6 +143,56 @@
       {"id": "cylinder_to_cuboid", "object_a": "cylinder", "object_b": "cuboid"},
       {"id": "cylinder_to_cylinder", "object_a": "cylinder", "object_b": "cylinder"}
     ],
+    "camera_view_families": [
+      {
+        "id": "side_left_mid",
+        "relative_azimuth_degrees": 90.0,
+        "preferred_elevation_degrees": 28.0,
+        "minimum_elevation_degrees": 22.0,
+        "maximum_elevation_degrees": 34.0
+      },
+      {
+        "id": "side_right_mid",
+        "relative_azimuth_degrees": -90.0,
+        "preferred_elevation_degrees": 28.0,
+        "minimum_elevation_degrees": 22.0,
+        "maximum_elevation_degrees": 34.0
+      },
+      {
+        "id": "front_left_low",
+        "relative_azimuth_degrees": 55.0,
+        "preferred_elevation_degrees": 22.0,
+        "minimum_elevation_degrees": 18.0,
+        "maximum_elevation_degrees": 28.0
+      },
+      {
+        "id": "front_right_low",
+        "relative_azimuth_degrees": -55.0,
+        "preferred_elevation_degrees": 22.0,
+        "minimum_elevation_degrees": 18.0,
+        "maximum_elevation_degrees": 28.0
+      },
+      {
+        "id": "rear_left_high",
+        "relative_azimuth_degrees": 125.0,
+        "preferred_elevation_degrees": 38.0,
+        "minimum_elevation_degrees": 32.0,
+        "maximum_elevation_degrees": 42.0
+      },
+      {
+        "id": "rear_right_high",
+        "relative_azimuth_degrees": -125.0,
+        "preferred_elevation_degrees": 38.0,
+        "minimum_elevation_degrees": 32.0,
+        "maximum_elevation_degrees": 42.0
+      }
+    ],
+    "role_ordered_source_family_pairs": [
+      {"id": "generic_to_generic", "object_a": "generic", "object_b": "generic"},
+      {"id": "generic_to_asset", "object_a": "generic", "object_b": "asset"},
+      {"id": "asset_to_generic", "object_a": "asset", "object_b": "generic"},
+      {"id": "asset_to_asset", "object_a": "asset", "object_b": "asset"}
+    ],
     "replicates_per_cell": 1,
     "selection_policy": {
       "source_pair_uniqueness": "unordered_without_replacement",
@@ -136,6 +201,7 @@
       "maximum_host_source_reuse": 2,
       "host_must_differ_from_object_sources": true,
       "object_visual_profile_coverage": "balanced_eligible",
+      "object_source_family_coverage": "balanced_feasible_role_ordered_pairs",
       "host_visual_profile_coverage": "all_eligible",
       "deterministic_ranking": "sha256_seeded"
     }
@@ -153,18 +219,21 @@
     }
   },
   "pair_observation": {
-    "schema_version": "physweep_two_object_camera_observation_v1",
-    "maximum_camera_side_deviation_degrees": 8.0,
-    "preferred_camera_elevation_degrees": 28.0,
-    "minimum_camera_elevation_degrees": 18.0,
-    "maximum_camera_elevation_degrees": 42.0,
+    "schema_version": "physweep_two_object_camera_observation_v2",
+    "solver_profile_template_id": "front_left_oblique",
+    "focal_length_mm": 44.0,
+    "maximum_camera_view_azimuth_deviation_degrees": 8.0,
+    "minimum_camera_distance_m": 1.0,
     "maximum_camera_distance_m": 6.0,
     "maximum_camera_distance_above_minimum_m": 4.5,
     "full_motion_envelope_margin_ndc": 0.03,
-    "preferred_full_motion_envelope_span_ndc": 0.45,
+    "preferred_full_motion_envelope_span_ndc": 0.60,
     "minimum_per_object_median_span_ndc": 0.065,
     "minimum_per_object_unoccluded_fraction": 0.70,
-    "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio": 0.75
+    "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio": 0.75,
+    "minimum_support_context_visible_fraction": 0.5,
+    "minimum_support_anchor_visible_fraction": 1.0,
+    "minimum_support_anchor_unoccluded_fraction": 0.75
   },
   "scene_compatibility": {
     "schema_version": "physweep_two_object_scene_compatibility_v1",

@@ -29,7 +29,7 @@ def _object_id(role: Mapping[str, Any]) -> str:
 
 def _source_parts(
     metadata: Mapping[str, Any],
-) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any] | None]:
     if metadata.get("schema_version") != "physweep_pybullet_rigid_metadata_v1":
         raise ValueError("object candidates must use rigid metadata v1")
     _is_canonical_base(metadata)
@@ -64,8 +64,15 @@ def _source_parts(
     if not isinstance(materials, Mapping):
         raise ValueError("object candidate lacks appearance materials")
     material = materials.get("dynamic_object")
-    if not isinstance(material, dict):
-        raise ValueError("object candidate lacks a dynamic appearance material")
+    if material is not None and not isinstance(material, dict):
+        raise ValueError("object candidate has an invalid dynamic appearance material")
+    if material is None:
+        visual = obj.get("visual_profile")
+        if not isinstance(visual, dict) or (
+            visual.get("type") != "mesh"
+            or visual.get("material_policy") != "source_or_bound_fallback"
+        ):
+            raise ValueError("object candidate lacks a dynamic appearance material")
     return obj, foreground, material
 
 
@@ -103,6 +110,9 @@ def compile_object_collection_scene(
     materials = appearance.get("materials")
     if not isinstance(materials, dict):
         raise ValueError("object collection host lacks appearance materials")
+    host_dynamic_material = materials.get("dynamic_object")
+    if not isinstance(host_dynamic_material, dict):
+        raise ValueError("object collection host lacks a fallback dynamic material")
     materials.pop("dynamic_object", None)
 
     objects = []
@@ -122,7 +132,9 @@ def compile_object_collection_scene(
                 },
             }
         )
-        dynamic_materials[object_id] = copy.deepcopy(material)
+        dynamic_materials[object_id] = copy.deepcopy(
+            material if material is not None else host_dynamic_material
+        )
 
     simulation["objects"] = objects
     dimensions["foreground_objects"] = foreground_objects
