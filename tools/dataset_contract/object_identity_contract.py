@@ -398,6 +398,10 @@ def _two_object_caption(
             f"{left} is launched upward and forward, then collides with "
             f"{right}, which starts at rest on the {support}"
         ),
+        "air_air_collision_2obj": (
+            f"{left} and {right} travel along airborne paths above the "
+            f"{support} and collide"
+        ),
         "surface_single_independent_2obj": (
             f"{left} moves across the {support} while {right} remains at rest; "
             "they do not contact"

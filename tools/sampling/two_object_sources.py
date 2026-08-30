@@ -106,6 +106,104 @@ def _asset_scale_bin(size: np.ndarray, eligibility: dict[str, Any]) -> str:
     raise ValueError("asset scale-bin contract has no open final interval")
 
 
+def _asset_proxy_definition(
+    colliders: Any, eligibility: dict[str, Any], asset_id: str
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None, str]:
+    """Return the layout envelope and exact admitted collision declaration."""
+
+    if not isinstance(colliders, list) or not colliders:
+        raise ValueError(f"asset source has no collision proxy: {asset_id}")
+    canonical: list[dict[str, Any]] = []
+    for collider in colliders:
+        if not isinstance(collider, dict):
+            raise ValueError(f"asset source has an invalid proxy: {asset_id}")
+        position = np.asarray(collider.get("position_m"), dtype=np.float64)
+        rotation = np.asarray(
+            collider.get("rotation_euler_degrees"), dtype=np.float64
+        )
+        size = np.asarray(collider.get("size_m"), dtype=np.float64)
+        shape = str(collider.get("shape", ""))
+        if (
+            position.shape != (3,)
+            or rotation.shape != (3,)
+            or size.shape != (3,)
+            or not np.isfinite(position).all()
+            or not np.isfinite(rotation).all()
+            or not np.isfinite(size).all()
+            or bool(np.any(size <= 0.0))
+            or shape not in {"box", "sphere", "cylinder"}
+            or (
+                shape == "sphere"
+                and not np.allclose(size, size[0], atol=1.0e-8, rtol=0.0)
+            )
+            or (
+                shape == "cylinder"
+                and not np.isclose(size[0], size[1], atol=1.0e-8, rtol=0.0)
+            )
+        ):
+            raise ValueError(f"asset source has an invalid proxy: {asset_id}")
+        canonical.append(
+            {
+                "shape": shape,
+                "size_m": size.tolist(),
+                "position_m": position.tolist(),
+                "rotation_euler_degrees": rotation.tolist(),
+            }
+        )
+
+    if len(canonical) == 1:
+        collider = canonical[0]
+        if not np.allclose(collider["position_m"], 0.0, atol=1.0e-8, rtol=0.0):
+            return None, None, "offset_primitive_proxy"
+        if not np.allclose(
+            collider["rotation_euler_degrees"], 0.0, atol=1.0e-8, rtol=0.0
+        ):
+            return None, None, "rotated_primitive_proxy"
+        shape = {"box": "cuboid"}.get(collider["shape"], collider["shape"])
+        geometry = {"type": shape, "size_m": collider["size_m"]}
+        return geometry, copy.deepcopy(geometry), "eligible"
+
+    if any(collider["shape"] != "cylinder" for collider in canonical):
+        return None, None, "non_axisymmetric_compound_proxy"
+    if any(
+        not np.allclose(
+            collider["rotation_euler_degrees"], 0.0, atol=1.0e-8, rtol=0.0
+        )
+        for collider in canonical
+    ):
+        return None, None, "rotated_compound_proxy"
+    if any(
+        not np.allclose(collider["position_m"][:2], 0.0, atol=1.0e-8, rtol=0.0)
+        for collider in canonical
+    ):
+        return None, None, "off_axis_compound_proxy"
+    z_intervals = sorted(
+        (
+            collider["position_m"][2] - collider["size_m"][2] * 0.5,
+            collider["position_m"][2] + collider["size_m"][2] * 0.5,
+        )
+        for collider in canonical
+    )
+    connected_upper = z_intervals[0][1]
+    for lower, upper in z_intervals[1:]:
+        if lower > connected_upper + 1.0e-8:
+            return None, None, "disconnected_compound_proxy"
+        connected_upper = max(connected_upper, upper)
+    lower_z = z_intervals[0][0]
+    upper_z = connected_upper
+    center_offset = abs((lower_z + upper_z) * 0.5)
+    if center_offset > float(
+        eligibility["asset_proxy_maximum_aabb_center_offset_m"]
+    ) + 1.0e-12:
+        return None, None, "off_center_compound_proxy"
+    diameter = max(float(collider["size_m"][0]) for collider in canonical)
+    geometry = {
+        "type": "cylinder",
+        "size_m": [diameter, diameter, upper_z - lower_z],
+    }
+    return geometry, {"type": "compound", "colliders": canonical}, "eligible"
+
+
 def _asset_object_template(
     *,
     source_root: Path,
@@ -142,44 +240,12 @@ def _asset_object_template(
     dynamic = registry_cache[cache_key].get(asset_id)
     if dynamic is None:
         raise ValueError(f"asset source is absent from its registry: {asset_id}")
-    colliders = dynamic.get("proxy", {}).get("colliders")
-    if not isinstance(colliders, list) or len(colliders) != 1:
-        return None, "compound_proxy"
-    collider = colliders[0]
-    position = np.asarray(collider.get("position_m"), dtype=np.float64)
-    rotation = np.asarray(
-        collider.get("rotation_euler_degrees"), dtype=np.float64
+    geometry, collision, reason = _asset_proxy_definition(
+        dynamic.get("proxy", {}).get("colliders"), eligibility, asset_id
     )
-    if (
-        position.shape != (3,)
-        or rotation.shape != (3,)
-        or not np.isfinite(position).all()
-        or not np.isfinite(rotation).all()
-    ):
-        raise ValueError(f"asset source has an invalid proxy transform: {asset_id}")
-    if not np.allclose(position, 0.0, atol=1.0e-8, rtol=0.0):
-        return None, "offset_primitive_proxy"
-    if not np.allclose(rotation, 0.0, atol=1.0e-8, rtol=0.0):
-        return None, "rotated_primitive_proxy"
-    collider_shape = str(collider.get("shape", ""))
-    shape = {"box": "cuboid"}.get(collider_shape, collider_shape)
-    if shape not in {"sphere", "cuboid", "cylinder"}:
-        return None, "unsupported_primitive_proxy"
-    size = np.asarray(collider.get("size_m"), dtype=np.float64)
-    if (
-        size.shape != (3,)
-        or not np.isfinite(size).all()
-        or bool(np.any(size <= 0.0))
-        or (
-            shape == "sphere"
-            and not np.allclose(size, size[0], atol=1.0e-8, rtol=0.0)
-        )
-        or (
-            shape == "cylinder"
-            and not np.isclose(size[0], size[1], atol=1.0e-8, rtol=0.0)
-        )
-    ):
-        raise ValueError(f"asset source has an invalid primitive proxy: {asset_id}")
+    if geometry is None or collision is None:
+        return None, reason
+    size = np.asarray(geometry["size_m"], dtype=np.float64)
     visual = dynamic.get("visual", {})
     canonical_extent = np.asarray(visual.get("canonical_extent_m"), dtype=np.float64)
     alignment = np.asarray(
@@ -222,7 +288,6 @@ def _asset_object_template(
     semantic_label = str(semantic_objects[0].get("semantic_label", "")).strip()
     if not semantic_label:
         raise ValueError(f"released asset source has no semantic label: {asset_id}")
-    geometry = {"type": shape, "size_m": size.tolist()}
     template = {
         "schema_version": "physweep_pybullet_rigid_metadata_v1",
         "scene_id": str(generation_metadata["scene_id"]),
@@ -234,7 +299,7 @@ def _asset_object_template(
                     "body_model": eligibility["body_model"],
                     "semantic_type": semantic_label,
                     "geometry": geometry,
-                    "collision_profile": copy.deepcopy(geometry),
+                    "collision_profile": collision,
                     "material": material,
                     "initial_state": {
                         "pose_profile": eligibility["required_pose_profile"],
@@ -360,6 +425,10 @@ def released_source_pool(
         str(record["geometry_type"])
         for record in matrix["shape_families"]["families"]
     }
+    environment_categories = {
+        str(record["id"]): set(record["allowed_scene_classes"])
+        for record in matrix["visual_environment_coverage"]["categories"]
+    }
 
     for record in base_records:
         schema = str(record.get("source_schema_version", ""))
@@ -416,9 +485,21 @@ def released_source_pool(
                         scene_visual = metadata["appearance"]["scene_visual"]
                         visual_id = str(scene_visual.get("id", ""))
                         visual_type = str(scene_visual.get("visual_type", ""))
-                        if not visual_id or not visual_type:
+                        environment_category = str(
+                            scene_visual.get("environment_category", "")
+                        )
+                        if not visual_id or not visual_type or not environment_category:
                             raise ValueError(
                                 "eligible two-object host lacks a visual profile"
+                            )
+                        if (
+                            environment_category not in environment_categories
+                            or scene_class
+                            not in environment_categories[environment_category]
+                        ):
+                            raise ValueError(
+                                "eligible two-object host contradicts the declared "
+                                "visual-environment coverage"
                             )
                         if visual_type not in allowed_visual_types:
                             rejected_visual_type_host_count += 1
@@ -430,6 +511,7 @@ def released_source_pool(
                                     "scene_class": scene_class,
                                     "visual_profile_id": visual_id,
                                     "visual_type": visual_type,
+                                    "environment_category": environment_category,
                                 }
                             )
                     elif not motion_neutral:
@@ -475,9 +557,18 @@ def released_source_pool(
                 shape == "cylinder"
                 and not np.isclose(size[0], size[1], atol=1.0e-8, rtol=0.0)
             )
-            or collision.get("type") != shape
+            or not (
+                collision.get("type") == shape
+                or (
+                    source_family == "asset"
+                    and shape == "cylinder"
+                    and collision.get("type") == "compound"
+                    and isinstance(collision.get("colliders"), list)
+                    and len(collision["colliders"]) >= 2
+                )
+            )
         ):
-            raise ValueError("eligible object lacks a matching primitive proxy")
+            raise ValueError("eligible object lacks a matching collision proxy")
         foreground = template["semantic_sampling"]["five_dimensions"][
             "foreground_object"
         ]
@@ -498,6 +589,21 @@ def released_source_pool(
 
     if not objects or not hosts:
         raise ValueError("released 1obj metadata yields no eligible 2obj sources")
+    declared_scene_environments = {
+        (scene_class, category)
+        for category, scene_classes in environment_categories.items()
+        for scene_class in scene_classes
+    }
+    eligible_scene_environments = {
+        (str(record["scene_class"]), str(record["environment_category"]))
+        for record in hosts
+    }
+    if eligible_scene_environments != declared_scene_environments:
+        missing = sorted(declared_scene_environments - eligible_scene_environments)
+        raise ValueError(
+            "released 1obj hosts do not cover declared visual environments: "
+            f"{missing}"
+        )
     audit = {
         "released_base_count": len(base_records),
         "released_object_family_counts": dict(
@@ -547,6 +653,19 @@ def released_source_pool(
         ),
         "host_visual_profile_count": len(
             {record["visual_profile_id"] for record in hosts}
+        ),
+        "host_environment_category_counts": dict(
+            sorted(
+                Counter(record["environment_category"] for record in hosts).items()
+            )
+        ),
+        "host_scene_environment_category_counts": dict(
+            sorted(
+                Counter(
+                    f"{record['scene_class']}:{record['environment_category']}"
+                    for record in hosts
+                ).items()
+            )
         ),
     }
     return objects, hosts, audit

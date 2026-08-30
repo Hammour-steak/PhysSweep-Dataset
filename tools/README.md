@@ -85,14 +85,14 @@ environment visual/collision pose.
 ## Two-object Candidate Matrix
 
 The 2obj candidate sampler reuses hash-bound released 1obj metadata, appearance,
-visual assets, and collision proxies. It admits generic primitives plus asset
-meshes whose proxies are exactly one centered, unrotated primitive; compound
-asset proxies remain explicitly deferred. The 1134 base cells cover nine
+visual assets, and collision proxies. It admits generic primitives, centered
+asset primitives, and exact continuous stacks of centered upright cylinders
+within the declared 1 mm origin tolerance. The 1152 base cells cover ten
 frozen motions with their admitted ordered shape pairs, all nine ordered size
-pairs, and two flat scene classes. Six pair-relative camera families are
-balanced across all cells; the four ordered generic/asset source-family pairs
-are balanced wherever the requested shape/scale pools are feasible. Neither
-axis changes the base count. This is not yet a production 2obj release.
+pairs, and two flat scene classes. Six pair-relative camera families, four
+ordered generic/asset source-family pairs, and five feasible visual-environment
+categories are balanced without multiplying the base count. This is not yet a
+production 2obj release.
 
 ```bash
 .venv/bin/python -m tools.sampling.sample_two_object_coverage \
@@ -124,7 +124,7 @@ axis changes the base count. This is not yet a production 2obj release.
   --output-root outputs/two_object_validation/sweep/bound
 ```
 
-Omit `--limit` for all 1134 cells. Post-contact outcomes are measured rather
+Omit `--limit` for all 1152 cells. Post-contact outcomes are measured rather
 than preclassified. One camera is frozen only after every member of a
 two-object one-factor group passes; masks use `masks/<object_id>/`.
 

@@ -14,11 +14,13 @@ Semantic object names do not extend this API. All 18 profiles compile to the sam
 - Workbench scenes use only the conservative reviewed safe strip and declared drop/push profiles.
 - Billiards supports one-ball free roll, one-ball rail rebound, and an explicit three-ball collision profile. It does not support pocket sinking.
 - Passive pinball supports one unforced sphere descending through an exact analytic board, rail, peg, divider, and catch fixture. Flippers, springs, motors, and other active mechanisms are not supported.
-- Bounded 2obj candidates use two generic-rigid primitive proxies, including
-  exact single-primitive asset adapters. Their interacting/independent motion,
-  pair camera, and source-family contracts are explicit and audited. Compound
-  asset proxies and a general 3obj matrix remain deferred; the three-ball
-  generator is a specialized backend, not a general multi-object fallback.
+- Bounded 2obj candidates use generic primitives plus reviewed asset proxies.
+  Assets may use one centered primitive or an exact continuous stack of
+  centered, upright cylinders whose AABB center is within 1 mm of the object
+  origin. Their interacting/independent motion, pair camera, and source-family
+  contracts are explicit and audited. Airborne-airborne contact is admitted
+  only for the exact sphere pair. A general 3obj matrix remains deferred; the
+  three-ball generator is a specialized backend, not a fallback.
 
 ## Integration
 
@@ -48,6 +50,6 @@ repairs.
 ## Limits
 
 Deformable, fluid, articulated, arbitrary triangle-mesh collision, pocket
-sinking, active pinball mechanisms, compound-proxy 2obj sources, and a general
-3obj matrix remain unsupported. Unsupported combinations are rejected rather
-than substituted.
+sinking, active pinball mechanisms, non-axisymmetric or disconnected 2obj
+compound proxies, and a general 3obj matrix remain unsupported. Unsupported
+combinations are rejected rather than substituted.

@@ -103,6 +103,73 @@ def quaternion_xyzw_from_wxyz(value: list[float]) -> list[float]:
     return [float(value[1]), float(value[2]), float(value[3]), float(value[0])]
 
 
+def declared_collision_descriptors(record: dict[str, Any]) -> dict[str, list[Any]]:
+    """Normalize the collision geometry that the rigid backend must create."""
+
+    geometry = record.get("geometry")
+    profile = record.get("collision_profile")
+    if not isinstance(geometry, dict) or not isinstance(profile, dict):
+        raise ValueError("rigid object lacks geometry or a collision profile")
+    profile_type = str(profile.get("type", ""))
+    if profile_type == "compound":
+        colliders = profile.get("colliders")
+        if not isinstance(colliders, list) or len(colliders) < 2:
+            raise ValueError("compound collision profile requires multiple colliders")
+    else:
+        geometry_type = str(geometry.get("type", ""))
+        if (
+            geometry_type not in {"sphere", "cuboid", "cylinder"}
+            or profile_type != geometry_type
+        ):
+            raise ValueError("primitive collision profile type must match geometry")
+        colliders = [
+            {
+                "shape": "box" if geometry_type == "cuboid" else geometry_type,
+                "size_m": geometry["size_m"],
+                "position_m": [0.0, 0.0, 0.0],
+                "rotation_euler_degrees": [0.0, 0.0, 0.0],
+            }
+        ]
+    shape_codes: list[int] = []
+    dimensions: list[list[float]] = []
+    positions: list[list[float]] = []
+    quaternions: list[list[float]] = []
+    for collider in colliders:
+        if not isinstance(collider, dict) or set(collider) != {
+            "shape",
+            "size_m",
+            "position_m",
+            "rotation_euler_degrees",
+        }:
+            raise ValueError("collision collider fields are invalid")
+        shape = str(collider["shape"])
+        if shape not in {"box", "sphere", "cylinder"}:
+            raise ValueError(f"unsupported collision collider: {shape}")
+        size = positive_vector(collider["size_m"], 3, "collision dimensions")
+        if shape == "sphere" and max(size) - min(size) > 1.0e-8:
+            raise ValueError("sphere collision dimensions must be equal")
+        if shape == "cylinder" and abs(size[0] - size[1]) > 1.0e-8:
+            raise ValueError("cylinder collision radial dimensions must be equal")
+        position = finite_vector(collider["position_m"], 3, "collision position")
+        rotation = finite_vector(
+            collider["rotation_euler_degrees"], 3, "collision rotation"
+        )
+        shape_codes.append(PROXY_SHAPE_CODE[shape])
+        dimensions.append(size)
+        positions.append(position)
+        quaternions.append(
+            quaternion_xyzw_from_wxyz(
+                quaternion_wxyz_from_euler_degrees(rotation)
+            )
+        )
+    return {
+        "shape_codes": shape_codes,
+        "dimensions_m": dimensions,
+        "positions_m": positions,
+        "quaternions_xyzw": quaternions,
+    }
+
+
 def quaternion_matrix_wxyz(value: Any) -> list[list[float]]:
     """Return a normalized 3x3 rotation matrix for a wxyz quaternion."""
 

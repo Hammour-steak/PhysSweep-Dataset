@@ -17,8 +17,14 @@ from tools.core.json_io import write_json
 from tools.dataset_contract.object_identity_contract import (
     require_simulation_objects,
 )
-from tools.physics.physics_invariants import maximum_coulomb_utilization, runtime_collision_descriptors
-from tools.core.rigid_geometry import quaternion_xyzw_from_wxyz
+from tools.physics.physics_invariants import (
+    maximum_coulomb_utilization,
+    runtime_collision_descriptors,
+)
+from tools.core.rigid_geometry import (
+    declared_collision_descriptors,
+    quaternion_xyzw_from_wxyz,
+)
 from tools.physics.rigid_trajectory import (
     audit_trajectory,
     compact_advisory_ids,
@@ -61,7 +67,35 @@ def create_dynamic_body(pb: Any, record: dict[str, Any]) -> int:
     geometry = record["geometry"]
     shape_type = str(geometry["type"])
     size = [float(value) for value in geometry["size_m"]]
-    if shape_type == "cuboid":
+    collision_profile = record["collision_profile"]
+    if collision_profile.get("type") == "compound":
+        declared = declared_collision_descriptors(record)
+        dimensions = np.asarray(declared["dimensions_m"], dtype=np.float64)
+        shape_codes = np.asarray(declared["shape_codes"], dtype=np.int32)
+        shape = pb.createCollisionShapeArray(
+            shapeTypes=[
+                {
+                    1: pb.GEOM_BOX,
+                    2: pb.GEOM_SPHERE,
+                    3: pb.GEOM_CYLINDER,
+                }[int(code)]
+                for code in shape_codes
+            ],
+            halfExtents=(dimensions * 0.5).tolist(),
+            radii=[
+                float(dimensions[index, 0] * 0.5)
+                if int(code) in {2, 3}
+                else 0.0
+                for index, code in enumerate(shape_codes)
+            ],
+            lengths=[
+                float(dimensions[index, 2]) if int(code) == 3 else 0.0
+                for index, code in enumerate(shape_codes)
+            ],
+            collisionFramePositions=declared["positions_m"],
+            collisionFrameOrientations=declared["quaternions_xyzw"],
+        )
+    elif shape_type == "cuboid":
         shape = pb.createCollisionShape(
             pb.GEOM_BOX, halfExtents=[value / 2.0 for value in size]
         )

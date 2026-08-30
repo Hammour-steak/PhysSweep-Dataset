@@ -8,7 +8,7 @@ import numpy as np
 
 from tools.core.camera_geometry import pair_approach_axis_xy
 from tools.core.rigid_geometry import (
-    PROXY_SHAPE_CODE,
+    declared_collision_descriptors,
     primitive_support_radius_m,
     quaternion_matrix_wxyz,
 )
@@ -304,7 +304,13 @@ def audit_pair_motion(
             inertia.tolist(),
             "finite and positive",
         )
-        geometry_type = str(obj["geometry"]["type"])
+        declared_proxy = declared_collision_descriptors(obj)
+        expected_proxy = {
+            key: np.asarray(
+                value, dtype=np.int32 if key == "shape_codes" else np.float64
+            )
+            for key, value in declared_proxy.items()
+        }
         proxy_codes = np.asarray(
             trajectory[f"{object_id}__runtime_proxy_shape_codes"], dtype=np.int32
         )
@@ -312,26 +318,59 @@ def audit_pair_motion(
             trajectory[f"{object_id}__runtime_proxy_dimensions_m"],
             dtype=np.float64,
         )
+        proxy_positions = np.asarray(
+            trajectory[f"{object_id}__runtime_proxy_positions_m"],
+            dtype=np.float64,
+        )
+        proxy_quaternions = np.asarray(
+            trajectory[f"{object_id}__runtime_proxy_quaternions_xyzw"],
+            dtype=np.float64,
+        )
         check(
             f"{object_id}__collision_proxy_matches_definition",
             bool(
-                proxy_codes.shape == (1,)
-                and int(proxy_codes[0]) == PROXY_SHAPE_CODE[geometry_type]
-                and proxy_dimensions.shape == (1, 3)
+                np.array_equal(proxy_codes, expected_proxy["shape_codes"])
+                and proxy_dimensions.shape
+                == expected_proxy["dimensions_m"].shape
+                and proxy_positions.shape == expected_proxy["positions_m"].shape
+                and proxy_quaternions.shape
+                == expected_proxy["quaternions_xyzw"].shape
                 and np.allclose(
-                    proxy_dimensions[0],
-                    obj["geometry"]["size_m"],
+                    proxy_dimensions,
+                    expected_proxy["dimensions_m"],
                     atol=parameter_tolerance,
                     rtol=0.0,
+                )
+                and np.allclose(
+                    proxy_positions,
+                    expected_proxy["positions_m"],
+                    atol=parameter_tolerance,
+                    rtol=0.0,
+                )
+                and all(
+                    min(
+                        float(np.linalg.norm(runtime - expected)),
+                        float(np.linalg.norm(runtime + expected)),
+                    )
+                    <= parameter_tolerance
+                    for runtime, expected in zip(
+                        proxy_quaternions,
+                        expected_proxy["quaternions_xyzw"],
+                        strict=True,
+                    )
                 )
             ),
             {
                 "shape_codes": proxy_codes.tolist(),
                 "dimensions_m": proxy_dimensions.tolist(),
+                "positions_m": proxy_positions.tolist(),
+                "quaternions_xyzw": proxy_quaternions.tolist(),
             },
             {
-                "shape_code": PROXY_SHAPE_CODE[geometry_type],
-                "dimensions_m": obj["geometry"]["size_m"],
+                "shape_codes": expected_proxy["shape_codes"].tolist(),
+                "dimensions_m": expected_proxy["dimensions_m"].tolist(),
+                "positions_m": expected_proxy["positions_m"].tolist(),
+                "quaternions_xyzw": expected_proxy["quaternions_xyzw"].tolist(),
             },
         )
         initial_penetration = max(0.0, -float(contact_distance[0]))

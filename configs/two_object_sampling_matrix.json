@@ -1,5 +1,5 @@
 {
-  "schema_version": "physweep_two_object_sampling_matrix_v5",
+  "schema_version": "physweep_two_object_sampling_matrix_v7",
   "objects": {
     "schema_version": "physweep_object_collection_v1",
     "roles": [
@@ -35,7 +35,8 @@
     "pair_sets": {
       "all_shape_pairs": ["sphere_to_sphere", "sphere_to_cuboid", "sphere_to_cylinder", "cuboid_to_sphere", "cuboid_to_cuboid", "cuboid_to_cylinder", "cylinder_to_sphere", "cylinder_to_cuboid", "cylinder_to_cylinder"],
       "supported_head_on": ["sphere_to_sphere", "cuboid_to_sphere", "cylinder_to_sphere"],
-      "sphere_airborne_object_a": ["sphere_to_sphere", "sphere_to_cuboid", "sphere_to_cylinder"]
+      "sphere_airborne_object_a": ["sphere_to_sphere", "sphere_to_cuboid", "sphere_to_cylinder"],
+      "sphere_airborne_pair": ["sphere_to_sphere"]
     },
     "rules": [
       {
@@ -63,6 +64,10 @@
         "shape_pair_set_id": "sphere_airborne_object_a"
       },
       {
+        "motion_id": "air_air_collision_2obj",
+        "shape_pair_set_id": "sphere_airborne_pair"
+      },
+      {
         "motion_id": "surface_single_independent_2obj",
         "shape_pair_set_id": "all_shape_pairs"
       },
@@ -77,7 +82,7 @@
     ]
   },
   "candidate_pool": {
-    "schema_version": "physweep_two_object_candidate_pool_v2",
+    "schema_version": "physweep_two_object_candidate_pool_v3",
     "source_release": {
       "released_base_manifest_schema_version": "physweep_base_release_view_v14",
       "generation_manifest_schema_version": "physweep_release_metadata_manifest_v2",
@@ -99,7 +104,8 @@
       "scale_bins": ["small", "medium", "large"],
       "visual_profile_key": "visual_profile.id",
       "distinct_source_scenes": true,
-      "asset_proxy_policy": "single_centered_unrotated_primitive_only",
+      "asset_proxy_policy": "centered_primitive_or_upright_axisymmetric_compound",
+      "asset_proxy_maximum_aabb_center_offset_m": 0.001,
       "asset_scale_bin_maximum_extent_m": {
         "small": 0.18,
         "medium": 0.23,
@@ -239,6 +245,33 @@
     "schema_version": "physweep_two_object_scene_compatibility_v1",
     "allowed_scene_classes": ["ground_flat", "raised_flat"]
   },
+  "visual_environment_coverage": {
+    "schema_version": "physweep_two_object_visual_environment_coverage_v1",
+    "metadata_key": "appearance.scene_visual.environment_category",
+    "categories": [
+      {
+        "id": "minimal",
+        "allowed_scene_classes": ["ground_flat", "raised_flat"]
+      },
+      {
+        "id": "home_office",
+        "allowed_scene_classes": ["ground_flat", "raised_flat"]
+      },
+      {
+        "id": "lab_studio",
+        "allowed_scene_classes": ["ground_flat", "raised_flat"]
+      },
+      {
+        "id": "garage_workshop",
+        "allowed_scene_classes": ["ground_flat", "raised_flat"]
+      },
+      {
+        "id": "outdoor_courtyard",
+        "allowed_scene_classes": ["ground_flat"]
+      }
+    ],
+    "selection_policy": "balanced_feasible_within_scene_camera_and_source_pair"
+  },
   "motion_intents": [
     {
       "id": "surface_hit_rest_2obj",
@@ -307,6 +340,17 @@
       "contact_elevation_degrees": 12.0
     },
     {
+      "id": "air_air_collision_2obj",
+      "interaction_class": "interacting",
+      "kinematic_regime": "airborne_airborne",
+      "layout": "ballistic_airborne_pair_contact",
+      "object_motions": ["arc_projectile_1obj", "arc_projectile_1obj"],
+      "linear_velocity_m_s": [[0.70, 0.0, 0.45], [-0.42, 0.0, 0.15]],
+      "minimum_displacement_m": [0.30, 0.30],
+      "contact_time_s": 0.42,
+      "contact_center_height_above_support_m": 0.65
+    },
+    {
       "id": "surface_single_independent_2obj",
       "interaction_class": "independent",
       "kinematic_regime": "supported_supported",
@@ -344,6 +388,6 @@
     "post_contact_outcome_is_not_preclassified": true,
     "one_factor_sweep_keeps_both_initial_states_fixed": true,
     "initial_contact_is_deferred": true,
-    "airborne_airborne_is_deferred": true
+    "airborne_airborne_is_explicitly_bounded": true
   }
 }

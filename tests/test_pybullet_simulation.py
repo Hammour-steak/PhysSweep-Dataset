@@ -44,14 +44,75 @@ from tools.sampling.sample_pybullet_base import (  # noqa: E402
     load_json,
     sampling_manifest_rule_sources,
 )
-from tools.physics.simulate_pybullet_rigid import simulate  # noqa: E402
+from tools.core.rigid_geometry import (  # noqa: E402
+    declared_collision_descriptors,
+)
+from tools.physics.physics_invariants import (  # noqa: E402
+    runtime_collision_descriptors,
+)
+from tools.physics.simulate_pybullet_rigid import (  # noqa: E402
+    create_dynamic_body,
+    simulate,
+)
 from tools.sampling.sample_two_object_base import (  # noqa: E402
     build_two_object_matrix,
     build_two_object_scene,
 )
+from tools.sampling.sample_two_object_coverage import (  # noqa: E402
+    _pair_layout_fits_host,
+)
 
 
 class PyBulletSimulationTests(unittest.TestCase):
+    def test_compound_collision_profile_is_created_exactly(self) -> None:
+        import pybullet as pb
+
+        obj = {
+            "geometry": {"type": "cylinder", "size_m": [0.10, 0.10, 0.12]},
+            "collision_profile": {
+                "type": "compound",
+                "colliders": [
+                    {
+                        "shape": "cylinder",
+                        "size_m": [0.08, 0.08, 0.06],
+                        "position_m": [0.0, 0.0, -0.03],
+                        "rotation_euler_degrees": [0.0, 0.0, 0.0],
+                    },
+                    {
+                        "shape": "cylinder",
+                        "size_m": [0.10, 0.10, 0.06],
+                        "position_m": [0.0, 0.0, 0.03],
+                        "rotation_euler_degrees": [0.0, 0.0, 0.0],
+                    },
+                ],
+            },
+            "material": {
+                "mass_kg": 0.2,
+                "contact_friction": 0.3,
+                "contact_restitution": 0.1,
+                "linear_damping": 0.02,
+                "angular_damping": 0.03,
+                "rolling_friction": 0.0,
+                "spinning_friction": 0.0,
+            },
+            "initial_state": {
+                "position_m": [0.0, 0.0, 1.0],
+                "orientation_quaternion_wxyz": [1.0, 0.0, 0.0, 0.0],
+                "linear_velocity_m_s": [0.0, 0.0, 0.0],
+                "angular_velocity_rad_s": [0.0, 0.0, 0.0],
+            },
+        }
+        client = pb.connect(pb.DIRECT)
+        try:
+            body = create_dynamic_body(pb, obj)
+            expected = declared_collision_descriptors(obj)
+            runtime = runtime_collision_descriptors(pb, body)
+            self.assertEqual(set(runtime), set(expected))
+            for key in expected:
+                np.testing.assert_allclose(runtime[key], expected[key])
+        finally:
+            pb.disconnect(client)
+
     def test_visual_binding_consumes_audited_physics_manifest(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -850,11 +911,35 @@ class PyBulletSimulationTests(unittest.TestCase):
         self.assertTrue(all(abs(value - 55.0) < 8.0 for value in front))
         self.assertTrue(all(abs(value - 125.0) < 8.0 for value in rear))
 
+    def test_two_object_source_selection_checks_layout_against_host(self) -> None:
+        matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
+        template = self.without_incidental_environment(self.rolling_stress_scene)
+        source = {"metadata": template}
+        cell = {
+            "motion_id": "surface_dual_independent_2obj",
+            "camera_view_family_id": "side_left_mid",
+        }
+        self.assertTrue(
+            _pair_layout_fits_host(
+                {"metadata": template}, source, source, matrix, cell
+            )
+        )
+        narrow = copy.deepcopy(template)
+        narrow["simulation"]["support"]["safe_surface_bounds"] = {
+            "x": [-0.15, 0.15],
+            "y": [-0.15, 0.15],
+        }
+        self.assertFalse(
+            _pair_layout_fits_host(
+                {"metadata": narrow}, source, source, matrix, cell
+            )
+        )
+
     def test_two_object_motion_matrix_contact_contracts(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)
         matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
         scenes = build_two_object_matrix(host, matrix)
-        self.assertEqual(len(scenes), 9)
+        self.assertEqual(len(scenes), 10)
         self.assertEqual(
             [
                 scene["simulation"]["interaction"]["motion_pattern"]
@@ -867,19 +952,20 @@ class PyBulletSimulationTests(unittest.TestCase):
                 "surface_catch_up_2obj",
                 "air_drop_hit_supported_2obj",
                 "air_projectile_hit_supported_2obj",
+                "air_air_collision_2obj",
                 "surface_single_independent_2obj",
                 "surface_dual_independent_2obj",
                 "air_supported_independent_2obj",
             ],
         )
         self.assertEqual(
-            [scene["sample_index"] for scene in scenes], list(range(1, 10))
+            [scene["sample_index"] for scene in scenes], list(range(1, 11))
         )
         classes = [
             scene["simulation"]["interaction"]["interaction_class"]
             for scene in scenes
         ]
-        self.assertEqual(classes.count("interacting"), 6)
+        self.assertEqual(classes.count("interacting"), 7)
         self.assertEqual(classes.count("independent"), 3)
         semantics = {
             scene["simulation"]["interaction"]["motion_pattern"]: scene[
@@ -904,6 +990,10 @@ class PyBulletSimulationTests(unittest.TestCase):
         )
         self.assertEqual(
             semantics["surface_crossing_2obj"]["impact_offset_ratio"], 0.30
+        )
+        self.assertEqual(
+            semantics["air_air_collision_2obj"]["trajectory_angle_degrees"],
+            180.0,
         )
         drop_scene = next(
             scene
@@ -933,6 +1023,19 @@ class PyBulletSimulationTests(unittest.TestCase):
         self.assertGreater(abs(approach[0]), 0.05)
         self.assertLess(abs(approach[0]), 0.20)
         self.assertLess(approach[2], -0.95)
+        air_air_scene = next(
+            scene
+            for scene in scenes
+            if scene["simulation"]["interaction"]["motion_pattern"]
+            == "air_air_collision_2obj"
+        )
+        self.assertTrue(
+            all(
+                obj["initial_state"]["pose_profile"] == "airborne"
+                and not obj["expected_motion"]["must_contact_primary_support"]
+                for obj in air_air_scene["simulation"]["objects"]
+            )
+        )
         with self.assertRaisesRegex(ValueError, "may not be repeated"):
             build_two_object_matrix(
                 host,
@@ -953,6 +1056,17 @@ class PyBulletSimulationTests(unittest.TestCase):
                     contact_occurred,
                     interaction["interaction_class"] == "interacting",
                 )
+                if interaction["motion_pattern"] == "air_air_collision_2obj":
+                    first_contact = int(np.flatnonzero(contacts > 0)[0])
+                    for airborne_id in interaction["object_ids"]:
+                        self.assertEqual(
+                            int(
+                                trajectory[
+                                    f"{airborne_id}__primary_support_contact_count"
+                                ][first_contact]
+                            ),
+                            0,
+                        )
                 self.assertEqual(
                     audit["metrics"]["motion_pattern"],
                     interaction["motion_pattern"],

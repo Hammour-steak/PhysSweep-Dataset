@@ -38,7 +38,7 @@ def write_json(path: Path, value: object) -> None:
 
 
 class TwoObjectCoverageTests(unittest.TestCase):
-    def test_asset_source_adapter_accepts_only_exact_single_primitive(self) -> None:
+    def test_asset_source_adapter_accepts_strict_centered_proxies(self) -> None:
         matrix = load_matrix()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
@@ -127,9 +127,46 @@ class TwoObjectCoverageTests(unittest.TestCase):
                     visual_hash_cache={},
                 )
             visual_path.write_bytes(b"unit asset mesh")
-            registry["records"][0]["proxy"]["colliders"].append(
-                copy.deepcopy(registry["records"][0]["proxy"]["colliders"][0])
+            registry["records"][0]["proxy"]["colliders"] = [
+                {
+                    "shape": "cylinder",
+                    "size_m": [0.08, 0.08, 0.06],
+                    "position_m": [0.0, 0.0, -0.03],
+                    "rotation_euler_degrees": [0.0, 0.0, 0.0],
+                },
+                {
+                    "shape": "cylinder",
+                    "size_m": [0.10, 0.10, 0.06],
+                    "position_m": [0.0, 0.0, 0.03],
+                    "rotation_euler_degrees": [0.0, 0.0, 0.0],
+                },
+            ]
+            registry["records"][0]["visual"]["canonical_extent_m"] = [
+                0.10,
+                0.10,
+                0.12,
+            ]
+            write_json(registry_path, registry)
+            generation["registry"]["sha256"] = sha256_file(registry_path)
+            compound, reason = _asset_object_template(
+                source_root=root,
+                runtime_root=root,
+                generation_metadata=generation,
+                release_metadata=released,
+                eligibility=matrix["candidate_pool"]["object_eligibility"],
+                registry_cache={},
+                visual_hash_cache={},
             )
+            self.assertEqual(reason, "eligible")
+            compound_obj = compound["simulation"]["objects"][0]
+            self.assertEqual(
+                compound_obj["geometry"],
+                {"type": "cylinder", "size_m": [0.10, 0.10, 0.12]},
+            )
+            self.assertEqual(compound_obj["collision_profile"]["type"], "compound")
+            self.assertEqual(len(compound_obj["collision_profile"]["colliders"]), 2)
+
+            registry["records"][0]["proxy"]["colliders"][1]["position_m"][0] = 0.01
             write_json(registry_path, registry)
             generation["registry"]["sha256"] = sha256_file(registry_path)
             rejected, reason = _asset_object_template(
@@ -142,21 +179,45 @@ class TwoObjectCoverageTests(unittest.TestCase):
                 visual_hash_cache={},
             )
             self.assertIsNone(rejected)
-            self.assertEqual(reason, "compound_proxy")
+            self.assertEqual(reason, "off_axis_compound_proxy")
+
+            registry["records"][0]["proxy"]["colliders"][0]["position_m"] = [
+                0.0,
+                0.0,
+                -0.025,
+            ]
+            registry["records"][0]["proxy"]["colliders"][1]["position_m"] = [
+                0.0,
+                0.0,
+                0.035,
+            ]
+            write_json(registry_path, registry)
+            generation["registry"]["sha256"] = sha256_file(registry_path)
+            rejected, reason = _asset_object_template(
+                source_root=root,
+                runtime_root=root,
+                generation_metadata=generation,
+                release_metadata=released,
+                eligibility=matrix["candidate_pool"]["object_eligibility"],
+                registry_cache={},
+                visual_hash_cache={},
+            )
+            self.assertIsNone(rejected)
+            self.assertEqual(reason, "off_center_compound_proxy")
 
     def test_matrix_declares_complete_ordered_cartesian_coverage(self) -> None:
         matrix = load_matrix()
         cells, full_count = coverage_cells(matrix)
-        self.assertEqual(full_count, 1134)
-        self.assertEqual(len(cells), 1134)
+        self.assertEqual(full_count, 1152)
+        self.assertEqual(len(cells), 1152)
         counts = _axis_counts(cells)
-        self.assertEqual(set(counts["motion"].values()), {54, 162})
+        self.assertEqual(set(counts["motion"].values()), {18, 54, 162})
         self.assertEqual(
-            set(counts["ordered_shape_pair"].values()), {108, 126, 144, 162}
+            set(counts["ordered_shape_pair"].values()), {108, 126, 144, 180}
         )
-        self.assertEqual(set(counts["ordered_scale_pair"].values()), {126})
-        self.assertEqual(set(counts["scene_class"].values()), {567})
-        self.assertEqual(set(counts["camera_view_family"].values()), {189})
+        self.assertEqual(set(counts["ordered_scale_pair"].values()), {128})
+        self.assertEqual(set(counts["scene_class"].values()), {576})
+        self.assertEqual(set(counts["camera_view_family"].values()), {192})
         family_ids = set(counts["camera_view_family"])
         for axis in (
             "motion_id",
@@ -180,17 +241,26 @@ class TwoObjectCoverageTests(unittest.TestCase):
                 max(counts.values()) - min(counts.values())
                 for counts in conditional.values()
             )
-            self.assertLessEqual(maximum_spread, 3, axis)
+            self.assertLessEqual(
+                maximum_spread,
+                4 if axis in {"shape_pair_id", "scale_pair_id"} else 3,
+                axis,
+            )
 
     def test_balanced_smoke_prefix_covers_every_axis(self) -> None:
         cells, full_count = coverage_cells(load_matrix(), 72)
-        self.assertEqual(full_count, 1134)
+        self.assertEqual(full_count, 1152)
         counts = _axis_counts(cells)
         self.assertLessEqual(
             max(counts["motion"].values()) - min(counts["motion"].values()),
             2,
         )
-        self.assertEqual(set(counts["ordered_shape_pair"].values()), {8})
+        self.assertEqual(len(counts["ordered_shape_pair"]), 9)
+        self.assertLessEqual(
+            max(counts["ordered_shape_pair"].values())
+            - min(counts["ordered_shape_pair"].values()),
+            3,
+        )
         self.assertEqual(set(counts["ordered_scale_pair"].values()), {8})
         self.assertEqual(set(counts["scene_class"].values()), {36})
         self.assertEqual(set(counts["camera_view_family"].values()), {12})
@@ -241,6 +311,13 @@ class TwoObjectCoverageTests(unittest.TestCase):
         ] = "allow_bounded"
         with self.assertRaisesRegex(ValueError, "host-eligibility"):
             _validated_intents(bounded_host)
+        missing_environment = copy.deepcopy(matrix)
+        missing_environment["visual_environment_coverage"]["categories"].pop()
+        missing_environment["visual_environment_coverage"]["categories"][0][
+            "allowed_scene_classes"
+        ] = ["unknown_scene"]
+        with self.assertRaisesRegex(ValueError, "visual-environment categories"):
+            _validated_intents(missing_environment)
 
     def test_source_selection_obeys_scale_and_uniqueness(self) -> None:
         matrix = load_matrix()
@@ -269,6 +346,10 @@ class TwoObjectCoverageTests(unittest.TestCase):
                                 }
                             )
         hosts = []
+        environment_categories = [
+            record["id"]
+            for record in matrix["visual_environment_coverage"]["categories"]
+        ]
         for scene_class in ("ground_flat", "raised_flat"):
             for profile_index in range(3):
                 for source_index in range(6):
@@ -282,6 +363,14 @@ class TwoObjectCoverageTests(unittest.TestCase):
                             "scene_class": scene_class,
                             "visual_profile_id": f"host_profile_{profile_index}",
                             "visual_type": "procedural_room",
+                            "environment_category": environment_categories[
+                                (profile_index + source_index)
+                                % (
+                                    len(environment_categories)
+                                    if scene_class == "ground_flat"
+                                    else len(environment_categories) - 1
+                                )
+                            ],
                         }
                     )
         selected, audit = select_coverage_sources(
@@ -326,6 +415,28 @@ class TwoObjectCoverageTests(unittest.TestCase):
             self.assertEqual(
                 selection["host"]["scene_class"], cell["scene_class"]
             )
+            self.assertEqual(
+                selection["host"]["environment_category"],
+                cell["visual_environment_category"],
+            )
+        per_scene_environment = defaultdict(Counter)
+        for selection in selected:
+            cell = selection["cell"]
+            per_scene_environment[cell["scene_class"]][
+                cell["visual_environment_category"]
+            ] += 1
+        self.assertTrue(
+            all(
+                max(counts.values()) - min(counts.values()) <= 1
+                for counts in per_scene_environment.values()
+            ),
+            per_scene_environment,
+        )
+        for scene_counts in audit[
+            "selected_camera_scene_environment_category_counts"
+        ].values():
+            for counts in scene_counts.values():
+                self.assertLessEqual(max(counts.values()) - min(counts.values()), 1)
 
     def test_source_selection_allows_matching_size_and_appearance(self) -> None:
         cell = {
@@ -355,6 +466,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
                 "scene_class": "ground_flat",
                 "visual_profile_id": "host_profile",
                 "visual_type": "procedural_room",
+                "environment_category": "minimal",
             }
         ]
         selected, _ = select_coverage_sources(
@@ -451,6 +563,9 @@ class TwoObjectCoverageTests(unittest.TestCase):
 
     def test_released_base_manifest_pins_generation_manifest(self) -> None:
         matrix = load_matrix()
+        matrix["visual_environment_coverage"]["categories"] = [
+            {"id": "minimal", "allowed_scene_classes": ["ground_flat"]}
+        ]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
             source_root = root / "source"
@@ -496,6 +611,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
                         "scene_visual": {
                             "id": f"host_{index}",
                             "visual_type": "procedural_room",
+                            "environment_category": "minimal",
                         }
                     },
                 }

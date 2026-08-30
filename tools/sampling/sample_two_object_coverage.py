@@ -39,6 +39,7 @@ def _axis_counts(cells: Sequence[dict[str, Any]]) -> dict[str, dict[str, int]]:
         "scene_class": "scene_class",
         "camera_view_family": "camera_view_family_id",
         "source_family_pair": "source_family_pair_id",
+        "visual_environment": "visual_environment_category",
     }
     return {
         label: dict(sorted(Counter(str(cell[field]) for cell in cells).items()))
@@ -73,8 +74,8 @@ def _balanced_cell_order(
                 values[levels[field].index(str(cell[field]))] += 1
                 ranges.append(max(values) - min(values))
             return (
-                sum(ranges),
                 max(ranges),
+                sum(ranges),
                 _rank(seed, "coverage-cell", cell["cell_id"]),
             )
 
@@ -123,8 +124,8 @@ def _assign_camera_view_families(
                 current_conditional_use.append(counts[family_id])
             return (
                 global_use[family_id],
-                sum(conditional_ranges),
                 max(conditional_ranges),
+                sum(conditional_ranges),
                 sum(current_conditional_use),
                 _rank(seed, "camera-view-family", cell["cell_id"], family_id),
             )
@@ -204,6 +205,41 @@ def _resolved_within(root: Path, value: Path) -> Path:
     return resolved
 
 
+def _pair_layout_fits_host(
+    host: dict[str, Any],
+    left: dict[str, Any],
+    right: dict[str, Any],
+    matrix: dict[str, Any],
+    cell: dict[str, Any],
+) -> bool:
+    metadata = [
+        host.get("metadata"),
+        left.get("metadata"),
+        right.get("metadata"),
+    ]
+    has_simulation = [
+        isinstance(record, dict) and isinstance(record.get("simulation"), dict)
+        for record in metadata
+    ]
+    if not any(has_simulation):
+        return True
+    if not all(has_simulation):
+        raise ValueError("two-object source metadata is incomplete")
+    try:
+        build_two_object_scene(
+            metadata[0],
+            matrix,
+            str(cell["motion_id"]),
+            metadata[1:],
+            camera_view_family_id=str(cell["camera_view_family_id"]),
+        )
+    except ValueError as error:
+        if str(error) == "host support is too small for the two-object layout":
+            return False
+        raise
+    return True
+
+
 def select_coverage_sources(
     cells: Sequence[dict[str, Any]],
     objects: Sequence[dict[str, Any]],
@@ -241,11 +277,16 @@ def select_coverage_sources(
     source_family_role_use: Counter[tuple[str, str]] = Counter()
     host_profile_use: Counter[str] = Counter()
     host_type_use: Counter[str] = Counter()
+    environment_use: Counter[str] = Counter()
+    scene_environment_use: Counter[tuple[str, str]] = Counter()
+    camera_scene_environment_use: Counter[tuple[str, str, str]] = Counter()
+    source_pair_scene_environment_use: Counter[tuple[str, str, str]] = Counter()
     used_pairs: set[tuple[str, str]] = set()
     host_use: Counter[str] = Counter()
     selected = []
     for cell in cells:
         camera_view_family_id = str(cell["camera_view_family_id"])
+        scene_class = str(cell["scene_class"])
 
         def object_key(record: dict[str, Any], role: str) -> tuple[int, int, str]:
             source_id = str(record["source"]["scene_id"])
@@ -270,6 +311,7 @@ def select_coverage_sources(
         )
         pair = None
         selected_source_pair = None
+        host = None
         for source_pair in declared_source_pairs:
             left_family = str(source_pair["object_a"])
             right_family = str(source_pair["object_b"])
@@ -304,8 +346,65 @@ def select_coverage_sources(
                     unordered_pair = tuple(sorted((left_id, right_id)))
                     if unordered_pair in used_pairs:
                         continue
+                    source_pair_id = str(source_pair["id"])
+                    excluded_host_ids = {left_id, right_id}
+                    candidate_hosts = [
+                        record
+                        for record in hosts_by_scene.get(scene_class, [])
+                        if host_use[str(record["source"]["scene_id"])]
+                        < maximum_host_reuse
+                        and str(record["source"]["scene_id"])
+                        not in excluded_host_ids
+                    ]
+                    candidate_hosts.sort(
+                        key=lambda record: (
+                            host_use[str(record["source"]["scene_id"])],
+                            scene_environment_use[
+                                (
+                                    scene_class,
+                                    str(record["environment_category"]),
+                                )
+                            ],
+                            camera_scene_environment_use[
+                                (
+                                    camera_view_family_id,
+                                    scene_class,
+                                    str(record["environment_category"]),
+                                )
+                            ],
+                            source_pair_scene_environment_use[
+                                (
+                                    source_pair_id,
+                                    scene_class,
+                                    str(record["environment_category"]),
+                                )
+                            ],
+                            environment_use[str(record["environment_category"])],
+                            host_profile_use[str(record["visual_profile_id"])],
+                            host_type_use[str(record["visual_type"])],
+                            _rank(
+                                seed,
+                                cell["cell_id"],
+                                "host",
+                                record["source"]["scene_id"],
+                            ),
+                        )
+                    )
+                    candidate_host = next(
+                        (
+                            record
+                            for record in candidate_hosts
+                            if _pair_layout_fits_host(
+                                record, left, right, matrix, cell
+                            )
+                        ),
+                        None,
+                    )
+                    if candidate_host is None:
+                        continue
                     pair = (left, right, unordered_pair)
                     selected_source_pair = source_pair
+                    host = candidate_host
                     break
                 if pair is not None:
                     break
@@ -315,8 +414,8 @@ def select_coverage_sources(
             raise ValueError(
                 f"cannot satisfy two-object source cell: {cell['cell_id']}"
             )
-        if selected_source_pair is None:
-            raise AssertionError("selected source pair is missing")
+        if selected_source_pair is None or host is None:
+            raise AssertionError("selected source pair or host is missing")
         left, right, unordered_pair = pair
         selected_cell = copy.deepcopy(cell)
         selected_cell.update(
@@ -326,31 +425,11 @@ def select_coverage_sources(
                 "object_b_source_family": str(selected_source_pair["object_b"]),
             }
         )
-        excluded_host_ids = {
-            str(left["source"]["scene_id"]),
-            str(right["source"]["scene_id"]),
-        }
-        eligible_hosts = [
-            record
-            for record in hosts_by_scene.get(str(cell["scene_class"]), [])
-            if host_use[str(record["source"]["scene_id"])] < maximum_host_reuse
-            and str(record["source"]["scene_id"]) not in excluded_host_ids
-        ]
-        if not eligible_hosts:
-            raise ValueError(f"cannot satisfy two-object host cell: {cell['cell_id']}")
-        host = min(
-            eligible_hosts,
-            key=lambda record: (
-                host_use[str(record["source"]["scene_id"])],
-                host_profile_use[str(record["visual_profile_id"])],
-                host_type_use[str(record["visual_type"])],
-                _rank(
-                    seed,
-                    cell["cell_id"],
-                    "host",
-                    record["source"]["scene_id"],
-                ),
-            ),
+        source_pair_id = str(selected_source_pair["id"])
+        environment_category = str(host["environment_category"])
+        selected_cell["visual_environment_category"] = environment_category
+        selected_cell["cell_id"] = "__".join(
+            [str(selected_cell["cell_id"]), environment_category]
         )
         used_pairs.add(unordered_pair)
         source_family_pair_use[str(selected_source_pair["id"])] += 1
@@ -369,6 +448,14 @@ def select_coverage_sources(
             object_profile_use[str(record["visual_profile_id"])] += 1
         host_profile_use[str(host["visual_profile_id"])] += 1
         host_type_use[str(host["visual_type"])] += 1
+        environment_use[environment_category] += 1
+        scene_environment_use[(scene_class, environment_category)] += 1
+        camera_scene_environment_use[
+            (camera_view_family_id, scene_class, environment_category)
+        ] += 1
+        source_pair_scene_environment_use[
+            (source_pair_id, scene_class, environment_category)
+        ] += 1
         selected.append(
             {
                 "cell": selected_cell,
@@ -392,6 +479,22 @@ def select_coverage_sources(
     selected_objects = [
         record for selection in selected for record in selection["objects"]
     ]
+    selected_scene_classes = sorted(
+        {str(record["scene_class"]) for record in hosts}
+    )
+    environment_categories_by_scene = {
+        scene_class: sorted(
+            {
+                str(record["environment_category"])
+                for record in hosts
+                if str(record["scene_class"]) == scene_class
+            }
+        )
+        for scene_class in selected_scene_classes
+    }
+    selected_camera_families = sorted(
+        {str(cell["camera_view_family_id"]) for cell in cells}
+    )
     audit = {
         "unique_object_source_count": len(object_use),
         "maximum_object_source_reuse": max(object_use.values()),
@@ -443,6 +546,40 @@ def select_coverage_sources(
         },
         "selected_host_visual_profile_count": len(host_profile_use),
         "selected_host_visual_type_counts": dict(sorted(host_type_use.items())),
+        "selected_host_environment_category_counts": dict(
+            sorted(environment_use.items())
+        ),
+        "selected_scene_environment_category_counts": {
+            scene_class: {
+                category: scene_environment_use[(scene_class, category)]
+                for category in environment_categories_by_scene[scene_class]
+            }
+            for scene_class in selected_scene_classes
+        },
+        "selected_camera_scene_environment_category_counts": {
+            camera_family: {
+                scene_class: {
+                    category: camera_scene_environment_use[
+                        (camera_family, scene_class, category)
+                    ]
+                    for category in environment_categories_by_scene[scene_class]
+                }
+                for scene_class in selected_scene_classes
+            }
+            for camera_family in selected_camera_families
+        },
+        "selected_source_family_pair_scene_environment_category_counts": {
+            source_pair_id: {
+                scene_class: {
+                    category: source_pair_scene_environment_use[
+                        (source_pair_id, scene_class, category)
+                    ]
+                    for category in environment_categories_by_scene[scene_class]
+                }
+                for scene_class in selected_scene_classes
+            }
+            for source_pair_id in sorted(source_family_pair_use)
+        },
     }
     return selected, audit
 
@@ -463,6 +600,7 @@ def build_coverage_scenes(
                 str(cell["shape_pair_id"]),
                 str(cell["scale_pair_id"]),
                 str(cell["scene_class"]),
+                str(cell["visual_environment_category"]),
             ]
         )
         host["scene_id"] = stub
@@ -475,7 +613,7 @@ def build_coverage_scenes(
             camera_view_family_id=str(cell["camera_view_family_id"]),
         )
         scene["two_object_sampling"] = {
-            "schema_version": "physweep_two_object_coverage_cell_v2",
+            "schema_version": "physweep_two_object_coverage_cell_v3",
             "cell": copy.deepcopy(cell),
             "sources": {
                 "host": copy.deepcopy(selection["host"]["source"]),
@@ -566,7 +704,7 @@ def main() -> None:
             },
         },
         "coverage": {
-            "schema_version": "physweep_two_object_coverage_selection_v3",
+            "schema_version": "physweep_two_object_coverage_selection_v4",
             "full_cell_count": full_cell_count,
             "selected_cell_count": len(cells),
             "complete_cartesian_product": len(cells) == full_cell_count,

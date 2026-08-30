@@ -17,7 +17,8 @@ from tools.motion_rules.one_object.common import (
     distance_lower_bound as _distance_lower_bound,
     distance_upper_bound as _distance_upper_bound,
 )
-from tools.physics.physics_invariants import PROXY_SHAPE_CODE, additional_physics_invariants
+from tools.core.rigid_geometry import declared_collision_descriptors
+from tools.physics.physics_invariants import additional_physics_invariants
 
 SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2)
 
@@ -484,6 +485,7 @@ def audit_trajectory(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]
         parameter_tolerance,
     )
     geometry_type = str(obj["geometry"]["type"])
+    expected_proxy = declared_collision_descriptors(obj)
     additional = additional_physics_invariants(
         motion=motion,
         time_s=np.asarray(trajectory["time_s"], dtype=np.float64),
@@ -509,14 +511,16 @@ def audit_trajectory(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]
             dtype=np.float64,
         ),
         expected_proxy_shape_codes=np.asarray(
-            [PROXY_SHAPE_CODE[geometry_type]], dtype=np.int32
+            expected_proxy["shape_codes"], dtype=np.int32
         ),
         expected_proxy_dimensions_m=np.asarray(
-            [obj["geometry"]["size_m"]], dtype=np.float64
+            expected_proxy["dimensions_m"], dtype=np.float64
         ),
-        expected_proxy_positions_m=np.zeros((1, 3), dtype=np.float64),
+        expected_proxy_positions_m=np.asarray(
+            expected_proxy["positions_m"], dtype=np.float64
+        ),
         expected_proxy_quaternions_xyzw=np.asarray(
-            [[0.0, 0.0, 0.0, 1.0]], dtype=np.float64
+            expected_proxy["quaternions_xyzw"], dtype=np.float64
         ),
         runtime_proxy_shape_codes=np.asarray(
             trajectory[f"{object_id}__runtime_proxy_shape_codes"], dtype=np.int32
@@ -535,7 +539,9 @@ def audit_trajectory(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]
             trajectory[f"{object_id}__maximum_coulomb_friction_utilization"],
             dtype=np.float64,
         ),
-        validate_primitive_inertia_geometry=True,
+        validate_primitive_inertia_geometry=(
+            obj["collision_profile"].get("type") != "compound"
+        ),
     )
     checks.extend(additional["checks"])
 

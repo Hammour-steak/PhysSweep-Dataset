@@ -70,6 +70,10 @@ _LAYOUT_FIELDS = {
         "contact_time_s",
         "contact_elevation_degrees",
     },
+    "ballistic_airborne_pair_contact": {
+        "contact_time_s",
+        "contact_center_height_above_support_m",
+    },
     "parallel_supported_independent": {
         "initial_x_offset_m",
         "lateral_clearance_m",
@@ -82,6 +86,7 @@ _LAYOUT_FIELDS = {
 _LAYOUT_CONTRACT = {
     "planned_supported_contact": ("interacting", "supported_supported"),
     "ballistic_airborne_contact": ("interacting", "airborne_supported"),
+    "ballistic_airborne_pair_contact": ("interacting", "airborne_airborne"),
     "parallel_supported_independent": ("independent", "supported_supported"),
     "separated_airborne_supported_independent": (
         "independent",
@@ -387,6 +392,70 @@ def _ballistic_airborne_contact(
     return positions, contact_normal
 
 
+def _ballistic_airborne_pair_contact(
+    scene: dict[str, Any],
+    center: np.ndarray,
+    geometry: list[dict[str, Any]],
+    velocities: np.ndarray,
+    intent: dict[str, Any],
+) -> tuple[np.ndarray, np.ndarray]:
+    if any(str(record["shape"]) != "sphere" for record in geometry):
+        raise ValueError("airborne pair contact requires two spheres")
+    contact_time = positive_vector(
+        [intent["contact_time_s"]], 1, "airborne pair contact time"
+    )[0]
+    contact_height = positive_vector(
+        [intent["contact_center_height_above_support_m"]],
+        1,
+        "airborne pair contact height",
+    )[0]
+    relative_approach = velocities[0] - velocities[1]
+    approach_speed = float(np.linalg.norm(relative_approach))
+    if approach_speed <= _NUMERICAL_EPSILON:
+        raise ValueError("airborne pair contact requires nonzero relative velocity")
+    contact_normal = relative_approach / approach_speed
+    center_distance = sphere_primitive_center_distance_m(
+        list(geometry[0]["size_m"]),
+        "sphere",
+        list(geometry[1]["size_m"]),
+        contact_normal.tolist(),
+    )
+    support_surface_z = float(
+        scene["simulation"]["support"]["surface_center_z_m"]
+    )
+    contact_center = np.asarray(
+        [center[0], center[1], support_surface_z + contact_height],
+        dtype=np.float64,
+    )
+    contact_positions = np.stack(
+        [
+            contact_center - 0.5 * center_distance * contact_normal,
+            contact_center + 0.5 * center_distance * contact_normal,
+        ]
+    )
+    gravity = np.asarray(
+        finite_vector(
+            scene["simulation"]["world"]["gravity_m_s2"],
+            3,
+            "simulation gravity",
+        ),
+        dtype=np.float64,
+    )
+    initial_positions = (
+        contact_positions
+        - velocities * contact_time
+        - 0.5 * gravity[None, :] * contact_time**2
+    )
+    minimum_bottom = min(
+        float(initial_positions[index, 2])
+        - float(geometry[index]["support_offset_m"])
+        for index in range(2)
+    )
+    if minimum_bottom <= support_surface_z:
+        raise ValueError("airborne pair initial state intersects the support")
+    return initial_positions, contact_normal
+
+
 def _parallel_supported_independent(
     center: np.ndarray,
     support_z: list[float],
@@ -522,6 +591,10 @@ def apply_two_object_motion(
         positions, approach_axis = _ballistic_airborne_contact(
             scene, center, support_z, geometry, velocities, intent
         )
+    elif layout == "ballistic_airborne_pair_contact":
+        positions, approach_axis = _ballistic_airborne_pair_contact(
+            scene, center, geometry, velocities, intent
+        )
     elif layout == "parallel_supported_independent":
         positions, approach_axis = _parallel_supported_independent(
             center, support_z, geometry, intent
@@ -530,7 +603,11 @@ def apply_two_object_motion(
         positions, approach_axis = _separated_airborne_supported_independent(
             center, support_z, geometry, intent
         )
-    if layout in {"planned_supported_contact", "ballistic_airborne_contact"}:
+    if layout in {
+        "planned_supported_contact",
+        "ballistic_airborne_contact",
+        "ballistic_airborne_pair_contact",
+    }:
         contact_time = float(intent["contact_time_s"])
         planned_contact_positions = positions + velocities * contact_time
         if layout == "ballistic_airborne_contact":
@@ -539,6 +616,12 @@ def apply_two_object_motion(
                 dtype=np.float64,
             )
             planned_contact_positions[0] += 0.5 * gravity * contact_time**2
+        elif layout == "ballistic_airborne_pair_contact":
+            gravity = np.asarray(
+                scene["simulation"]["world"]["gravity_m_s2"],
+                dtype=np.float64,
+            )
+            planned_contact_positions += 0.5 * gravity[None, :] * contact_time**2
         path_xy = np.vstack(
             [positions[:, :2], planned_contact_positions[:, :2]]
         )
@@ -572,11 +655,12 @@ def apply_two_object_motion(
     object_motions = [str(value) for value in intent["object_motions"]]
     if len(object_motions) != 2 or any(not value for value in object_motions):
         raise ValueError("two-object intent requires two object motions")
-    supported = (
-        [True, True]
-        if intent["kinematic_regime"] == "supported_supported"
-        else [False, True]
-    )
+    supported_by_regime = {
+        "supported_supported": [True, True],
+        "airborne_supported": [False, True],
+        "airborne_airborne": [False, False],
+    }
+    supported = supported_by_regime[str(intent["kinematic_regime"])]
 
     interaction_class = str(intent["interaction_class"])
     contact_requirement = (

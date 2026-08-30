@@ -28,6 +28,7 @@ _MATRIX_FIELDS = {
     "shared_physics",
     "pair_observation",
     "scene_compatibility",
+    "visual_environment_coverage",
     "motion_intents",
     "policy",
 }
@@ -50,6 +51,7 @@ _OBJECT_ELIGIBILITY_FIELDS = {
     "visual_profile_key",
     "distinct_source_scenes",
     "asset_proxy_policy",
+    "asset_proxy_maximum_aabb_center_offset_m",
     "asset_scale_bin_maximum_extent_m",
 }
 _HOST_ELIGIBILITY_FIELDS = {
@@ -87,13 +89,13 @@ _POLICY_FIELDS = {
     "post_contact_outcome_is_not_preclassified",
     "one_factor_sweep_keeps_both_initial_states_fixed",
     "initial_contact_is_deferred",
-    "airborne_airborne_is_deferred",
+    "airborne_airborne_is_explicitly_bounded",
 }
 
 
 def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
     if set(matrix) != _MATRIX_FIELDS or (
-        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v5"
+        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v7"
     ):
         raise ValueError("unsupported two-object sampling matrix")
     objects = matrix.get("objects")
@@ -158,7 +160,7 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         not isinstance(candidate_pool, dict)
         or set(candidate_pool) != _CANDIDATE_POOL_FIELDS
         or candidate_pool.get("schema_version")
-        != "physweep_two_object_candidate_pool_v2"
+        != "physweep_two_object_candidate_pool_v3"
     ):
         raise ValueError("two-object candidate-pool contract is incomplete")
     source = candidate_pool.get("source_release")
@@ -195,7 +197,8 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         or eligibility.get("visual_profile_key") != "visual_profile.id"
         or eligibility.get("distinct_source_scenes") is not True
         or eligibility.get("asset_proxy_policy")
-        != "single_centered_unrotated_primitive_only"
+        != "centered_primitive_or_upright_axisymmetric_compound"
+        or eligibility.get("asset_proxy_maximum_aabb_center_offset_m") != 0.001
     ):
         raise ValueError("two-object object-eligibility contract is invalid")
     scale_bins = eligibility.get("scale_bins")
@@ -365,6 +368,58 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         or selection.get("maximum_host_source_reuse") != 2
     ):
         raise ValueError("two-object source reuse limits may not be weakened")
+    scene_compatibility = matrix.get("scene_compatibility")
+    if (
+        not isinstance(scene_compatibility, dict)
+        or set(scene_compatibility) != {"schema_version", "allowed_scene_classes"}
+        or scene_compatibility.get("schema_version")
+        != "physweep_two_object_scene_compatibility_v1"
+        or scene_compatibility.get("allowed_scene_classes")
+        != ["ground_flat", "raised_flat"]
+    ):
+        raise ValueError("two-object scene compatibility is invalid")
+    environment_coverage = matrix.get("visual_environment_coverage")
+    if (
+        not isinstance(environment_coverage, dict)
+        or set(environment_coverage)
+        != {"schema_version", "metadata_key", "categories", "selection_policy"}
+        or environment_coverage.get("schema_version")
+        != "physweep_two_object_visual_environment_coverage_v1"
+        or environment_coverage.get("metadata_key")
+        != "appearance.scene_visual.environment_category"
+        or environment_coverage.get("selection_policy")
+        != "balanced_feasible_within_scene_camera_and_source_pair"
+    ):
+        raise ValueError("two-object visual-environment coverage is invalid")
+    environment_categories = environment_coverage.get("categories")
+    scene_classes = set(scene_compatibility["allowed_scene_classes"])
+    if (
+        not isinstance(environment_categories, list)
+        or len(environment_categories) < 2
+        or any(
+            not isinstance(record, dict)
+            or set(record) != {"id", "allowed_scene_classes"}
+            or not isinstance(record["id"], str)
+            or not record["id"]
+            or not isinstance(record["allowed_scene_classes"], list)
+            or not record["allowed_scene_classes"]
+            or len(record["allowed_scene_classes"])
+            != len(set(record["allowed_scene_classes"]))
+            or not set(record["allowed_scene_classes"]).issubset(scene_classes)
+            for record in environment_categories
+        )
+        or len({record["id"] for record in environment_categories})
+        != len(environment_categories)
+        or any(
+            sum(
+                scene_class in record["allowed_scene_classes"]
+                for record in environment_categories
+            )
+            < 2
+            for scene_class in scene_classes
+        )
+    ):
+        raise ValueError("two-object visual-environment categories are invalid")
     policy = matrix.get("policy")
     if not isinstance(policy, dict) or set(policy) != _POLICY_FIELDS:
         raise ValueError("two-object sampling policy is incomplete")
