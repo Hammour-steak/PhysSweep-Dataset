@@ -1,10 +1,79 @@
 {
-  "schema_version": "physweep_two_object_sampling_matrix_v3",
+  "schema_version": "physweep_two_object_sampling_matrix_v4",
   "objects": {
     "schema_version": "physweep_object_collection_v1",
     "roles": [
       {"object_id": "object_a"},
       {"object_id": "object_b"}
+    ]
+  },
+  "shape_families": {
+    "schema_version": "physweep_two_object_shape_families_v1",
+    "families": [
+      {
+        "id": "sphere",
+        "geometry_type": "sphere",
+        "stable_pose_profile": "support_normal",
+        "supported_motion_mode": "rolling"
+      },
+      {
+        "id": "cuboid",
+        "geometry_type": "cuboid",
+        "stable_pose_profile": "support_normal",
+        "supported_motion_mode": "sliding_upright"
+      },
+      {
+        "id": "cylinder",
+        "geometry_type": "cylinder",
+        "stable_pose_profile": "support_normal",
+        "supported_motion_mode": "sliding_upright"
+      }
+    ]
+  },
+  "shape_motion_compatibility": {
+    "schema_version": "physweep_two_object_shape_motion_compatibility_v1",
+    "pair_sets": {
+      "all_shape_pairs": ["sphere_to_sphere", "sphere_to_cuboid", "sphere_to_cylinder", "cuboid_to_sphere", "cuboid_to_cuboid", "cuboid_to_cylinder", "cylinder_to_sphere", "cylinder_to_cuboid", "cylinder_to_cylinder"],
+      "supported_head_on": ["sphere_to_sphere", "cuboid_to_sphere", "cylinder_to_sphere"],
+      "sphere_airborne_object_a": ["sphere_to_sphere", "sphere_to_cuboid", "sphere_to_cylinder"]
+    },
+    "rules": [
+      {
+        "motion_id": "surface_hit_rest_2obj",
+        "shape_pair_set_id": "all_shape_pairs"
+      },
+      {
+        "motion_id": "surface_head_on_2obj",
+        "shape_pair_set_id": "supported_head_on"
+      },
+      {
+        "motion_id": "surface_crossing_2obj",
+        "shape_pair_set_id": "all_shape_pairs"
+      },
+      {
+        "motion_id": "surface_catch_up_2obj",
+        "shape_pair_set_id": "all_shape_pairs"
+      },
+      {
+        "motion_id": "air_drop_hit_supported_2obj",
+        "shape_pair_set_id": "sphere_airborne_object_a"
+      },
+      {
+        "motion_id": "air_projectile_hit_supported_2obj",
+        "shape_pair_set_id": "sphere_airborne_object_a"
+      },
+      {
+        "motion_id": "surface_single_independent_2obj",
+        "shape_pair_set_id": "all_shape_pairs"
+      },
+      {
+        "motion_id": "surface_dual_independent_2obj",
+        "shape_pair_set_id": "all_shape_pairs"
+      },
+      {
+        "motion_id": "air_supported_independent_2obj",
+        "shape_pair_set_id": "all_shape_pairs"
+      }
     ]
   },
   "candidate_pool": {
@@ -17,8 +86,7 @@
     },
     "object_eligibility": {
       "body_model": "rigid_body",
-      "geometry_type": "sphere",
-      "require_isotropic_geometry": true,
+      "required_pose_profile": "support_normal",
       "scale_bins": ["small", "medium", "large"],
       "visual_profile_key": "visual_profile.id",
       "distinct_source_scenes": true
@@ -31,6 +99,7 @@
         "support_structure",
         "environment_floor"
       ],
+      "allowed_visual_types": ["procedural_room"],
       "camera_envelope_policy": "unbounded_only"
     }
   },
@@ -48,13 +117,25 @@
       {"id": "large_to_medium", "object_a": "large", "object_b": "medium"},
       {"id": "large_to_large", "object_a": "large", "object_b": "large"}
     ],
+    "role_ordered_shape_pairs": [
+      {"id": "sphere_to_sphere", "object_a": "sphere", "object_b": "sphere"},
+      {"id": "sphere_to_cuboid", "object_a": "sphere", "object_b": "cuboid"},
+      {"id": "sphere_to_cylinder", "object_a": "sphere", "object_b": "cylinder"},
+      {"id": "cuboid_to_sphere", "object_a": "cuboid", "object_b": "sphere"},
+      {"id": "cuboid_to_cuboid", "object_a": "cuboid", "object_b": "cuboid"},
+      {"id": "cuboid_to_cylinder", "object_a": "cuboid", "object_b": "cylinder"},
+      {"id": "cylinder_to_sphere", "object_a": "cylinder", "object_b": "sphere"},
+      {"id": "cylinder_to_cuboid", "object_a": "cylinder", "object_b": "cuboid"},
+      {"id": "cylinder_to_cylinder", "object_a": "cylinder", "object_b": "cylinder"}
+    ],
     "replicates_per_cell": 1,
     "selection_policy": {
       "source_pair_uniqueness": "unordered_without_replacement",
-      "host_uniqueness": "without_replacement",
+      "host_uniqueness": "balanced_bounded_reuse",
       "maximum_object_source_reuse": 2,
+      "maximum_host_source_reuse": 2,
       "host_must_differ_from_object_sources": true,
-      "object_visual_profile_coverage": "all_eligible",
+      "object_visual_profile_coverage": "balanced_eligible",
       "host_visual_profile_coverage": "all_eligible",
       "deterministic_ranking": "sha256_seeded"
     }

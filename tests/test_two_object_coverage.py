@@ -39,18 +39,25 @@ class TwoObjectCoverageTests(unittest.TestCase):
     def test_matrix_declares_complete_ordered_cartesian_coverage(self) -> None:
         matrix = load_matrix()
         cells, full_count = coverage_cells(matrix)
-        self.assertEqual(full_count, 162)
-        self.assertEqual(len(cells), 162)
+        self.assertEqual(full_count, 1134)
+        self.assertEqual(len(cells), 1134)
         counts = _axis_counts(cells)
-        self.assertEqual(set(counts["motion"].values()), {18})
-        self.assertEqual(set(counts["ordered_scale_pair"].values()), {18})
-        self.assertEqual(set(counts["scene_class"].values()), {81})
+        self.assertEqual(set(counts["motion"].values()), {54, 162})
+        self.assertEqual(
+            set(counts["ordered_shape_pair"].values()), {108, 126, 144, 162}
+        )
+        self.assertEqual(set(counts["ordered_scale_pair"].values()), {126})
+        self.assertEqual(set(counts["scene_class"].values()), {567})
 
     def test_balanced_smoke_prefix_covers_every_axis(self) -> None:
         cells, full_count = coverage_cells(load_matrix(), 72)
-        self.assertEqual(full_count, 162)
+        self.assertEqual(full_count, 1134)
         counts = _axis_counts(cells)
-        self.assertEqual(set(counts["motion"].values()), {8})
+        self.assertLessEqual(
+            max(counts["motion"].values()) - min(counts["motion"].values()),
+            2,
+        )
+        self.assertEqual(set(counts["ordered_shape_pair"].values()), {8})
         self.assertEqual(set(counts["ordered_scale_pair"].values()), {8})
         self.assertEqual(set(counts["scene_class"].values()), {36})
 
@@ -60,12 +67,34 @@ class TwoObjectCoverageTests(unittest.TestCase):
         missing["coverage_plan"]["role_ordered_scale_pairs"].pop()
         with self.assertRaisesRegex(ValueError, "full product"):
             _validated_intents(missing)
+        missing_shape = copy.deepcopy(matrix)
+        missing_shape["coverage_plan"]["role_ordered_shape_pairs"].pop()
+        with self.assertRaisesRegex(ValueError, "full product"):
+            _validated_intents(missing_shape)
+        unknown_shape_pair = copy.deepcopy(matrix)
+        unknown_shape_pair["shape_motion_compatibility"]["pair_sets"][
+            "all_shape_pairs"
+        ].append("unknown_to_sphere")
+        with self.assertRaisesRegex(ValueError, "shape-pair sets"):
+            _validated_intents(unknown_shape_pair)
+        unsupported_host = copy.deepcopy(matrix)
+        unsupported_host["candidate_pool"]["host_eligibility"][
+            "allowed_visual_types"
+        ].append("mesh_environment")
+        with self.assertRaisesRegex(ValueError, "reviewed procedural"):
+            _validated_intents(unsupported_host)
         weakened = copy.deepcopy(matrix)
         weakened["coverage_plan"]["selection_policy"][
             "source_pair_uniqueness"
         ] = "allow_reuse"
         with self.assertRaisesRegex(ValueError, "may not be weakened"):
             _validated_intents(weakened)
+        excessive_reuse = copy.deepcopy(matrix)
+        excessive_reuse["coverage_plan"]["selection_policy"][
+            "maximum_host_source_reuse"
+        ] = 3
+        with self.assertRaisesRegex(ValueError, "may not be weakened"):
+            _validated_intents(excessive_reuse)
         active_host = copy.deepcopy(matrix)
         active_host["candidate_pool"]["host_eligibility"][
             "allowed_collider_roles"
@@ -83,20 +112,25 @@ class TwoObjectCoverageTests(unittest.TestCase):
         matrix = load_matrix()
         cells, _ = coverage_cells(matrix, 18)
         objects = []
-        for scale in ("small", "medium", "large"):
-            for profile_index in range(3):
-                for source_index in range(4):
-                    source_id = (
-                        f"object_{scale}_{profile_index}_{source_index}"
-                    )
-                    objects.append(
-                        {
-                            "metadata": {},
-                            "source": {"scene_id": source_id},
-                            "scale_bin": scale,
-                            "visual_profile_id": f"profile_{profile_index}",
-                        }
-                    )
+        for shape in ("sphere", "cuboid", "cylinder"):
+            for scale in ("small", "medium", "large"):
+                for profile_index in range(3):
+                    for source_index in range(4):
+                        source_id = (
+                            f"object_{shape}_{scale}_{profile_index}_"
+                            f"{source_index}"
+                        )
+                        objects.append(
+                            {
+                                "metadata": {},
+                                "source": {"scene_id": source_id},
+                                "shape_family_id": shape,
+                                "scale_bin": scale,
+                                "visual_profile_id": (
+                                    f"{shape}_profile_{profile_index}"
+                                ),
+                            }
+                        )
         hosts = []
         for scene_class in ("ground_flat", "raised_flat"):
             for profile_index in range(3):
@@ -120,11 +154,18 @@ class TwoObjectCoverageTests(unittest.TestCase):
         self.assertEqual(audit["unique_source_pair_count"], 18)
         self.assertEqual(audit["unique_host_count"], 18)
         self.assertLessEqual(audit["maximum_object_source_reuse"], 2)
+        self.assertLessEqual(audit["maximum_host_source_reuse"], 2)
         for selection in selected:
             cell = selection["cell"]
             left, right = selection["objects"]
             self.assertEqual(left["scale_bin"], cell["object_a_scale_bin"])
             self.assertEqual(right["scale_bin"], cell["object_b_scale_bin"])
+            self.assertEqual(
+                left["shape_family_id"], cell["object_a_shape"]
+            )
+            self.assertEqual(
+                right["shape_family_id"], cell["object_b_shape"]
+            )
             self.assertEqual(
                 selection["host"]["scene_class"], cell["scene_class"]
             )
@@ -132,6 +173,8 @@ class TwoObjectCoverageTests(unittest.TestCase):
     def test_source_selection_allows_matching_size_and_appearance(self) -> None:
         cell = {
             "cell_id": "same_size_and_appearance",
+            "object_a_shape": "sphere",
+            "object_b_shape": "sphere",
             "object_a_scale_bin": "small",
             "object_b_scale_bin": "small",
             "scene_class": "ground_flat",
@@ -140,6 +183,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
             {
                 "metadata": {},
                 "source": {"scene_id": f"object_{index}"},
+                "shape_family_id": "sphere",
                 "scale_bin": "small",
                 "visual_profile_id": "shared_profile",
             }
@@ -238,6 +282,13 @@ class TwoObjectCoverageTests(unittest.TestCase):
                                 "geometry": {
                                     "type": "sphere",
                                     "size_m": [0.2, 0.2, 0.2],
+                                },
+                                "collision_profile": {
+                                    "type": "sphere",
+                                    "size_m": [0.2, 0.2, 0.2],
+                                },
+                                "initial_state": {
+                                    "pose_profile": "support_normal"
                                 },
                                 "visual_profile": {"id": f"profile_{index}"},
                             }

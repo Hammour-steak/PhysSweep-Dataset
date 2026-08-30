@@ -21,6 +21,8 @@ DEFAULT_MATRIX = PROJECT_ROOT / "configs" / "two_object_sampling_matrix.json"
 _MATRIX_FIELDS = {
     "schema_version",
     "objects",
+    "shape_families",
+    "shape_motion_compatibility",
     "candidate_pool",
     "coverage_plan",
     "shared_physics",
@@ -43,8 +45,7 @@ _SOURCE_RELEASE_FIELDS = {
 }
 _OBJECT_ELIGIBILITY_FIELDS = {
     "body_model",
-    "geometry_type",
-    "require_isotropic_geometry",
+    "required_pose_profile",
     "scale_bins",
     "visual_profile_key",
     "distinct_source_scenes",
@@ -53,6 +54,7 @@ _HOST_ELIGIBILITY_FIELDS = {
     "support_shape",
     "required_collider_roles",
     "allowed_collider_roles",
+    "allowed_visual_types",
     "camera_envelope_policy",
 }
 _MOTION_NEUTRAL_HOST_ROLES = {
@@ -64,14 +66,15 @@ _COVERAGE_PLAN_FIELDS = {
     "schema_version",
     "seed",
     "role_ordered_scale_pairs",
+    "role_ordered_shape_pairs",
     "replicates_per_cell",
     "selection_policy",
 }
 _SELECTION_POLICY = {
     "source_pair_uniqueness": "unordered_without_replacement",
-    "host_uniqueness": "without_replacement",
+    "host_uniqueness": "balanced_bounded_reuse",
     "host_must_differ_from_object_sources": True,
-    "object_visual_profile_coverage": "all_eligible",
+    "object_visual_profile_coverage": "balanced_eligible",
     "host_visual_profile_coverage": "all_eligible",
     "deterministic_ranking": "sha256_seeded",
 }
@@ -85,7 +88,7 @@ _POLICY_FIELDS = {
 
 def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
     if set(matrix) != _MATRIX_FIELDS or (
-        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v3"
+        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v4"
     ):
         raise ValueError("unsupported two-object sampling matrix")
     objects = matrix.get("objects")
@@ -105,6 +108,46 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         or any(not str(role["object_id"]).strip() for role in roles)
     ):
         raise ValueError("two-object roles must contain two unique object ids")
+    shape_contract = matrix.get("shape_families")
+    if (
+        not isinstance(shape_contract, dict)
+        or set(shape_contract) != {"schema_version", "families"}
+        or shape_contract.get("schema_version")
+        != "physweep_two_object_shape_families_v1"
+    ):
+        raise ValueError("two-object shape-family contract is incomplete")
+    families = shape_contract.get("families")
+    family_fields = {
+        "id",
+        "geometry_type",
+        "stable_pose_profile",
+        "supported_motion_mode",
+    }
+    if (
+        not isinstance(families, list)
+        or any(not isinstance(record, dict) or set(record) != family_fields for record in families)
+    ):
+        raise ValueError("two-object shape families are invalid")
+    family_ids = [str(record["id"]) for record in families]
+    family_id_set = set(family_ids)
+    geometry_types = [str(record["geometry_type"]) for record in families]
+    expected_motion_modes = {
+        "sphere": "rolling",
+        "cuboid": "sliding_upright",
+        "cylinder": "sliding_upright",
+    }
+    if (
+        family_id_set != set(expected_motion_modes)
+        or len(family_ids) != len(set(family_ids))
+        or geometry_types != family_ids
+        or any(record["stable_pose_profile"] != "support_normal" for record in families)
+        or any(
+            record["supported_motion_mode"]
+            != expected_motion_modes[str(record["id"])]
+            for record in families
+        )
+    ):
+        raise ValueError("two-object shape families contradict rigid geometry")
     candidate_pool = matrix.get("candidate_pool")
     if (
         not isinstance(candidate_pool, dict)
@@ -123,8 +166,7 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         not isinstance(eligibility, dict)
         or set(eligibility) != _OBJECT_ELIGIBILITY_FIELDS
         or eligibility.get("body_model") != "rigid_body"
-        or eligibility.get("geometry_type") != "sphere"
-        or eligibility.get("require_isotropic_geometry") is not True
+        or eligibility.get("required_pose_profile") != "support_normal"
         or eligibility.get("visual_profile_key") != "visual_profile.id"
         or eligibility.get("distinct_source_scenes") is not True
     ):
@@ -147,13 +189,17 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         raise ValueError("two-object host-eligibility contract is invalid")
     required_roles = host_eligibility.get("required_collider_roles")
     allowed_roles = host_eligibility.get("allowed_collider_roles")
+    allowed_visual_types = host_eligibility.get("allowed_visual_types")
     if (
         required_roles != ["primary_support"]
         or not isinstance(allowed_roles, list)
         or len(allowed_roles) != len(set(allowed_roles))
         or set(allowed_roles) != _MOTION_NEUTRAL_HOST_ROLES
+        or allowed_visual_types != ["procedural_room"]
     ):
-        raise ValueError("two-object hosts must use motion-neutral colliders")
+        raise ValueError(
+            "two-object hosts must use the reviewed procedural motion-neutral contract"
+        )
     coverage = matrix.get("coverage_plan")
     if (
         not isinstance(coverage, dict)
@@ -193,20 +239,46 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         or actual_pairs != expected_pairs
     ):
         raise ValueError("two-object ordered scale pairs must cover the full product")
+    shape_pairs = coverage.get("role_ordered_shape_pairs")
+    if not isinstance(shape_pairs, list) or any(
+        not isinstance(record, dict)
+        or set(record) != {"id", "object_a", "object_b"}
+        for record in shape_pairs
+    ):
+        raise ValueError("two-object ordered shape pairs are invalid")
+    shape_pair_ids = [str(record["id"]) for record in shape_pairs]
+    shape_pair_id_set = set(shape_pair_ids)
+    actual_shape_pairs = {
+        (str(record["object_a"]), str(record["object_b"]))
+        for record in shape_pairs
+    }
+    expected_shape_pairs = {
+        (left, right) for left in family_ids for right in family_ids
+    }
+    if (
+        any(not pair_id for pair_id in shape_pair_ids)
+        or len(shape_pair_ids) != len(set(shape_pair_ids))
+        or len(actual_shape_pairs) != len(shape_pairs)
+        or actual_shape_pairs != expected_shape_pairs
+    ):
+        raise ValueError("two-object ordered shape pairs must cover the full product")
     selection = coverage.get("selection_policy")
     if not isinstance(selection, dict) or (
-        set(selection) != {*_SELECTION_POLICY, "maximum_object_source_reuse"}
+        set(selection)
+        != {
+            *_SELECTION_POLICY,
+            "maximum_object_source_reuse",
+            "maximum_host_source_reuse",
+        }
     ):
         raise ValueError("two-object selection policy is incomplete")
     if any(selection.get(key) != value for key, value in _SELECTION_POLICY.items()):
         raise ValueError("two-object selection policy may not be weakened")
-    maximum_reuse = selection.get("maximum_object_source_reuse")
     if (
-        isinstance(maximum_reuse, bool)
-        or not isinstance(maximum_reuse, int)
-        or maximum_reuse < 1
+        selection.get("maximum_object_source_reuse") != 2
+        or selection.get("maximum_host_source_reuse") != 2
     ):
-        raise ValueError("two-object source reuse limit is invalid")
+        raise ValueError("two-object source reuse limits may not be weakened")
     policy = matrix.get("policy")
     if not isinstance(policy, dict) or set(policy) != _POLICY_FIELDS:
         raise ValueError("two-object sampling policy is incomplete")
@@ -220,7 +292,89 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
     ids = [str(intent.get("id", "")) for intent in intents]
     if any(not motion_id for motion_id in ids) or len(ids) != len(set(ids)):
         raise ValueError("two-object motion intent ids must be unique")
+    intent_id_set = set(ids)
+    compatibility = matrix.get("shape_motion_compatibility")
+    if (
+        not isinstance(compatibility, dict)
+        or set(compatibility) != {"schema_version", "pair_sets", "rules"}
+        or compatibility.get("schema_version")
+        != "physweep_two_object_shape_motion_compatibility_v1"
+    ):
+        raise ValueError("two-object shape-motion compatibility is incomplete")
+    pair_sets = compatibility.get("pair_sets")
+    if (
+        not isinstance(pair_sets, dict)
+        or not pair_sets
+        or any(
+            not isinstance(name, str)
+            or not name
+            or not isinstance(values, list)
+            or not values
+            or any(str(value) not in shape_pair_id_set for value in values)
+            or len(values) != len(set(map(str, values)))
+            for name, values in pair_sets.items()
+        )
+    ):
+        raise ValueError("two-object shape-pair sets are invalid")
+    compatibility_rules = compatibility.get("rules")
+    if (
+        not isinstance(compatibility_rules, list)
+        or any(
+            not isinstance(record, dict)
+            or set(record) != {"motion_id", "shape_pair_set_id"}
+            or str(record["motion_id"]) not in intent_id_set
+            or str(record["shape_pair_set_id"]) not in pair_sets
+            for record in compatibility_rules
+        )
+        or [str(record["motion_id"]) for record in compatibility_rules] != ids
+    ):
+        raise ValueError("two-object shape-motion rules must follow motion order")
+    admitted_pairs = {
+        str(pair_id)
+        for record in compatibility_rules
+        for pair_id in pair_sets[str(record["shape_pair_set_id"])]
+    }
+    if admitted_pairs != shape_pair_id_set:
+        raise ValueError("two-object compatibility leaves a shape pair unreachable")
     return intents
+
+
+def compatible_shape_pair_ids(
+    matrix: dict[str, Any], motion_id: str
+) -> tuple[str, ...]:
+    """Return the explicitly admitted ordered shape pairs for one motion."""
+
+    rules = matrix["shape_motion_compatibility"]
+    record = next(
+        (
+            value
+            for value in rules["rules"]
+            if str(value["motion_id"]) == motion_id
+        ),
+        None,
+    )
+    if record is None:
+        raise ValueError(f"unknown two-object motion intent: {motion_id}")
+    return tuple(
+        str(value)
+        for value in rules["pair_sets"][str(record["shape_pair_set_id"])]
+    )
+
+
+def shape_pair_id(
+    matrix: dict[str, Any], object_a_shape: str, object_b_shape: str
+) -> str:
+    """Resolve one ordered shape pair without deriving ids from string syntax."""
+
+    matches = [
+        str(record["id"])
+        for record in matrix["coverage_plan"]["role_ordered_shape_pairs"]
+        if str(record["object_a"]) == object_a_shape
+        and str(record["object_b"]) == object_b_shape
+    ]
+    if len(matches) != 1:
+        raise ValueError("two-object geometry does not name one declared shape pair")
+    return matches[0]
 
 
 def build_two_object_scene(
@@ -252,8 +406,18 @@ def build_two_object_scene(
         sources,
         matrix["objects"]["roles"],
     )
+    shapes = [
+        str(record.get("geometry", {}).get("type", ""))
+        for record in pair_scene["simulation"]["objects"]
+    ]
+    resolved_shape_pair = shape_pair_id(matrix, shapes[0], shapes[1])
+    if resolved_shape_pair not in compatible_shape_pair_ids(matrix, motion_id):
+        raise ValueError(
+            f"shape pair {resolved_shape_pair} is incompatible with {motion_id}"
+        )
     scene = apply_two_object_motion(
         pair_scene,
+        matrix["shape_families"],
         matrix["shared_physics"],
         matrix["pair_observation"],
         matches[0],

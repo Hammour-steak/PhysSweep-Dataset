@@ -7,7 +7,7 @@ import argparse
 import copy
 import shutil
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 import numpy as np
@@ -55,7 +55,7 @@ def validated_sweep_samples(manifest: dict[str, Any]) -> list[dict[str, Any]]:
                 "trajectory_path": str(record["trajectory_path"]),
                 "audit_path": str(record["audit_path"]),
                 "simulation_record_path": str(
-                    Path(str(record["trajectory_path"])).with_name(
+                    PurePosixPath(str(record["trajectory_path"])).with_name(
                         "simulation_record.json"
                     )
                 ),
@@ -128,7 +128,7 @@ def bind_one(
     if isinstance(objects, list) and len(objects) == 2:
         inherited_camera = bound["visualization"]["camera"]
         if inherited_camera.get("solver_version") != (
-            "joint_full_motion_envelope_group_camera_v2"
+            "joint_full_motion_envelope_group_camera_v3"
         ):
             raise ValueError(
                 f"two-object sweep lacks a group-envelope camera: {scene_id}"
@@ -150,7 +150,7 @@ def bind_one(
     }
     if isinstance(objects, list) and len(objects) == 2:
         camera_inheritance["derived_trajectory_camera_audit"] = (
-            "joint_full_motion_envelope_camera_v2"
+            "joint_full_motion_envelope_camera_v3"
         )
     bound["visualization"]["camera_inheritance"] = camera_inheritance
     render = bound["visualization"]["render"]

@@ -21,6 +21,7 @@ from tools.sampling.sample_two_object_base import (
     DEFAULT_MATRIX,
     _validated_intents,
     build_two_object_scene,
+    compatible_shape_pair_ids,
 )
 
 
@@ -35,6 +36,7 @@ def _rank(seed: int, *parts: object) -> str:
 def _axis_counts(cells: Sequence[dict[str, Any]]) -> dict[str, dict[str, int]]:
     fields = {
         "motion": "motion_id",
+        "ordered_shape_pair": "shape_pair_id",
         "ordered_scale_pair": "scale_pair_id",
         "scene_class": "scene_class",
     }
@@ -52,6 +54,7 @@ def _balanced_cell_order(
     remaining = [copy.deepcopy(cell) for cell in cells]
     axis_fields = (
         "motion_id",
+        "shape_pair_id",
         "scale_pair_id",
         "scene_class",
     )
@@ -91,31 +94,41 @@ def coverage_cells(
     coverage = matrix["coverage_plan"]
     scene_classes = matrix["scene_compatibility"]["allowed_scene_classes"]
     cells = []
-    for intent, scale_pair, scene_class, replicate_index in product(
-        intents,
-        coverage["role_ordered_scale_pairs"],
-        scene_classes,
-        range(int(coverage["replicates_per_cell"])),
-    ):
-        cell_id = "__".join(
-            [
-                str(intent["id"]),
-                str(scale_pair["id"]),
-                str(scene_class),
-                f"r{replicate_index:02d}",
-            ]
-        )
-        cells.append(
-            {
-                "cell_id": cell_id,
-                "motion_id": str(intent["id"]),
-                "scale_pair_id": str(scale_pair["id"]),
-                "object_a_scale_bin": str(scale_pair["object_a"]),
-                "object_b_scale_bin": str(scale_pair["object_b"]),
-                "scene_class": str(scene_class),
-                "replicate_index": replicate_index,
-            }
-        )
+    for intent in intents:
+        motion_id = str(intent["id"])
+        allowed_pairs = set(compatible_shape_pair_ids(matrix, motion_id))
+        for shape_pair, scale_pair, scene_class, replicate_index in product(
+            coverage["role_ordered_shape_pairs"],
+            coverage["role_ordered_scale_pairs"],
+            scene_classes,
+            range(int(coverage["replicates_per_cell"])),
+        ):
+            shape_pair_id = str(shape_pair["id"])
+            if shape_pair_id not in allowed_pairs:
+                continue
+            cell_id = "__".join(
+                [
+                    motion_id,
+                    shape_pair_id,
+                    str(scale_pair["id"]),
+                    str(scene_class),
+                    f"r{replicate_index:02d}",
+                ]
+            )
+            cells.append(
+                {
+                    "cell_id": cell_id,
+                    "motion_id": motion_id,
+                    "shape_pair_id": shape_pair_id,
+                    "object_a_shape": str(shape_pair["object_a"]),
+                    "object_b_shape": str(shape_pair["object_b"]),
+                    "scale_pair_id": str(scale_pair["id"]),
+                    "object_a_scale_bin": str(scale_pair["object_a"]),
+                    "object_b_scale_bin": str(scale_pair["object_b"]),
+                    "scene_class": str(scene_class),
+                    "replicate_index": replicate_index,
+                }
+            )
     full_count = len(cells)
     if limit is not None and (
         isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= full_count
@@ -214,9 +227,15 @@ def released_source_pool(
     hosts = []
     rejected_host_role_count = 0
     rejected_bounded_camera_host_count = 0
+    rejected_visual_type_host_count = 0
     allowed_scenes = set(matrix["scene_compatibility"]["allowed_scene_classes"])
+    allowed_visual_types = set(host_eligibility["allowed_visual_types"])
     expected_schema = source_contract["generation_metadata_schema_version"]
     allowed_scale_bins = set(eligibility["scale_bins"])
+    family_geometry_types = {
+        str(record["geometry_type"])
+        for record in matrix["shape_families"]["families"]
+    }
     for record in base_records:
         if record.get("source_schema_version") != expected_schema:
             continue
@@ -262,25 +281,32 @@ def released_source_pool(
                         raise ValueError(
                             "eligible two-object host lacks a visual profile"
                         )
-                    hosts.append(
-                        {
-                            "metadata": metadata,
-                            "source": _source_reference(
-                                source_root, record, metadata
-                            ),
-                            "scene_class": scene_class,
-                            "visual_profile_id": visual_id,
-                            "visual_type": visual_type,
-                        }
-                    )
+                    if visual_type not in allowed_visual_types:
+                        rejected_visual_type_host_count += 1
+                    else:
+                        hosts.append(
+                            {
+                                "metadata": metadata,
+                                "source": _source_reference(
+                                    source_root, record, metadata
+                                ),
+                                "scene_class": scene_class,
+                                "visual_profile_id": visual_id,
+                                "visual_type": visual_type,
+                            }
+                        )
                 elif not motion_neutral:
                     rejected_host_role_count += 1
                 else:
                     rejected_bounded_camera_host_count += 1
         geometry = obj.get("geometry", {})
+        geometry_type = str(geometry.get("type", ""))
+        collision = obj.get("collision_profile", {})
+        pose_profile = str(obj.get("initial_state", {}).get("pose_profile", ""))
         if (
             obj.get("body_model") != eligibility["body_model"]
-            or geometry.get("type") != eligibility["geometry_type"]
+            or geometry_type not in family_geometry_types
+            or pose_profile != eligibility["required_pose_profile"]
         ):
             continue
         size = np.asarray(geometry.get("size_m"), dtype=np.float64)
@@ -289,22 +315,28 @@ def released_source_pool(
             or not np.isfinite(size).all()
             or bool(np.any(size <= 0.0))
             or (
-                eligibility["require_isotropic_geometry"]
+                geometry_type == "sphere"
                 and not np.allclose(size, size[0], atol=1.0e-8, rtol=0.0)
             )
+            or (
+                geometry_type == "cylinder"
+                and not np.isclose(size[0], size[1], atol=1.0e-8, rtol=0.0)
+            )
+            or collision.get("type") != geometry_type
         ):
-            raise ValueError("eligible sphere geometry must be finite and isotropic")
+            raise ValueError("eligible object lacks a matching primitive proxy")
         foreground = metadata.get("semantic_sampling", {}).get(
             "five_dimensions", {}
         ).get("foreground_object", {})
         scale_bin = str(foreground.get("scale_bin", ""))
         visual_profile_id = str(obj.get("visual_profile", {}).get("id", ""))
         if scale_bin not in allowed_scale_bins or not visual_profile_id:
-            raise ValueError("eligible sphere lacks scale or a visual profile")
+            raise ValueError("eligible object lacks scale or a visual profile")
         objects.append(
             {
                 "metadata": metadata,
                 "source": _source_reference(source_root, record, metadata),
+                "shape_family_id": geometry_type,
                 "scale_bin": scale_bin,
                 "visual_profile_id": visual_profile_id,
             }
@@ -319,12 +351,40 @@ def released_source_pool(
         "rejected_bounded_camera_host_count": (
             rejected_bounded_camera_host_count
         ),
+        "rejected_visual_type_host_count": rejected_visual_type_host_count,
         "object_scale_bin_counts": dict(
             sorted(Counter(record["scale_bin"] for record in objects).items())
         ),
+        "object_shape_counts": dict(
+            sorted(
+                Counter(record["shape_family_id"] for record in objects).items()
+            )
+        ),
+        "object_shape_scale_counts": {
+            shape: dict(
+                sorted(
+                    Counter(
+                        record["scale_bin"]
+                        for record in objects
+                        if record["shape_family_id"] == shape
+                    ).items()
+                )
+            )
+            for shape in sorted(family_geometry_types)
+        },
         "object_visual_profile_count": len(
             {record["visual_profile_id"] for record in objects}
         ),
+        "object_visual_profile_counts_by_shape": {
+            shape: len(
+                {
+                    record["visual_profile_id"]
+                    for record in objects
+                    if record["shape_family_id"] == shape
+                }
+            )
+            for shape in sorted(family_geometry_types)
+        },
         "host_scene_class_counts": dict(
             sorted(Counter(record["scene_class"] for record in hosts).items())
         ),
@@ -341,16 +401,20 @@ def select_coverage_sources(
     hosts: Sequence[dict[str, Any]],
     matrix: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Assign sources without replacement while balancing every visual profile."""
+    """Assign compatible sources while balancing profiles and source reuse."""
 
     plan = matrix["coverage_plan"]
     seed = int(plan["seed"])
     maximum_reuse = int(
         plan["selection_policy"]["maximum_object_source_reuse"]
     )
-    objects_by_scale: dict[str, list[dict[str, Any]]] = {}
+    maximum_host_reuse = int(
+        plan["selection_policy"]["maximum_host_source_reuse"]
+    )
+    objects_by_shape_scale: dict[tuple[str, str], list[dict[str, Any]]] = {}
     for record in objects:
-        objects_by_scale.setdefault(str(record["scale_bin"]), []).append(record)
+        key = (str(record["shape_family_id"]), str(record["scale_bin"]))
+        objects_by_shape_scale.setdefault(key, []).append(record)
     hosts_by_scene: dict[str, list[dict[str, Any]]] = {}
     for record in hosts:
         hosts_by_scene.setdefault(str(record["scene_class"]), []).append(record)
@@ -360,11 +424,19 @@ def select_coverage_sources(
     host_profile_use: Counter[str] = Counter()
     host_type_use: Counter[str] = Counter()
     used_pairs: set[tuple[str, str]] = set()
-    used_hosts: set[str] = set()
+    host_use: Counter[str] = Counter()
     selected = []
     for cell in cells:
-        left_pool = objects_by_scale.get(str(cell["object_a_scale_bin"]), [])
-        right_pool = objects_by_scale.get(str(cell["object_b_scale_bin"]), [])
+        left_key = (
+            str(cell["object_a_shape"]),
+            str(cell["object_a_scale_bin"]),
+        )
+        right_key = (
+            str(cell["object_b_shape"]),
+            str(cell["object_b_scale_bin"]),
+        )
+        left_pool = objects_by_shape_scale.get(left_key, [])
+        right_pool = objects_by_shape_scale.get(right_key, [])
 
         def object_key(record: dict[str, Any], role: str) -> tuple[int, int, str]:
             source_id = str(record["source"]["scene_id"])
@@ -403,7 +475,7 @@ def select_coverage_sources(
         eligible_hosts = [
             record
             for record in hosts_by_scene.get(str(cell["scene_class"]), [])
-            if str(record["source"]["scene_id"]) not in used_hosts
+            if host_use[str(record["source"]["scene_id"])] < maximum_host_reuse
             and str(record["source"]["scene_id"]) not in excluded_host_ids
         ]
         if not eligible_hosts:
@@ -411,6 +483,7 @@ def select_coverage_sources(
         host = min(
             eligible_hosts,
             key=lambda record: (
+                host_use[str(record["source"]["scene_id"])],
                 host_profile_use[str(record["visual_profile_id"])],
                 host_type_use[str(record["visual_type"])],
                 _rank(
@@ -422,7 +495,7 @@ def select_coverage_sources(
             ),
         )
         used_pairs.add(unordered_pair)
-        used_hosts.add(str(host["source"]["scene_id"]))
+        host_use[str(host["source"]["scene_id"])] += 1
         for record in (left, right):
             object_use[str(record["source"]["scene_id"])] += 1
             object_profile_use[str(record["visual_profile_id"])] += 1
@@ -438,16 +511,47 @@ def select_coverage_sources(
 
     eligible_object_profiles = {str(value["visual_profile_id"]) for value in objects}
     eligible_host_profiles = {str(value["visual_profile_id"]) for value in hosts}
-    if set(object_profile_use) != eligible_object_profiles:
+    object_profile_policy = str(
+        plan["selection_policy"]["object_visual_profile_coverage"]
+    )
+    if (
+        object_profile_policy == "all_eligible"
+        and set(object_profile_use) != eligible_object_profiles
+    ):
         raise ValueError("coverage selection misses eligible object visual profiles")
     if set(host_profile_use) != eligible_host_profiles:
         raise ValueError("coverage selection misses eligible host visual profiles")
+    selected_objects = [
+        record for selection in selected for record in selection["objects"]
+    ]
     audit = {
         "unique_object_source_count": len(object_use),
         "maximum_object_source_reuse": max(object_use.values()),
         "unique_source_pair_count": len(used_pairs),
-        "unique_host_count": len(used_hosts),
+        "unique_host_count": len(host_use),
+        "maximum_host_source_reuse": max(host_use.values()),
+        "eligible_object_visual_profile_count": len(eligible_object_profiles),
         "selected_object_visual_profile_count": len(object_profile_use),
+        "selected_object_shape_counts": dict(
+            sorted(
+                Counter(
+                    str(record["shape_family_id"])
+                    for record in selected_objects
+                ).items()
+            )
+        ),
+        "selected_object_visual_profile_counts_by_shape": {
+            shape: len(
+                {
+                    str(record["visual_profile_id"])
+                    for record in selected_objects
+                    if str(record["shape_family_id"]) == shape
+                }
+            )
+            for shape in sorted(
+                {str(record["shape_family_id"]) for record in selected_objects}
+            )
+        },
         "selected_host_visual_profile_count": len(host_profile_use),
         "selected_host_visual_type_counts": dict(sorted(host_type_use.items())),
     }
@@ -467,6 +571,7 @@ def build_coverage_scenes(
         stub = "_".join(
             [
                 f"physweep2scene_{sample_index:06d}",
+                str(cell["shape_pair_id"]),
                 str(cell["scale_pair_id"]),
                 str(cell["scene_class"]),
             ]
@@ -570,7 +675,7 @@ def main() -> None:
             },
         },
         "coverage": {
-            "schema_version": "physweep_two_object_coverage_selection_v1",
+            "schema_version": "physweep_two_object_coverage_selection_v2",
             "full_cell_count": full_cell_count,
             "selected_cell_count": len(cells),
             "complete_cartesian_product": len(cells) == full_cell_count,

@@ -7,7 +7,8 @@ from typing import Any
 import numpy as np
 
 from tools.core.camera_geometry import pair_approach_axis_xy
-from tools.core.rigid_geometry import PROXY_SHAPE_CODE
+from tools.core.rigid_geometry import PROXY_SHAPE_CODE, primitive_support_radius_m
+from tools.physics.physics_invariants import quaternion_matrix_wxyz
 
 
 def _first_true(values: np.ndarray) -> int | None:
@@ -19,15 +20,44 @@ def _path_length(positions: np.ndarray) -> float:
     return float(np.linalg.norm(np.diff(positions, axis=0), axis=1).sum())
 
 
-def _surface_gap(
+def _center_axis_separation_margin(
     positions_a: np.ndarray,
     positions_b: np.ndarray,
-    size_a: np.ndarray,
-    size_b: np.ndarray,
+    quaternions_a: np.ndarray,
+    quaternions_b: np.ndarray,
+    object_a: dict[str, Any],
+    object_b: dict[str, Any],
 ) -> np.ndarray:
-    radius_a = 0.5 * float(np.max(size_a))
-    radius_b = 0.5 * float(np.max(size_b))
-    return np.linalg.norm(positions_b - positions_a, axis=1) - radius_a - radius_b
+    """Return a conservative separation margin along the pair center axis."""
+
+    delta = positions_b - positions_a
+    distance = np.linalg.norm(delta, axis=1)
+    directions = np.zeros_like(delta)
+    valid = distance > 1.0e-12
+    directions[valid] = delta[valid] / distance[valid, None]
+    directions[~valid, 0] = 1.0
+
+    def radius(
+        obj: dict[str, Any],
+        quaternions: np.ndarray,
+        world_directions: np.ndarray,
+    ) -> np.ndarray:
+        geometry = obj["geometry"]
+        return np.asarray(
+            [
+                primitive_support_radius_m(
+                    str(geometry["type"]),
+                    list(geometry["size_m"]),
+                    (quaternion_matrix_wxyz(quaternion).T @ direction).tolist(),
+                )
+                for quaternion, direction in zip(quaternions, world_directions)
+            ],
+            dtype=np.float64,
+        )
+
+    return distance - radius(object_a, quaternions_a, directions) - radius(
+        object_b, quaternions_b, -directions
+    )
 
 
 def audit_pair_motion(
@@ -90,16 +120,22 @@ def audit_pair_motion(
             )
         geometry = obj.get("geometry", {})
         dimensions = np.asarray(geometry.get("size_m", []), dtype=np.float64)
+        geometry_type = str(geometry.get("type", ""))
         if (
-            geometry.get("type") != "sphere"
+            geometry_type not in {"sphere", "cuboid", "cylinder"}
             or dimensions.shape != (3,)
             or not np.isfinite(dimensions).all()
             or np.any(dimensions <= 0.0)
-            or float(np.ptp(dimensions)) > 1.0e-8
-        ):
-            raise ValueError(
-                "pair-motion audit currently requires isotropic sphere geometry"
+            or (
+                geometry_type == "sphere"
+                and float(np.ptp(dimensions)) > 1.0e-8
             )
+            or (
+                geometry_type == "cylinder"
+                and abs(float(dimensions[0] - dimensions[1])) > 1.0e-8
+            )
+        ):
+            raise ValueError("pair-motion audit received invalid primitive geometry")
 
     time_s = np.asarray(trajectory["time_s"], dtype=np.float64)
     positions = {
@@ -374,18 +410,25 @@ def audit_pair_motion(
         first_contact,
         "at least one frame" if interacting else "no frames",
     )
-    size_a = np.asarray(object_a["geometry"]["size_m"], dtype=np.float64)
-    size_b = np.asarray(object_b["geometry"]["size_m"], dtype=np.float64)
-    gap = _surface_gap(
-        positions[object_id_a], positions[object_id_b], size_a, size_b
+    separation_margin = _center_axis_separation_margin(
+        positions[object_id_a],
+        positions[object_id_b],
+        np.asarray(
+            trajectory[f"{object_id_a}__quaternion_wxyz"], dtype=np.float64
+        ),
+        np.asarray(
+            trajectory[f"{object_id_b}__quaternion_wxyz"], dtype=np.float64
+        ),
+        object_a,
+        object_b,
     )
     minimum_initial_clearance = float(
         interaction["minimum_initial_clearance_m"]
     )
     check(
         "pair_initial_clearance",
-        float(gap[0]) >= minimum_initial_clearance,
-        float(gap[0]),
+        float(separation_margin[0]) >= minimum_initial_clearance,
+        float(separation_margin[0]),
         minimum_initial_clearance,
     )
     pair_approach_axis_xy(interaction["approach_axis_xyz"])
@@ -429,7 +472,9 @@ def audit_pair_motion(
             "frame_count": int(time_s.size),
             "object_count": 2,
             "first_pair_contact_frame": first_contact,
-            "minimum_pair_surface_gap_m": float(np.min(gap)),
+            "minimum_pair_center_axis_separation_margin_m": float(
+                np.min(separation_margin)
+            ),
             "interaction_class": interaction["interaction_class"],
             "motion_pattern": interaction["motion_pattern"],
         },

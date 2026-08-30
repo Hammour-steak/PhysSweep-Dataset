@@ -10,7 +10,11 @@ ROOT = Path(__file__).resolve().parents[1]
 from tools.core.rigid_geometry import (  # noqa: E402
     build_support_geometry as _build_support_geometry,
     pose_on_support,
+    primitive_support_radius_m,
+    sphere_primitive_center_distance_m,
     support_surface_height_m,
+    upright_footprint_half_extents_m,
+    upright_pair_center_distance_m,
     validate_support_geometry,
 )
 from tools.motion_rules.one_object import support_geometry_policy  # noqa: E402
@@ -33,6 +37,82 @@ class RigidGeometryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.axes = load_active_rules(ROOT)["axes"]
+
+    def test_upright_primitive_footprints_are_shape_exact(self) -> None:
+        self.assertEqual(
+            upright_footprint_half_extents_m("sphere", [2.0, 2.0, 2.0]),
+            (1.0, 1.0),
+        )
+        self.assertEqual(
+            upright_footprint_half_extents_m("cuboid", [2.0, 4.0, 6.0]),
+            (1.0, 2.0),
+        )
+        self.assertEqual(
+            upright_footprint_half_extents_m("cylinder", [2.0, 2.0, 4.0]),
+            (1.0, 1.0),
+        )
+        with self.assertRaisesRegex(ValueError, "isotropic"):
+            upright_footprint_half_extents_m("sphere", [2.0, 2.0, 2.1])
+        with self.assertRaisesRegex(ValueError, "radial dimensions"):
+            upright_footprint_half_extents_m("cylinder", [2.0, 2.1, 4.0])
+
+    def test_primitive_support_radius_uses_full_shape(self) -> None:
+        self.assertAlmostEqual(
+            primitive_support_radius_m("sphere", [2.0, 2.0, 2.0], [1, 1, 1]),
+            1.0,
+        )
+        self.assertAlmostEqual(
+            primitive_support_radius_m("cuboid", [2.0, 4.0, 6.0], [1, 0, 0]),
+            1.0,
+        )
+        self.assertAlmostEqual(
+            primitive_support_radius_m("cuboid", [2.0, 4.0, 6.0], [1, 1, 0]),
+            3.0 / math.sqrt(2.0),
+        )
+        self.assertAlmostEqual(
+            primitive_support_radius_m("cylinder", [2.0, 2.0, 4.0], [1, 0, 0]),
+            1.0,
+        )
+        self.assertAlmostEqual(
+            primitive_support_radius_m("cylinder", [2.0, 2.0, 4.0], [0, 0, 1]),
+            2.0,
+        )
+
+    def test_pair_contact_distances_are_radial_not_projected(self) -> None:
+        diagonal = [1.0, 1.0]
+        self.assertAlmostEqual(
+            upright_pair_center_distance_m(
+                "sphere", [2.0, 2.0, 2.0],
+                "cylinder", [4.0, 4.0, 6.0], diagonal,
+            ),
+            3.0,
+        )
+        self.assertAlmostEqual(
+            upright_pair_center_distance_m(
+                "cuboid", [2.0, 4.0, 6.0],
+                "cuboid", [4.0, 2.0, 2.0], diagonal,
+            ),
+            3.0 * math.sqrt(2.0),
+        )
+        rounded_box_distance = upright_pair_center_distance_m(
+            "cuboid", [2.0, 4.0, 6.0],
+            "sphere", [2.0, 2.0, 2.0], diagonal,
+        )
+        self.assertLess(rounded_box_distance, 3.0 / math.sqrt(2.0) + 1.0)
+        self.assertGreater(rounded_box_distance, math.sqrt(2.0))
+
+    def test_ballistic_sphere_contact_uses_target_shape(self) -> None:
+        self.assertAlmostEqual(
+            sphere_primitive_center_distance_m(
+                [2.0, 2.0, 2.0], "cuboid", [2.0, 4.0, 6.0], [1, 0, 0]
+            ),
+            2.0,
+        )
+        diagonal = sphere_primitive_center_distance_m(
+            [2.0, 2.0, 2.0], "cuboid", [2.0, 4.0, 6.0], [1, 1, 0]
+        )
+        self.assertLess(diagonal, 3.0 / math.sqrt(2.0) + 1.0)
+        self.assertGreater(diagonal, math.sqrt(2.0))
 
     def test_every_declared_support_compiles_to_explicit_colliders(self) -> None:
         slope_subtype = self.axes["motion_subtype_axis"]["slope_slide_down_1obj"][0]

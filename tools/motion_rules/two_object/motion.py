@@ -8,7 +8,14 @@ from typing import Any
 
 import numpy as np
 
-from tools.core.rigid_geometry import finite_vector, positive_vector
+from tools.core.rigid_geometry import (
+    finite_vector,
+    object_contact_offset_m,
+    positive_vector,
+    sphere_primitive_center_distance_m,
+    upright_footprint_half_extents_m,
+    upright_pair_center_distance_m,
+)
 
 
 _SHARED_FIELDS = {
@@ -173,19 +180,48 @@ def _validate_contracts(
     return layout
 
 
-def _sphere_radii(objects: list[dict[str, Any]]) -> list[float]:
-    radii = []
+def _object_geometry(
+    objects: list[dict[str, Any]], shape_contract: dict[str, Any]
+) -> list[dict[str, Any]]:
+    if (
+        set(shape_contract) != {"schema_version", "families"}
+        or shape_contract.get("schema_version")
+        != "physweep_two_object_shape_families_v1"
+    ):
+        raise ValueError("unsupported two-object shape-family contract")
+    families = shape_contract.get("families")
+    if not isinstance(families, list):
+        raise ValueError("two-object shape families must be records")
+    by_geometry = {
+        str(record.get("geometry_type", "")): record
+        for record in families
+        if isinstance(record, dict)
+    }
+    if len(by_geometry) != len(families):
+        raise ValueError("two-object geometry types must be unique")
+    result = []
     for obj in objects:
         geometry = obj.get("geometry", {})
-        if geometry.get("type") != "sphere":
-            raise ValueError("the initial two-object matrix requires sphere candidates")
+        shape = str(geometry.get("type", ""))
+        family = by_geometry.get(shape)
+        if family is None:
+            raise ValueError(f"unsupported two-object geometry: {shape}")
         dimensions = positive_vector(
-            geometry["size_m"], 3, f"{obj['object_id']} sphere dimensions"
+            geometry["size_m"], 3, f"{obj['object_id']} geometry dimensions"
         )
-        if max(dimensions) - min(dimensions) > 1.0e-8:
-            raise ValueError("sphere candidate dimensions must be isotropic")
-        radii.append(0.5 * dimensions[0])
-    return radii
+        result.append(
+            {
+                "shape": shape,
+                "size_m": dimensions,
+                "support_offset_m": object_contact_offset_m(shape, dimensions),
+                "footprint_half_extents_m": upright_footprint_half_extents_m(
+                    shape, dimensions
+                ),
+                "stable_pose_profile": str(family["stable_pose_profile"]),
+                "supported_motion_mode": str(family["supported_motion_mode"]),
+            }
+        )
+    return result
 
 
 def _support_center(bounds: dict[str, Any]) -> np.ndarray:
@@ -201,15 +237,18 @@ def _support_center(bounds: dict[str, Any]) -> np.ndarray:
 
 
 def _supported_positions_z(
-    support: dict[str, Any], radii: list[float], clearance_m: float
+    support: dict[str, Any], geometry: list[dict[str, Any]], clearance_m: float
 ) -> list[float]:
     surface_z = float(support["surface_center_z_m"])
-    return [surface_z + radius + clearance_m for radius in radii]
+    return [
+        surface_z + float(record["support_offset_m"]) + clearance_m
+        for record in geometry
+    ]
 
 
 def _planned_supported_contact(
     center: np.ndarray,
-    radii: list[float],
+    geometry: list[dict[str, Any]],
     velocities: np.ndarray,
     intent: dict[str, Any],
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -234,7 +273,13 @@ def _planned_supported_contact(
         dtype=np.float64,
     )
     contact_normal = rotation @ central_normal
-    center_distance = radii[0] + radii[1]
+    center_distance = upright_pair_center_distance_m(
+        str(geometry[0]["shape"]),
+        list(geometry[0]["size_m"]),
+        str(geometry[1]["shape"]),
+        list(geometry[1]["size_m"]),
+        contact_normal.tolist(),
+    )
     initial_delta = (
         center_distance * contact_normal + relative_approach * contact_time
     )
@@ -250,7 +295,7 @@ def _ballistic_airborne_contact(
     scene: dict[str, Any],
     center: np.ndarray,
     support_z: list[float],
-    radii: list[float],
+    geometry: list[dict[str, Any]],
     velocities: np.ndarray,
     intent: dict[str, Any],
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -274,7 +319,15 @@ def _ballistic_airborne_contact(
         [center[0], center[1], support_z[1]], dtype=np.float64
     )
     object_b_contact = object_b_initial + velocities[1] * contact_time
-    object_a_contact = object_b_contact - sum(radii) * contact_normal
+    if str(geometry[0]["shape"]) != "sphere":
+        raise ValueError("ballistic pair contact requires a sphere as object_a")
+    center_distance = sphere_primitive_center_distance_m(
+        list(geometry[0]["size_m"]),
+        str(geometry[1]["shape"]),
+        list(geometry[1]["size_m"]),
+        contact_normal.tolist(),
+    )
+    object_a_contact = object_b_contact - center_distance * contact_normal
     gravity = np.asarray(
         finite_vector(
             scene["simulation"]["world"]["gravity_m_s2"],
@@ -295,7 +348,7 @@ def _ballistic_airborne_contact(
 def _parallel_supported_independent(
     center: np.ndarray,
     support_z: list[float],
-    radii: list[float],
+    geometry: list[dict[str, Any]],
     intent: dict[str, Any],
 ) -> tuple[np.ndarray, np.ndarray]:
     offsets_x = finite_vector(
@@ -304,7 +357,9 @@ def _parallel_supported_independent(
     clearance = positive_vector(
         [intent["lateral_clearance_m"]], 1, "independent lateral clearance"
     )[0]
-    separation_y = sum(radii) + clearance
+    separation_y = sum(
+        float(record["footprint_half_extents_m"][1]) for record in geometry
+    ) + clearance
     positions = np.asarray(
         [
             [center[0] + offsets_x[0], center[1] - 0.5 * separation_y, support_z[0]],
@@ -318,7 +373,7 @@ def _parallel_supported_independent(
 def _separated_airborne_supported_independent(
     center: np.ndarray,
     support_z: list[float],
-    radii: list[float],
+    geometry: list[dict[str, Any]],
     intent: dict[str, Any],
 ) -> tuple[np.ndarray, np.ndarray]:
     height = positive_vector(
@@ -329,7 +384,9 @@ def _separated_airborne_supported_independent(
     clearance = positive_vector(
         [intent["lateral_clearance_m"]], 1, "independent lateral clearance"
     )[0]
-    separation_y = sum(radii) + clearance
+    separation_y = sum(
+        float(record["footprint_half_extents_m"][1]) for record in geometry
+    ) + clearance
     positions = np.asarray(
         [
             [center[0], center[1] - 0.5 * separation_y, support_z[0] + height],
@@ -342,20 +399,20 @@ def _separated_airborne_supported_independent(
 
 def _inside_support(
     positions: np.ndarray,
-    radii: list[float],
+    geometry: list[dict[str, Any]],
     bounds: dict[str, Any],
 ) -> None:
     for index, position in enumerate(positions):
-        radius = radii[index]
+        half_x, half_y = geometry[index]["footprint_half_extents_m"]
         if (
             position[0]
-            < float(bounds["x"][0]) + radius + _SUPPORT_EDGE_MARGIN_M
+            < float(bounds["x"][0]) + half_x + _SUPPORT_EDGE_MARGIN_M
             or position[0]
-            > float(bounds["x"][1]) - radius - _SUPPORT_EDGE_MARGIN_M
+            > float(bounds["x"][1]) - half_x - _SUPPORT_EDGE_MARGIN_M
             or position[1]
-            < float(bounds["y"][0]) + radius + _SUPPORT_EDGE_MARGIN_M
+            < float(bounds["y"][0]) + half_y + _SUPPORT_EDGE_MARGIN_M
             or position[1]
-            > float(bounds["y"][1]) - radius - _SUPPORT_EDGE_MARGIN_M
+            > float(bounds["y"][1]) - half_y - _SUPPORT_EDGE_MARGIN_M
         ):
             raise ValueError("host support is too small for the two-object layout")
 
@@ -376,6 +433,7 @@ def _trajectory_angle_degrees(velocities: np.ndarray) -> float | None:
 
 def apply_two_object_motion(
     pair_scene: dict[str, Any],
+    shape_contract: dict[str, Any],
     shared: dict[str, Any],
     observation: dict[str, Any],
     intent: dict[str, Any],
@@ -390,7 +448,7 @@ def apply_two_object_motion(
     object_ids = [str(obj.get("object_id", "")) for obj in objects]
     if any(not object_id for object_id in object_ids) or len(set(object_ids)) != 2:
         raise ValueError("two-object motion ids must be unique")
-    radii = _sphere_radii(objects)
+    geometry = _object_geometry(objects, shape_contract)
     support = scene["simulation"]["support"]
     if abs(float(support["surface_frame"]["slope_angle_degrees"])) > 1.0e-8:
         raise ValueError("the initial two-object matrix requires a flat support")
@@ -401,7 +459,7 @@ def apply_two_object_motion(
         1,
         "two-object initial support clearance",
     )[0]
-    support_z = _supported_positions_z(support, radii, support_clearance)
+    support_z = _supported_positions_z(support, geometry, support_clearance)
     velocities = np.asarray(
         [
             finite_vector(value, 3, f"{object_ids[index]} linear velocity")
@@ -414,20 +472,20 @@ def apply_two_object_motion(
 
     if layout == "planned_supported_contact":
         positions_xy, approach_axis = _planned_supported_contact(
-            center, radii, velocities, intent
+            center, geometry, velocities, intent
         )
         positions = np.column_stack([positions_xy, support_z])
     elif layout == "ballistic_airborne_contact":
         positions, approach_axis = _ballistic_airborne_contact(
-            scene, center, support_z, radii, velocities, intent
+            scene, center, support_z, geometry, velocities, intent
         )
     elif layout == "parallel_supported_independent":
         positions, approach_axis = _parallel_supported_independent(
-            center, support_z, radii, intent
+            center, support_z, geometry, intent
         )
     else:
         positions, approach_axis = _separated_airborne_supported_independent(
-            center, support_z, radii, intent
+            center, support_z, geometry, intent
         )
     if layout in {"planned_supported_contact", "ballistic_airborne_contact"}:
         contact_time = float(intent["contact_time_s"])
@@ -445,10 +503,10 @@ def apply_two_object_motion(
         translation = center - envelope_center
         positions[:, :2] += translation
         planned_contact_positions[:, :2] += translation
-        _inside_support(positions, radii, bounds)
-        _inside_support(planned_contact_positions, radii, bounds)
+        _inside_support(positions, geometry, bounds)
+        _inside_support(planned_contact_positions, geometry, bounds)
     else:
-        _inside_support(positions, radii, bounds)
+        _inside_support(positions, geometry, bounds)
 
     contact_friction, contact_restitution, minimum_support_fraction = finite_vector(
         [
@@ -487,16 +545,28 @@ def apply_two_object_motion(
         material["contact_restitution"] = contact_restitution
         obj["material"] = material
         velocity = velocities[index]
+        rolling = (
+            supported[index]
+            and geometry[index]["supported_motion_mode"] == "rolling"
+        )
         angular = (
             np.asarray(
-                [-velocity[1] / radii[index], velocity[0] / radii[index], 0.0],
+                [
+                    -velocity[1] / float(geometry[index]["support_offset_m"]),
+                    velocity[0] / float(geometry[index]["support_offset_m"]),
+                    0.0,
+                ],
                 dtype=np.float64,
             )
-            if supported[index]
+            if rolling
             else np.zeros(3, dtype=np.float64)
         )
         obj["initial_state"] = {
-            "pose_profile": "support_normal" if supported[index] else "airborne",
+            "pose_profile": (
+                str(geometry[index]["stable_pose_profile"])
+                if supported[index]
+                else "airborne"
+            ),
             "position_m": positions[index].tolist(),
             "orientation_quaternion_wxyz": [1.0, 0.0, 0.0, 0.0],
             "linear_velocity_m_s": velocity.tolist(),

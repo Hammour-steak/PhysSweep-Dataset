@@ -418,20 +418,66 @@ def audit_two_object_camera(
         geometry = obj.get("geometry", {})
         size = np.asarray(geometry.get("size_m"), dtype=np.float64)
         if (
-            geometry.get("type") != "sphere"
+            geometry.get("type") not in {"sphere", "cuboid", "cylinder"}
             or size.shape != (3,)
             or not np.isfinite(size).all()
             or bool(np.any(size <= 0.0))
-            or not np.allclose(size, size[0], atol=1.0e-8, rtol=0.0)
+            or (
+                geometry.get("type") == "sphere"
+                and not np.allclose(size, size[0], atol=1.0e-8, rtol=0.0)
+            )
+            or (
+                geometry.get("type") == "cylinder"
+                and not np.isclose(size[0], size[1], atol=1.0e-8, rtol=0.0)
+            )
         ):
-            raise ValueError("joint pair-keyframe visibility requires spheres")
-        depth = float(keyframe_projection[object_index, 2])
-        keyframe_projected_radii.append(
-            (lens / sensor_width)
-            * (0.5 * float(size[0]))
-            * direction_scale
-            / depth
-        )
+            raise ValueError(
+                "joint pair-keyframe visibility requires a supported primitive"
+            )
+        if geometry["type"] == "sphere":
+            depth = float(keyframe_projection[object_index, 2])
+            projected_radius = (
+                (lens / sensor_width)
+                * (0.5 * float(size[0]))
+                * direction_scale
+                / depth
+            )
+        else:
+            half_extent_xy = 0.5 * (
+                upper[pair_keyframe, object_index, :2]
+                - lower[pair_keyframe, object_index, :2]
+            )
+            footprint_radius = float(
+                np.abs(approach_axis) @ half_extent_xy
+            )
+            footprint_direction = np.asarray(
+                [approach_axis[0], approach_axis[1], 0.0],
+                dtype=np.float64,
+            )
+            footprint_points = (
+                positions[pair_keyframe, object_index]
+                + np.asarray([-1.0, 1.0])[:, None]
+                * footprint_radius
+                * footprint_direction
+            )
+            projected_footprint = project_points(
+                footprint_points,
+                position,
+                target,
+                lens,
+                sensor_width,
+                aspect,
+            )
+            offsets = (
+                projected_footprint[:, :2]
+                - keyframe_projection[object_index, :2]
+            )
+            projected_radius = float(
+                np.max(np.abs(offsets @ separation_direction))
+            )
+        if not np.isfinite(projected_radius) or projected_radius <= 0.0:
+            raise ValueError("joint pair-keyframe silhouette is degenerate")
+        keyframe_projected_radii.append(projected_radius)
     keyframe_separation_ratio = projected_keyframe_separation / max(
         sum(keyframe_projected_radii), 1.0e-8
     )
@@ -597,7 +643,9 @@ def _solve_two_object_camera(
                     try:
                         member_diagnostics.append(
                             audit_two_object_camera(
-                                member_metadata, member_trajectory, candidate
+                                member_metadata,
+                                member_trajectory,
+                                candidate,
                             )
                         )
                     except ValueError as error:
@@ -625,9 +673,9 @@ def _solve_two_object_camera(
             + " | ".join(failures)
         )
     camera["solver_version"] = (
-        "joint_full_motion_envelope_group_camera_v2"
+        "joint_full_motion_envelope_group_camera_v3"
         if audit_members
-        else "joint_full_motion_envelope_camera_v2"
+        else "joint_full_motion_envelope_camera_v3"
     )
     camera["diagnostics"]["pair_selected_side_azimuth_degrees"] = round(
         selected_azimuth, 6

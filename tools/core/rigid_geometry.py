@@ -174,6 +174,157 @@ def object_contact_offset_m(shape: str, size_m: list[float]) -> float:
     raise ValueError(f"unsupported rigid shape: {shape}")
 
 
+def upright_footprint_half_extents_m(
+    shape: str, size_m: list[float]
+) -> tuple[float, float]:
+    """Return axis-aligned support-plane half extents for an upright primitive."""
+
+    x, y, z = positive_vector(size_m, 3, "upright primitive size")
+    if shape == "sphere":
+        if max(x, y, z) - min(x, y, z) > 1.0e-8:
+            raise ValueError("sphere dimensions must be isotropic")
+        return 0.5 * x, 0.5 * x
+    if shape == "cylinder":
+        if abs(x - y) > 1.0e-8:
+            raise ValueError("cylinder radial dimensions must match")
+        return 0.5 * x, 0.5 * x
+    if shape == "cuboid":
+        return 0.5 * x, 0.5 * y
+    raise ValueError(f"unsupported rigid shape: {shape}")
+
+
+def primitive_support_radius_m(
+    shape: str, size_m: list[float], direction_local: list[float]
+) -> float:
+    """Return the centered primitive extent along a local-space direction."""
+
+    x, y, z = positive_vector(size_m, 3, "primitive support size")
+    direction = normalize(
+        finite_vector(direction_local, 3, "primitive support direction")
+    )
+    if shape == "sphere":
+        if max(x, y, z) - min(x, y, z) > 1.0e-8:
+            raise ValueError("sphere dimensions must be isotropic")
+        return 0.5 * x
+    if shape == "cuboid":
+        return 0.5 * (
+            abs(direction[0]) * x
+            + abs(direction[1]) * y
+            + abs(direction[2]) * z
+        )
+    if shape == "cylinder":
+        if abs(x - y) > 1.0e-8:
+            raise ValueError("cylinder radial dimensions must match")
+        radial = 0.5 * x * math.hypot(direction[0], direction[1])
+        axial = 0.5 * z * abs(direction[2])
+        return radial + axial
+    raise ValueError(f"unsupported rigid shape: {shape}")
+
+
+def upright_pair_center_distance_m(
+    shape_a: str,
+    size_a_m: list[float],
+    shape_b: str,
+    size_b_m: list[float],
+    direction_xy: list[float],
+) -> float:
+    """Return exact planar contact distance for two upright primitives."""
+
+    direction = normalize(finite_vector(direction_xy, 2, "pair direction"))
+    extents_a = upright_footprint_half_extents_m(shape_a, size_a_m)
+    extents_b = upright_footprint_half_extents_m(shape_b, size_b_m)
+    round_a = shape_a in {"sphere", "cylinder"}
+    round_b = shape_b in {"sphere", "cylinder"}
+    if round_a and round_b:
+        return extents_a[0] + extents_b[0]
+    if not round_a and not round_b:
+        combined = [
+            extents_a[index] + extents_b[index] for index in range(2)
+        ]
+        candidates = [
+            combined[index] / abs(direction[index])
+            for index in range(2)
+            if abs(direction[index]) > 1.0e-12
+        ]
+        return min(candidates)
+
+    box = extents_b if round_a else extents_a
+    radius = extents_a[0] if round_a else extents_b[0]
+    lower = 0.0
+    upper = math.hypot(*box) + radius
+    for _ in range(64):
+        midpoint = 0.5 * (lower + upper)
+        point = [midpoint * value for value in direction]
+        distance_to_box = math.hypot(
+            max(abs(point[0]) - box[0], 0.0),
+            max(abs(point[1]) - box[1], 0.0),
+        )
+        if distance_to_box < radius:
+            lower = midpoint
+        else:
+            upper = midpoint
+    return upper
+
+
+def sphere_primitive_center_distance_m(
+    sphere_size_m: list[float],
+    target_shape: str,
+    target_size_m: list[float],
+    direction_xyz: list[float],
+) -> float:
+    """Return exact contact distance from a sphere to an axis-aligned primitive."""
+
+    sphere_size = positive_vector(sphere_size_m, 3, "sphere size")
+    if max(sphere_size) - min(sphere_size) > 1.0e-8:
+        raise ValueError("sphere dimensions must be isotropic")
+    sphere_radius = 0.5 * sphere_size[0]
+    target_size = positive_vector(target_size_m, 3, "target primitive size")
+    direction = normalize(
+        finite_vector(direction_xyz, 3, "sphere-target direction")
+    )
+    if target_shape == "sphere":
+        if max(target_size) - min(target_size) > 1.0e-8:
+            raise ValueError("sphere dimensions must be isotropic")
+        return sphere_radius + 0.5 * target_size[0]
+    if target_shape == "cuboid":
+        half = [0.5 * value for value in target_size]
+
+        def distance_to_target(point: list[float]) -> float:
+            return math.sqrt(
+                sum(
+                    max(abs(point[index]) - half[index], 0.0) ** 2
+                    for index in range(3)
+                )
+            )
+
+        target_radius = math.sqrt(sum(value**2 for value in half))
+    elif target_shape == "cylinder":
+        if abs(target_size[0] - target_size[1]) > 1.0e-8:
+            raise ValueError("cylinder radial dimensions must match")
+        radius = 0.5 * target_size[0]
+        half_height = 0.5 * target_size[2]
+
+        def distance_to_target(point: list[float]) -> float:
+            radial_excess = max(math.hypot(point[0], point[1]) - radius, 0.0)
+            axial_excess = max(abs(point[2]) - half_height, 0.0)
+            return math.hypot(radial_excess, axial_excess)
+
+        target_radius = math.hypot(radius, half_height)
+    else:
+        raise ValueError(f"unsupported rigid shape: {target_shape}")
+
+    lower = 0.0
+    upper = target_radius + sphere_radius
+    for _ in range(64):
+        midpoint = 0.5 * (lower + upper)
+        point = [midpoint * value for value in direction]
+        if distance_to_target(point) < sphere_radius:
+            lower = midpoint
+        else:
+            upper = midpoint
+    return upper
+
+
 def _layout_for_support(
     support: dict[str, Any],
     policy: SupportGeometryPolicy,

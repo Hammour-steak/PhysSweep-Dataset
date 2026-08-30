@@ -231,7 +231,7 @@ class SweepVisualBindingTest(unittest.TestCase):
                     "visualization": {
                         "camera": {
                             "solver_version": (
-                                "joint_full_motion_envelope_group_camera_v2"
+                                "joint_full_motion_envelope_group_camera_v3"
                             ),
                             "diagnostics": {"base_selection": True},
                         },
@@ -282,7 +282,7 @@ class SweepVisualBindingTest(unittest.TestCase):
                 bound["visualization"]["camera_inheritance"][
                     "derived_trajectory_camera_audit"
                 ],
-                "joint_full_motion_envelope_camera_v2",
+                "joint_full_motion_envelope_camera_v3",
             )
 
 
