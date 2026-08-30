@@ -121,6 +121,75 @@ class ObjectIdentityContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             attach_object_identity(metadata)
 
+    def test_two_object_caption_names_roles_motion_support_and_environment(self) -> None:
+        metadata = {
+            "semantic_sampling": {
+                "five_dimensions": {
+                    "motion": {"family": "air_drop_hit_supported_2obj"},
+                    "appearance_lighting": {
+                        "environment_category": "lab_studio"
+                    },
+                }
+            },
+            "simulation": {
+                "support": {"semantic_type": "lab_bench"},
+                "interaction": {
+                    "motion_pattern": "air_drop_hit_supported_2obj"
+                },
+                "objects": [
+                    {
+                        "object_id": "object_a",
+                        "semantic_type": "physassets_10575_tennis_ball",
+                    },
+                    {
+                        "object_id": "object_b",
+                        "semantic_type": "physassets_16301_drink_box",
+                    },
+                ],
+            },
+        }
+        attach_object_identity(metadata)
+        self.assertEqual(
+            metadata["object_identity"]["text"]["caption"],
+            (
+                "In a laboratory studio, the tennis ball falls under gravity "
+                "and collides with the drink carton, which starts at rest on "
+                "the laboratory bench."
+            ),
+        )
+        self.assertNotIn("physassets", str(metadata["object_identity"]))
+
+    def test_two_identical_labels_remain_two_identity_mentions(self) -> None:
+        metadata = {
+            "semantic_sampling": {
+                "five_dimensions": {
+                    "motion": {"family": "surface_dual_independent_2obj"}
+                }
+            },
+            "simulation": {
+                "support": {"semantic_type": "wood_floor"},
+                "interaction": {
+                    "motion_pattern": "surface_dual_independent_2obj"
+                },
+                "objects": [
+                    {"object_id": "object_a", "semantic_type": "barrel"},
+                    {"object_id": "object_b", "semantic_type": "barrel"},
+                ],
+            },
+        }
+        attach_object_identity(metadata)
+        caption = metadata["object_identity"]["text"]["caption"]
+        self.assertEqual(caption.count("the barrel"), 2)
+        self.assertEqual(
+            [
+                record["object_id"]
+                for record in metadata["object_identity"]["text"][
+                    "object_mentions"
+                ]
+            ],
+            ["object_a", "object_b"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

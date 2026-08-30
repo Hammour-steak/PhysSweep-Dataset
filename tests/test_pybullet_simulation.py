@@ -596,22 +596,20 @@ class PyBulletSimulationTests(unittest.TestCase):
             ],
         )
         identity = scene["object_identity"]
-        source_mention = (
-            "the "
-            + str(template["simulation"]["objects"][0]["semantic_type"])
-            .replace("_", " ")
-            .strip()
+        source_mention = "the " + str(
+            identity["objects"][0]["semantic_label"]
         )
         self.assertEqual(
             [record["text"] for record in identity["text"]["object_mentions"]],
             [source_mention, source_mention],
         )
-        self.assertEqual(
-            identity["text"]["caption"],
-            (
-                f"{source_mention} and {source_mention} collide while moving "
-                "toward each other."
-            ),
+        caption = identity["text"]["caption"]
+        self.assertEqual(caption.count(source_mention), 2)
+        self.assertIn("move toward each other across the", caption)
+        self.assertTrue(caption.endswith("and collide."), caption)
+        self.assertNotIn(
+            "physassets",
+            caption,
         )
         initial_midpoint_xy = np.mean(
             [

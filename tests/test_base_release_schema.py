@@ -19,6 +19,7 @@ from tools.release.base_release_schema import (
     build_mask_manifest,
     canonical_trajectory,
     _compact_generic_object_annotations,
+    _clean_text,
     _dynamic_material_extras,
     sha256,
     validate_base_metadata,
@@ -28,6 +29,40 @@ from tools.release.base_release_schema import (
 
 
 class BaseReleaseSchemaTests(unittest.TestCase):
+    def test_text_binding_supports_two_objects_with_the_same_label(self) -> None:
+        source = {
+            "object_identity": {
+                "text": {
+                    "caption": (
+                        "the physassets 1 barrel and the physassets 1 barrel "
+                        "move separately."
+                    ),
+                    "object_mentions": [
+                        {
+                            "object_id": "object_a",
+                            "text": "the physassets 1 barrel",
+                        },
+                        {
+                            "object_id": "object_b",
+                            "text": "the physassets 1 barrel",
+                        },
+                    ],
+                }
+            }
+        }
+        text = _clean_text(
+            "generic",
+            source,
+            {"object_a": "barrel", "object_b": "barrel"},
+        )
+        self.assertEqual(
+            text["caption"], "the barrel and the barrel move separately."
+        )
+        self.assertEqual(
+            [record["char_span"] for record in text["object_mentions"]],
+            [[0, 10], [15, 25]],
+        )
+
     def test_generic_semantics_bind_each_object_explicitly(self) -> None:
         source = {
             "semantic_sampling": {

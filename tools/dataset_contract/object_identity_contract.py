@@ -107,6 +107,19 @@ def _humanize(value: Any) -> str:
     return text.strip().lower() or "object"
 
 
+def _public_object_label(value: Any) -> str:
+    """Return a human label while keeping source ids in structured provenance."""
+
+    label = _humanize(value)
+    label = re.sub(r"^physassets\s+\d+\s+", "", label)
+    label = re.sub(r"^physassets\s+", "", label)
+    aliases = {
+        "remote": "remote control",
+        "drink box": "drink carton",
+    }
+    return aliases.get(label, label) or "object"
+
+
 def _semantic_label(record: Mapping[str, Any], index: int) -> str:
     visual = _as_mapping(record.get("visual_profile"))
     for key in (
@@ -117,10 +130,10 @@ def _semantic_label(record: Mapping[str, Any], index: int) -> str:
         "asset_id",
     ):
         if record.get(key):
-            return _humanize(record[key])
+            return _public_object_label(record[key])
     for key in ("asset_id",):
         if visual.get(key):
-            return _humanize(visual[key])
+            return _public_object_label(visual[key])
     return f"object {index + 1}"
 
 
@@ -171,12 +184,118 @@ def _motion_phrase(metadata: Mapping[str, Any]) -> str:
 def _support_label(metadata: Mapping[str, Any]) -> str | None:
     simulation = _as_mapping(metadata.get("simulation"))
     support = _as_mapping(simulation.get("support"))
-    if support.get("label"):
-        return _humanize(support["label"])
+    raw_support = support.get("label") or support.get("semantic_type")
+    if raw_support:
+        aliases = {
+            "concrete floor mat": "concrete floor",
+            "indoor long floor": "indoor floor",
+            "long kitchen counter": "long kitchen counter",
+            "long lab bench": "long laboratory bench",
+            "long wood table": "long wooden table",
+            "lab bench": "laboratory bench",
+            "wood floor": "wooden floor",
+            "wood tabletop": "wooden tabletop",
+        }
+        label = _humanize(raw_support)
+        return aliases.get(label, label)
     assets = _as_mapping(metadata.get("assets"))
     if assets.get("support_asset_id"):
         return _humanize(assets["support_asset_id"])
     return None
+
+
+def _environment_label(metadata: Mapping[str, Any]) -> str | None:
+    dimensions = _as_mapping(
+        _as_mapping(metadata.get("semantic_sampling")).get("five_dimensions")
+    )
+    appearance = _as_mapping(dimensions.get("appearance_lighting"))
+    category = appearance.get("environment_category")
+    if not category:
+        category = _as_mapping(metadata.get("appearance")).get(
+            "environment_category"
+        )
+    if not category:
+        return None
+    aliases = {
+        "garage workshop": "workshop",
+        "home office": "indoor room",
+        "lab studio": "laboratory studio",
+        "minimal": "minimal indoor setting",
+        "outdoor courtyard": "outdoor courtyard",
+    }
+    label = _humanize(category)
+    return aliases.get(label, label)
+
+
+def _two_object_caption(
+    metadata: Mapping[str, Any], dynamic: list[dict[str, Any]]
+) -> str | None:
+    """Describe a declared 2obj initial event without predicting its outcome."""
+
+    if len(dynamic) != 2:
+        return None
+    simulation = _as_mapping(metadata.get("simulation"))
+    interaction = _as_mapping(simulation.get("interaction"))
+    pattern = str(interaction.get("motion_pattern") or "")
+    if not pattern:
+        return None
+    dimensions = _as_mapping(
+        _as_mapping(metadata.get("semantic_sampling")).get("five_dimensions")
+    )
+    semantic_motion = _as_mapping(dimensions.get("motion"))
+    semantic_family = str(semantic_motion.get("family") or "")
+    if semantic_family and semantic_family != pattern:
+        raise ValueError("two-object motion semantics disagree with interaction")
+
+    left = f"the {dynamic[0]['semantic_label']}"
+    right = f"the {dynamic[1]['semantic_label']}"
+    support = _support_label(metadata) or "support surface"
+    clauses = {
+        "surface_hit_rest_2obj": (
+            f"{left} moves across the {support} and collides with {right}, "
+            "which starts at rest"
+        ),
+        "surface_head_on_2obj": (
+            f"{left} and {right} move toward each other across the {support} "
+            "and collide"
+        ),
+        "surface_crossing_2obj": (
+            f"{left} and {right} move along crossing paths across the {support} "
+            "and collide"
+        ),
+        "surface_catch_up_2obj": (
+            f"{left} catches up with {right} while both move in the same "
+            f"direction across the {support}, and they collide"
+        ),
+        "air_drop_hit_supported_2obj": (
+            f"{left} falls under gravity and collides with {right}, which "
+            f"starts at rest on the {support}"
+        ),
+        "air_projectile_hit_supported_2obj": (
+            f"{left} is launched upward and forward, then collides with "
+            f"{right}, which starts at rest on the {support}"
+        ),
+        "surface_single_independent_2obj": (
+            f"{left} moves across the {support} while {right} remains at rest; "
+            "they do not contact"
+        ),
+        "surface_dual_independent_2obj": (
+            f"{left} and {right} move separately across the {support} without "
+            "contacting each other"
+        ),
+        "air_supported_independent_2obj": (
+            f"{left} falls under gravity beside {right}, which remains at rest "
+            f"on the {support}; they do not contact"
+        ),
+    }
+    if pattern not in clauses:
+        raise ValueError(
+            f"two-object motion needs an explicit caption: {pattern}"
+        )
+    environment = _environment_label(metadata)
+    article = "an" if environment and environment[0] in "aeiou" else "a"
+    prefix = f"In {article} {environment}, " if environment else ""
+    return prefix + clauses[pattern] + "."
 
 
 def _trajectory_keys(object_id: str) -> dict[str, str]:
@@ -288,13 +407,15 @@ def build_object_identity(
                     "angular_velocity_rad_s": _trajectory_keys(object_id)["angular_velocity_rad_s"],
                 }
 
-    labels = [str(record["semantic_label"]) for record in dynamic]
-    subject = " and ".join(f"the {label}" for label in labels)
-    support = _support_label(metadata)
-    caption = f"{subject} {_motion_phrase(metadata)}"
-    if support:
-        caption += f" on the {support}"
-    caption += "."
+    caption = _two_object_caption(metadata, dynamic)
+    if caption is None:
+        labels = [str(record["semantic_label"]) for record in dynamic]
+        subject = " and ".join(f"the {label}" for label in labels)
+        support = _support_label(metadata)
+        caption = f"{subject} {_motion_phrase(metadata)}"
+        if support:
+            caption += f" on the {support}"
+        caption += "."
 
     identity = {
         "schema_version": OBJECT_IDENTITY_SCHEMA_VERSION,
@@ -303,7 +424,7 @@ def build_object_identity(
         "text": {
             "caption": caption,
             "object_mentions": mentions,
-            "template_version": "physweep_object_caption_v1",
+            "template_version": "physweep_object_caption_v2",
         },
         "trajectory": {
             "format": "npz",

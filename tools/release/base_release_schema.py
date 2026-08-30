@@ -517,13 +517,21 @@ def _clean_text(
     raw_mentions = identity_text.get("object_mentions", [])
     if not caption or not isinstance(raw_mentions, list) or not raw_mentions:
         raise ValueError("source object text is incomplete")
+    search_start = 0
+    normalized_surfaces = []
     for raw in raw_mentions:
         mention = _mapping(raw)
         object_id = str(mention.get("object_id", ""))
         old_surface = str(mention.get("text", ""))
-        if object_id not in labels or not old_surface or caption.count(old_surface) != 1:
-            raise ValueError("source caption mention is not unique")
-        caption = caption.replace(old_surface, f"the {labels[object_id]}", 1)
+        if object_id not in labels or not old_surface:
+            raise ValueError("source caption mention is incomplete")
+        start = caption.find(old_surface, search_start)
+        if start < 0:
+            raise ValueError("source caption mentions do not follow object order")
+        surface = f"the {labels[object_id]}"
+        caption = caption[:start] + surface + caption[start + len(old_surface) :]
+        search_start = start + len(surface)
+        normalized_surfaces.append((object_id, surface))
     if family == "generic":
         caption = caption.replace(" 1obj scenario", " scenario")
     if family in {"asset", "billiards"}:
@@ -540,15 +548,15 @@ def _clean_text(
     ):
         raise ValueError(f"internal identifier remains in caption: {caption!r}")
     mentions = []
-    for raw in raw_mentions:
-        object_id = str(_mapping(raw)["object_id"])
-        surface = f"the {labels[object_id]}"
-        if caption.count(surface) != 1:
-            raise ValueError("normalized caption mention is not unique")
-        start = caption.index(surface)
+    search_start = 0
+    for object_id, surface in normalized_surfaces:
+        start = caption.find(surface, search_start)
+        if start < 0:
+            raise ValueError("normalized caption mention is missing")
         mentions.append(
             {"object_id": object_id, "char_span": [start, start + len(surface)]}
         )
+        search_start = start + len(surface)
     return {"caption": caption, "object_mentions": mentions}
 
 
