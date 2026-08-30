@@ -71,6 +71,7 @@ class ObjectIdentityContractTests(unittest.TestCase):
 
     def test_billiards_initial_states_get_distinct_ids(self) -> None:
         metadata = {
+            "semantics": {"profile": "three_ball_collision"},
             "physics": {
                 "initial_states": [
                     {"object_id": "cue_ball", "semantic_type": "cue ball"},
@@ -89,6 +90,96 @@ class ObjectIdentityContractTests(unittest.TestCase):
         self.assertEqual(
             metadata["object_identity"]["trajectory"]["layout"],
             "frame_object_channel",
+        )
+
+    def test_every_one_object_motion_has_an_explicit_event_caption(self) -> None:
+        expected_fragments = {
+            "drop_fall_1obj": "falls under gravity onto",
+            "edge_fall_1obj": "falls from its edge",
+            "projectile_1obj": "launched horizontally through the air",
+            "arc_projectile_1obj": "launched upward and forward",
+            "slide_push_1obj": "short initial push",
+            "roll_or_slide_1obj": "rolls or slides",
+            "slope_slide_down_1obj": "moves downhill",
+            "slope_slide_up_1obj": "launched uphill",
+            "wall_impact_1obj": "strikes a fixed wall",
+            "ramp_to_flat_1obj": "continues onto flat ground",
+            "bounce_1obj": "bounces on",
+            "vertical_drop": "falls under gravity onto",
+            "resting_push": "after an initial push",
+            "diagonal_push": "moves diagonally",
+            "edge_exit": "leaves its edge",
+            "workbench_clear_zone_drop": "clear area of the workbench",
+            "workbench_long_axis_push": "long axis of the workbench",
+            "single_ball_free_roll": "without touching a rail",
+            "single_ball_rail_rebound": "strikes a rail and rebounds",
+            "dense_pinfield_descent": "dense passive peg field",
+            "offset_pinfield_descent": "offset start",
+            "early_release_chain": "starts upstream",
+            "late_release_chain": "starts farther downstream",
+        }
+        for family, fragment in expected_fragments.items():
+            with self.subTest(family=family):
+                metadata = {
+                    "semantic_sampling": {
+                        "five_dimensions": {
+                            "motion": {"family": family},
+                            "appearance_lighting": {
+                                "environment_category": "home_office"
+                            },
+                        }
+                    },
+                    "simulation": {
+                        "support": {"semantic_type": "wood_tabletop"},
+                        "objects": [
+                            {
+                                "object_id": "object_a",
+                                "semantic_type": "physassets_7_book",
+                            }
+                        ],
+                    },
+                }
+                attach_object_identity(metadata)
+                caption = metadata["object_identity"]["text"]["caption"]
+                self.assertIn(fragment, caption)
+                self.assertIn("In an indoor room", caption)
+                self.assertIn("the book", caption)
+                self.assertNotIn("scenario", caption)
+                self.assertNotIn("_1obj", caption)
+
+    def test_unknown_one_object_motion_is_rejected(self) -> None:
+        metadata = {
+            "semantics": {"profile": "unreviewed_motion"},
+            "simulation": {
+                "objects": [
+                    {"object_id": "object_a", "semantic_type": "ball"}
+                ]
+            },
+        }
+        with self.assertRaisesRegex(ValueError, "explicit caption"):
+            attach_object_identity(metadata)
+
+    def test_published_one_object_metadata_recompiles_the_same_event_contract(self) -> None:
+        metadata = {
+            "semantics": {
+                "objects": [
+                    {"object_id": "object_a", "semantic_label": "soccer ball"}
+                ],
+                "motion": {"family": "bounce_1obj"},
+                "appearance": {"environment_category": "home_office"},
+            },
+            "physics": {
+                "fixture": {"id": "wood_floor"},
+                "objects": [{"object_id": "object_a", "object_valid": True}],
+            },
+        }
+        attach_object_identity(metadata)
+        self.assertEqual(
+            metadata["object_identity"]["text"]["caption"],
+            (
+                "In an indoor room, the soccer ball falls under gravity and "
+                "bounces on the wooden floor."
+            ),
         )
 
     def test_asset_scene_uses_dynamic_asset_as_the_joined_object(self) -> None:

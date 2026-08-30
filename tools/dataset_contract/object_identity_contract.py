@@ -74,6 +74,11 @@ def _simulation_objects(metadata: Mapping[str, Any]) -> list[dict[str, Any]]:
     if records:
         return [dict(record) for record in records if isinstance(record, Mapping)]
 
+    # Published samples store resolved objects under physics.objects.
+    records = _as_list(physics.get("objects"))
+    if records:
+        return [dict(record) for record in records if isinstance(record, Mapping)]
+
     # Asset-review scenes use a compact physics block instead of simulation.objects.
     assets = _as_mapping(metadata.get("assets"))
     dynamic_asset_id = assets.get("dynamic_asset_id")
@@ -111,6 +116,8 @@ def _public_object_label(value: Any) -> str:
     """Return a human label while keeping source ids in structured provenance."""
 
     label = _humanize(value)
+    if re.fullmatch(r"physassets\s+\d+", label):
+        return "object"
     label = re.sub(r"^physassets\s+\d+\s+", "", label)
     label = re.sub(r"^physassets\s+", "", label)
     aliases = {
@@ -137,70 +144,70 @@ def _semantic_label(record: Mapping[str, Any], index: int) -> str:
     return f"object {index + 1}"
 
 
-def _motion_phrase(metadata: Mapping[str, Any]) -> str:
+def _motion_family(metadata: Mapping[str, Any]) -> str:
     semantic = _as_mapping(metadata.get("semantic_sampling"))
     dimensions = _as_mapping(semantic.get("five_dimensions"))
     motion = _as_mapping(dimensions.get("motion"))
-    family = str(
+    semantics = _as_mapping(metadata.get("semantics"))
+    compact_motion = semantics.get("motion")
+    if isinstance(compact_motion, Mapping):
+        compact_motion = compact_motion.get("family")
+    return str(
         motion.get("family")
         or semantic.get("motion_family")
-        or _as_mapping(metadata.get("semantics")).get("motion")
+        or compact_motion
         or _as_mapping(metadata.get("physics")).get("motion_profile")
-        or _as_mapping(metadata.get("semantics")).get("profile")
-        or "moves"
+        or semantics.get("profile")
+        or ""
     )
-    phrases = {
-        "drop_fall": "falls under gravity",
-        "edge_fall": "falls from an edge",
-        "projectile": "travels through the air",
-        "arc_projectile": "follows an arcing trajectory",
-        "slide_push": "slides across the support",
-        "roll_or_slide": "rolls or slides across the support",
-        "slope_slide_down": "moves down the slope",
-        "slope_slide_up": "moves up the slope and returns",
-        "wall_impact": "impacts a wall",
-        "ramp_to_flat": "moves from the ramp onto the flat support",
-        "resting_push": "is pushed across the support",
-        "diagonal_push": "is pushed diagonally across the support",
-        "free_roll": "rolls freely across the support",
-        "single_ball_free_roll": "rolls freely across the support",
-        "single_ball_rail_rebound": "rebounds from the rail",
-        "three_ball_collision": "collides with the other balls",
-        "surface_hit_rest_2obj": "collide after one moves toward the other",
-        "surface_head_on_2obj": "collide while moving toward each other",
-        "surface_crossing_2obj": "collide along crossing surface paths",
-        "surface_catch_up_2obj": "collide while moving in the same direction",
-        "air_drop_hit_supported_2obj": "collide as one falls toward the other",
-        "air_projectile_hit_supported_2obj": (
-            "collide as one travels through the air"
-        ),
-        "surface_single_independent_2obj": "do not contact each other",
-        "surface_dual_independent_2obj": "do not contact each other",
-        "air_supported_independent_2obj": "do not contact each other",
-    }
-    return phrases.get(family, f"moves in the {family.replace('_', ' ')} scenario")
 
 
 def _support_label(metadata: Mapping[str, Any]) -> str | None:
+    dimensions = _as_mapping(
+        _as_mapping(metadata.get("semantic_sampling")).get("five_dimensions")
+    )
+    semantic_support = _as_mapping(dimensions.get("support_interaction"))
+    compact_support = _as_mapping(
+        _as_mapping(metadata.get("semantics")).get("support")
+    )
     simulation = _as_mapping(metadata.get("simulation"))
     support = _as_mapping(simulation.get("support"))
-    raw_support = support.get("label") or support.get("semantic_type")
+    fixture = _as_mapping(_as_mapping(metadata.get("physics")).get("fixture"))
+    raw_support = (
+        semantic_support.get("support_type")
+        or compact_support.get("support_type")
+        or support.get("label")
+        or support.get("semantic_type")
+        or fixture.get("id")
+    )
     if raw_support:
         aliases = {
             "concrete floor mat": "concrete floor",
+            "ground channel ramp": "channel ramp",
+            "ground ramp long shallow": "long shallow ramp",
+            "ground ramp short steep": "short steep ramp",
+            "ground ramp standard": "ramp",
             "indoor long floor": "indoor floor",
-            "long kitchen counter": "long kitchen counter",
             "long lab bench": "long laboratory bench",
             "long wood table": "long wooden table",
             "lab bench": "laboratory bench",
+            "raised channel ramp": "raised channel ramp",
+            "raised ramp long shallow": "long shallow raised ramp",
+            "raised ramp short steep": "short steep raised ramp",
+            "raised ramp standard": "raised ramp",
             "wood floor": "wooden floor",
+            "wood tray": "wooden tray",
             "wood tabletop": "wooden tabletop",
         }
         label = _humanize(raw_support)
+        if re.search(r"(?:sketchfab|physassets)\s+[0-9a-f]{8,}", label):
+            return None
         return aliases.get(label, label)
     assets = _as_mapping(metadata.get("assets"))
     if assets.get("support_asset_id"):
-        return _humanize(assets["support_asset_id"])
+        label = _humanize(assets["support_asset_id"])
+        if not re.search(r"(?:sketchfab|physassets)\s+[0-9a-f]{8,}", label):
+            return label
     return None
 
 
@@ -211,9 +218,18 @@ def _environment_label(metadata: Mapping[str, Any]) -> str | None:
     appearance = _as_mapping(dimensions.get("appearance_lighting"))
     category = appearance.get("environment_category")
     if not category:
+        category = _as_mapping(
+            _as_mapping(metadata.get("semantics")).get("appearance")
+        ).get("environment_category")
+    if not category:
         category = _as_mapping(metadata.get("appearance")).get(
             "environment_category"
         )
+    if not category:
+        render_environment = _as_mapping(
+            _as_mapping(metadata.get("render")).get("environment")
+        )
+        category = render_environment.get("role")
     if not category:
         return None
     aliases = {
@@ -222,9 +238,112 @@ def _environment_label(metadata: Mapping[str, Any]) -> str | None:
         "lab studio": "laboratory studio",
         "minimal": "minimal indoor setting",
         "outdoor courtyard": "outdoor courtyard",
+        "indoor neutral": "indoor environment",
+        "studio soft": "studio setting",
     }
     label = _humanize(category)
     return aliases.get(label, label)
+
+
+def _environment_prefix(metadata: Mapping[str, Any]) -> str:
+    environment = _environment_label(metadata)
+    if not environment:
+        return ""
+    article = "an" if environment[0] in "aeiou" else "a"
+    return f"In {article} {environment}, "
+
+
+def _one_object_caption(
+    metadata: Mapping[str, Any], dynamic: list[dict[str, Any]]
+) -> str:
+    if len(dynamic) != 1:
+        raise ValueError("one-object caption requires exactly one dynamic object")
+    subject = f"the {dynamic[0]['semantic_label']}"
+    support = _support_label(metadata) or "support surface"
+    family = _motion_family(metadata)
+    aliases = {
+        "drop_fall": "drop_fall_1obj",
+        "edge_fall": "edge_fall_1obj",
+        "projectile": "projectile_1obj",
+        "arc_projectile": "arc_projectile_1obj",
+        "slide_push": "slide_push_1obj",
+        "roll_or_slide": "roll_or_slide_1obj",
+        "slope_slide_down": "slope_slide_down_1obj",
+        "slope_slide_up": "slope_slide_up_1obj",
+        "wall_impact": "wall_impact_1obj",
+        "ramp_to_flat": "ramp_to_flat_1obj",
+        "bounce": "bounce_1obj",
+    }
+    family = aliases.get(family, family)
+    clauses = {
+        "drop_fall_1obj": f"{subject} falls under gravity onto the {support}",
+        "edge_fall_1obj": (
+            f"{subject} moves across the {support} and falls from its edge"
+        ),
+        "projectile_1obj": (
+            f"{subject} is launched horizontally through the air above the {support}"
+        ),
+        "arc_projectile_1obj": (
+            f"{subject} is launched upward and forward above the {support}"
+        ),
+        "slide_push_1obj": (
+            f"{subject} receives a short initial push and slides across the {support}"
+        ),
+        "roll_or_slide_1obj": f"{subject} rolls or slides across the {support}",
+        "slope_slide_down_1obj": f"{subject} moves downhill along the {support}",
+        "slope_slide_up_1obj": (
+            f"{subject} is launched uphill along the {support} and returns downward"
+        ),
+        "wall_impact_1obj": (
+            f"{subject} moves across the {support} and strikes a fixed wall"
+        ),
+        "ramp_to_flat_1obj": (
+            f"{subject} moves down the {support} and continues onto flat ground"
+        ),
+        "bounce_1obj": (
+            f"{subject} falls under gravity and bounces on the {support}"
+        ),
+        "vertical_drop": f"{subject} falls under gravity onto the {support}",
+        "resting_push": (
+            f"{subject} moves across the {support} after an initial push"
+        ),
+        "diagonal_push": (
+            f"{subject} moves diagonally across the {support} after an initial push"
+        ),
+        "edge_exit": (
+            f"{subject} moves across the {support}, leaves its edge, and falls"
+        ),
+        "workbench_clear_zone_drop": (
+            f"{subject} falls under gravity onto a clear area of the workbench"
+        ),
+        "workbench_long_axis_push": (
+            f"{subject} moves along the long axis of the workbench after an initial push"
+        ),
+        "single_ball_free_roll": (
+            f"{subject} rolls freely across a billiards table without touching a rail"
+        ),
+        "single_ball_rail_rebound": (
+            f"{subject} strikes a rail and rebounds across a billiards table"
+        ),
+        "dense_pinfield_descent": (
+            f"{subject} descends through a dense passive peg field into a catch bin"
+        ),
+        "offset_pinfield_descent": (
+            f"{subject} descends from an offset start through a passive peg field "
+            "into a catch bin"
+        ),
+        "early_release_chain": (
+            f"{subject} starts upstream and travels through a four-segment passive "
+            "marble-run channel"
+        ),
+        "late_release_chain": (
+            f"{subject} starts farther downstream and travels through a four-segment "
+            "passive marble-run channel"
+        ),
+    }
+    if family not in clauses:
+        raise ValueError(f"one-object motion needs an explicit caption: {family}")
+    return _environment_prefix(metadata) + clauses[family] + "."
 
 
 def _two_object_caption(
@@ -292,10 +411,7 @@ def _two_object_caption(
         raise ValueError(
             f"two-object motion needs an explicit caption: {pattern}"
         )
-    environment = _environment_label(metadata)
-    article = "an" if environment and environment[0] in "aeiou" else "a"
-    prefix = f"In {article} {environment}, " if environment else ""
-    return prefix + clauses[pattern] + "."
+    return _environment_prefix(metadata) + clauses[pattern] + "."
 
 
 def _trajectory_keys(object_id: str) -> dict[str, str]:
@@ -325,6 +441,18 @@ def _source_asset_id(record: Mapping[str, Any]) -> str | None:
 
 def _normalise_records(metadata: Mapping[str, Any]) -> list[dict[str, Any]]:
     source = _simulation_objects(metadata)
+    semantic_records = _as_list(
+        _as_mapping(metadata.get("semantics")).get("objects")
+    )
+    semantic_labels = {
+        str(record.get("object_id")): _public_object_label(
+            record.get("semantic_label")
+        )
+        for record in semantic_records
+        if isinstance(record, Mapping)
+        and record.get("object_id")
+        and record.get("semantic_label")
+    }
     result: list[dict[str, Any]] = []
     seen: set[str] = set()
     for index, record in enumerate(source):
@@ -337,7 +465,9 @@ def _normalise_records(metadata: Mapping[str, Any]) -> list[dict[str, Any]]:
                 "object_id": object_id,
                 "object_index": index,
                 "role": "dynamic" if _is_dynamic(record) else "static",
-                "semantic_label": _semantic_label(record, index),
+                "semantic_label": semantic_labels.get(
+                    object_id, _semantic_label(record, index)
+                ),
                 "asset_id": _source_asset_id(record),
             }
         )
@@ -407,15 +537,19 @@ def build_object_identity(
                     "angular_velocity_rad_s": _trajectory_keys(object_id)["angular_velocity_rad_s"],
                 }
 
-    caption = _two_object_caption(metadata, dynamic)
+    if len(dynamic) == 1:
+        caption = _one_object_caption(metadata, dynamic)
+    else:
+        caption = _two_object_caption(metadata, dynamic)
     if caption is None:
+        family = _motion_family(metadata)
+        if family != "three_ball_collision":
+            raise ValueError(
+                f"multi-object motion needs an explicit caption: {family}"
+            )
         labels = [str(record["semantic_label"]) for record in dynamic]
         subject = " and ".join(f"the {label}" for label in labels)
-        support = _support_label(metadata)
-        caption = f"{subject} {_motion_phrase(metadata)}"
-        if support:
-            caption += f" on the {support}"
-        caption += "."
+        caption = f"{subject} collide with one another on a billiards table."
 
     identity = {
         "schema_version": OBJECT_IDENTITY_SCHEMA_VERSION,
@@ -424,7 +558,7 @@ def build_object_identity(
         "text": {
             "caption": caption,
             "object_mentions": mentions,
-            "template_version": "physweep_object_caption_v2",
+            "template_version": "physweep_object_caption_v3",
         },
         "trajectory": {
             "format": "npz",
