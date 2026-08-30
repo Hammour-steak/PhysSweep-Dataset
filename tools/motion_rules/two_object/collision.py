@@ -7,8 +7,11 @@ from typing import Any
 import numpy as np
 
 from tools.core.camera_geometry import pair_approach_axis_xy
-from tools.core.rigid_geometry import PROXY_SHAPE_CODE, primitive_support_radius_m
-from tools.physics.physics_invariants import quaternion_matrix_wxyz
+from tools.core.rigid_geometry import (
+    PROXY_SHAPE_CODE,
+    primitive_support_radius_m,
+    quaternion_matrix_wxyz,
+)
 
 
 def _first_true(values: np.ndarray) -> int | None:
@@ -48,7 +51,10 @@ def _center_axis_separation_margin(
                 primitive_support_radius_m(
                     str(geometry["type"]),
                     list(geometry["size_m"]),
-                    (quaternion_matrix_wxyz(quaternion).T @ direction).tolist(),
+                    (
+                        np.asarray(quaternion_matrix_wxyz(quaternion)).T
+                        @ direction
+                    ).tolist(),
                 )
                 for quaternion, direction in zip(quaternions, world_directions)
             ],

@@ -32,11 +32,21 @@ from tools.core.paths import (
     safe_scene_id,
 )
 from tools.core.process import run_checked
-from tools.core.rigid_geometry import finite_vector, positive_vector
+from tools.core.rigid_geometry import (
+    finite_vector,
+    positive_vector,
+    quaternion_matrix_wxyz,
+)
 from tools.rendering.blender_scene import parse_scene_render_args
 
 
 class CoreInfrastructureTest(unittest.TestCase):
+    def test_quaternion_matrix_is_normalized_and_backend_neutral(self) -> None:
+        self.assertEqual(
+            quaternion_matrix_wxyz([2.0, 0.0, 0.0, 0.0]),
+            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+        )
+
     def test_canonical_json_hash_is_stable_and_non_mutating(self) -> None:
         record = {"z": 2, "a": {"value": 1}, "binding_sha256": "old"}
         expected = hashlib.sha256(

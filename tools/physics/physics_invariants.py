@@ -7,7 +7,7 @@ from typing import Any
 
 import numpy as np
 
-from tools.core.rigid_geometry import PROXY_SHAPE_CODE
+from tools.core.rigid_geometry import PROXY_SHAPE_CODE, quaternion_matrix_wxyz
 
 
 def runtime_collision_descriptors(
@@ -71,20 +71,6 @@ def maximum_coulomb_utilization(
         )
         values.append(utilization)
     return max(values, default=0.0)
-
-
-def quaternion_matrix_wxyz(value: np.ndarray) -> np.ndarray:
-    w, x, y, z = np.asarray(value, dtype=np.float64)
-    norm = max(float(np.linalg.norm([w, x, y, z])), 1.0e-12)
-    w, x, y, z = np.asarray([w, x, y, z]) / norm
-    return np.asarray(
-        [
-            [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
-            [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
-            [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
-        ],
-        dtype=np.float64,
-    )
 
 
 def principal_inertia(shape: str, size_m: np.ndarray, mass_kg: float) -> np.ndarray:
@@ -309,7 +295,10 @@ def additional_physics_invariants(
                 inertia_limit,
             )
     omega_body = np.asarray(
-        [quaternion_matrix_wxyz(q).T @ omega for q, omega in zip(quaternions_wxyz, angular_velocity)]
+        [
+            np.asarray(quaternion_matrix_wxyz(q)).T @ omega
+            for q, omega in zip(quaternions_wxyz, angular_velocity)
+        ]
     )
     kinetic = 0.5 * mass_kg * np.sum(linear_velocity * linear_velocity, axis=1)
     rotational = 0.5 * np.sum(omega_body * omega_body * inertia[None, :], axis=1)

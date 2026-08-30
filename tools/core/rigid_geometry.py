@@ -103,6 +103,17 @@ def quaternion_xyzw_from_wxyz(value: list[float]) -> list[float]:
     return [float(value[1]), float(value[2]), float(value[3]), float(value[0])]
 
 
+def quaternion_matrix_wxyz(value: Any) -> list[list[float]]:
+    """Return a normalized 3x3 rotation matrix for a wxyz quaternion."""
+
+    w, x, y, z = normalize(finite_vector(value, 4, "quaternion"))
+    return [
+        [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+        [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+        [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
+    ]
+
+
 def quaternion_wxyz_from_basis(
     local_x: list[float], local_y: list[float], local_z: list[float]
 ) -> list[float]:
