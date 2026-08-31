@@ -138,6 +138,7 @@ class RepositoryHygieneTest(unittest.TestCase):
             "release",
             "rendering",
             "sampling",
+            "scene_rules",
             "training_export",
         }
         packages = {
@@ -165,6 +166,7 @@ class RepositoryHygieneTest(unittest.TestCase):
             "tools.release",
             "tools.rendering",
             "tools.sampling",
+            "tools.scene_rules",
             "tools.training_export",
         }
         findings = []
@@ -187,6 +189,17 @@ class RepositoryHygieneTest(unittest.TestCase):
                     dependency = module.split(".", 2)[1]
                     if dependency not in {package, "core"}:
                         findings.append(f"{path.relative_to(ROOT)}: {module}")
+        self.assertEqual(findings, [])
+
+    def test_scene_rules_depend_only_on_assets_and_core(self) -> None:
+        findings = []
+        for path in (ROOT / "tools" / "scene_rules").rglob("*.py"):
+            for module in self.imported_modules(path):
+                if not module.startswith("tools."):
+                    continue
+                dependency = module.split(".", 2)[1]
+                if dependency not in {"scene_rules", "assets", "core"}:
+                    findings.append(f"{path.relative_to(ROOT)}: {module}")
         self.assertEqual(findings, [])
 
     def test_physics_does_not_depend_on_sampling(self) -> None:
@@ -223,6 +236,7 @@ class RepositoryHygieneTest(unittest.TestCase):
             "release",
             "rendering",
             "sampling",
+            "scene_rules",
         ):
             for path in (ROOT / "tools" / package).rglob("*.py"):
                 findings.extend(

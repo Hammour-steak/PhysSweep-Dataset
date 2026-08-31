@@ -15,6 +15,8 @@ Asset download, conversion, and proxy-building tools additionally require
 - `motion_rules/one_object`: 1obj motion, audit, and support-geometry policy.
 - `motion_rules/two_object`: bounded interacting/independent 2obj initial-state
   builders and pair audits.
+- `scene_rules`: object-count-specific physical host admission and motion-scene
+  compatibility; visual themes remain appearance only.
 - `physics`: simulation, geometry, trajectory audits, and specialized backends.
 - `rendering`: visual binding, Blender rendering, video encoding, and visual QA.
 - `dataset_contract`: source and published dataset schemas, identity, and physical
@@ -55,6 +57,7 @@ import samplers. Training exports consume releases only.
 - Mesh environment profiles: `configs/scene_mesh_profiles.json`
 - Specialized backend registry: `configs/specialized_scene_backends.json`
 - Passive-pinball backend: `configs/passive_pinball_backend.json`
+- Two-object physical scenes: `configs/two_object_scene_rules.json`
 
 ## Generic Base Pipeline
 
@@ -89,10 +92,18 @@ visual assets, and collision proxies. It admits generic primitives, centered
 asset primitives, and exact continuous stacks of centered upright cylinders
 within the declared 1 mm origin tolerance. The 828 base cells cover ten
 frozen motions with their admitted ordered shape pairs, all nine ordered size
-pairs, and two flat scene classes. Six pair-relative camera families, four
+pairs, and two flat scene classes. Interacting source pairs have a declared
+50:1 maximum mass ratio and 6:1 maximum per-object geometry aspect ratio;
+independent pairs are not restricted by those rules.
+The separately versioned scene contract
+classifies those hosts into five physical profiles: ground patch, long indoor
+floor, open hardscape, wide raised platform, and long raised support. Six
+pair-relative camera families, four
 ordered generic/asset source-family pairs, and five feasible visual-environment
-categories are balanced without multiplying the base count. This is not yet a
-production 2obj release.
+categories are balanced without multiplying the base count. Each environment
+explicitly names its compatible physical profiles; complete plans must realize
+every allowed motion/profile and profile/environment pairing at least once. This
+is not yet a production 2obj release.
 
 Every admitted cell appears once. Independent controls use the three same-shape
 pairs because they do not exercise collision geometry; the six cross-shape
@@ -111,6 +122,7 @@ and a visible pre-contact ascent for every declared arc projectile.
   --released-base-manifest outputs/one_object/base/manifest.json \
   --source-root <one-object-generation-root> \
   --source-manifest <release/metadata_manifest.json> \
+  --scene-rules configs/two_object_scene_rules.json \
   --limit 72 --output-dir outputs/two_object_validation/base
 
 .venv/bin/python -m tools.physics.run_pybullet_batch \

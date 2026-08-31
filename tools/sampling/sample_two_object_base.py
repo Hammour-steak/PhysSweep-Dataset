@@ -12,8 +12,13 @@ from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json, write_json
 from tools.dataset_contract.object_identity_contract import attach_object_identity
 from tools.motion_rules.two_object import apply_two_object_motion
+from tools.scene_rules.two_object import (
+    DEFAULT_TWO_OBJECT_SCENE_RULES,
+    bind_two_object_scene,
+    load_two_object_scene_rules,
+    resolved_two_object_scene_rules,
+)
 from tools.sampling.object_collection import compile_object_collection_scene
-from tools.sampling.two_object_scene import bind_two_object_scene
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -28,8 +33,6 @@ _MATRIX_FIELDS = {
     "coverage_plan",
     "shared_physics",
     "pair_observation",
-    "scene_compatibility",
-    "visual_environment_coverage",
     "motion_intents",
     "policy",
 }
@@ -38,7 +41,7 @@ _CANDIDATE_POOL_FIELDS = {
     "source_release",
     "object_source_families",
     "object_eligibility",
-    "host_eligibility",
+    "pair_eligibility",
 }
 _SOURCE_RELEASE_FIELDS = {
     "released_base_manifest_schema_version",
@@ -54,18 +57,6 @@ _OBJECT_ELIGIBILITY_FIELDS = {
     "asset_proxy_policy",
     "asset_proxy_maximum_aabb_center_offset_m",
     "asset_scale_bin_maximum_extent_m",
-}
-_HOST_ELIGIBILITY_FIELDS = {
-    "support_shape",
-    "required_collider_roles",
-    "allowed_collider_roles",
-    "allowed_visual_types",
-    "camera_envelope_policy",
-}
-_MOTION_NEUTRAL_HOST_ROLES = {
-    "primary_support",
-    "support_structure",
-    "environment_floor",
 }
 _COVERAGE_PLAN_FIELDS = {
     "schema_version",
@@ -95,9 +86,12 @@ _POLICY_FIELDS = {
 }
 
 
-def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
+def _validated_intents(
+    matrix: dict[str, Any], scene_rules: dict[str, Any] | None = None
+) -> list[dict[str, Any]]:
+    resolved_scene_rules = resolved_two_object_scene_rules(scene_rules)
     if set(matrix) != _MATRIX_FIELDS or (
-        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v10"
+        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v11"
     ):
         raise ValueError("unsupported two-object sampling matrix")
     objects = matrix.get("objects")
@@ -162,7 +156,7 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         not isinstance(candidate_pool, dict)
         or set(candidate_pool) != _CANDIDATE_POOL_FIELDS
         or candidate_pool.get("schema_version")
-        != "physweep_two_object_candidate_pool_v3"
+        != "physweep_two_object_candidate_pool_v4"
     ):
         raise ValueError("two-object candidate-pool contract is incomplete")
     source = candidate_pool.get("source_release")
@@ -218,27 +212,11 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         or asset_scale_limits != {"small": 0.18, "medium": 0.23, "large": None}
     ):
         raise ValueError("two-object asset scale-bin contract is invalid")
-    host_eligibility = candidate_pool.get("host_eligibility")
-    if (
-        not isinstance(host_eligibility, dict)
-        or set(host_eligibility) != _HOST_ELIGIBILITY_FIELDS
-        or host_eligibility.get("support_shape") != "rectangular_slab"
-        or host_eligibility.get("camera_envelope_policy") != "unbounded_only"
-    ):
-        raise ValueError("two-object host-eligibility contract is invalid")
-    required_roles = host_eligibility.get("required_collider_roles")
-    allowed_roles = host_eligibility.get("allowed_collider_roles")
-    allowed_visual_types = host_eligibility.get("allowed_visual_types")
-    if (
-        required_roles != ["primary_support"]
-        or not isinstance(allowed_roles, list)
-        or len(allowed_roles) != len(set(allowed_roles))
-        or set(allowed_roles) != _MOTION_NEUTRAL_HOST_ROLES
-        or allowed_visual_types != ["procedural_room"]
-    ):
-        raise ValueError(
-            "two-object hosts must use the reviewed procedural motion-neutral contract"
-        )
+    if candidate_pool.get("pair_eligibility") != {
+        "maximum_interacting_mass_ratio": 50.0,
+        "maximum_interacting_geometry_aspect_ratio": 6.0,
+    }:
+        raise ValueError("two-object pair-eligibility contract is invalid")
     coverage = matrix.get("coverage_plan")
     if (
         not isinstance(coverage, dict)
@@ -375,58 +353,6 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         or selection.get("maximum_host_source_reuse") != 2
     ):
         raise ValueError("two-object source reuse limits may not be weakened")
-    scene_compatibility = matrix.get("scene_compatibility")
-    if (
-        not isinstance(scene_compatibility, dict)
-        or set(scene_compatibility) != {"schema_version", "allowed_scene_classes"}
-        or scene_compatibility.get("schema_version")
-        != "physweep_two_object_scene_compatibility_v1"
-        or scene_compatibility.get("allowed_scene_classes")
-        != ["ground_flat", "raised_flat"]
-    ):
-        raise ValueError("two-object scene compatibility is invalid")
-    environment_coverage = matrix.get("visual_environment_coverage")
-    if (
-        not isinstance(environment_coverage, dict)
-        or set(environment_coverage)
-        != {"schema_version", "metadata_key", "categories", "selection_policy"}
-        or environment_coverage.get("schema_version")
-        != "physweep_two_object_visual_environment_coverage_v1"
-        or environment_coverage.get("metadata_key")
-        != "appearance.scene_visual.environment_category"
-        or environment_coverage.get("selection_policy")
-        != "balanced_feasible_within_scene_camera_and_source_pair"
-    ):
-        raise ValueError("two-object visual-environment coverage is invalid")
-    environment_categories = environment_coverage.get("categories")
-    scene_classes = set(scene_compatibility["allowed_scene_classes"])
-    if (
-        not isinstance(environment_categories, list)
-        or len(environment_categories) < 2
-        or any(
-            not isinstance(record, dict)
-            or set(record) != {"id", "allowed_scene_classes"}
-            or not isinstance(record["id"], str)
-            or not record["id"]
-            or not isinstance(record["allowed_scene_classes"], list)
-            or not record["allowed_scene_classes"]
-            or len(record["allowed_scene_classes"])
-            != len(set(record["allowed_scene_classes"]))
-            or not set(record["allowed_scene_classes"]).issubset(scene_classes)
-            for record in environment_categories
-        )
-        or len({record["id"] for record in environment_categories})
-        != len(environment_categories)
-        or any(
-            sum(
-                scene_class in record["allowed_scene_classes"]
-                for record in environment_categories
-            )
-            < 2
-            for scene_class in scene_classes
-        )
-    ):
-        raise ValueError("two-object visual-environment categories are invalid")
     policy = matrix.get("policy")
     if not isinstance(policy, dict) or set(policy) != _POLICY_FIELDS:
         raise ValueError("two-object sampling policy is incomplete")
@@ -440,6 +366,16 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
     ids = [str(intent.get("id", "")) for intent in intents]
     if any(not motion_id for motion_id in ids) or len(ids) != len(set(ids)):
         raise ValueError("two-object motion intent ids must be unique")
+    admitted_regimes = {
+        str(regime)
+        for rule in resolved_scene_rules["physical_rules"]
+        for regime in rule["allowed_kinematic_regimes"]
+    }
+    if any(
+        str(intent.get("kinematic_regime", "")) not in admitted_regimes
+        for intent in intents
+    ):
+        raise ValueError("two-object motion intent has no compatible scene rule")
     intent_id_set = set(ids)
     compatibility = matrix.get("shape_motion_compatibility")
     if (
@@ -545,10 +481,13 @@ def build_two_object_scene(
     object_templates: Sequence[dict[str, Any]] | None = None,
     sample_index: int | None = None,
     camera_view_family_id: str | None = None,
+    scene_rules: dict[str, Any] | None = None,
+    scene_rule_id: str | None = None,
 ) -> dict[str, Any]:
     """Compose two sources and apply one declared initial-state intent."""
 
-    intents = _validated_intents(matrix)
+    resolved_scene_rules = resolved_two_object_scene_rules(scene_rules)
+    intents = _validated_intents(matrix, resolved_scene_rules)
     matches = [intent for intent in intents if str(intent["id"]) == motion_id]
     if len(matches) != 1:
         raise ValueError(f"unknown two-object motion intent: {motion_id}")
@@ -585,7 +524,9 @@ def build_two_object_scene(
         camera_view_family(matrix, camera_view_family_id),
         matches[0],
     )
-    scene = bind_two_object_scene(scene, matrix["scene_compatibility"])
+    scene = bind_two_object_scene(
+        scene, resolved_scene_rules, expected_rule_id=scene_rule_id
+    )
     scene["dataset_id"] = DATASET_ID
     scene["dataset_stage"] = "two_object_base_candidate"
     scene["sample_index"] = resolved_index
@@ -598,10 +539,12 @@ def build_two_object_matrix(
     matrix: dict[str, Any],
     object_templates: Sequence[dict[str, Any]] | None = None,
     motion_ids: Sequence[str] | None = None,
+    scene_rules: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Build all or a declared subset of matrix rows in stable matrix order."""
 
-    intents = _validated_intents(matrix)
+    resolved_scene_rules = resolved_two_object_scene_rules(scene_rules)
+    intents = _validated_intents(matrix, resolved_scene_rules)
     declared_ids = [str(intent["id"]) for intent in intents]
     requested_ids = (
         declared_ids if motion_ids is None else [str(value) for value in motion_ids]
@@ -620,6 +563,7 @@ def build_two_object_matrix(
             matrix,
             motion_id,
             object_templates,
+            scene_rules=resolved_scene_rules,
         )
         for motion_id in declared_ids
         if motion_id in selected
@@ -633,6 +577,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--object-a-template", type=Path)
     parser.add_argument("--object-b-template", type=Path)
     parser.add_argument("--matrix", type=Path, default=DEFAULT_MATRIX)
+    parser.add_argument(
+        "--scene-rules", type=Path, default=DEFAULT_TWO_OBJECT_SCENE_RULES
+    )
     parser.add_argument("--motion-id", action="append")
     parser.add_argument("--output-dir", type=Path, required=True)
     return parser.parse_args()
@@ -647,22 +594,26 @@ def main() -> None:
         (args.object_b_template or host_path).resolve(),
     ]
     matrix_path = args.matrix.resolve()
+    scene_rules_path = args.scene_rules.resolve()
     output_dir = args.output_dir.resolve()
     try:
         host_relative = host_path.relative_to(root)
         object_relatives = [path.relative_to(root) for path in object_paths]
         matrix_relative = matrix_path.relative_to(root)
+        scene_rules_relative = scene_rules_path.relative_to(root)
         output_dir.relative_to(root)
     except ValueError as error:
         raise ValueError(
             "two-object matrix inputs and output must remain under --root"
         ) from error
     matrix = read_json(matrix_path)
+    scene_rules = load_two_object_scene_rules(scene_rules_path)
     scenes = build_two_object_matrix(
         read_json(host_path),
         matrix,
         [read_json(path) for path in object_paths],
         args.motion_id,
+        scene_rules,
     )
     samples = []
     for scene in scenes:
@@ -695,6 +646,10 @@ def main() -> None:
         "matrix": {
             "path": str(matrix_relative),
             "sha256": sha256(matrix_path),
+        },
+        "scene_rules": {
+            "path": str(scene_rules_relative),
+            "sha256": sha256(scene_rules_path),
         },
         "host_template": {
             "path": str(host_relative),

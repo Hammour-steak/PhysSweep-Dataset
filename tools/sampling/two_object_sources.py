@@ -12,6 +12,10 @@ import numpy as np
 
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json
+from tools.scene_rules.two_object import (
+    resolve_scene_rule,
+    resolved_two_object_scene_rules,
+)
 
 
 def declared_within(root: Path, value: Path) -> Path:
@@ -342,12 +346,14 @@ def released_source_pool(
     source_root: Path,
     source_manifest_path: Path,
     matrix: dict[str, Any],
+    scene_rules: dict[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     """Load generic hosts and exact generic/asset objects from the 1obj release."""
 
+    resolved_scene_rules = resolved_two_object_scene_rules(scene_rules)
     source_contract = matrix["candidate_pool"]["source_release"]
     eligibility = matrix["candidate_pool"]["object_eligibility"]
-    host_eligibility = matrix["candidate_pool"]["host_eligibility"]
+    host_eligibility = resolved_scene_rules["host_eligibility"]
     released_path = released_base_manifest_path.resolve()
     released_path.relative_to(root)
     generation_path = declared_within(source_root, source_manifest_path)
@@ -418,7 +424,7 @@ def released_source_pool(
     rejected_host_role_count = 0
     rejected_bounded_camera_host_count = 0
     rejected_visual_type_host_count = 0
-    allowed_scenes = set(matrix["scene_compatibility"]["allowed_scene_classes"])
+    rejected_scene_rule_host_count = 0
     allowed_visual_types = set(host_eligibility["allowed_visual_types"])
     allowed_scale_bins = set(eligibility["scale_bins"])
     geometry_types = {
@@ -426,8 +432,10 @@ def released_source_pool(
         for record in matrix["shape_families"]["families"]
     }
     environment_categories = {
-        str(record["id"]): set(record["allowed_scene_classes"])
-        for record in matrix["visual_environment_coverage"]["categories"]
+        str(record["id"]): set(record["allowed_scene_rules"])
+        for record in resolved_scene_rules["visual_environment_coverage"][
+            "categories"
+        ]
     }
 
     for record in base_records:
@@ -468,7 +476,8 @@ def released_source_pool(
             obj = simulation_objects[0]
             support = metadata["simulation"]["support"]
             scene_class = str(support.get("scene_class", ""))
-            if scene_class in allowed_scenes:
+            scene_rule = resolve_scene_rule(resolved_scene_rules, support)
+            if scene_rule is not None:
                 roles = {
                     str(collider.get("role", ""))
                     for collider in support.get("colliders", [])
@@ -476,48 +485,50 @@ def released_source_pool(
                 }
                 required_roles = set(host_eligibility["required_collider_roles"])
                 allowed_roles = set(host_eligibility["allowed_collider_roles"])
-                if support.get("support_shape") == host_eligibility["support_shape"]:
-                    motion_neutral = required_roles.issubset(roles) and roles.issubset(
-                        allowed_roles
+                motion_neutral = required_roles.issubset(roles) and roles.issubset(
+                    allowed_roles
+                )
+                camera_unbounded = support.get("camera_envelope") is None
+                if motion_neutral and camera_unbounded:
+                    scene_visual = metadata["appearance"]["scene_visual"]
+                    visual_id = str(scene_visual.get("id", ""))
+                    visual_type = str(scene_visual.get("visual_type", ""))
+                    environment_category = str(
+                        scene_visual.get("environment_category", "")
                     )
-                    camera_unbounded = support.get("camera_envelope") is None
-                    if motion_neutral and camera_unbounded:
-                        scene_visual = metadata["appearance"]["scene_visual"]
-                        visual_id = str(scene_visual.get("id", ""))
-                        visual_type = str(scene_visual.get("visual_type", ""))
-                        environment_category = str(
-                            scene_visual.get("environment_category", "")
+                    if not visual_id or not visual_type or not environment_category:
+                        raise ValueError(
+                            "eligible two-object host lacks a visual profile"
                         )
-                        if not visual_id or not visual_type or not environment_category:
-                            raise ValueError(
-                                "eligible two-object host lacks a visual profile"
-                            )
-                        if (
-                            environment_category not in environment_categories
-                            or scene_class
-                            not in environment_categories[environment_category]
-                        ):
-                            raise ValueError(
-                                "eligible two-object host contradicts the declared "
-                                "visual-environment coverage"
-                            )
-                        if visual_type not in allowed_visual_types:
-                            rejected_visual_type_host_count += 1
-                        else:
-                            hosts.append(
-                                {
-                                    "metadata": metadata,
-                                    "source": source,
-                                    "scene_class": scene_class,
-                                    "visual_profile_id": visual_id,
-                                    "visual_type": visual_type,
-                                    "environment_category": environment_category,
-                                }
-                            )
-                    elif not motion_neutral:
-                        rejected_host_role_count += 1
+                    if (
+                        environment_category not in environment_categories
+                        or str(scene_rule["id"])
+                        not in environment_categories[environment_category]
+                    ):
+                        raise ValueError(
+                            "eligible two-object host contradicts the declared "
+                            "visual-environment coverage"
+                        )
+                    if visual_type not in allowed_visual_types:
+                        rejected_visual_type_host_count += 1
                     else:
-                        rejected_bounded_camera_host_count += 1
+                        hosts.append(
+                            {
+                                "metadata": metadata,
+                                "source": source,
+                                "scene_rule_id": str(scene_rule["id"]),
+                                "scene_class": scene_class,
+                                "visual_profile_id": visual_id,
+                                "visual_type": visual_type,
+                                "environment_category": environment_category,
+                            }
+                        )
+                elif not motion_neutral:
+                    rejected_host_role_count += 1
+                else:
+                    rejected_bounded_camera_host_count += 1
+            else:
+                rejected_scene_rule_host_count += 1
             template = metadata
         else:
             template, reason = _asset_object_template(
@@ -589,13 +600,23 @@ def released_source_pool(
 
     if not objects or not hosts:
         raise ValueError("released 1obj metadata yields no eligible 2obj sources")
+    declared_scene_rules = {
+        str(rule["id"]) for rule in resolved_scene_rules["physical_rules"]
+    }
+    eligible_scene_rules = {str(record["scene_rule_id"]) for record in hosts}
+    if eligible_scene_rules != declared_scene_rules:
+        missing = sorted(declared_scene_rules - eligible_scene_rules)
+        raise ValueError(
+            "released 1obj hosts do not cover declared physical scene rules: "
+            f"{missing}"
+        )
     declared_scene_environments = {
-        (scene_class, category)
-        for category, scene_classes in environment_categories.items()
-        for scene_class in scene_classes
+        (scene_rule_id, category)
+        for category, scene_rule_ids in environment_categories.items()
+        for scene_rule_id in scene_rule_ids
     }
     eligible_scene_environments = {
-        (str(record["scene_class"]), str(record["environment_category"]))
+        (str(record["scene_rule_id"]), str(record["environment_category"]))
         for record in hosts
     }
     if eligible_scene_environments != declared_scene_environments:
@@ -639,6 +660,7 @@ def released_source_pool(
         "rejected_motion_specific_host_count": rejected_host_role_count,
         "rejected_bounded_camera_host_count": rejected_bounded_camera_host_count,
         "rejected_visual_type_host_count": rejected_visual_type_host_count,
+        "rejected_scene_rule_host_count": rejected_scene_rule_host_count,
         "object_scale_bin_counts": dict(
             sorted(Counter(record["scale_bin"] for record in objects).items())
         ),
@@ -650,6 +672,17 @@ def released_source_pool(
         ),
         "host_scene_class_counts": dict(
             sorted(Counter(record["scene_class"] for record in hosts).items())
+        ),
+        "host_scene_rule_counts": dict(
+            sorted(Counter(record["scene_rule_id"] for record in hosts).items())
+        ),
+        "host_scene_rule_environment_category_counts": dict(
+            sorted(
+                Counter(
+                    f"{record['scene_rule_id']}:{record['environment_category']}"
+                    for record in hosts
+                ).items()
+            )
         ),
         "host_visual_profile_count": len(
             {record["visual_profile_id"] for record in hosts}

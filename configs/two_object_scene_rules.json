@@ -1,0 +1,122 @@
+{
+  "schema_version": "physweep_two_object_scene_rules_v1",
+  "host_eligibility": {
+    "required_collider_roles": ["primary_support"],
+    "allowed_collider_roles": [
+      "primary_support",
+      "support_structure",
+      "environment_floor"
+    ],
+    "allowed_visual_types": ["procedural_room"],
+    "camera_envelope_policy": "unbounded_only"
+  },
+  "physical_rules": [
+    {
+      "id": "ground_patch_flat",
+      "scene_class": "ground_flat",
+      "support_shape": "rectangular_slab",
+      "maximum_abs_slope_degrees": 0.0,
+      "allowed_structure_families": ["floor_patch"],
+      "allowed_kinematic_regimes": [
+        "supported_supported",
+        "airborne_supported",
+        "airborne_airborne"
+      ]
+    },
+    {
+      "id": "ground_long_flat",
+      "scene_class": "ground_flat",
+      "support_shape": "rectangular_slab",
+      "maximum_abs_slope_degrees": 0.0,
+      "allowed_structure_families": ["long_indoor_floor"],
+      "allowed_kinematic_regimes": [
+        "supported_supported",
+        "airborne_supported",
+        "airborne_airborne"
+      ]
+    },
+    {
+      "id": "ground_open_hardscape",
+      "scene_class": "ground_flat",
+      "support_shape": "rectangular_slab",
+      "maximum_abs_slope_degrees": 0.0,
+      "allowed_structure_families": ["open_hardscape"],
+      "allowed_kinematic_regimes": [
+        "supported_supported",
+        "airborne_supported",
+        "airborne_airborne"
+      ]
+    },
+    {
+      "id": "raised_wide_flat",
+      "scene_class": "raised_flat",
+      "support_shape": "rectangular_slab",
+      "maximum_abs_slope_degrees": 0.0,
+      "allowed_structure_families": ["standard_flat", "wide_flat"],
+      "allowed_kinematic_regimes": [
+        "supported_supported",
+        "airborne_supported",
+        "airborne_airborne"
+      ]
+    },
+    {
+      "id": "raised_long_flat",
+      "scene_class": "raised_flat",
+      "support_shape": "rectangular_slab",
+      "maximum_abs_slope_degrees": 0.0,
+      "allowed_structure_families": [
+        "long_lab_bench",
+        "long_kitchen_counter",
+        "long_wood_table"
+      ],
+      "allowed_kinematic_regimes": [
+        "supported_supported",
+        "airborne_supported",
+        "airborne_airborne"
+      ]
+    }
+  ],
+  "visual_environment_coverage": {
+    "metadata_key": "appearance.scene_visual.environment_category",
+    "categories": [
+      {
+        "id": "minimal",
+        "allowed_scene_rules": [
+          "ground_patch_flat",
+          "ground_long_flat",
+          "raised_wide_flat",
+          "raised_long_flat"
+        ]
+      },
+      {
+        "id": "home_office",
+        "allowed_scene_rules": [
+          "ground_patch_flat",
+          "ground_long_flat",
+          "raised_wide_flat",
+          "raised_long_flat"
+        ]
+      },
+      {
+        "id": "lab_studio",
+        "allowed_scene_rules": [
+          "ground_patch_flat",
+          "raised_wide_flat",
+          "raised_long_flat"
+        ]
+      },
+      {
+        "id": "garage_workshop",
+        "allowed_scene_rules": ["ground_patch_flat", "raised_wide_flat"]
+      },
+      {
+        "id": "outdoor_courtyard",
+        "allowed_scene_rules": [
+          "ground_patch_flat",
+          "ground_open_hardscape"
+        ]
+      }
+    ],
+    "selection_policy": "balanced_feasible_within_scene_camera_and_source_pair"
+  }
+}

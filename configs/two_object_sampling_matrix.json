@@ -1,5 +1,5 @@
 {
-  "schema_version": "physweep_two_object_sampling_matrix_v10",
+  "schema_version": "physweep_two_object_sampling_matrix_v11",
   "objects": {
     "schema_version": "physweep_object_collection_v1",
     "roles": [
@@ -83,7 +83,7 @@
     ]
   },
   "candidate_pool": {
-    "schema_version": "physweep_two_object_candidate_pool_v3",
+    "schema_version": "physweep_two_object_candidate_pool_v4",
     "source_release": {
       "released_base_manifest_schema_version": "physweep_base_release_view_v14",
       "generation_manifest_schema_version": "physweep_release_metadata_manifest_v2",
@@ -113,16 +113,9 @@
         "large": null
       }
     },
-    "host_eligibility": {
-      "support_shape": "rectangular_slab",
-      "required_collider_roles": ["primary_support"],
-      "allowed_collider_roles": [
-        "primary_support",
-        "support_structure",
-        "environment_floor"
-      ],
-      "allowed_visual_types": ["procedural_room"],
-      "camera_envelope_policy": "unbounded_only"
+    "pair_eligibility": {
+      "maximum_interacting_mass_ratio": 50.0,
+      "maximum_interacting_geometry_aspect_ratio": 6.0
     }
   },
   "coverage_plan": {
@@ -244,37 +237,6 @@
     "minimum_support_context_visible_fraction": 0.5,
     "minimum_support_anchor_visible_fraction": 1.0,
     "minimum_support_anchor_unoccluded_fraction": 0.75
-  },
-  "scene_compatibility": {
-    "schema_version": "physweep_two_object_scene_compatibility_v1",
-    "allowed_scene_classes": ["ground_flat", "raised_flat"]
-  },
-  "visual_environment_coverage": {
-    "schema_version": "physweep_two_object_visual_environment_coverage_v1",
-    "metadata_key": "appearance.scene_visual.environment_category",
-    "categories": [
-      {
-        "id": "minimal",
-        "allowed_scene_classes": ["ground_flat", "raised_flat"]
-      },
-      {
-        "id": "home_office",
-        "allowed_scene_classes": ["ground_flat", "raised_flat"]
-      },
-      {
-        "id": "lab_studio",
-        "allowed_scene_classes": ["ground_flat", "raised_flat"]
-      },
-      {
-        "id": "garage_workshop",
-        "allowed_scene_classes": ["ground_flat", "raised_flat"]
-      },
-      {
-        "id": "outdoor_courtyard",
-        "allowed_scene_classes": ["ground_flat"]
-      }
-    ],
-    "selection_policy": "balanced_feasible_within_scene_camera_and_source_pair"
   },
   "motion_intents": [
     {

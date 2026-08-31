@@ -21,6 +21,12 @@ from tools.sampling.sample_two_object_base import (
     build_two_object_scene,
     compatible_shape_pair_ids,
 )
+from tools.scene_rules.two_object import (
+    DEFAULT_TWO_OBJECT_SCENE_RULES,
+    allowed_scene_classes,
+    load_two_object_scene_rules,
+    resolved_two_object_scene_rules,
+)
 from tools.sampling.two_object_sources import declared_within, released_source_pool
 
 
@@ -39,6 +45,7 @@ def _axis_counts(cells: Sequence[dict[str, Any]]) -> dict[str, dict[str, int]]:
         "ordered_shape_pair": "shape_pair_id",
         "ordered_scale_pair": "scale_pair_id",
         "scene_class": "scene_class",
+        "scene_rule": "scene_rule_id",
         "camera_view_family": "camera_view_family_id",
         "source_family_pair": "source_family_pair_id",
         "visual_environment": "visual_environment_category",
@@ -181,13 +188,17 @@ def _assign_camera_view_families(
 
 
 def coverage_cells(
-    matrix: dict[str, Any], limit: int | None = None
+    matrix: dict[str, Any],
+    limit: int | None = None,
+    *,
+    scene_rules: dict[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
     """Return a balanced prefix of the complete declared Cartesian matrix."""
 
-    intents = _validated_intents(matrix)
+    resolved_scene_rules = resolved_two_object_scene_rules(scene_rules)
+    intents = _validated_intents(matrix, resolved_scene_rules)
     coverage = matrix["coverage_plan"]
-    scene_classes = matrix["scene_compatibility"]["allowed_scene_classes"]
+    scene_classes = allowed_scene_classes(resolved_scene_rules)
     replicates = int(coverage["replicates_per_cell"])
     cells = []
     for intent in intents:
@@ -256,12 +267,75 @@ def _resolved_within(root: Path, value: Path) -> Path:
     return resolved
 
 
+def _pair_dynamics_eligible(
+    left: dict[str, Any],
+    right: dict[str, Any],
+    matrix: dict[str, Any],
+    cell: dict[str, Any],
+) -> bool:
+    """Reject only interacting pairs with a declared extreme mass mismatch."""
+
+    metadata = [left.get("metadata"), right.get("metadata")]
+    has_simulation = [
+        isinstance(record, dict) and isinstance(record.get("simulation"), dict)
+        for record in metadata
+    ]
+    if not any(has_simulation):
+        return True
+    if not all(has_simulation):
+        raise ValueError("two-object source metadata is incomplete")
+    masses = []
+    aspect_ratios = []
+    for record in metadata:
+        objects = record["simulation"].get("objects")
+        if not isinstance(objects, list) or len(objects) != 1:
+            raise ValueError("two-object source must contain exactly one object")
+        mass = float(objects[0].get("material", {}).get("mass_kg", 0.0))
+        if not math.isfinite(mass) or mass <= 0.0:
+            raise ValueError("two-object source mass must be finite and positive")
+        masses.append(mass)
+        size = objects[0].get("geometry", {}).get("size_m")
+        if (
+            not isinstance(size, list)
+            or len(size) != 3
+            or any(
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(float(value))
+                or float(value) <= 0.0
+                for value in size
+            )
+        ):
+            raise ValueError("two-object source size must be three positive values")
+        aspect_ratios.append(max(map(float, size)) / min(map(float, size)))
+    interaction_class = str(cell.get("interaction_class", ""))
+    if interaction_class not in {"interacting", "independent"}:
+        raise ValueError("two-object coverage cell has no interaction class")
+    if interaction_class == "independent":
+        return True
+    maximum_ratio = float(
+        matrix["candidate_pool"]["pair_eligibility"][
+            "maximum_interacting_mass_ratio"
+        ]
+    )
+    maximum_aspect_ratio = float(
+        matrix["candidate_pool"]["pair_eligibility"][
+            "maximum_interacting_geometry_aspect_ratio"
+        ]
+    )
+    return (
+        max(masses) / min(masses) <= maximum_ratio + 1.0e-12
+        and max(aspect_ratios) <= maximum_aspect_ratio + 1.0e-12
+    )
+
+
 def _pair_layout_fits_host(
     host: dict[str, Any],
     left: dict[str, Any],
     right: dict[str, Any],
     matrix: dict[str, Any],
     cell: dict[str, Any],
+    scene_rules: dict[str, Any] | None = None,
 ) -> bool:
     metadata = [
         host.get("metadata"),
@@ -276,6 +350,7 @@ def _pair_layout_fits_host(
         return True
     if not all(has_simulation):
         raise ValueError("two-object source metadata is incomplete")
+    declared_scene_rule_id = host.get("scene_rule_id")
     try:
         build_two_object_scene(
             metadata[0],
@@ -283,6 +358,12 @@ def _pair_layout_fits_host(
             str(cell["motion_id"]),
             metadata[1:],
             camera_view_family_id=str(cell["camera_view_family_id"]),
+            scene_rules=scene_rules,
+            scene_rule_id=(
+                None
+                if declared_scene_rule_id is None
+                else str(declared_scene_rule_id)
+            ),
         )
     except ValueError as error:
         if str(error) == "host support is too small for the two-object layout":
@@ -296,11 +377,41 @@ def select_coverage_sources(
     objects: Sequence[dict[str, Any]],
     hosts: Sequence[dict[str, Any]],
     matrix: dict[str, Any],
+    scene_rules: dict[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Assign compatible sources while balancing profiles and source reuse."""
 
+    resolved_scene_rules = resolved_two_object_scene_rules(scene_rules)
     plan = matrix["coverage_plan"]
     seed = int(plan["seed"])
+    intent_regimes = {
+        str(intent["id"]): str(intent["kinematic_regime"])
+        for intent in matrix["motion_intents"]
+    }
+    scene_rule_regimes = {
+        str(rule["id"]): set(map(str, rule["allowed_kinematic_regimes"]))
+        for rule in resolved_scene_rules["physical_rules"]
+    }
+    scene_rule_classes = {
+        str(rule["id"]): str(rule["scene_class"])
+        for rule in resolved_scene_rules["physical_rules"]
+    }
+    unknown_host_rules = sorted(
+        {
+            str(record.get("scene_rule_id", ""))
+            for record in hosts
+        }.difference(scene_rule_regimes)
+    )
+    if unknown_host_rules:
+        raise ValueError(
+            f"two-object hosts name unknown scene rules: {unknown_host_rules}"
+        )
+    if any(
+        str(record.get("scene_class", ""))
+        != scene_rule_classes[str(record["scene_rule_id"])]
+        for record in hosts
+    ):
+        raise ValueError("two-object host scene class contradicts its scene rule")
     maximum_reuse = int(
         plan["selection_policy"]["maximum_object_source_reuse"]
     )
@@ -328,6 +439,10 @@ def select_coverage_sources(
     source_family_role_use: Counter[tuple[str, str]] = Counter()
     host_profile_use: Counter[str] = Counter()
     host_type_use: Counter[str] = Counter()
+    scene_rule_use: Counter[str] = Counter()
+    motion_scene_rule_use: Counter[tuple[str, str]] = Counter()
+    camera_scene_rule_use: Counter[tuple[str, str]] = Counter()
+    scene_rule_environment_use: Counter[tuple[str, str]] = Counter()
     environment_use: Counter[str] = Counter()
     scene_environment_use: Counter[tuple[str, str]] = Counter()
     camera_scene_environment_use: Counter[tuple[str, str, str]] = Counter()
@@ -364,6 +479,7 @@ def select_coverage_sources(
         selected_source_pair = None
         host = None
         for source_pair in declared_source_pairs:
+            source_pair_id = str(source_pair["id"])
             left_family = str(source_pair["object_a"])
             right_family = str(source_pair["object_b"])
             left_pool = objects_by_family_shape_scale.get(
@@ -382,6 +498,52 @@ def select_coverage_sources(
                 ),
                 [],
             )
+            candidate_hosts = [
+                record
+                for record in hosts_by_scene.get(scene_class, [])
+                if intent_regimes[str(cell["motion_id"])]
+                in scene_rule_regimes[str(record["scene_rule_id"])]
+                and host_use[str(record["source"]["scene_id"])]
+                < maximum_host_reuse
+            ]
+            candidate_hosts.sort(
+                key=lambda record: (
+                    motion_scene_rule_use[
+                        (str(cell["motion_id"]), str(record["scene_rule_id"]))
+                    ]
+                    > 0,
+                    host_use[str(record["source"]["scene_id"])],
+                    scene_environment_use[
+                        (scene_class, str(record["environment_category"]))
+                    ],
+                    camera_scene_environment_use[
+                        (
+                            camera_view_family_id,
+                            scene_class,
+                            str(record["environment_category"]),
+                        )
+                    ],
+                    source_pair_scene_environment_use[
+                        (
+                            source_pair_id,
+                            scene_class,
+                            str(record["environment_category"]),
+                        )
+                    ],
+                    motion_scene_rule_use[
+                        (str(cell["motion_id"]), str(record["scene_rule_id"]))
+                    ],
+                    environment_use[str(record["environment_category"])],
+                    host_profile_use[str(record["visual_profile_id"])],
+                    host_type_use[str(record["visual_type"])],
+                    _rank(
+                        seed,
+                        cell["cell_id"],
+                        "host",
+                        record["source"]["scene_id"],
+                    ),
+                )
+            )
             for left in sorted(
                 left_pool, key=lambda value: object_key(value, "a")
             ):
@@ -397,56 +559,22 @@ def select_coverage_sources(
                     unordered_pair = tuple(sorted((left_id, right_id)))
                     if unordered_pair in used_pairs:
                         continue
-                    source_pair_id = str(source_pair["id"])
+                    if not _pair_dynamics_eligible(left, right, matrix, cell):
+                        continue
                     excluded_host_ids = {left_id, right_id}
-                    candidate_hosts = [
-                        record
-                        for record in hosts_by_scene.get(scene_class, [])
-                        if host_use[str(record["source"]["scene_id"])]
-                        < maximum_host_reuse
-                        and str(record["source"]["scene_id"])
-                        not in excluded_host_ids
-                    ]
-                    candidate_hosts.sort(
-                        key=lambda record: (
-                            host_use[str(record["source"]["scene_id"])],
-                            scene_environment_use[
-                                (
-                                    scene_class,
-                                    str(record["environment_category"]),
-                                )
-                            ],
-                            camera_scene_environment_use[
-                                (
-                                    camera_view_family_id,
-                                    scene_class,
-                                    str(record["environment_category"]),
-                                )
-                            ],
-                            source_pair_scene_environment_use[
-                                (
-                                    source_pair_id,
-                                    scene_class,
-                                    str(record["environment_category"]),
-                                )
-                            ],
-                            environment_use[str(record["environment_category"])],
-                            host_profile_use[str(record["visual_profile_id"])],
-                            host_type_use[str(record["visual_type"])],
-                            _rank(
-                                seed,
-                                cell["cell_id"],
-                                "host",
-                                record["source"]["scene_id"],
-                            ),
-                        )
-                    )
                     candidate_host = next(
                         (
                             record
                             for record in candidate_hosts
-                            if _pair_layout_fits_host(
-                                record, left, right, matrix, cell
+                            if str(record["source"]["scene_id"])
+                            not in excluded_host_ids
+                            and _pair_layout_fits_host(
+                                record,
+                                left,
+                                right,
+                                matrix,
+                                cell,
+                                resolved_scene_rules,
                             )
                         ),
                         None,
@@ -478,9 +606,11 @@ def select_coverage_sources(
         )
         source_pair_id = str(selected_source_pair["id"])
         environment_category = str(host["environment_category"])
+        scene_rule_id = str(host["scene_rule_id"])
+        selected_cell["scene_rule_id"] = scene_rule_id
         selected_cell["visual_environment_category"] = environment_category
         selected_cell["cell_id"] = "__".join(
-            [str(selected_cell["cell_id"]), environment_category]
+            [str(selected_cell["cell_id"]), scene_rule_id, environment_category]
         )
         used_pairs.add(unordered_pair)
         source_family_pair_use[str(selected_source_pair["id"])] += 1
@@ -499,6 +629,10 @@ def select_coverage_sources(
             object_profile_use[str(record["visual_profile_id"])] += 1
         host_profile_use[str(host["visual_profile_id"])] += 1
         host_type_use[str(host["visual_type"])] += 1
+        scene_rule_use[scene_rule_id] += 1
+        motion_scene_rule_use[(str(cell["motion_id"]), scene_rule_id)] += 1
+        camera_scene_rule_use[(camera_view_family_id, scene_rule_id)] += 1
+        scene_rule_environment_use[(scene_rule_id, environment_category)] += 1
         environment_use[environment_category] += 1
         scene_environment_use[(scene_class, environment_category)] += 1
         camera_scene_environment_use[
@@ -597,6 +731,31 @@ def select_coverage_sources(
         },
         "selected_host_visual_profile_count": len(host_profile_use),
         "selected_host_visual_type_counts": dict(sorted(host_type_use.items())),
+        "selected_scene_rule_counts": dict(sorted(scene_rule_use.items())),
+        "selected_motion_scene_rule_counts": {
+            motion_id: {
+                rule_id: motion_scene_rule_use[(motion_id, rule_id)]
+                for rule_id in sorted(scene_rule_use)
+            }
+            for motion_id in sorted({str(cell["motion_id"]) for cell in cells})
+        },
+        "selected_camera_scene_rule_counts": {
+            camera_family: {
+                rule_id: camera_scene_rule_use[(camera_family, rule_id)]
+                for rule_id in sorted(scene_rule_use)
+            }
+            for camera_family in selected_camera_families
+        },
+        "selected_scene_rule_environment_counts": {
+            rule_id: {
+                category: count
+                for (selected_rule_id, category), count in sorted(
+                    scene_rule_environment_use.items()
+                )
+                if selected_rule_id == rule_id
+            }
+            for rule_id in sorted(scene_rule_use)
+        },
         "selected_host_environment_category_counts": dict(
             sorted(environment_use.items())
         ),
@@ -635,11 +794,69 @@ def select_coverage_sources(
     return selected, audit
 
 
+def _validate_complete_scene_coverage(
+    matrix: dict[str, Any],
+    scene_rules: dict[str, Any],
+    audit: dict[str, Any],
+) -> None:
+    """Require a complete matrix to materialize every declared scene pairing."""
+
+    declared_rules = {str(rule["id"]) for rule in scene_rules["physical_rules"]}
+    selected_rules = set(audit["selected_scene_rule_counts"])
+    if selected_rules != declared_rules:
+        raise ValueError(
+            "complete two-object coverage misses physical scene rules: "
+            f"{sorted(declared_rules - selected_rules)}"
+        )
+    declared_pairs = {
+        (str(rule_id), str(category["id"]))
+        for category in scene_rules["visual_environment_coverage"]["categories"]
+        for rule_id in category["allowed_scene_rules"]
+    }
+    selected_pairs = {
+        (str(rule_id), str(category))
+        for rule_id, counts in audit[
+            "selected_scene_rule_environment_counts"
+        ].items()
+        for category, count in counts.items()
+        if int(count) > 0
+    }
+    if selected_pairs != declared_pairs:
+        raise ValueError(
+            "complete two-object coverage misses scene/environment pairs: "
+            f"{sorted(declared_pairs - selected_pairs)}"
+        )
+    motion_regimes = {
+        str(intent["id"]): str(intent["kinematic_regime"])
+        for intent in matrix["motion_intents"]
+    }
+    declared_motion_rules = {
+        (motion_id, str(rule["id"]))
+        for motion_id, regime in motion_regimes.items()
+        for rule in scene_rules["physical_rules"]
+        if regime in rule["allowed_kinematic_regimes"]
+    }
+    selected_motion_rules = {
+        (str(motion_id), str(rule_id))
+        for motion_id, counts in audit["selected_motion_scene_rule_counts"].items()
+        for rule_id, count in counts.items()
+        if int(count) > 0
+    }
+    if selected_motion_rules != declared_motion_rules:
+        raise ValueError(
+            "complete two-object coverage misses motion/scene-rule pairs: "
+            f"{sorted(declared_motion_rules - selected_motion_rules)}"
+        )
+
+
 def build_coverage_scenes(
-    selections: Sequence[dict[str, Any]], matrix: dict[str, Any]
+    selections: Sequence[dict[str, Any]],
+    matrix: dict[str, Any],
+    scene_rules: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Compile selected sources and attach the minimal per-scene coverage fact."""
 
+    resolved_scene_rules = resolved_two_object_scene_rules(scene_rules)
     scenes = []
     role_ids = [str(role["object_id"]) for role in matrix["objects"]["roles"]]
     for sample_index, selection in enumerate(selections, start=1):
@@ -650,7 +867,7 @@ def build_coverage_scenes(
                 f"physweep2scene_{sample_index:06d}",
                 str(cell["shape_pair_id"]),
                 str(cell["scale_pair_id"]),
-                str(cell["scene_class"]),
+                str(cell["scene_rule_id"]),
                 str(cell["visual_environment_category"]),
             ]
         )
@@ -662,9 +879,11 @@ def build_coverage_scenes(
             [record["metadata"] for record in selection["objects"]],
             sample_index=sample_index,
             camera_view_family_id=str(cell["camera_view_family_id"]),
+            scene_rules=resolved_scene_rules,
+            scene_rule_id=str(cell["scene_rule_id"]),
         )
         scene["two_object_sampling"] = {
-            "schema_version": "physweep_two_object_coverage_cell_v3",
+            "schema_version": "physweep_two_object_coverage_cell_v4",
             "cell": copy.deepcopy(cell),
             "sources": {
                 "host": copy.deepcopy(selection["host"]["source"]),
@@ -688,6 +907,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--source-manifest", type=Path, required=True)
     parser.add_argument("--matrix", type=Path, default=DEFAULT_MATRIX)
+    parser.add_argument(
+        "--scene-rules", type=Path, default=DEFAULT_TWO_OBJECT_SCENE_RULES
+    )
     parser.add_argument("--limit", type=int)
     parser.add_argument("--output-dir", type=Path, required=True)
     return parser.parse_args()
@@ -700,23 +922,30 @@ def main() -> None:
     released_path = _resolved_within(root, args.released_base_manifest)
     source_path = declared_within(source_root, args.source_manifest)
     matrix_path = _resolved_within(root, args.matrix)
+    scene_rules_path = _resolved_within(root, args.scene_rules)
     output_dir = _resolved_within(root, args.output_dir)
     if output_dir.exists() and any(output_dir.iterdir()):
         raise ValueError("two-object coverage output directory must be empty")
     matrix = read_json(matrix_path)
-    cells, full_cell_count = coverage_cells(matrix, args.limit)
+    scene_rules = load_two_object_scene_rules(scene_rules_path)
+    cells, full_cell_count = coverage_cells(
+        matrix, args.limit, scene_rules=scene_rules
+    )
     objects, hosts, source_audit = released_source_pool(
         root=root,
         released_base_manifest_path=released_path,
         source_root=source_root,
         source_manifest_path=source_path,
         matrix=matrix,
+        scene_rules=scene_rules,
     )
     selections, selection_audit = select_coverage_sources(
-        cells, objects, hosts, matrix
+        cells, objects, hosts, matrix, scene_rules
     )
+    if len(cells) == full_cell_count:
+        _validate_complete_scene_coverage(matrix, scene_rules, selection_audit)
     selected_cells = [selection["cell"] for selection in selections]
-    scenes = build_coverage_scenes(selections, matrix)
+    scenes = build_coverage_scenes(selections, matrix, scene_rules)
     samples = []
     for scene in scenes:
         metadata_path = output_dir / "scenes" / scene["scene_id"] / "metadata.json"
@@ -739,6 +968,10 @@ def main() -> None:
             "path": matrix_path.relative_to(root).as_posix(),
             "sha256": sha256(matrix_path),
         },
+        "scene_rules": {
+            "path": scene_rules_path.relative_to(root).as_posix(),
+            "sha256": sha256(scene_rules_path),
+        },
         "source_release": {
             "source_project_root": (
                 source_root.relative_to(root).as_posix()
@@ -755,7 +988,7 @@ def main() -> None:
             },
         },
         "coverage": {
-            "schema_version": "physweep_two_object_coverage_selection_v5",
+            "schema_version": "physweep_two_object_coverage_selection_v6",
             "full_cell_count": full_cell_count,
             "selected_cell_count": len(cells),
             "complete_cartesian_product": len(cells) == full_cell_count,

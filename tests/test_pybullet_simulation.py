@@ -55,6 +55,10 @@ from tools.core.kinematics import (  # noqa: E402
 from tools.motion_rules.two_object.motion import (  # noqa: E402
     _supported_displacements,
 )
+from tools.scene_rules.two_object import (  # noqa: E402
+    load_two_object_scene_rules,
+    resolve_scene_rule,
+)
 from tools.physics.physics_invariants import runtime_collision_descriptors  # noqa: E402
 from tools.physics.simulate_pybullet_rigid import (  # noqa: E402
     create_dynamic_body,
@@ -1456,7 +1460,13 @@ class PyBulletSimulationTests(unittest.TestCase):
         self.assertEqual(
             scene["simulation"]["interaction"]["scene_compatibility"],
             {
-                "schema_version": "physweep_two_object_scene_compatibility_v1",
+                "schema_version": "physweep_two_object_scene_compatibility_v2",
+                "scene_rule_id": str(
+                    resolve_scene_rule(
+                        load_two_object_scene_rules(),
+                        host["simulation"]["support"],
+                    )["id"]
+                ),
                 "scene_class": host["simulation"]["support"]["scene_class"],
                 "environment_binding_policy": (
                     "recompiled_for_declared_pair_view"
