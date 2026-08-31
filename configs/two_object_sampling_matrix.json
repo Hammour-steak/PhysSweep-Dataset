@@ -1,5 +1,5 @@
 {
-  "schema_version": "physweep_two_object_sampling_matrix_v9",
+  "schema_version": "physweep_two_object_sampling_matrix_v10",
   "objects": {
     "schema_version": "physweep_object_collection_v1",
     "roles": [
@@ -36,7 +36,8 @@
       "all_shape_pairs": ["sphere_to_sphere", "sphere_to_cuboid", "sphere_to_cylinder", "cuboid_to_sphere", "cuboid_to_cuboid", "cuboid_to_cylinder", "cylinder_to_sphere", "cylinder_to_cuboid", "cylinder_to_cylinder"],
       "supported_head_on": ["sphere_to_sphere", "cuboid_to_sphere", "cylinder_to_sphere"],
       "sphere_airborne_object_a": ["sphere_to_sphere", "sphere_to_cuboid", "sphere_to_cylinder"],
-      "sphere_airborne_pair": ["sphere_to_sphere"]
+      "sphere_airborne_pair": ["sphere_to_sphere"],
+      "independent_control_pairs": ["sphere_to_sphere", "cuboid_to_cuboid", "cylinder_to_cylinder"]
     },
     "rules": [
       {
@@ -69,15 +70,15 @@
       },
       {
         "motion_id": "surface_single_independent_2obj",
-        "shape_pair_set_id": "all_shape_pairs"
+        "shape_pair_set_id": "independent_control_pairs"
       },
       {
         "motion_id": "surface_dual_independent_2obj",
-        "shape_pair_set_id": "all_shape_pairs"
+        "shape_pair_set_id": "independent_control_pairs"
       },
       {
         "motion_id": "air_supported_independent_2obj",
-        "shape_pair_set_id": "all_shape_pairs"
+        "shape_pair_set_id": "independent_control_pairs"
       }
     ]
   },
@@ -125,7 +126,7 @@
     }
   },
   "coverage_plan": {
-    "schema_version": "physweep_two_object_coverage_plan_v2",
+    "schema_version": "physweep_two_object_coverage_plan_v3",
     "seed": 20260829,
     "role_ordered_scale_pairs": [
       {"id": "small_to_small", "object_a": "small", "object_b": "small"},
@@ -200,6 +201,7 @@
       {"id": "asset_to_asset", "object_a": "asset", "object_b": "asset"}
     ],
     "replicates_per_cell": 1,
+    "minimum_interacting_fraction": 0.80,
     "selection_policy": {
       "source_pair_uniqueness": "unordered_without_replacement",
       "host_uniqueness": "balanced_bounded_reuse",

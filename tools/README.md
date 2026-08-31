@@ -87,12 +87,18 @@ environment visual/collision pose.
 The 2obj candidate sampler reuses hash-bound released 1obj metadata, appearance,
 visual assets, and collision proxies. It admits generic primitives, centered
 asset primitives, and exact continuous stacks of centered upright cylinders
-within the declared 1 mm origin tolerance. The 1152 base cells cover ten
+within the declared 1 mm origin tolerance. The 828 base cells cover ten
 frozen motions with their admitted ordered shape pairs, all nine ordered size
 pairs, and two flat scene classes. Six pair-relative camera families, four
 ordered generic/asset source-family pairs, and five feasible visual-environment
 categories are balanced without multiplying the base count. This is not yet a
 production 2obj release.
+
+Every admitted cell appears once. Independent controls use the three same-shape
+pairs because they do not exercise collision geometry; the six cross-shape
+orders remain covered by interacting motions. Thus 666/828 (80.43%) of the
+complete matrix is interacting. Balanced prefixes preserve that mix while
+retaining all three control types.
 
 Motion labels must agree with their initial velocities and displacement bounds.
 Supported contact placement predicts Coulomb-friction travel; drop-contact rows
@@ -130,7 +136,7 @@ and a visible pre-contact ascent for every declared arc projectile.
   --output-root outputs/two_object_validation/sweep/bound
 ```
 
-Omit `--limit` for all 1152 cells. Post-contact outcomes are measured rather
+Omit `--limit` for all 828 cells. Post-contact outcomes are measured rather
 than preclassified. One camera is frozen only after every member of a
 two-object one-factor group passes; masks use `masks/<object_id>/`.
 

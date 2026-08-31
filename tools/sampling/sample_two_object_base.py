@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -74,6 +75,7 @@ _COVERAGE_PLAN_FIELDS = {
     "camera_view_families",
     "role_ordered_source_family_pairs",
     "replicates_per_cell",
+    "minimum_interacting_fraction",
     "selection_policy",
 }
 _SELECTION_POLICY = {
@@ -95,7 +97,7 @@ _POLICY_FIELDS = {
 
 def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
     if set(matrix) != _MATRIX_FIELDS or (
-        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v9"
+        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v10"
     ):
         raise ValueError("unsupported two-object sampling matrix")
     objects = matrix.get("objects")
@@ -242,11 +244,12 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         not isinstance(coverage, dict)
         or set(coverage) != _COVERAGE_PLAN_FIELDS
         or coverage.get("schema_version")
-        != "physweep_two_object_coverage_plan_v2"
+        != "physweep_two_object_coverage_plan_v3"
     ):
         raise ValueError("two-object coverage plan is incomplete")
     seed = coverage.get("seed")
     replicates = coverage.get("replicates_per_cell")
+    minimum_interacting_fraction = coverage.get("minimum_interacting_fraction")
     if (
         isinstance(seed, bool)
         or not isinstance(seed, int)
@@ -254,6 +257,10 @@ def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
         or isinstance(replicates, bool)
         or not isinstance(replicates, int)
         or replicates < 1
+        or isinstance(minimum_interacting_fraction, bool)
+        or not isinstance(minimum_interacting_fraction, (int, float))
+        or not math.isfinite(float(minimum_interacting_fraction))
+        or not 0.0 < float(minimum_interacting_fraction) < 1.0
     ):
         raise ValueError("two-object coverage seed and replicates are invalid")
     scale_pairs = coverage.get("role_ordered_scale_pairs")

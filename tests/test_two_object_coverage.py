@@ -208,7 +208,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
     def test_matrix_declares_complete_ordered_cartesian_coverage(self) -> None:
         matrix = load_matrix()
         self.assertEqual(
-            matrix["schema_version"], "physweep_two_object_sampling_matrix_v9"
+            matrix["schema_version"], "physweep_two_object_sampling_matrix_v10"
         )
         intents = {record["id"]: record for record in matrix["motion_intents"]}
         self.assertEqual(
@@ -226,16 +226,29 @@ class TwoObjectCoverageTests(unittest.TestCase):
             [[0.12, 0.0, 0.0], [0.0, 0.0, 0.0]],
         )
         cells, full_count = coverage_cells(matrix)
-        self.assertEqual(full_count, 1152)
-        self.assertEqual(len(cells), 1152)
-        counts = _axis_counts(cells)
-        self.assertEqual(set(counts["motion"].values()), {18, 54, 162})
         self.assertEqual(
-            set(counts["ordered_shape_pair"].values()), {108, 126, 144, 180}
+            matrix["shape_motion_compatibility"]["pair_sets"][
+                "independent_control_pairs"
+            ],
+            ["sphere_to_sphere", "cuboid_to_cuboid", "cylinder_to_cylinder"],
         )
-        self.assertEqual(set(counts["ordered_scale_pair"].values()), {128})
-        self.assertEqual(set(counts["scene_class"].values()), {576})
-        self.assertEqual(set(counts["camera_view_family"].values()), {192})
+        self.assertEqual(full_count, 828)
+        self.assertEqual(len(cells), 828)
+        interaction_counts = Counter(cell["interaction_class"] for cell in cells)
+        self.assertEqual(
+            interaction_counts,
+            {"interacting": 666, "independent": 162},
+        )
+        self.assertGreater(interaction_counts["interacting"] / full_count, 0.80)
+        counts = _axis_counts(cells)
+        self.assertEqual(
+            counts["interaction_class"],
+            {"independent": 162, "interacting": 666},
+        )
+        self.assertEqual(set(counts["motion"].values()), {18, 54, 162})
+        self.assertEqual(set(counts["ordered_scale_pair"].values()), {92})
+        self.assertEqual(set(counts["scene_class"].values()), {414})
+        self.assertEqual(set(counts["camera_view_family"].values()), {138})
         family_ids = set(counts["camera_view_family"])
         for axis in (
             "motion_id",
@@ -267,19 +280,29 @@ class TwoObjectCoverageTests(unittest.TestCase):
 
     def test_balanced_smoke_prefix_covers_every_axis(self) -> None:
         cells, full_count = coverage_cells(load_matrix(), 72)
-        self.assertEqual(full_count, 1152)
+        self.assertEqual(full_count, 828)
+        interaction_counts = Counter(cell["interaction_class"] for cell in cells)
+        self.assertEqual(interaction_counts, {"interacting": 58, "independent": 14})
+        self.assertGreater(interaction_counts["interacting"] / len(cells), 0.80)
         counts = _axis_counts(cells)
+        intents = {
+            record["id"]: record["interaction_class"]
+            for record in load_matrix()["motion_intents"]
+        }
+        for interaction_class in ("interacting", "independent"):
+            motion_counts = [
+                count
+                for motion_id, count in counts["motion"].items()
+                if intents[motion_id] == interaction_class
+            ]
+            self.assertLessEqual(max(motion_counts) - min(motion_counts), 2)
+        self.assertEqual(len(counts["ordered_shape_pair"]), 9)
+        self.assertGreaterEqual(min(counts["ordered_shape_pair"].values()), 2)
         self.assertLessEqual(
-            max(counts["motion"].values()) - min(counts["motion"].values()),
+            max(counts["ordered_scale_pair"].values())
+            - min(counts["ordered_scale_pair"].values()),
             2,
         )
-        self.assertEqual(len(counts["ordered_shape_pair"]), 9)
-        self.assertLessEqual(
-            max(counts["ordered_shape_pair"].values())
-            - min(counts["ordered_shape_pair"].values()),
-            3,
-        )
-        self.assertEqual(set(counts["ordered_scale_pair"].values()), {8})
         self.assertEqual(set(counts["scene_class"].values()), {36})
         self.assertEqual(set(counts["camera_view_family"].values()), {12})
 
@@ -329,6 +352,12 @@ class TwoObjectCoverageTests(unittest.TestCase):
         ] = "allow_bounded"
         with self.assertRaisesRegex(ValueError, "host-eligibility"):
             _validated_intents(bounded_host)
+        impossible_interaction_mix = copy.deepcopy(matrix)
+        impossible_interaction_mix["coverage_plan"][
+            "minimum_interacting_fraction"
+        ] = 0.90
+        with self.assertRaisesRegex(ValueError, "interaction mix"):
+            coverage_cells(impossible_interaction_mix)
         missing_environment = copy.deepcopy(matrix)
         missing_environment["visual_environment_coverage"]["categories"].pop()
         missing_environment["visual_environment_coverage"]["categories"][0][
@@ -454,7 +483,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
             "selected_camera_scene_environment_category_counts"
         ].values():
             for counts in scene_counts.values():
-                self.assertLessEqual(max(counts.values()) - min(counts.values()), 1)
+                self.assertLessEqual(max(counts.values()) - min(counts.values()), 2)
 
     def test_source_selection_allows_matching_size_and_appearance(self) -> None:
         cell = {

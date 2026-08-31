@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 
 from tools.core.camera_geometry import pair_approach_axis_xy
+from tools.core.kinematics import energy_consistent_linear_speed_limit
 from tools.core.rigid_geometry import (
     declared_collision_descriptors,
     primitive_support_radius_m,
@@ -208,6 +209,9 @@ def audit_pair_motion(
         ],
         dtype=np.float64,
     )
+    gravity = np.asarray(
+        metadata["simulation"]["world"]["gravity_m_s2"], dtype=np.float64
+    )
 
     for obj in objects:
         object_id = str(obj["object_id"])
@@ -407,11 +411,17 @@ def audit_pair_motion(
         )
         speed = np.linalg.norm(velocity, axis=1)
         angular_speed = np.linalg.norm(angular, axis=1)
+        object_maximum_linear_speed = energy_consistent_linear_speed_limit(
+            maximum_linear_speed,
+            velocity[0],
+            position,
+            gravity,
+        )
         check(
             f"{object_id}__bounded_linear_speed",
-            float(speed.max()) <= maximum_linear_speed,
+            float(speed.max()) <= object_maximum_linear_speed,
             float(speed.max()),
-            maximum_linear_speed,
+            object_maximum_linear_speed,
         )
         check(
             f"{object_id}__bounded_angular_speed",

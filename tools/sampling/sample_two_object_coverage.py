@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import copy
 import hashlib
+import math
 from collections import Counter
 from itertools import product
 from pathlib import Path
@@ -33,6 +34,7 @@ def _rank(seed: int, *parts: object) -> str:
 
 def _axis_counts(cells: Sequence[dict[str, Any]]) -> dict[str, dict[str, int]]:
     fields = {
+        "interaction_class": "interaction_class",
         "motion": "motion_id",
         "ordered_shape_pair": "shape_pair_id",
         "ordered_scale_pair": "scale_pair_id",
@@ -51,39 +53,77 @@ def _axis_counts(cells: Sequence[dict[str, Any]]) -> dict[str, dict[str, int]]:
 def _balanced_cell_order(
     cells: Sequence[dict[str, Any]], seed: int
 ) -> list[dict[str, Any]]:
-    """Order a Cartesian matrix so every prefix balances all declared axes."""
+    """Balance axes within each interaction class, then preserve their full mix."""
 
-    remaining = [copy.deepcopy(cell) for cell in cells]
-    axis_fields = (
-        "motion_id",
-        "shape_pair_id",
-        "scale_pair_id",
-        "scene_class",
-    )
-    levels = {
-        field: sorted({str(cell[field]) for cell in remaining})
-        for field in axis_fields
-    }
-    counts = {field: Counter() for field in axis_fields}
-    ordered = []
-    while remaining:
-        def score(cell: dict[str, Any]) -> tuple[int, int, str]:
-            ranges = []
+    classes = ("interacting", "independent")
+    if {str(cell["interaction_class"]) for cell in cells} != set(classes):
+        raise ValueError("coverage cells require both interaction classes")
+
+    def balanced_class_order(
+        class_cells: Sequence[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
+        remaining = [copy.deepcopy(cell) for cell in class_cells]
+        axis_fields = (
+            "motion_id",
+            "shape_pair_id",
+            "scale_pair_id",
+            "scene_class",
+        )
+        levels = {
+            field: sorted({str(cell[field]) for cell in remaining})
+            for field in axis_fields
+        }
+        counts = {field: Counter() for field in axis_fields}
+        ordered = []
+        while remaining:
+            def score(cell: dict[str, Any]) -> tuple[int, int, int, str]:
+                ranges = []
+                for field in axis_fields:
+                    values = [counts[field][level] for level in levels[field]]
+                    values[levels[field].index(str(cell[field]))] += 1
+                    ranges.append(max(values) - min(values))
+                return (
+                    ranges[0],
+                    max(ranges[1:]),
+                    sum(ranges[1:]),
+                    _rank(seed, "coverage-cell", cell["cell_id"]),
+                )
+
+            selected = min(remaining, key=score)
+            remaining.remove(selected)
+            ordered.append(selected)
             for field in axis_fields:
-                values = [counts[field][level] for level in levels[field]]
-                values[levels[field].index(str(cell[field]))] += 1
-                ranges.append(max(values) - min(values))
-            return (
-                max(ranges),
-                sum(ranges),
-                _rank(seed, "coverage-cell", cell["cell_id"]),
-            )
+                counts[field][str(selected[field])] += 1
+        return ordered
 
-        selected = min(remaining, key=score)
-        remaining.remove(selected)
-        ordered.append(selected)
-        for field in axis_fields:
-            counts[field][str(selected[field])] += 1
+    by_class = {
+        interaction_class: balanced_class_order(
+            [
+                cell
+                for cell in cells
+                if str(cell["interaction_class"]) == interaction_class
+            ]
+        )
+        for interaction_class in classes
+    }
+    interacting_fraction = len(by_class["interacting"]) / len(cells)
+    ordered = []
+    class_indices = Counter()
+    for prefix_size in range(1, len(cells) + 1):
+        required_interacting = math.ceil(interacting_fraction * prefix_size)
+        interaction_class = (
+            "interacting"
+            if class_indices["interacting"] < required_interacting
+            else "independent"
+        )
+        if class_indices[interaction_class] >= len(by_class[interaction_class]):
+            interaction_class = (
+                "independent"
+                if interaction_class == "interacting"
+                else "interacting"
+            )
+        ordered.append(by_class[interaction_class][class_indices[interaction_class]])
+        class_indices[interaction_class] += 1
     return ordered
 
 
@@ -148,15 +188,17 @@ def coverage_cells(
     intents = _validated_intents(matrix)
     coverage = matrix["coverage_plan"]
     scene_classes = matrix["scene_compatibility"]["allowed_scene_classes"]
+    replicates = int(coverage["replicates_per_cell"])
     cells = []
     for intent in intents:
         motion_id = str(intent["id"])
+        interaction_class = str(intent["interaction_class"])
         allowed_pairs = set(compatible_shape_pair_ids(matrix, motion_id))
         for shape_pair, scale_pair, scene_class, replicate_index in product(
             coverage["role_ordered_shape_pairs"],
             coverage["role_ordered_scale_pairs"],
             scene_classes,
-            range(int(coverage["replicates_per_cell"])),
+            range(replicates),
         ):
             shape_pair_id = str(shape_pair["id"])
             if shape_pair_id not in allowed_pairs:
@@ -174,6 +216,7 @@ def coverage_cells(
                 {
                     "cell_id": cell_id,
                     "motion_id": motion_id,
+                    "interaction_class": interaction_class,
                     "shape_pair_id": shape_pair_id,
                     "object_a_shape": str(shape_pair["object_a"]),
                     "object_b_shape": str(shape_pair["object_b"]),
@@ -185,6 +228,14 @@ def coverage_cells(
                 }
             )
     full_count = len(cells)
+    interacting_count = sum(
+        cell["interaction_class"] == "interacting" for cell in cells
+    )
+    if (
+        interacting_count / full_count
+        <= float(coverage["minimum_interacting_fraction"])
+    ):
+        raise ValueError("two-object coverage does not meet its interaction mix")
     if limit is not None and (
         isinstance(limit, bool)
         or not isinstance(limit, int)
@@ -704,7 +755,7 @@ def main() -> None:
             },
         },
         "coverage": {
-            "schema_version": "physweep_two_object_coverage_selection_v4",
+            "schema_version": "physweep_two_object_coverage_selection_v5",
             "full_cell_count": full_cell_count,
             "selected_cell_count": len(cells),
             "complete_cartesian_product": len(cells) == full_cell_count,

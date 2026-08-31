@@ -17,6 +17,7 @@ from tools.motion_rules.one_object.common import (
     distance_lower_bound as _distance_lower_bound,
     distance_upper_bound as _distance_upper_bound,
 )
+from tools.core.kinematics import energy_consistent_linear_speed_limit
 from tools.core.rigid_geometry import declared_collision_descriptors
 from tools.physics.physics_invariants import additional_physics_invariants
 
@@ -280,19 +281,18 @@ def audit_trajectory(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]
     configured_maximum_linear_speed = float(
         limits.get("maximum_linear_speed_m_s", 5.2)
     )
-    gravity = abs(
-        float(metadata.get("simulation", {}).get("world", {}).get(
+    gravity_vector = np.asarray(
+        metadata.get("simulation", {}).get("world", {}).get(
             "gravity_m_s2", [0.0, 0.0, -9.81]
-        )[2])
+        ),
+        dtype=np.float64,
     )
-    initial_speed = float(speed[0])
-    gravitational_drop = max(0.0, float(positions[0, 2] - positions[:, 2].min()))
-    energy_consistent_speed = math.sqrt(
-        initial_speed * initial_speed + 2.0 * gravity * gravitational_drop
-    )
-    maximum_linear_speed = max(
+    gravity = abs(float(gravity_vector[2]))
+    maximum_linear_speed = energy_consistent_linear_speed_limit(
         configured_maximum_linear_speed,
-        1.15 * energy_consistent_speed,
+        velocities[0],
+        positions,
+        gravity_vector,
     )
     maximum_angular_speed = float(limits.get("maximum_angular_speed_rad_s", 120.0))
     maximum_surface_speed = float(limits.get("maximum_rotational_surface_speed_m_s", 4.5))

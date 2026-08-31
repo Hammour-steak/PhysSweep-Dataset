@@ -49,12 +49,13 @@ from tools.core.rigid_geometry import (  # noqa: E402
     declared_collision_descriptors,
     upright_pair_center_distance_m,
 )
+from tools.core.kinematics import (  # noqa: E402
+    energy_consistent_linear_speed_limit,
+)
 from tools.motion_rules.two_object.motion import (  # noqa: E402
     _supported_displacements,
 )
-from tools.physics.physics_invariants import (  # noqa: E402
-    runtime_collision_descriptors,
-)
+from tools.physics.physics_invariants import runtime_collision_descriptors  # noqa: E402
 from tools.physics.simulate_pybullet_rigid import (  # noqa: E402
     create_dynamic_body,
     simulate,
@@ -69,6 +70,19 @@ from tools.sampling.sample_two_object_coverage import (  # noqa: E402
 
 
 class PyBulletSimulationTests(unittest.TestCase):
+    def test_gravity_adjusts_linear_speed_bound_from_observed_drop(self) -> None:
+        positions = np.asarray(
+            [[0.0, 0.0, 1.0], [0.2, 0.0, -1.0]], dtype=np.float64
+        )
+        actual = energy_consistent_linear_speed_limit(
+            5.2,
+            np.asarray([0.8, 0.0, 1.4], dtype=np.float64),
+            positions,
+            np.asarray([0.0, 0.0, -9.81], dtype=np.float64),
+        )
+        expected = 1.15 * math.sqrt(0.8**2 + 1.4**2 + 2.0 * 9.81 * 2.0)
+        self.assertAlmostEqual(actual, expected)
+
     def test_visual_binding_path_supports_separate_code_and_data_roots(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
