@@ -1,5 +1,5 @@
 {
-  "schema_version": "physweep_two_object_sampling_matrix_v8",
+  "schema_version": "physweep_two_object_sampling_matrix_v9",
   "objects": {
     "schema_version": "physweep_object_collection_v1",
     "roles": [
@@ -292,7 +292,7 @@
       "kinematic_regime": "supported_supported",
       "layout": "planned_supported_contact",
       "object_motions": ["roll_or_slide_1obj", "roll_or_slide_1obj"],
-      "linear_velocity_m_s": [[0.72, 0.0, 0.0], [-0.12, 0.0, 0.0]],
+      "linear_velocity_m_s": [[0.60, 0.0, 0.0], [-0.24, 0.0, 0.0]],
       "minimum_displacement_m": [0.18, 0.06],
       "contact_time_s": 0.619048,
       "impact_offset_ratio": 0.0
@@ -305,8 +305,8 @@
       "object_motions": ["roll_or_slide_1obj", "roll_or_slide_1obj"],
       "linear_velocity_m_s": [[0.60, 0.0, 0.0], [0.0, -0.55, 0.0]],
       "minimum_displacement_m": [0.16, 0.14],
-      "contact_time_s": 0.65,
-      "impact_offset_ratio": 0.30
+      "contact_time_s": 0.50,
+      "impact_offset_ratio": 0.10
     },
     {
       "id": "surface_catch_up_2obj",
@@ -314,9 +314,9 @@
       "kinematic_regime": "supported_supported",
       "layout": "planned_supported_contact",
       "object_motions": ["roll_or_slide_1obj", "roll_or_slide_1obj"],
-      "linear_velocity_m_s": [[0.85, 0.0, 0.0], [0.26, 0.0, 0.0]],
+      "linear_velocity_m_s": [[0.87, 0.0, 0.0], [0.39, 0.0, 0.0]],
       "minimum_displacement_m": [0.20, 0.10],
-      "contact_time_s": 0.75,
+      "contact_time_s": 0.35,
       "impact_offset_ratio": 0.0
     },
     {
@@ -325,7 +325,7 @@
       "kinematic_regime": "airborne_supported",
       "layout": "ballistic_airborne_contact",
       "object_motions": ["drop_fall_1obj", "rest"],
-      "linear_velocity_m_s": [[0.04, 0.0, 0.0], [0.0, 0.0, 0.0]],
+      "linear_velocity_m_s": [[0.12, 0.0, 0.0], [0.0, 0.0, 0.0]],
       "minimum_displacement_m": [0.40, 0.0],
       "contact_time_s": 0.35,
       "contact_elevation_degrees": 85.0
@@ -338,7 +338,7 @@
       "object_motions": ["arc_projectile_1obj", "rest"],
       "linear_velocity_m_s": [[0.80, 0.0, 1.40], [0.0, 0.0, 0.0]],
       "minimum_displacement_m": [0.15, 0.0],
-      "contact_time_s": 0.30,
+      "contact_time_s": 0.32,
       "contact_elevation_degrees": 30.0
     },
     {
@@ -382,7 +382,7 @@
       "object_motions": ["drop_fall_1obj", "rest"],
       "linear_velocity_m_s": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
       "minimum_displacement_m": [0.35, 0.0],
-      "airborne_surface_gap_m": 0.52,
+      "airborne_surface_gap_m": 0.48,
       "lateral_clearance_m": 0.30
     }
   ],

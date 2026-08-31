@@ -367,7 +367,8 @@ def _planned_supported_contact(
     geometry: list[dict[str, Any]],
     velocities: np.ndarray,
     intent: dict[str, Any],
-) -> tuple[np.ndarray, np.ndarray]:
+    deceleration_m_s2: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     contact_time = positive_vector(
         [intent["contact_time_s"]], 1, "planned contact time"
     )[0]
@@ -396,15 +397,48 @@ def _planned_supported_contact(
         list(geometry[1]["size_m"]),
         contact_normal.tolist(),
     )
-    initial_delta = (
-        center_distance * contact_normal + relative_approach * contact_time
+    displacements = _supported_displacements(
+        velocities[:, :2], contact_time, deceleration_m_s2
+    )
+    initial_delta = center_distance * contact_normal + (
+        displacements[0] - displacements[1]
     )
     positions_xy = np.stack(
         [center - 0.5 * initial_delta, center + 0.5 * initial_delta]
     )
-    return positions_xy, np.asarray(
-        [contact_normal[0], contact_normal[1], 0.0], dtype=np.float64
+    return (
+        positions_xy,
+        np.asarray(
+            [contact_normal[0], contact_normal[1], 0.0], dtype=np.float64
+        ),
+        displacements,
     )
+
+
+def _supported_displacements(
+    velocities_xy: np.ndarray,
+    duration_s: float,
+    deceleration_m_s2: float,
+) -> np.ndarray:
+    """Predict free supported travel under the declared Coulomb friction."""
+
+    if deceleration_m_s2 < 0.0 or not math.isfinite(deceleration_m_s2):
+        raise ValueError("supported deceleration must be finite and non-negative")
+    result = np.zeros_like(velocities_xy, dtype=np.float64)
+    for index, velocity in enumerate(velocities_xy):
+        speed = float(np.linalg.norm(velocity))
+        if speed <= _NUMERICAL_EPSILON:
+            continue
+        if deceleration_m_s2 <= _NUMERICAL_EPSILON:
+            travel = speed * duration_s
+        else:
+            travel_time = min(duration_s, speed / deceleration_m_s2)
+            travel = (
+                speed * travel_time
+                - 0.5 * deceleration_m_s2 * travel_time**2
+            )
+        result[index] = velocity * (travel / speed)
+    return result
 
 
 def _ballistic_airborne_contact(
@@ -654,8 +688,20 @@ def apply_two_object_motion(
     _validate_intent_kinematics(layout, object_motions, velocities)
 
     if layout == "planned_supported_contact":
-        positions_xy, approach_axis = _planned_supported_contact(
-            center, geometry, velocities, intent
+        gravity_magnitude = float(
+            np.linalg.norm(scene["simulation"]["world"]["gravity_m_s2"])
+        )
+        supported_deceleration = (
+            float(shared["contact_friction"]) * gravity_magnitude
+        )
+        positions_xy, approach_axis, supported_displacements = (
+            _planned_supported_contact(
+                center,
+                geometry,
+                velocities,
+                intent,
+                supported_deceleration,
+            )
         )
         positions = np.column_stack([positions_xy, support_z])
     elif layout == "ballistic_airborne_contact":
@@ -680,7 +726,11 @@ def apply_two_object_motion(
         "ballistic_airborne_pair_contact",
     }:
         contact_time = float(intent["contact_time_s"])
-        planned_contact_positions = positions + velocities * contact_time
+        if layout == "planned_supported_contact":
+            planned_contact_positions = positions.copy()
+            planned_contact_positions[:, :2] += supported_displacements
+        else:
+            planned_contact_positions = positions + velocities * contact_time
         if layout == "ballistic_airborne_contact":
             gravity = np.asarray(
                 scene["simulation"]["world"]["gravity_m_s2"],

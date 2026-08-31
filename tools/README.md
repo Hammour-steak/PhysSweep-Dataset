@@ -95,6 +95,8 @@ categories are balanced without multiplying the base count. This is not yet a
 production 2obj release.
 
 Motion labels must agree with their initial velocities and displacement bounds.
+Supported contact placement predicts Coulomb-friction travel; drop-contact rows
+carry a small shared lateral drift so they do not settle in vertical stacks.
 Trajectory audit also enforces pair contact intent, bounded independent rest,
 and a visible pre-contact ascent for every declared arc projectile.
 

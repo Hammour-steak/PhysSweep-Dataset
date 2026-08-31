@@ -47,6 +47,10 @@ from tools.sampling.sample_pybullet_base import (  # noqa: E402
 )
 from tools.core.rigid_geometry import (  # noqa: E402
     declared_collision_descriptors,
+    upright_pair_center_distance_m,
+)
+from tools.motion_rules.two_object.motion import (  # noqa: E402
+    _supported_displacements,
 )
 from tools.physics.physics_invariants import (  # noqa: E402
     runtime_collision_descriptors,
@@ -1001,7 +1005,7 @@ class PyBulletSimulationTests(unittest.TestCase):
             0.0,
         )
         self.assertEqual(
-            semantics["surface_crossing_2obj"]["impact_offset_ratio"], 0.30
+            semantics["surface_crossing_2obj"]["impact_offset_ratio"], 0.10
         )
         self.assertEqual(
             semantics["air_air_collision_2obj"]["trajectory_angle_degrees"],
@@ -1358,9 +1362,10 @@ class PyBulletSimulationTests(unittest.TestCase):
         original_host = copy.deepcopy(host)
         original_secondary = copy.deepcopy(secondary)
 
+        matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
         scene = build_two_object_scene(
             host,
-            load_json(ROOT / "configs/two_object_sampling_matrix.json"),
+            matrix,
             "surface_head_on_2obj",
             (secondary, host),
             sample_index=7,
@@ -1392,6 +1397,40 @@ class PyBulletSimulationTests(unittest.TestCase):
         midpoint_x = 0.5 * sum(obj["initial_state"]["position_m"][0] for obj in objects)
         self.assertAlmostEqual(midpoint_x, anchor_x)
         self.assertAlmostEqual(objects[0]["initial_state"]["position_m"][1], anchor_y)
+        interaction = scene["simulation"]["interaction"]
+        intent = next(
+            record
+            for record in matrix["motion_intents"]
+            if record["id"] == "surface_head_on_2obj"
+        )
+        velocities_xy = np.asarray(intent["linear_velocity_m_s"], dtype=float)[
+            :, :2
+        ]
+        gravity = np.linalg.norm(scene["simulation"]["world"]["gravity_m_s2"])
+        displacements = _supported_displacements(
+            velocities_xy,
+            float(intent["contact_time_s"]),
+            float(matrix["shared_physics"]["contact_friction"]) * gravity,
+        )
+        contact_normal = np.asarray(
+            interaction["approach_axis_xyz"][:2], dtype=float
+        )
+        center_distance = upright_pair_center_distance_m(
+            objects[0]["geometry"]["type"],
+            objects[0]["geometry"]["size_m"],
+            objects[1]["geometry"]["type"],
+            objects[1]["geometry"]["size_m"],
+            contact_normal.tolist(),
+        )
+        expected_delta = (
+            center_distance * contact_normal
+            + displacements[0]
+            - displacements[1]
+        )
+        actual_delta = np.asarray(
+            objects[1]["initial_state"]["position_m"][:2]
+        ) - np.asarray(objects[0]["initial_state"]["position_m"][:2])
+        np.testing.assert_allclose(actual_delta, expected_delta, atol=1.0e-12)
         self.assertEqual(scene["sample_index"], 7)
         self.assertNotEqual(
             scene["environment_binding"], host["environment_binding"]

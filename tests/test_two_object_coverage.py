@@ -207,6 +207,24 @@ class TwoObjectCoverageTests(unittest.TestCase):
 
     def test_matrix_declares_complete_ordered_cartesian_coverage(self) -> None:
         matrix = load_matrix()
+        self.assertEqual(
+            matrix["schema_version"], "physweep_two_object_sampling_matrix_v9"
+        )
+        intents = {record["id"]: record for record in matrix["motion_intents"]}
+        self.assertEqual(
+            intents["surface_head_on_2obj"]["linear_velocity_m_s"],
+            [[0.60, 0.0, 0.0], [-0.24, 0.0, 0.0]],
+        )
+        self.assertEqual(
+            intents["surface_crossing_2obj"]["impact_offset_ratio"], 0.10
+        )
+        self.assertEqual(
+            intents["surface_catch_up_2obj"]["contact_time_s"], 0.35
+        )
+        self.assertEqual(
+            intents["air_drop_hit_supported_2obj"]["linear_velocity_m_s"],
+            [[0.12, 0.0, 0.0], [0.0, 0.0, 0.0]],
+        )
         cells, full_count = coverage_cells(matrix)
         self.assertEqual(full_count, 1152)
         self.assertEqual(len(cells), 1152)
