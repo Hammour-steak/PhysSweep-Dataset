@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 from tools.rendering.bind_pybullet_visuals import (  # noqa: E402
     binding_samples,
+    manifest_binding_path,
     resolve_render_request,
 )
 from tools.rendering.camera_solver import (  # noqa: E402
@@ -64,6 +65,17 @@ from tools.sampling.sample_two_object_coverage import (  # noqa: E402
 
 
 class PyBulletSimulationTests(unittest.TestCase):
+    def test_visual_binding_path_supports_separate_code_and_data_roots(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            colocated = root / "tools" / "binder.py"
+            external = ROOT / "tools" / "rendering" / "bind_pybullet_visuals.py"
+
+            self.assertEqual(
+                manifest_binding_path(root, colocated), "tools/binder.py"
+            )
+            self.assertEqual(manifest_binding_path(root, external), str(external))
+
     def test_compound_collision_profile_is_created_exactly(self) -> None:
         import pybullet as pb
 
@@ -1136,6 +1148,114 @@ class PyBulletSimulationTests(unittest.TestCase):
                         interaction["minimum_per_object_median_span_ndc"],
                     )
 
+    def test_two_object_motion_labels_must_match_initial_kinematics(self) -> None:
+        host = self.without_incidental_environment(self.rolling_stress_scene)
+        matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
+        cases = (
+            (
+                "surface_hit_rest_2obj",
+                lambda intent: intent["linear_velocity_m_s"][1].__setitem__(
+                    0, 0.1
+                ),
+                "label contradicts its velocity",
+            ),
+            (
+                "air_projectile_hit_supported_2obj",
+                lambda intent: intent["linear_velocity_m_s"][0].__setitem__(
+                    2, 0.0
+                ),
+                "must start upward and forward",
+            ),
+            (
+                "air_air_collision_2obj",
+                lambda intent: intent["object_motions"].__setitem__(
+                    1, "drop_fall_1obj"
+                ),
+                "must contain two arc projectiles",
+            ),
+            (
+                "surface_single_independent_2obj",
+                lambda intent: intent["minimum_displacement_m"].__setitem__(
+                    1, 0.01
+                ),
+                "minimum displacement threshold",
+            ),
+        )
+        for motion_id, mutate, message in cases:
+            with self.subTest(motion_id=motion_id):
+                invalid = copy.deepcopy(matrix)
+                intent = next(
+                    record
+                    for record in invalid["motion_intents"]
+                    if record["id"] == motion_id
+                )
+                mutate(intent)
+                with self.assertRaisesRegex(ValueError, message):
+                    build_two_object_scene(host, invalid, motion_id)
+
+    def test_two_object_audit_enforces_rest_and_arc_semantics(self) -> None:
+        host = self.without_incidental_environment(self.rolling_stress_scene)
+        matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
+
+        independent = build_two_object_scene(
+            host, matrix, "surface_single_independent_2obj"
+        )
+        independent_trajectory, _ = simulate(independent)
+        rest_object = next(
+            obj
+            for obj in independent["simulation"]["objects"]
+            if obj["expected_motion"]["motion_family"] == "rest"
+        )
+        rest_position_key = f"{rest_object['object_id']}__position_m"
+        independent_trajectory[rest_position_key] = independent_trajectory[
+            rest_position_key
+        ].copy()
+        independent_trajectory[rest_position_key][:, 0] += np.linspace(
+            0.0, 0.03, len(independent_trajectory["time_s"])
+        )
+        independent_audit = audit_trajectory(
+            independent, independent_trajectory
+        )
+        independent_failures = {
+            record["id"]
+            for record in independent_audit["checks"]
+            if not record["passed"]
+        }
+        self.assertIn(
+            f"{rest_object['object_id']}__bounded_independent_rest_path_length",
+            independent_failures,
+        )
+
+        projectile = build_two_object_scene(
+            host, matrix, "air_projectile_hit_supported_2obj"
+        )
+        projectile_trajectory, _ = simulate(projectile)
+        projectile_object = projectile["simulation"]["objects"][0]
+        projectile_position_key = f"{projectile_object['object_id']}__position_m"
+        contact_key = (
+            f"{projectile_object['object_id']}__object_contact_count__"
+            f"{projectile['simulation']['objects'][1]['object_id']}"
+        )
+        contact_indices = np.flatnonzero(projectile_trajectory[contact_key] > 0)
+        self.assertGreater(contact_indices.size, 0)
+        pre_contact_stop = int(contact_indices[0]) + 1
+        projectile_trajectory[projectile_position_key] = projectile_trajectory[
+            projectile_position_key
+        ].copy()
+        projectile_trajectory[projectile_position_key][
+            :pre_contact_stop, 2
+        ] = projectile_trajectory[projectile_position_key][0, 2]
+        projectile_audit = audit_trajectory(projectile, projectile_trajectory)
+        projectile_failures = {
+            record["id"]
+            for record in projectile_audit["checks"]
+            if not record["passed"]
+        }
+        self.assertIn(
+            f"{projectile_object['object_id']}__pre_contact_arc_vertical_ascent",
+            projectile_failures,
+        )
+
     def test_two_object_independent_contract_rejects_pair_contact(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)
         matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
@@ -1185,6 +1305,8 @@ class PyBulletSimulationTests(unittest.TestCase):
             "minimum_initial_clearance_m",
             "maximum_first_contact_time_s",
             "minimum_pre_contact_closing_speed_m_s",
+            "maximum_independent_rest_path_length_m",
+            "minimum_pre_contact_arc_vertical_ascent_m",
         ):
             with self.subTest(field=field):
                 incomplete = copy.deepcopy(scene)

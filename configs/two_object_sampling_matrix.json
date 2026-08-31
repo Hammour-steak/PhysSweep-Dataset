@@ -1,5 +1,5 @@
 {
-  "schema_version": "physweep_two_object_sampling_matrix_v7",
+  "schema_version": "physweep_two_object_sampling_matrix_v8",
   "objects": {
     "schema_version": "physweep_object_collection_v1",
     "roles": [
@@ -213,7 +213,7 @@
     }
   },
   "shared_physics": {
-    "schema_version": "physweep_two_object_shared_physics_v1",
+    "schema_version": "physweep_two_object_shared_physics_v2",
     "contact_friction": 0.04,
     "contact_restitution": 0.65,
     "initial_support_clearance_m": 0.003,
@@ -221,7 +221,9 @@
     "interaction_audit": {
       "minimum_initial_clearance_m": 0.08,
       "minimum_pre_contact_closing_speed_m_s": 0.18,
-      "maximum_first_contact_time_s": 1.25
+      "maximum_first_contact_time_s": 1.25,
+      "maximum_independent_rest_path_length_m": 0.02,
+      "minimum_pre_contact_arc_vertical_ascent_m": 0.08
     }
   },
   "pair_observation": {
@@ -334,10 +336,10 @@
       "kinematic_regime": "airborne_supported",
       "layout": "ballistic_airborne_contact",
       "object_motions": ["arc_projectile_1obj", "rest"],
-      "linear_velocity_m_s": [[0.80, 0.0, 0.50], [0.0, 0.0, 0.0]],
+      "linear_velocity_m_s": [[0.80, 0.0, 1.40], [0.0, 0.0, 0.0]],
       "minimum_displacement_m": [0.15, 0.0],
-      "contact_time_s": 0.20,
-      "contact_elevation_degrees": 12.0
+      "contact_time_s": 0.30,
+      "contact_elevation_degrees": 30.0
     },
     {
       "id": "air_air_collision_2obj",
@@ -345,7 +347,7 @@
       "kinematic_regime": "airborne_airborne",
       "layout": "ballistic_airborne_pair_contact",
       "object_motions": ["arc_projectile_1obj", "arc_projectile_1obj"],
-      "linear_velocity_m_s": [[0.70, 0.0, 0.45], [-0.42, 0.0, 0.15]],
+      "linear_velocity_m_s": [[0.70, 0.0, 1.60], [-0.42, 0.0, 1.60]],
       "minimum_displacement_m": [0.30, 0.30],
       "contact_time_s": 0.42,
       "contact_center_height_above_support_m": 0.65

@@ -95,7 +95,7 @@ _POLICY_FIELDS = {
 
 def _validated_intents(matrix: dict[str, Any]) -> list[dict[str, Any]]:
     if set(matrix) != _MATRIX_FIELDS or (
-        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v7"
+        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v8"
     ):
         raise ValueError("unsupported two-object sampling matrix")
     objects = matrix.get("objects")

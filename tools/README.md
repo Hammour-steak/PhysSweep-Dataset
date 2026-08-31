@@ -94,6 +94,10 @@ ordered generic/asset source-family pairs, and five feasible visual-environment
 categories are balanced without multiplying the base count. This is not yet a
 production 2obj release.
 
+Motion labels must agree with their initial velocities and displacement bounds.
+Trajectory audit also enforces pair contact intent, bounded independent rest,
+and a visible pre-contact ascent for every declared arc projectile.
+
 ```bash
 .venv/bin/python -m tools.sampling.sample_two_object_coverage \
   --released-base-manifest outputs/one_object/base/manifest.json \

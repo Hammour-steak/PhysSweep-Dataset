@@ -30,6 +30,8 @@ _AUDIT_FIELDS = {
     "minimum_initial_clearance_m",
     "minimum_pre_contact_closing_speed_m_s",
     "maximum_first_contact_time_s",
+    "maximum_independent_rest_path_length_m",
+    "minimum_pre_contact_arc_vertical_ascent_m",
 }
 _OBSERVATION_FIELDS = {
     "schema_version",
@@ -106,7 +108,7 @@ def _validate_contracts(
 ) -> str:
     if set(shared) != _SHARED_FIELDS or (
         shared.get("schema_version")
-        != "physweep_two_object_shared_physics_v1"
+        != "physweep_two_object_shared_physics_v2"
     ):
         raise ValueError("unsupported two-object shared physics")
     audit = shared.get("interaction_audit")
@@ -117,8 +119,10 @@ def _validate_contracts(
             audit["minimum_initial_clearance_m"],
             audit["minimum_pre_contact_closing_speed_m_s"],
             audit["maximum_first_contact_time_s"],
+            audit["maximum_independent_rest_path_length_m"],
+            audit["minimum_pre_contact_arc_vertical_ascent_m"],
         ],
-        3,
+        5,
         "two-object interaction audit values",
     )
     if set(observation) != _OBSERVATION_FIELDS:
@@ -225,6 +229,71 @@ def _validate_contracts(
     if (interaction_class, kinematic_regime) != _LAYOUT_CONTRACT[layout]:
         raise ValueError("two-object layout contradicts its interaction contract")
     return layout
+
+
+def _validate_intent_kinematics(
+    layout: str,
+    object_motions: list[str],
+    velocities: np.ndarray,
+) -> None:
+    """Reject motion labels that contradict the declared initial state."""
+
+    if len(object_motions) != 2 or any(not motion for motion in object_motions):
+        raise ValueError("two-object intent requires two object motions")
+    horizontal_speeds = np.linalg.norm(velocities[:, :2], axis=1)
+    vertical_speeds = velocities[:, 2]
+
+    def require_supported_labels() -> None:
+        if any(abs(speed) > _NUMERICAL_EPSILON for speed in vertical_speeds):
+            raise ValueError("supported motion cannot start with vertical velocity")
+        for motion, speed in zip(
+            object_motions, horizontal_speeds, strict=True
+        ):
+            if motion not in {"rest", "roll_or_slide_1obj"}:
+                raise ValueError("supported motion has an unsupported motion label")
+            moving = float(speed) > _NUMERICAL_EPSILON
+            if moving != (motion == "roll_or_slide_1obj"):
+                raise ValueError("supported motion label contradicts its velocity")
+
+    if layout in {"planned_supported_contact", "parallel_supported_independent"}:
+        require_supported_labels()
+        return
+    if layout == "ballistic_airborne_contact":
+        if object_motions[1] != "rest" or float(
+            np.linalg.norm(velocities[1])
+        ) > _NUMERICAL_EPSILON:
+            raise ValueError("supported target must start at rest")
+        airborne_motion = object_motions[0]
+        if airborne_motion == "drop_fall_1obj":
+            if vertical_speeds[0] > _NUMERICAL_EPSILON:
+                raise ValueError("drop motion cannot start upward")
+        elif airborne_motion == "arc_projectile_1obj":
+            if (
+                vertical_speeds[0] <= _NUMERICAL_EPSILON
+                or horizontal_speeds[0] <= _NUMERICAL_EPSILON
+            ):
+                raise ValueError("arc projectile must start upward and forward")
+        else:
+            raise ValueError("unsupported airborne-contact motion label")
+        return
+    if layout == "ballistic_airborne_pair_contact":
+        if object_motions != ["arc_projectile_1obj", "arc_projectile_1obj"]:
+            raise ValueError("airborne pair must contain two arc projectiles")
+        if bool(np.any(vertical_speeds <= _NUMERICAL_EPSILON)) or bool(
+            np.any(horizontal_speeds <= _NUMERICAL_EPSILON)
+        ):
+            raise ValueError("airborne pair must start upward and forward")
+        if float(np.linalg.norm(velocities[0, :2] - velocities[1, :2])) <= (
+            _NUMERICAL_EPSILON
+        ):
+            raise ValueError("airborne pair must have horizontal closing motion")
+        return
+    if object_motions != ["drop_fall_1obj", "rest"] or bool(
+        np.any(np.linalg.norm(velocities, axis=1) > _NUMERICAL_EPSILON)
+    ):
+        raise ValueError(
+            "separated airborne-supported motion must start as drop and rest"
+        )
 
 
 def _object_geometry(
@@ -581,6 +650,8 @@ def apply_two_object_motion(
     )
     if velocities.shape != (2, 3):
         raise ValueError("two-object intent requires two linear velocities")
+    object_motions = [str(value) for value in intent["object_motions"]]
+    _validate_intent_kinematics(layout, object_motions, velocities)
 
     if layout == "planned_supported_contact":
         positions_xy, approach_axis = _planned_supported_contact(
@@ -652,9 +723,15 @@ def apply_two_object_motion(
     )
     if any(value < 0.0 for value in minimum_displacements):
         raise ValueError("object displacement thresholds must be nonnegative")
-    object_motions = [str(value) for value in intent["object_motions"]]
-    if len(object_motions) != 2 or any(not value for value in object_motions):
-        raise ValueError("two-object intent requires two object motions")
+    for motion, minimum_displacement in zip(
+        object_motions, minimum_displacements, strict=True
+    ):
+        if (motion == "rest") != (
+            abs(minimum_displacement) <= _NUMERICAL_EPSILON
+        ):
+            raise ValueError(
+                "motion label contradicts its minimum displacement threshold"
+            )
     supported_by_regime = {
         "supported_supported": [True, True],
         "airborne_supported": [False, True],

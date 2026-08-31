@@ -32,6 +32,17 @@ ACTIVE_RULES_PATH = PROJECT_ROOT / "configs/one_object_sampling_rules.json"
 SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2)
 
 
+def manifest_binding_path(root: Path, path: Path) -> str:
+    """Store a relative binding when colocated, otherwise the resolved path."""
+
+    resolved_root = root.resolve()
+    resolved_path = path.resolve()
+    try:
+        return resolved_path.relative_to(resolved_root).as_posix()
+    except ValueError:
+        return str(resolved_path)
+
+
 def shadow_readable_lighting(metadata: dict[str, Any]) -> dict[str, Any]:
     objects = require_simulation_objects(
         metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
@@ -624,11 +635,11 @@ def main() -> None:
         "source_manifest": str(args.manifest.resolve()),
         "output_root": str(output_root),
         "implementation": {
-            "path": str(Path(__file__).resolve().relative_to(root)),
+            "path": manifest_binding_path(root, Path(__file__)),
             "sha256": sha256(Path(__file__).resolve()),
         },
         "camera_rules": {
-            "path": str(rules_path.relative_to(root)),
+            "path": manifest_binding_path(root, rules_path),
             "sha256": sha256(rules_path),
         },
         "sample_count": len(records),

@@ -168,6 +168,24 @@ def audit_pair_motion(
             }
         )
 
+    object_id_a, object_id_b = object_ids
+    contact_a = np.asarray(
+        trajectory[f"{object_id_a}__object_contact_count__{object_id_b}"],
+        dtype=np.int32,
+    )
+    contact_b = np.asarray(
+        trajectory[f"{object_id_b}__object_contact_count__{object_id_a}"],
+        dtype=np.int32,
+    )
+    contact_mask = (contact_a > 0) | (contact_b > 0)
+    first_contact = _first_true(contact_mask)
+    maximum_independent_rest_path_length = float(
+        interaction["maximum_independent_rest_path_length_m"]
+    )
+    minimum_pre_contact_arc_ascent = float(
+        interaction["minimum_pre_contact_arc_vertical_ascent_m"]
+    )
+
     limits = metadata.get("qa", {}).get("limits", {})
     parameter_tolerance = float(
         limits.get("parameter_match_absolute_tolerance", 1.0e-6)
@@ -409,6 +427,28 @@ def audit_pair_motion(
             path_length,
             minimum_displacement,
         )
+        motion_family = str(expected["motion_family"])
+        if not interacting and motion_family == "rest":
+            check(
+                f"{object_id}__bounded_independent_rest_path_length",
+                path_length <= maximum_independent_rest_path_length,
+                path_length,
+                maximum_independent_rest_path_length,
+            )
+        if motion_family == "arc_projectile_1obj":
+            pre_contact_stop = (
+                first_contact + 1 if first_contact is not None else position.shape[0]
+            )
+            pre_contact_position = position[:pre_contact_stop]
+            vertical_ascent = float(
+                np.max(pre_contact_position[:, 2]) - pre_contact_position[0, 2]
+            )
+            check(
+                f"{object_id}__pre_contact_arc_vertical_ascent",
+                vertical_ascent >= minimum_pre_contact_arc_ascent,
+                vertical_ascent,
+                minimum_pre_contact_arc_ascent,
+            )
         if bool(expected["must_contact_primary_support"]):
             check(
                 f"{object_id}__primary_support_contact",
@@ -429,17 +469,6 @@ def audit_pair_motion(
             )
 
     object_a, object_b = objects
-    object_id_a, object_id_b = object_ids
-    contact_a = np.asarray(
-        trajectory[f"{object_id_a}__object_contact_count__{object_id_b}"],
-        dtype=np.int32,
-    )
-    contact_b = np.asarray(
-        trajectory[f"{object_id_b}__object_contact_count__{object_id_a}"],
-        dtype=np.int32,
-    )
-    contact_mask = (contact_a > 0) | (contact_b > 0)
-    first_contact = _first_true(contact_mask)
     check(
         "pair_contact_channels_are_reciprocal",
         bool(np.array_equal(contact_a, contact_b)),
