@@ -30,6 +30,7 @@ from tools.rendering.camera_solver import (
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 ACTIVE_RULES_PATH = PROJECT_ROOT / "configs/one_object_sampling_rules.json"
 SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2)
+_MAXIMUM_BINDING_ERROR_CHARACTERS = 2400
 
 
 def manifest_binding_path(root: Path, path: Path) -> str:
@@ -379,6 +380,27 @@ def bind_scene(
     }
 
 
+def bind_scene_outcome(
+    scene_id: str, *job: Any
+) -> dict[str, Any]:
+    """Run one binding job without discarding other jobs after a failure."""
+
+    try:
+        return {"ok": True, "sample": bind_scene(*job)}
+    except Exception as error:
+        message = " ".join(str(error).split())
+        if len(message) > _MAXIMUM_BINDING_ERROR_CHARACTERS:
+            message = (
+                message[: _MAXIMUM_BINDING_ERROR_CHARACTERS - 3] + "..."
+            )
+        return {
+            "ok": False,
+            "scene_id": str(scene_id),
+            "error_type": type(error).__name__,
+            "error": message,
+        }
+
+
 def parse_resolution(value: str) -> tuple[int, int]:
     parts = value.lower().split("x")
     if len(parts) != 2:
@@ -625,11 +647,48 @@ def main() -> None:
     ]
     if args.workers < 1:
         raise ValueError("workers must be positive")
+    scene_ids = [str(sample["scene_id"]) for sample in samples]
     if args.workers == 1:
-        records = [bind_scene(*job) for job in jobs]
+        outcomes = [
+            bind_scene_outcome(scene_id, *job)
+            for scene_id, job in zip(scene_ids, jobs, strict=True)
+        ]
     else:
         with ProcessPoolExecutor(max_workers=args.workers) as executor:
-            records = list(executor.map(bind_scene, *zip(*jobs)))
+            outcomes = list(
+                executor.map(bind_scene_outcome, scene_ids, *zip(*jobs))
+            )
+    records = [outcome["sample"] for outcome in outcomes if outcome["ok"]]
+    failures = [outcome for outcome in outcomes if not outcome["ok"]]
+    if failures:
+        failure_manifest = {
+            "schema_version": "physweep_pybullet_binding_failure_manifest_v1",
+            "source_manifest": str(args.manifest.resolve()),
+            "output_root": str(output_root),
+            "implementation": {
+                "path": manifest_binding_path(root, Path(__file__)),
+                "sha256": sha256(Path(__file__).resolve()),
+            },
+            "camera_rules": {
+                "path": manifest_binding_path(root, rules_path),
+                "sha256": sha256(rules_path),
+            },
+            "sample_count": len(outcomes),
+            "succeeded_count": len(records),
+            "failed_count": len(failures),
+            "succeeded_samples": records,
+            "failures": failures,
+        }
+        failure_path = output_root / "failure_manifest.json"
+        write_json(failure_path, failure_manifest)
+        print(f"binding failure manifest: {failure_path}")
+        print(
+            f"succeeded={len(records)} failed={len(failures)} "
+            f"sample_count={len(outcomes)}"
+        )
+        raise RuntimeError(
+            "visual binding failed; inspect the binding failure manifest"
+        )
     bound_manifest = {
         "schema_version": "physweep_pybullet_bound_manifest_v2",
         "source_manifest": str(args.manifest.resolve()),

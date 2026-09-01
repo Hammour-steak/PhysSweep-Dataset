@@ -83,6 +83,8 @@ def audit_pair_motion(
     interaction = metadata["simulation"].get("interaction")
     if not isinstance(interaction, dict):
         raise ValueError("two-object metadata requires simulation.interaction")
+    if interaction.get("schema_version") != "physweep_two_object_interaction_v1":
+        raise ValueError("unsupported two-object interaction contract")
     interaction_type = str(interaction.get("type", ""))
     if interaction_type not in {"pairwise_collision", "pairwise_independent"}:
         raise ValueError("unsupported two-object interaction type")

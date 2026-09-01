@@ -20,6 +20,7 @@ from tools.rendering.bind_pybullet_visuals import (  # noqa: E402
 from tools.rendering.camera_solver import (  # noqa: E402
     _two_object_azimuth_candidates,
     _two_object_elevation_candidates,
+    _unoccluded_mask,
     audit_two_object_camera,
     camera_inside_structural_envelope,
     camera_occlusion_colliders,
@@ -53,6 +54,8 @@ from tools.core.kinematics import (  # noqa: E402
     energy_consistent_linear_speed_limit,
 )
 from tools.motion_rules.two_object.motion import (  # noqa: E402
+    _motion_xy_from_support_xy,
+    _support_xy_from_motion_xy,
     _supported_displacements,
 )
 from tools.scene_rules.two_object import (  # noqa: E402
@@ -74,6 +77,38 @@ from tools.sampling.sample_two_object_coverage import (  # noqa: E402
 
 
 class PyBulletSimulationTests(unittest.TestCase):
+    def test_two_object_incline_motion_coordinates_round_trip(self) -> None:
+        slope = math.radians(9.0)
+        azimuth = math.radians(31.0)
+        tangent_cross = [math.sin(azimuth), -math.cos(azimuth), 0.0]
+        tangent_uphill = [
+            math.cos(slope) * math.cos(azimuth),
+            math.cos(slope) * math.sin(azimuth),
+            math.sin(slope),
+        ]
+        normal = [
+            -math.sin(slope) * math.cos(azimuth),
+            -math.sin(slope) * math.sin(azimuth),
+            math.cos(slope),
+        ]
+        support = {
+            "support_shape": "inclined_ramp",
+            "surface_frame": {
+                "tangent_cross": tangent_cross,
+                "tangent_uphill": tangent_uphill,
+                "normal": normal,
+            },
+        }
+        support_xy = np.asarray(
+            [[-0.71, 0.38], [0.42, -0.93]], dtype=np.float64
+        )
+        motion_xy = _motion_xy_from_support_xy(support_xy, support)
+        reconstructed = _support_xy_from_motion_xy(motion_xy, support)
+
+        np.testing.assert_allclose(
+            reconstructed, support_xy, atol=1.0e-12, rtol=0.0
+        )
+
     def test_gravity_adjusts_linear_speed_bound_from_observed_drop(self) -> None:
         positions = np.asarray(
             [[0.0, 0.0, 1.0], [0.2, 0.0, -1.0]], dtype=np.float64
@@ -751,6 +786,9 @@ class PyBulletSimulationTests(unittest.TestCase):
         )
         diagnostics = camera["diagnostics"]
         self.assertEqual(diagnostics["object_count"], 2)
+        self.assertGreaterEqual(
+            diagnostics["pair_camera_candidate_failure_count"], 0
+        )
         self.assertEqual(
             diagnostics["joint_motion_envelope_visible_fraction"], 1.0
         )
@@ -974,6 +1012,13 @@ class PyBulletSimulationTests(unittest.TestCase):
         matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
         scenes = build_two_object_matrix(host, matrix)
         self.assertEqual(len(scenes), 10)
+        self.assertEqual(
+            {
+                scene["simulation"]["interaction"]["schema_version"]
+                for scene in scenes
+            },
+            {"physweep_two_object_interaction_v1"},
+        )
         self.assertEqual(
             [
                 scene["simulation"]["interaction"]["motion_pattern"]
@@ -1711,6 +1756,38 @@ class PyBulletSimulationTests(unittest.TestCase):
         np.testing.assert_array_equal(
             segments_intersect_box(start, ends, wall), expected
         )
+
+    def test_batched_occlusion_matches_separate_group_fractions(self) -> None:
+        camera = np.asarray([-1.4, -0.6, 1.4])
+        blockers = [
+            {
+                "primitive": "box",
+                "visible": True,
+                "position_m": [0.2, -0.1, 0.8],
+                "size_m": [0.12, 1.1, 0.7],
+                "rotation_euler_degrees": [5.0, -8.0, 37.0],
+            },
+            {
+                "primitive": "box",
+                "visible": True,
+                "position_m": [-0.4, 0.5, 0.6],
+                "size_m": [0.3, 0.2, 0.9],
+                "rotation_euler_degrees": [0.0, 0.0, -18.0],
+            },
+        ]
+        groups = (
+            np.asarray([[1.2, -0.2, 0.9], [1.2, 1.5, 0.9]]),
+            np.asarray([[-0.8, -0.4, 1.3], [0.2, -0.1, 0.8]]),
+        )
+        expected = [
+            unoccluded_fraction(camera, group, blockers) for group in groups
+        ]
+        visible = _unoccluded_mask(camera, np.vstack(groups), blockers)
+        actual = [
+            float(visible[: len(groups[0])].mean()),
+            float(visible[len(groups[0]) :].mean()),
+        ]
+        np.testing.assert_allclose(actual, expected, atol=0.0, rtol=0.0)
 
     def test_rendered_frame_exposure_gate_uses_shared_audit_limits(self) -> None:
         passing = {

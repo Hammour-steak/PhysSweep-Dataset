@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import os
-from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -347,7 +346,7 @@ def released_source_pool(
     source_manifest_path: Path,
     matrix: dict[str, Any],
     scene_rules: dict[str, Any] | None = None,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Load generic hosts and exact generic/asset objects from the 1obj release."""
 
     resolved_scene_rules = resolved_two_object_scene_rules(scene_rules)
@@ -418,13 +417,8 @@ def released_source_pool(
 
     objects: list[dict[str, Any]] = []
     hosts: list[dict[str, Any]] = []
-    asset_rejections: Counter[str] = Counter()
     registry_cache: dict[tuple[str, str], dict[str, dict[str, Any]]] = {}
     visual_hash_cache: dict[str, str] = {}
-    rejected_host_role_count = 0
-    rejected_bounded_camera_host_count = 0
-    rejected_visual_type_host_count = 0
-    rejected_scene_rule_host_count = 0
     allowed_visual_types = set(host_eligibility["allowed_visual_types"])
     allowed_scale_bins = set(eligibility["scale_bins"])
     geometry_types = {
@@ -509,9 +503,7 @@ def released_source_pool(
                             "eligible two-object host contradicts the declared "
                             "visual-environment coverage"
                         )
-                    if visual_type not in allowed_visual_types:
-                        rejected_visual_type_host_count += 1
-                    else:
+                    if visual_type in allowed_visual_types:
                         hosts.append(
                             {
                                 "metadata": metadata,
@@ -523,15 +515,9 @@ def released_source_pool(
                                 "environment_category": environment_category,
                             }
                         )
-                elif not motion_neutral:
-                    rejected_host_role_count += 1
-                else:
-                    rejected_bounded_camera_host_count += 1
-            else:
-                rejected_scene_rule_host_count += 1
             template = metadata
         else:
-            template, reason = _asset_object_template(
+            template, _ = _asset_object_template(
                 source_root=source_root,
                 runtime_root=root,
                 generation_metadata=metadata,
@@ -541,7 +527,6 @@ def released_source_pool(
                 visual_hash_cache=visual_hash_cache,
             )
             if template is None:
-                asset_rejections[reason] += 1
                 continue
             obj = template["simulation"]["objects"][0]
 
@@ -625,80 +610,4 @@ def released_source_pool(
             "released 1obj hosts do not cover declared visual environments: "
             f"{missing}"
         )
-    audit = {
-        "released_base_count": len(base_records),
-        "released_object_family_counts": dict(
-            sorted(Counter(value[0] for value in released_records.values()).items())
-        ),
-        "eligible_object_count": len(objects),
-        "eligible_object_source_family_counts": dict(
-            sorted(Counter(record["source_family"] for record in objects).items())
-        ),
-        "eligible_object_source_family_shape_scale_counts": dict(
-            sorted(
-                Counter(
-                    ":".join(
-                        [
-                            str(record["source_family"]),
-                            str(record["shape_family_id"]),
-                            str(record["scale_bin"]),
-                        ]
-                    )
-                    for record in objects
-                ).items()
-            )
-        ),
-        "eligible_asset_visual_count": len(
-            {
-                record["visual_profile_id"]
-                for record in objects
-                if record["source_family"] == "asset"
-            }
-        ),
-        "asset_rejection_counts": dict(sorted(asset_rejections.items())),
-        "eligible_host_count": len(hosts),
-        "rejected_motion_specific_host_count": rejected_host_role_count,
-        "rejected_bounded_camera_host_count": rejected_bounded_camera_host_count,
-        "rejected_visual_type_host_count": rejected_visual_type_host_count,
-        "rejected_scene_rule_host_count": rejected_scene_rule_host_count,
-        "object_scale_bin_counts": dict(
-            sorted(Counter(record["scale_bin"] for record in objects).items())
-        ),
-        "object_shape_counts": dict(
-            sorted(Counter(record["shape_family_id"] for record in objects).items())
-        ),
-        "object_visual_profile_count": len(
-            {record["visual_profile_id"] for record in objects}
-        ),
-        "host_scene_class_counts": dict(
-            sorted(Counter(record["scene_class"] for record in hosts).items())
-        ),
-        "host_scene_rule_counts": dict(
-            sorted(Counter(record["scene_rule_id"] for record in hosts).items())
-        ),
-        "host_scene_rule_environment_category_counts": dict(
-            sorted(
-                Counter(
-                    f"{record['scene_rule_id']}:{record['environment_category']}"
-                    for record in hosts
-                ).items()
-            )
-        ),
-        "host_visual_profile_count": len(
-            {record["visual_profile_id"] for record in hosts}
-        ),
-        "host_environment_category_counts": dict(
-            sorted(
-                Counter(record["environment_category"] for record in hosts).items()
-            )
-        ),
-        "host_scene_environment_category_counts": dict(
-            sorted(
-                Counter(
-                    f"{record['scene_class']}:{record['environment_category']}"
-                    for record in hosts
-                ).items()
-            )
-        ),
-    }
-    return objects, hosts, audit
+    return objects, hosts

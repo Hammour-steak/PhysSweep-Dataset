@@ -1,5 +1,5 @@
 {
-  "schema_version": "physweep_two_object_scene_rules_v1",
+  "schema_version": "physweep_two_object_scene_rules_v2",
   "host_eligibility": {
     "required_collider_roles": ["primary_support"],
     "allowed_collider_roles": [
@@ -21,7 +21,17 @@
         "supported_supported",
         "airborne_supported",
         "airborne_airborne"
-      ]
+      ],
+      "allowed_interaction_classes": ["interacting", "independent"],
+      "allowed_camera_view_families": [
+        "side_left_mid",
+        "side_right_mid",
+        "front_left_low",
+        "front_right_low",
+        "rear_left_high",
+        "rear_right_high"
+      ],
+      "camera_view_family_overrides": {}
     },
     {
       "id": "ground_long_flat",
@@ -33,7 +43,17 @@
         "supported_supported",
         "airborne_supported",
         "airborne_airborne"
-      ]
+      ],
+      "allowed_interaction_classes": ["interacting", "independent"],
+      "allowed_camera_view_families": [
+        "side_left_mid",
+        "side_right_mid",
+        "front_left_low",
+        "front_right_low",
+        "rear_left_high",
+        "rear_right_high"
+      ],
+      "camera_view_family_overrides": {}
     },
     {
       "id": "ground_open_hardscape",
@@ -45,7 +65,17 @@
         "supported_supported",
         "airborne_supported",
         "airborne_airborne"
-      ]
+      ],
+      "allowed_interaction_classes": ["interacting", "independent"],
+      "allowed_camera_view_families": [
+        "side_left_mid",
+        "side_right_mid",
+        "front_left_low",
+        "front_right_low",
+        "rear_left_high",
+        "rear_right_high"
+      ],
+      "camera_view_family_overrides": {}
     },
     {
       "id": "raised_wide_flat",
@@ -57,7 +87,17 @@
         "supported_supported",
         "airborne_supported",
         "airborne_airborne"
-      ]
+      ],
+      "allowed_interaction_classes": ["interacting", "independent"],
+      "allowed_camera_view_families": [
+        "side_left_mid",
+        "side_right_mid",
+        "front_left_low",
+        "front_right_low",
+        "rear_left_high",
+        "rear_right_high"
+      ],
+      "camera_view_family_overrides": {}
     },
     {
       "id": "raised_long_flat",
@@ -73,7 +113,65 @@
         "supported_supported",
         "airborne_supported",
         "airborne_airborne"
-      ]
+      ],
+      "allowed_interaction_classes": ["interacting", "independent"],
+      "allowed_camera_view_families": [
+        "side_left_mid",
+        "side_right_mid",
+        "front_left_low",
+        "front_right_low",
+        "rear_left_high",
+        "rear_right_high"
+      ],
+      "camera_view_family_overrides": {}
+    },
+    {
+      "id": "inclined_flat_slab",
+      "scene_class": "ground_feature",
+      "support_shape": "inclined_ramp",
+      "maximum_abs_slope_degrees": 15.0,
+      "allowed_structure_families": [
+        "straight_long_shallow",
+        "straight_standard"
+      ],
+      "allowed_kinematic_regimes": ["supported_supported"],
+      "allowed_interaction_classes": ["interacting"],
+      "allowed_camera_view_families": [
+        "side_left_mid",
+        "side_right_mid",
+        "front_left_low",
+        "rear_right_high"
+      ],
+      "object_camera_plane_readability_by_view_family": {
+        "side_left_mid": {
+          "geometry_size_axes": [1, 2],
+          "minimum_extent_m": 0.195
+        },
+        "side_right_mid": {
+          "geometry_size_axes": [1, 2],
+          "minimum_extent_m": 0.195
+        },
+        "front_left_low": {
+          "geometry_size_axes": [0, 2],
+          "minimum_extent_m": 0.17
+        },
+        "rear_right_high": {
+          "geometry_size_axes": [0, 2],
+          "minimum_extent_m": 0.17
+        }
+      },
+      "pair_camera_geometry_view_families": [
+        "side_left_mid",
+        "side_right_mid",
+        "front_left_low",
+        "rear_right_high"
+      ],
+      "camera_view_family_overrides": {
+        "surface_hit_rest_2obj": ["side_left_mid", "side_right_mid"],
+        "surface_head_on_2obj": ["side_left_mid", "side_right_mid"],
+        "surface_crossing_2obj": ["front_left_low", "rear_right_high"],
+        "surface_catch_up_2obj": ["side_left_mid", "side_right_mid"]
+      }
     }
   ],
   "visual_environment_coverage": {
@@ -85,7 +183,8 @@
           "ground_patch_flat",
           "ground_long_flat",
           "raised_wide_flat",
-          "raised_long_flat"
+          "raised_long_flat",
+          "inclined_flat_slab"
         ]
       },
       {
@@ -94,7 +193,8 @@
           "ground_patch_flat",
           "ground_long_flat",
           "raised_wide_flat",
-          "raised_long_flat"
+          "raised_long_flat",
+          "inclined_flat_slab"
         ]
       },
       {
@@ -102,18 +202,24 @@
         "allowed_scene_rules": [
           "ground_patch_flat",
           "raised_wide_flat",
-          "raised_long_flat"
+          "raised_long_flat",
+          "inclined_flat_slab"
         ]
       },
       {
         "id": "garage_workshop",
-        "allowed_scene_rules": ["ground_patch_flat", "raised_wide_flat"]
+        "allowed_scene_rules": [
+          "ground_patch_flat",
+          "raised_wide_flat",
+          "inclined_flat_slab"
+        ]
       },
       {
         "id": "outdoor_courtyard",
         "allowed_scene_rules": [
           "ground_patch_flat",
-          "ground_open_hardscape"
+          "ground_open_hardscape",
+          "inclined_flat_slab"
         ]
       }
     ],

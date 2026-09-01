@@ -32,13 +32,20 @@ _HOST_FIELDS = {
     "allowed_visual_types",
     "camera_envelope_policy",
 }
-_RULE_FIELDS = {
+_REQUIRED_RULE_FIELDS = {
     "id",
     "scene_class",
     "support_shape",
     "maximum_abs_slope_degrees",
     "allowed_structure_families",
     "allowed_kinematic_regimes",
+    "allowed_interaction_classes",
+    "allowed_camera_view_families",
+    "camera_view_family_overrides",
+}
+_OPTIONAL_RULE_FIELDS = {
+    "object_camera_plane_readability_by_view_family",
+    "pair_camera_geometry_view_families",
 }
 _ENVIRONMENT_FIELDS = {"metadata_key", "categories", "selection_policy"}
 _MOTION_NEUTRAL_HOST_ROLES = {
@@ -50,6 +57,12 @@ _KINEMATIC_REGIMES = {
     "supported_supported",
     "airborne_supported",
     "airborne_airborne",
+}
+_INTERACTION_CLASSES = {"interacting", "independent"}
+_SCENE_SUPPORT_SHAPES = {
+    "ground_flat": "rectangular_slab",
+    "raised_flat": "rectangular_slab",
+    "ground_feature": "inclined_ramp",
 }
 
 
@@ -80,7 +93,7 @@ def validate_two_object_scene_rules(contract: dict[str, Any]) -> None:
     if (
         not isinstance(contract, dict)
         or set(contract) != _TOP_LEVEL_FIELDS
-        or contract.get("schema_version") != "physweep_two_object_scene_rules_v1"
+        or contract.get("schema_version") != "physweep_two_object_scene_rules_v2"
     ):
         raise ValueError("unsupported two-object scene-rules contract")
     host = contract.get("host_eligibility")
@@ -103,7 +116,14 @@ def validate_two_object_scene_rules(contract: dict[str, Any]) -> None:
     if (
         not isinstance(rules, list)
         or len(rules) < 2
-        or any(not isinstance(rule, dict) or set(rule) != _RULE_FIELDS for rule in rules)
+        or any(
+            not isinstance(rule, dict)
+            or not _REQUIRED_RULE_FIELDS.issubset(rule)
+            or not set(rule).issubset(
+                _REQUIRED_RULE_FIELDS | _OPTIONAL_RULE_FIELDS
+            )
+            for rule in rules
+        )
     ):
         raise ValueError("two-object physical scene rules are incomplete")
     ids = [rule["id"] for rule in rules]
@@ -112,21 +132,38 @@ def validate_two_object_scene_rules(contract: dict[str, Any]) -> None:
         or len(ids) != len(set(ids))
     ):
         raise ValueError("two-object physical scene rule ids must be unique")
-    admitted_families: set[tuple[str, str]] = set()
+    admitted_families: set[tuple[str, str, str]] = set()
     admitted_regimes: set[str] = set()
+    admitted_interaction_classes: set[str] = set()
     for rule in rules:
         scene_class = rule["scene_class"]
         maximum_slope = rule["maximum_abs_slope_degrees"]
         families = rule["allowed_structure_families"]
         regimes = rule["allowed_kinematic_regimes"]
+        interaction_classes = rule["allowed_interaction_classes"]
+        camera_view_families = rule["allowed_camera_view_families"]
+        camera_overrides = rule["camera_view_family_overrides"]
+        camera_plane_readability = rule.get(
+            "object_camera_plane_readability_by_view_family"
+        )
+        pair_camera_families = rule.get(
+            "pair_camera_geometry_view_families"
+        )
         if (
             not isinstance(scene_class, str)
-            or scene_class not in {"ground_flat", "raised_flat"}
-            or rule["support_shape"] != "rectangular_slab"
+            or scene_class not in _SCENE_SUPPORT_SHAPES
+            or rule["support_shape"] != _SCENE_SUPPORT_SHAPES[scene_class]
             or isinstance(maximum_slope, bool)
             or not isinstance(maximum_slope, (int, float))
             or not math.isfinite(float(maximum_slope))
-            or float(maximum_slope) != 0.0
+            or (
+                rule["support_shape"] == "rectangular_slab"
+                and float(maximum_slope) != 0.0
+            )
+            or (
+                rule["support_shape"] == "inclined_ramp"
+                and not 5.0 <= float(maximum_slope) <= 30.0
+            )
             or not isinstance(families, list)
             or not families
             or len(families) != len(set(families))
@@ -135,16 +172,103 @@ def validate_two_object_scene_rules(contract: dict[str, Any]) -> None:
             or not regimes
             or not set(regimes).issubset(_KINEMATIC_REGIMES)
             or len(regimes) != len(set(regimes))
+            or not isinstance(interaction_classes, list)
+            or not interaction_classes
+            or not set(interaction_classes).issubset(_INTERACTION_CLASSES)
+            or len(interaction_classes) != len(set(interaction_classes))
+            or not isinstance(camera_view_families, list)
+            or not camera_view_families
+            or any(
+                not isinstance(family, str) or not family
+                for family in camera_view_families
+            )
+            or len(camera_view_families) != len(set(camera_view_families))
+            or not isinstance(camera_overrides, dict)
+            or any(
+                not isinstance(motion_id, str)
+                or not motion_id
+                or not isinstance(allowed, list)
+                or not allowed
+                or len(allowed) != len(set(allowed))
+                or not set(allowed).issubset(camera_view_families)
+                for motion_id, allowed in camera_overrides.items()
+            )
+            or (
+                camera_overrides
+                and {
+                    family
+                    for allowed in camera_overrides.values()
+                    for family in allowed
+                }
+                != set(camera_view_families)
+            )
+            or (
+                rule["support_shape"] == "inclined_ramp"
+                and (
+                    not isinstance(camera_plane_readability, dict)
+                    or not camera_plane_readability
+                    or set(camera_plane_readability)
+                    != set(camera_view_families)
+                    or any(
+                        not isinstance(family, str)
+                        or not family
+                        or not isinstance(readability, dict)
+                        or set(readability)
+                        != {"geometry_size_axes", "minimum_extent_m"}
+                        or not isinstance(
+                            readability.get("geometry_size_axes"), list
+                        )
+                        or len(readability.get("geometry_size_axes", [])) != 2
+                        or len(set(readability["geometry_size_axes"])) != 2
+                        or any(
+                            isinstance(axis, bool)
+                            or not isinstance(axis, int)
+                            or axis not in {0, 1, 2}
+                            for axis in readability.get(
+                                "geometry_size_axes", []
+                            )
+                        )
+                        or isinstance(readability.get("minimum_extent_m"), bool)
+                        or not isinstance(
+                            readability.get("minimum_extent_m"), (int, float)
+                        )
+                        or not math.isfinite(
+                            float(readability.get("minimum_extent_m", math.nan))
+                        )
+                        or float(readability.get("minimum_extent_m", 0.0))
+                        <= 0.0
+                        for family, readability in camera_plane_readability.items()
+                    )
+                    or not isinstance(pair_camera_families, list)
+                    or not pair_camera_families
+                    or len(pair_camera_families)
+                    != len(set(pair_camera_families))
+                    or set(pair_camera_families)
+                    != set(camera_view_families)
+                )
+            )
+            or (
+                rule["support_shape"] != "inclined_ramp"
+                and (
+                    camera_plane_readability is not None
+                    or pair_camera_families is not None
+                )
+            )
         ):
             raise ValueError("two-object physical scene rule is invalid")
         for family in families:
-            key = (scene_class, str(family))
+            key = (scene_class, str(rule["support_shape"]), str(family))
             if key in admitted_families:
                 raise ValueError("two-object physical scene rules overlap")
             admitted_families.add(key)
         admitted_regimes.update(map(str, regimes))
+        admitted_interaction_classes.update(map(str, interaction_classes))
     if admitted_regimes != _KINEMATIC_REGIMES:
         raise ValueError("two-object physical scene rules leave a regime unreachable")
+    if admitted_interaction_classes != _INTERACTION_CLASSES:
+        raise ValueError(
+            "two-object physical scene rules leave an interaction class unreachable"
+        )
 
     environment = contract.get("visual_environment_coverage")
     if not isinstance(environment, dict) or set(environment) != _ENVIRONMENT_FIELDS:
@@ -188,10 +312,25 @@ def allowed_scene_classes(contract: dict[str, Any]) -> tuple[str, ...]:
     )
 
 
+def allowed_camera_view_families(
+    rule: dict[str, Any], motion_pattern: str | None = None
+) -> tuple[str, ...]:
+    """Return the declared camera pool for one rule and motion pattern."""
+
+    allowed = tuple(map(str, rule["allowed_camera_view_families"]))
+    overrides = rule["camera_view_family_overrides"]
+    if motion_pattern is None or not overrides:
+        return allowed
+    return tuple(map(str, overrides.get(str(motion_pattern), ())))
+
+
 def resolve_scene_rule(
     contract: dict[str, Any],
     support: dict[str, Any],
     kinematic_regime: str | None = None,
+    interaction_class: str | None = None,
+    camera_view_family_id: str | None = None,
+    motion_pattern: str | None = None,
 ) -> dict[str, Any] | None:
     """Resolve one unambiguous physical rule for an existing support host."""
 
@@ -224,6 +363,19 @@ def resolve_scene_rule(
             kinematic_regime is None
             or kinematic_regime in set(rule["allowed_kinematic_regimes"])
         )
+        and (
+            interaction_class is None
+            or interaction_class in set(rule["allowed_interaction_classes"])
+        )
+        and (
+            motion_pattern is None
+            or bool(allowed_camera_view_families(rule, motion_pattern))
+        )
+        and (
+            camera_view_family_id is None
+            or camera_view_family_id
+            in set(allowed_camera_view_families(rule, motion_pattern))
+        )
     ]
     if len(matches) > 1:
         raise ValueError("two-object support resolves to overlapping scene rules")
@@ -244,7 +396,12 @@ def bind_two_object_scene(
     if not isinstance(support, dict) or not isinstance(interaction, dict):
         raise ValueError("two-object scene lacks support or interaction contracts")
     rule = resolve_scene_rule(
-        contract, support, str(interaction.get("kinematic_regime", ""))
+        contract,
+        support,
+        str(interaction.get("kinematic_regime", "")),
+        str(interaction.get("interaction_class", "")),
+        str(interaction.get("camera_view_family_id", "")),
+        str(interaction.get("motion_pattern", "")),
     )
     if rule is None:
         raise ValueError("two-object host has no compatible physical scene rule")

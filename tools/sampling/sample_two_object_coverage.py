@@ -10,19 +10,30 @@ import math
 from collections import Counter
 from itertools import product
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Iterator, Sequence
 
+from tools.core.camera_geometry import (
+    pair_camera_geometry_eligible,
+)
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json, write_json
+from tools.core.rigid_geometry import pose_on_support
+from tools.motion_rules.two_object.motion import (
+    apply_two_object_motion,
+    interaction_approach_axis,
+)
 from tools.sampling.sample_two_object_base import (
     DATASET_ID,
     DEFAULT_MATRIX,
     _validated_intents,
     build_two_object_scene,
+    camera_view_family,
+    compatible_scale_pair_ids,
     compatible_shape_pair_ids,
 )
 from tools.scene_rules.two_object import (
     DEFAULT_TWO_OBJECT_SCENE_RULES,
+    allowed_camera_view_families,
     allowed_scene_classes,
     load_two_object_scene_rules,
     resolved_two_object_scene_rules,
@@ -137,17 +148,77 @@ def _balanced_cell_order(
 def _assign_camera_view_families(
     cells: Sequence[dict[str, Any]],
     view_families: Sequence[dict[str, Any]],
+    scene_rules: dict[str, Any],
+    intents_by_id: dict[str, dict[str, Any]],
     seed: int,
 ) -> list[dict[str, Any]]:
-    """Balance views globally and within every existing coverage stratum."""
+    """Balance views globally and cover compatible views in every stratum."""
 
     family_ids = [str(record["id"]) for record in view_families]
+    declared_family_ids = set(family_ids)
+    rule_family_ids = {
+        str(family_id)
+        for rule in scene_rules["physical_rules"]
+        for family_id in rule["allowed_camera_view_families"]
+    }
+    if rule_family_ids != declared_family_ids:
+        raise ValueError(
+            "two-object scene and sampling camera families differ"
+        )
+    declared_motion_ids = set(intents_by_id)
+    for rule in scene_rules["physical_rules"]:
+        overrides = rule["camera_view_family_overrides"]
+        if not overrides:
+            continue
+        compatible_motion_ids = {
+            motion_id
+            for motion_id, intent in intents_by_id.items()
+            if str(intent["kinematic_regime"])
+            in rule["allowed_kinematic_regimes"]
+            and str(intent["interaction_class"])
+            in rule["allowed_interaction_classes"]
+        }
+        if set(overrides) != compatible_motion_ids or not set(
+            overrides
+        ).issubset(declared_motion_ids):
+            raise ValueError(
+                "two-object camera overrides differ from compatible motions"
+            )
     axis_fields = (
         "motion_id",
         "shape_pair_id",
         "scale_pair_id",
         "scene_class",
     )
+    compatible_by_cell: dict[str, tuple[str, ...]] = {}
+    compatible_by_axis: dict[str, dict[str, set[str]]] = {
+        field: {} for field in axis_fields
+    }
+    for cell in cells:
+        intent = intents_by_id[str(cell["motion_id"])]
+        compatible = tuple(
+            family_id
+            for family_id in family_ids
+            if any(
+                str(rule["scene_class"]) == str(cell["scene_class"])
+                and str(intent["kinematic_regime"])
+                in rule["allowed_kinematic_regimes"]
+                and str(intent["interaction_class"])
+                in rule["allowed_interaction_classes"]
+                and family_id
+                in allowed_camera_view_families(
+                    rule, str(cell["motion_id"])
+                )
+                for rule in scene_rules["physical_rules"]
+            )
+        )
+        if not compatible:
+            raise ValueError("two-object cell has no compatible camera family")
+        compatible_by_cell[str(cell["cell_id"])] = compatible
+        for field in axis_fields:
+            compatible_by_axis[field].setdefault(
+                str(cell[field]), set()
+            ).update(compatible)
     global_use: Counter[str] = Counter()
     conditional_use: dict[str, dict[str, Counter[str]]] = {
         field: {} for field in axis_fields
@@ -155,21 +226,31 @@ def _assign_camera_view_families(
     assigned = []
     for original in cells:
         cell = copy.deepcopy(original)
+        compatible_family_ids = compatible_by_cell[str(cell["cell_id"])]
         for field in axis_fields:
             conditional_use[field].setdefault(str(cell[field]), Counter())
 
-        def score(family_id: str) -> tuple[int, int, int, int, str]:
+        def score(family_id: str) -> tuple[int, int, int, int, int, str]:
             conditional_ranges = []
             current_conditional_use = []
+            uncovered_penalty = 0
             for field in axis_fields:
                 counts = conditional_use[field][str(cell[field])]
+                axis_family_ids = compatible_by_axis[field][str(cell[field])]
+                has_uncovered_family = any(
+                    counts[candidate] == 0 for candidate in axis_family_ids
+                )
+                uncovered_penalty += int(
+                    has_uncovered_family and counts[family_id] > 0
+                )
                 hypothetical = [
                     counts[candidate] + int(candidate == family_id)
-                    for candidate in family_ids
+                    for candidate in axis_family_ids
                 ]
                 conditional_ranges.append(max(hypothetical) - min(hypothetical))
                 current_conditional_use.append(counts[family_id])
             return (
+                uncovered_penalty,
                 global_use[family_id],
                 max(conditional_ranges),
                 sum(conditional_ranges),
@@ -177,7 +258,7 @@ def _assign_camera_view_families(
                 _rank(seed, "camera-view-family", cell["cell_id"], family_id),
             )
 
-        family_id = min(family_ids, key=score)
+        family_id = min(compatible_family_ids, key=score)
         global_use[family_id] += 1
         for field in axis_fields:
             conditional_use[field][str(cell[field])][family_id] += 1
@@ -198,21 +279,44 @@ def coverage_cells(
     resolved_scene_rules = resolved_two_object_scene_rules(scene_rules)
     intents = _validated_intents(matrix, resolved_scene_rules)
     coverage = matrix["coverage_plan"]
-    scene_classes = allowed_scene_classes(resolved_scene_rules)
+    declared_scene_classes = allowed_scene_classes(resolved_scene_rules)
     replicates = int(coverage["replicates_per_cell"])
     cells = []
     for intent in intents:
         motion_id = str(intent["id"])
         interaction_class = str(intent["interaction_class"])
+        kinematic_regime = str(intent["kinematic_regime"])
+        compatible_scene_classes = tuple(
+            scene_class
+            for scene_class in declared_scene_classes
+            if any(
+                str(rule["scene_class"]) == scene_class
+                and kinematic_regime in set(rule["allowed_kinematic_regimes"])
+                and interaction_class
+                in set(rule["allowed_interaction_classes"])
+                and bool(allowed_camera_view_families(rule, motion_id))
+                for rule in resolved_scene_rules["physical_rules"]
+            )
+        )
+        if not compatible_scene_classes:
+            raise ValueError(
+                f"two-object motion has no compatible scene class: {motion_id}"
+            )
         allowed_pairs = set(compatible_shape_pair_ids(matrix, motion_id))
         for shape_pair, scale_pair, scene_class, replicate_index in product(
             coverage["role_ordered_shape_pairs"],
             coverage["role_ordered_scale_pairs"],
-            scene_classes,
+            compatible_scene_classes,
             range(replicates),
         ):
             shape_pair_id = str(shape_pair["id"])
-            if shape_pair_id not in allowed_pairs:
+            if (
+                shape_pair_id not in allowed_pairs
+                or str(scale_pair["id"])
+                not in compatible_scale_pair_ids(
+                    matrix, motion_id, str(scene_class)
+                )
+            ):
                 continue
             cell_id = "__".join(
                 [
@@ -244,7 +348,7 @@ def coverage_cells(
     )
     if (
         interacting_count / full_count
-        <= float(coverage["minimum_interacting_fraction"])
+        < float(coverage["minimum_interacting_fraction"])
     ):
         raise ValueError("two-object coverage does not meet its interaction mix")
     if limit is not None and (
@@ -256,6 +360,8 @@ def coverage_cells(
     ordered = _assign_camera_view_families(
         _balanced_cell_order(cells, int(coverage["seed"])),
         coverage["camera_view_families"],
+        resolved_scene_rules,
+        {str(intent["id"]): intent for intent in intents},
         int(coverage["seed"]),
     )
     return ordered if limit is None else ordered[:limit], full_count
@@ -267,52 +373,56 @@ def _resolved_within(root: Path, value: Path) -> Path:
     return resolved
 
 
-def _pair_dynamics_eligible(
-    left: dict[str, Any],
-    right: dict[str, Any],
+def _source_dynamics_profile(source: dict[str, Any]) -> tuple[float, float]:
+    """Validate and retain the source facts used by pair eligibility."""
+
+    metadata = source.get("metadata")
+    if not isinstance(metadata, dict) or not isinstance(
+        metadata.get("simulation"), dict
+    ):
+        return math.nan, math.nan
+    objects = metadata["simulation"].get("objects")
+    if not isinstance(objects, list) or len(objects) != 1:
+        raise ValueError("two-object source must contain exactly one object")
+    mass = float(objects[0].get("material", {}).get("mass_kg", 0.0))
+    if not math.isfinite(mass) or mass <= 0.0:
+        raise ValueError("two-object source mass must be finite and positive")
+    size = objects[0].get("geometry", {}).get("size_m")
+    if (
+        not isinstance(size, list)
+        or len(size) != 3
+        or any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not math.isfinite(float(value))
+            or float(value) <= 0.0
+            for value in size
+        )
+    ):
+        raise ValueError("two-object source size must be three positive values")
+    dimensions = list(map(float, size))
+    return mass, max(dimensions) / min(dimensions)
+
+
+def _dynamics_profiles_eligible(
+    profiles: Sequence[tuple[float, float]],
     matrix: dict[str, Any],
     cell: dict[str, Any],
 ) -> bool:
-    """Reject only interacting pairs with a declared extreme mass mismatch."""
+    """Apply the pair rule to already validated source facts."""
 
-    metadata = [left.get("metadata"), right.get("metadata")]
-    has_simulation = [
-        isinstance(record, dict) and isinstance(record.get("simulation"), dict)
-        for record in metadata
-    ]
-    if not any(has_simulation):
+    has_profiles = [not math.isnan(profile[0]) for profile in profiles]
+    if not any(has_profiles):
         return True
-    if not all(has_simulation):
+    if not all(has_profiles):
         raise ValueError("two-object source metadata is incomplete")
-    masses = []
-    aspect_ratios = []
-    for record in metadata:
-        objects = record["simulation"].get("objects")
-        if not isinstance(objects, list) or len(objects) != 1:
-            raise ValueError("two-object source must contain exactly one object")
-        mass = float(objects[0].get("material", {}).get("mass_kg", 0.0))
-        if not math.isfinite(mass) or mass <= 0.0:
-            raise ValueError("two-object source mass must be finite and positive")
-        masses.append(mass)
-        size = objects[0].get("geometry", {}).get("size_m")
-        if (
-            not isinstance(size, list)
-            or len(size) != 3
-            or any(
-                isinstance(value, bool)
-                or not isinstance(value, (int, float))
-                or not math.isfinite(float(value))
-                or float(value) <= 0.0
-                for value in size
-            )
-        ):
-            raise ValueError("two-object source size must be three positive values")
-        aspect_ratios.append(max(map(float, size)) / min(map(float, size)))
     interaction_class = str(cell.get("interaction_class", ""))
     if interaction_class not in {"interacting", "independent"}:
         raise ValueError("two-object coverage cell has no interaction class")
     if interaction_class == "independent":
         return True
+    masses = [profile[0] for profile in profiles]
+    aspect_ratios = [profile[1] for profile in profiles]
     maximum_ratio = float(
         matrix["candidate_pool"]["pair_eligibility"][
             "maximum_interacting_mass_ratio"
@@ -329,14 +439,13 @@ def _pair_dynamics_eligible(
     )
 
 
-def _pair_layout_fits_host(
+def _pair_source_scene(
     host: dict[str, Any],
     left: dict[str, Any],
     right: dict[str, Any],
-    matrix: dict[str, Any],
-    cell: dict[str, Any],
-    scene_rules: dict[str, Any] | None = None,
-) -> bool:
+) -> dict[str, Any] | None:
+    """Build the one metadata-shaped pair used by every cheap source check."""
+
     metadata = [
         host.get("metadata"),
         left.get("metadata"),
@@ -347,23 +456,59 @@ def _pair_layout_fits_host(
         for record in metadata
     ]
     if not any(has_simulation):
-        return True
+        return None
     if not all(has_simulation):
         raise ValueError("two-object source metadata is incomplete")
-    declared_scene_rule_id = host.get("scene_rule_id")
+    host_simulation = metadata[0]["simulation"]
+    source_objects = [
+        source_metadata["simulation"]["objects"][0]
+        for source_metadata in metadata[1:]
+    ]
+    return {
+        "scene_id": "two_object_layout_check",
+        "semantic_sampling": {"five_dimensions": {}},
+        "simulation": {
+            "world": copy.deepcopy(host_simulation["world"]),
+            "support": copy.deepcopy(host_simulation["support"]),
+            "objects": [
+                {
+                    "object_id": object_id,
+                    "geometry": copy.deepcopy(source_object["geometry"]),
+                    "material": copy.deepcopy(source_object["material"]),
+                }
+                for object_id, source_object in zip(
+                    ("object_a", "object_b"), source_objects, strict=True
+                )
+            ],
+        },
+    }
+
+
+def _pair_layout_fits_host(
+    host: dict[str, Any],
+    left: dict[str, Any],
+    right: dict[str, Any],
+    matrix: dict[str, Any],
+    cell: dict[str, Any],
+) -> bool:
+    pair_scene = _pair_source_scene(host, left, right)
+    if pair_scene is None:
+        return True
+    intent = next(
+        value
+        for value in matrix["motion_intents"]
+        if str(value["id"]) == str(cell["motion_id"])
+    )
     try:
-        build_two_object_scene(
-            metadata[0],
-            matrix,
-            str(cell["motion_id"]),
-            metadata[1:],
-            camera_view_family_id=str(cell["camera_view_family_id"]),
-            scene_rules=scene_rules,
-            scene_rule_id=(
-                None
-                if declared_scene_rule_id is None
-                else str(declared_scene_rule_id)
+        apply_two_object_motion(
+            pair_scene,
+            matrix["shape_families"],
+            matrix["shared_physics"],
+            matrix["pair_observation"],
+            camera_view_family(
+                matrix, str(cell["camera_view_family_id"])
             ),
+            intent,
         )
     except ValueError as error:
         if str(error) == "host support is too small for the two-object layout":
@@ -372,13 +517,162 @@ def _pair_layout_fits_host(
     return True
 
 
+def _camera_plane_readability(
+    rule: dict[str, Any], cell: dict[str, Any]
+) -> tuple[tuple[int, int], float] | None:
+    readability = rule.get(
+        "object_camera_plane_readability_by_view_family", {}
+    ).get(str(cell["camera_view_family_id"]))
+    if readability is None:
+        return None
+    axes = tuple(map(int, readability["geometry_size_axes"]))
+    return (axes[0], axes[1]), float(readability["minimum_extent_m"])
+
+
+def _source_camera_plane_extent(
+    source: dict[str, Any], rule: dict[str, Any], cell: dict[str, Any]
+) -> float:
+    """Return the declared local camera-plane extent for one source."""
+
+    readability = _camera_plane_readability(rule, cell)
+    if readability is None:
+        return math.inf
+    axes, _ = readability
+    simulation = source.get("metadata", {}).get("simulation")
+    if not isinstance(simulation, dict):
+        return math.inf
+    objects = simulation["objects"]
+    if len(objects) != 1:
+        raise ValueError("two-object source must contain exactly one object")
+    size = list(map(float, objects[0]["geometry"]["size_m"]))
+    return max(size[axis] for axis in axes)
+
+
+def _source_meets_rule_camera_extent(
+    source: dict[str, Any], rule: dict[str, Any], cell: dict[str, Any]
+) -> bool:
+    """Apply cheap ramp readability gates before copying a full host."""
+
+    readability = _camera_plane_readability(rule, cell)
+    if readability is None:
+        return True
+    _, minimum_extent = readability
+    return (
+        _source_camera_plane_extent(source, rule, cell) + 1.0e-12
+        >= minimum_extent
+    )
+
+
+def _source_geometry_signature(source: dict[str, Any]) -> tuple[Any, ...]:
+    """Return the exact geometry facts used by layout and camera checks."""
+
+    simulation = source.get("metadata", {}).get("simulation")
+    if not isinstance(simulation, dict):
+        source_id = str(source.get("source", {}).get("scene_id", ""))
+        if not source_id:
+            raise ValueError("two-object source metadata is incomplete")
+        return "unbound_source", source_id
+    objects = simulation.get("objects")
+    if not isinstance(objects, list) or len(objects) != 1:
+        raise ValueError("two-object source must contain exactly one object")
+    geometry = objects[0].get("geometry", {})
+    size = geometry.get("size_m")
+    if not isinstance(size, list) or len(size) != 3:
+        raise ValueError("two-object source size must contain three values")
+    return str(geometry.get("type", "")), *map(float, size)
+
+
+def _pair_sources_meet_rule_camera_geometry(
+    host: dict[str, Any],
+    left: dict[str, Any],
+    right: dict[str, Any],
+    matrix: dict[str, Any],
+    cell: dict[str, Any],
+    rule: dict[str, Any],
+) -> bool:
+    """Check supported-contact geometry and any scene-specific size floor."""
+
+    readability = _camera_plane_readability(rule, cell)
+    minimum_extent = 0.0
+    if (
+        readability is not None
+        and str(cell["camera_view_family_id"])
+        in rule.get("pair_camera_geometry_view_families", ())
+    ):
+        _, minimum_extent = readability
+    lightweight_scene = _pair_source_scene(host, left, right)
+    if lightweight_scene is None:
+        return True
+    motion = next(
+        value
+        for value in matrix["motion_intents"]
+        if str(value["id"]) == str(cell["motion_id"])
+    )
+    if (
+        str(motion["interaction_class"]) == "independent"
+        or str(motion["layout"]) != "planned_supported_contact"
+    ):
+        return True
+    support = lightweight_scene["simulation"]["support"]
+    for obj in lightweight_scene["simulation"]["objects"]:
+        geometry = obj["geometry"]
+        pose = pose_on_support(
+            support,
+            str(geometry["type"]),
+            list(map(float, geometry["size_m"])),
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            pose_profile="support_normal",
+        )
+        obj["initial_state"] = {
+            "orientation_quaternion_wxyz": pose[
+                "orientation_quaternion_wxyz"
+            ]
+        }
+    family = camera_view_family(
+        matrix, str(cell["camera_view_family_id"])
+    )
+    observation = matrix["pair_observation"]
+    lightweight_scene["simulation"]["interaction"] = {
+        "approach_axis_xyz": interaction_approach_axis(
+            motion, support
+        ).tolist(),
+        "camera_relative_azimuth_degrees": float(
+            family["relative_azimuth_degrees"]
+        ),
+        "maximum_camera_view_azimuth_deviation_degrees": float(
+            observation["maximum_camera_view_azimuth_deviation_degrees"]
+        ),
+        "minimum_camera_elevation_degrees": float(
+            family["minimum_elevation_degrees"]
+        ),
+        "preferred_camera_elevation_degrees": float(
+            family["preferred_elevation_degrees"]
+        ),
+        "maximum_camera_elevation_degrees": float(
+            family["maximum_elevation_degrees"]
+        ),
+        "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio": float(
+            observation[
+                "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio"
+            ]
+        ),
+    }
+    return pair_camera_geometry_eligible(
+        lightweight_scene,
+        float(minimum_extent),
+    )
+
+
 def select_coverage_sources(
     cells: Sequence[dict[str, Any]],
     objects: Sequence[dict[str, Any]],
     hosts: Sequence[dict[str, Any]],
     matrix: dict[str, Any],
     scene_rules: dict[str, Any] | None = None,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+) -> list[dict[str, Any]]:
     """Assign compatible sources while balancing profiles and source reuse."""
 
     resolved_scene_rules = resolved_two_object_scene_rules(scene_rules)
@@ -388,9 +682,24 @@ def select_coverage_sources(
         str(intent["id"]): str(intent["kinematic_regime"])
         for intent in matrix["motion_intents"]
     }
+    intent_interaction_classes = {
+        str(intent["id"]): str(intent["interaction_class"])
+        for intent in matrix["motion_intents"]
+    }
+    intent_layouts = {
+        str(intent["id"]): str(intent["layout"])
+        for intent in matrix["motion_intents"]
+    }
     scene_rule_regimes = {
         str(rule["id"]): set(map(str, rule["allowed_kinematic_regimes"]))
         for rule in resolved_scene_rules["physical_rules"]
+    }
+    scene_rule_interaction_classes = {
+        str(rule["id"]): set(map(str, rule["allowed_interaction_classes"]))
+        for rule in resolved_scene_rules["physical_rules"]
+    }
+    scene_rules_by_id = {
+        str(rule["id"]): rule for rule in resolved_scene_rules["physical_rules"]
     }
     scene_rule_classes = {
         str(rule["id"]): str(rule["scene_class"])
@@ -421,7 +730,14 @@ def select_coverage_sources(
     objects_by_family_shape_scale: dict[
         tuple[str, str, str], list[dict[str, Any]]
     ] = {}
+    object_dynamics_profiles: dict[str, tuple[float, float]] = {}
+    object_geometry_signatures: dict[str, tuple[Any, ...]] = {}
     for record in objects:
+        source_id = str(record["source"]["scene_id"])
+        if source_id in object_dynamics_profiles:
+            raise ValueError("two-object source pool contains duplicate ids")
+        object_dynamics_profiles[source_id] = _source_dynamics_profile(record)
+        object_geometry_signatures[source_id] = _source_geometry_signature(record)
         key = (
             str(record["source_family"]),
             str(record["shape_family_id"]),
@@ -439,20 +755,138 @@ def select_coverage_sources(
     source_family_role_use: Counter[tuple[str, str]] = Counter()
     host_profile_use: Counter[str] = Counter()
     host_type_use: Counter[str] = Counter()
-    scene_rule_use: Counter[str] = Counter()
     motion_scene_rule_use: Counter[tuple[str, str]] = Counter()
-    camera_scene_rule_use: Counter[tuple[str, str]] = Counter()
-    scene_rule_environment_use: Counter[tuple[str, str]] = Counter()
     environment_use: Counter[str] = Counter()
     scene_environment_use: Counter[tuple[str, str]] = Counter()
     camera_scene_environment_use: Counter[tuple[str, str, str]] = Counter()
     source_pair_scene_environment_use: Counter[tuple[str, str, str]] = Counter()
     used_pairs: set[tuple[str, str]] = set()
     host_use: Counter[str] = Counter()
+    source_rule_extent_cache: dict[tuple[str, str, str], bool] = {}
+    pair_camera_geometry_cache: dict[tuple[Any, ...], bool] = {}
+    pair_layout_cache: dict[tuple[Any, ...], bool] = {}
+
+    def source_meets_rule_camera_extent(
+        source: dict[str, Any], rule: dict[str, Any], cell: dict[str, Any]
+    ) -> bool:
+        key = (
+            str(source["source"]["scene_id"]),
+            str(rule["id"]),
+            str(cell["camera_view_family_id"]),
+        )
+        if key not in source_rule_extent_cache:
+            source_rule_extent_cache[key] = _source_meets_rule_camera_extent(
+                source, rule, cell
+            )
+        return source_rule_extent_cache[key]
+
+    def pair_meets_rule_camera_geometry(
+        host: dict[str, Any],
+        left: dict[str, Any],
+        right: dict[str, Any],
+        cell: dict[str, Any],
+        rule: dict[str, Any],
+    ) -> bool:
+        simulation = host.get("metadata", {}).get("simulation")
+        if not isinstance(simulation, dict):
+            return _pair_sources_meet_rule_camera_geometry(
+                host, left, right, matrix, cell, rule
+            )
+        support = simulation["support"]
+        frame = support["surface_frame"]
+        key = (
+            object_geometry_signatures[str(left["source"]["scene_id"])],
+            object_geometry_signatures[str(right["source"]["scene_id"])],
+            str(cell["motion_id"]),
+            str(cell["camera_view_family_id"]),
+            str(rule["id"]),
+            float(frame["slope_angle_degrees"]),
+            *map(float, frame["tangent_cross"]),
+            *map(float, frame["tangent_uphill"]),
+            *map(float, frame["normal"]),
+        )
+        if key not in pair_camera_geometry_cache:
+            pair_camera_geometry_cache[key] = (
+                _pair_sources_meet_rule_camera_geometry(
+                    host,
+                    left,
+                    right,
+                    matrix,
+                    cell,
+                    rule,
+                )
+            )
+        return pair_camera_geometry_cache[key]
+
+    def pair_layout_fits_host(
+        host: dict[str, Any],
+        left: dict[str, Any],
+        right: dict[str, Any],
+        cell: dict[str, Any],
+    ) -> bool:
+        simulation = host.get("metadata", {}).get("simulation")
+        if not isinstance(simulation, dict):
+            return _pair_layout_fits_host(
+                host,
+                left,
+                right,
+                matrix,
+                cell,
+            )
+        support = simulation["support"]
+        bounds = support["safe_surface_bounds"]
+        frame = support["surface_frame"]
+        physical_host_signature = (
+            str(support["support_shape"]),
+            float(bounds["x"][1]) - float(bounds["x"][0]),
+            float(bounds["y"][1]) - float(bounds["y"][0]),
+            *map(float, frame["tangent_cross"]),
+            *map(float, frame["tangent_uphill"]),
+            *map(float, frame["normal"]),
+            *map(float, simulation["world"]["gravity_m_s2"]),
+        )
+        key = (
+            object_geometry_signatures[str(left["source"]["scene_id"])],
+            object_geometry_signatures[str(right["source"]["scene_id"])],
+            str(cell["motion_id"]),
+            str(cell["camera_view_family_id"]),
+            str(host["scene_rule_id"]),
+            *physical_host_signature,
+        )
+        if key not in pair_layout_cache:
+            pair_layout_cache[key] = _pair_layout_fits_host(
+                host,
+                left,
+                right,
+                matrix,
+                cell,
+            )
+        return pair_layout_cache[key]
+
+    original_cell_order = {
+        str(cell["cell_id"]): index for index, cell in enumerate(cells)
+    }
+
+    def requires_pair_camera_geometry(cell: dict[str, Any]) -> bool:
+        motion_id = str(cell["motion_id"])
+        return (
+            intent_interaction_classes[motion_id] == "interacting"
+            and intent_layouts[motion_id] == "planned_supported_contact"
+        )
+
+    assignment_cells = sorted(
+        cells,
+        key=lambda cell: (
+            not requires_pair_camera_geometry(cell),
+            original_cell_order[str(cell["cell_id"])],
+        ),
+    )
     selected = []
-    for cell in cells:
+    selected_cell_order: dict[str, int] = {}
+    for cell in assignment_cells:
         camera_view_family_id = str(cell["camera_view_family_id"])
         scene_class = str(cell["scene_class"])
+        strict_pair_geometry = requires_pair_camera_geometry(cell)
 
         def object_key(record: dict[str, Any], role: str) -> tuple[int, int, str]:
             source_id = str(record["source"]["scene_id"])
@@ -463,9 +897,66 @@ def select_coverage_sources(
                 _rank(seed, cell["cell_id"], role, source_id),
             )
 
+        cell_camera_ranking_rule = next(
+            (
+                scene_rules_by_id[str(record["scene_rule_id"])]
+                for record in hosts_by_scene.get(scene_class, [])
+                if intent_regimes[str(cell["motion_id"])]
+                in scene_rule_regimes[str(record["scene_rule_id"])]
+                and intent_interaction_classes[str(cell["motion_id"])]
+                in scene_rule_interaction_classes[
+                    str(record["scene_rule_id"])
+                ]
+                and camera_view_family_id
+                in allowed_camera_view_families(
+                    scene_rules_by_id[str(record["scene_rule_id"])],
+                    str(cell["motion_id"]),
+                )
+                and camera_view_family_id
+                in scene_rules_by_id[str(record["scene_rule_id"])].get(
+                    "object_camera_plane_readability_by_view_family", {}
+                )
+            ),
+            None,
+        )
+
+        def source_family_camera_rank(
+            source_family: str, role: str
+        ) -> float:
+            if strict_pair_geometry or cell_camera_ranking_rule is None:
+                return 1.0
+            pool = objects_by_family_shape_scale.get(
+                (
+                    source_family,
+                    str(cell[f"{role}_shape"]),
+                    str(cell[f"{role}_scale_bin"]),
+                ),
+                [],
+            )
+            return min(
+                (
+                    -_source_camera_plane_extent(
+                        record, cell_camera_ranking_rule, cell
+                    )
+                    for record in pool
+                    if source_meets_rule_camera_extent(
+                        record, cell_camera_ranking_rule, cell
+                    )
+                ),
+                default=math.inf,
+            )
+
         declared_source_pairs = sorted(
             plan["role_ordered_source_family_pairs"],
             key=lambda record: (
+                max(
+                    source_family_camera_rank(
+                        str(record["object_a"]), "object_a"
+                    ),
+                    source_family_camera_rank(
+                        str(record["object_b"]), "object_b"
+                    ),
+                ),
                 camera_source_family_pair_use[
                     (camera_view_family_id, str(record["id"]))
                 ],
@@ -503,6 +994,15 @@ def select_coverage_sources(
                 for record in hosts_by_scene.get(scene_class, [])
                 if intent_regimes[str(cell["motion_id"])]
                 in scene_rule_regimes[str(record["scene_rule_id"])]
+                and intent_interaction_classes[str(cell["motion_id"])]
+                in scene_rule_interaction_classes[
+                    str(record["scene_rule_id"])
+                ]
+                and camera_view_family_id
+                in allowed_camera_view_families(
+                    scene_rules_by_id[str(record["scene_rule_id"])],
+                    str(cell["motion_id"]),
+                )
                 and host_use[str(record["source"]["scene_id"])]
                 < maximum_host_reuse
             ]
@@ -544,42 +1044,132 @@ def select_coverage_sources(
                     ),
                 )
             )
-            for left in sorted(
-                left_pool, key=lambda value: object_key(value, "a")
-            ):
-                left_id = str(left["source"]["scene_id"])
-                if object_use[left_id] >= maximum_reuse:
-                    continue
-                for right in sorted(
-                    right_pool, key=lambda value: object_key(value, "b")
-                ):
-                    right_id = str(right["source"]["scene_id"])
-                    if left_id == right_id or object_use[right_id] >= maximum_reuse:
-                        continue
-                    unordered_pair = tuple(sorted((left_id, right_id)))
-                    if unordered_pair in used_pairs:
-                        continue
-                    if not _pair_dynamics_eligible(left, right, matrix, cell):
-                        continue
-                    excluded_host_ids = {left_id, right_id}
-                    candidate_host = next(
-                        (
-                            record
-                            for record in candidate_hosts
-                            if str(record["source"]["scene_id"])
-                            not in excluded_host_ids
-                            and _pair_layout_fits_host(
-                                record,
-                                left,
-                                right,
+            candidate_rules = [
+                scene_rules_by_id[str(record["scene_rule_id"])]
+                for record in candidate_hosts
+            ]
+            left_pool = [
+                record
+                for record in left_pool
+                if any(
+                    source_meets_rule_camera_extent(record, rule, cell)
+                    for rule in candidate_rules
+                )
+            ]
+            right_pool = [
+                record
+                for record in right_pool
+                if any(
+                    source_meets_rule_camera_extent(record, rule, cell)
+                    for rule in candidate_rules
+                )
+            ]
+
+            def ranked_object_key(
+                record: dict[str, Any], role: str
+            ) -> tuple[Any, ...]:
+                base_key = object_key(record, role)
+                if cell_camera_ranking_rule is None:
+                    return base_key
+                extent_rank = -_source_camera_plane_extent(
+                    record, cell_camera_ranking_rule, cell
+                )
+                if strict_pair_geometry:
+                    return base_key[:2] + (extent_rank, base_key[2])
+                return (
+                    extent_rank,
+                    *base_key,
+                )
+
+            ordered_left_pool = sorted(
+                (
+                    record
+                    for record in left_pool
+                    if object_use[str(record["source"]["scene_id"])]
+                    < maximum_reuse
+                ),
+                key=lambda value: ranked_object_key(value, "a"),
+            )
+            ordered_right_pool = sorted(
+                (
+                    record
+                    for record in right_pool
+                    if object_use[str(record["source"]["scene_id"])]
+                    < maximum_reuse
+                ),
+                key=lambda value: ranked_object_key(value, "b"),
+            )
+
+            def eligible_object_pairs() -> Iterator[
+                tuple[dict[str, Any], dict[str, Any], tuple[str, str]]
+            ]:
+                for left in ordered_left_pool:
+                    left_id = str(left["source"]["scene_id"])
+                    for right in ordered_right_pool:
+                        right_id = str(right["source"]["scene_id"])
+                        unordered_pair = tuple(sorted((left_id, right_id)))
+                        if (
+                            left_id == right_id
+                            or unordered_pair in used_pairs
+                            or not _dynamics_profiles_eligible(
+                                (
+                                    object_dynamics_profiles[left_id],
+                                    object_dynamics_profiles[right_id],
+                                ),
                                 matrix,
                                 cell,
-                                resolved_scene_rules,
                             )
-                        ),
-                        None,
+                        ):
+                            continue
+                        yield left, right, unordered_pair
+
+            candidate_object_pair_cache = []
+            candidate_object_pair_iterator = eligible_object_pairs()
+            for candidate_host in candidate_hosts:
+                candidate_rule = scene_rules_by_id[
+                    str(candidate_host["scene_rule_id"])
+                ]
+                candidate_host_id = str(candidate_host["source"]["scene_id"])
+                pair_index = 0
+                while True:
+                    if pair_index == len(candidate_object_pair_cache):
+                        try:
+                            candidate_object_pair_cache.append(
+                                next(candidate_object_pair_iterator)
+                            )
+                        except StopIteration:
+                            break
+                    left, right, unordered_pair = (
+                        candidate_object_pair_cache[pair_index]
                     )
-                    if candidate_host is None:
+                    pair_index += 1
+                    left_id = str(left["source"]["scene_id"])
+                    right_id = str(right["source"]["scene_id"])
+                    if (
+                        left_id == candidate_host_id
+                        or right_id == candidate_host_id
+                        or not source_meets_rule_camera_extent(
+                            left, candidate_rule, cell
+                        )
+                        or not source_meets_rule_camera_extent(
+                            right, candidate_rule, cell
+                        )
+                    ):
+                        continue
+                    if not pair_layout_fits_host(
+                        candidate_host,
+                        left,
+                        right,
+                        cell,
+                    ):
+                        continue
+                    if not pair_meets_rule_camera_geometry(
+                        candidate_host,
+                        left,
+                        right,
+                        cell,
+                        candidate_rule,
+                    ):
                         continue
                     pair = (left, right, unordered_pair)
                     selected_source_pair = source_pair
@@ -612,6 +1202,9 @@ def select_coverage_sources(
         selected_cell["cell_id"] = "__".join(
             [str(selected_cell["cell_id"]), scene_rule_id, environment_category]
         )
+        selected_cell_order[str(selected_cell["cell_id"])] = original_cell_order[
+            str(cell["cell_id"])
+        ]
         used_pairs.add(unordered_pair)
         source_family_pair_use[str(selected_source_pair["id"])] += 1
         camera_source_family_pair_use[
@@ -629,10 +1222,7 @@ def select_coverage_sources(
             object_profile_use[str(record["visual_profile_id"])] += 1
         host_profile_use[str(host["visual_profile_id"])] += 1
         host_type_use[str(host["visual_type"])] += 1
-        scene_rule_use[scene_rule_id] += 1
         motion_scene_rule_use[(str(cell["motion_id"]), scene_rule_id)] += 1
-        camera_scene_rule_use[(camera_view_family_id, scene_rule_id)] += 1
-        scene_rule_environment_use[(scene_rule_id, environment_category)] += 1
         environment_use[environment_category] += 1
         scene_environment_use[(scene_class, environment_category)] += 1
         camera_scene_environment_use[
@@ -648,6 +1238,9 @@ def select_coverage_sources(
                 "objects": [left, right],
             }
         )
+    selected.sort(
+        key=lambda record: selected_cell_order[str(record["cell"]["cell_id"])]
+    )
 
     eligible_object_profiles = {str(value["visual_profile_id"]) for value in objects}
     eligible_host_profiles = {str(value["visual_profile_id"]) for value in hosts}
@@ -661,148 +1254,20 @@ def select_coverage_sources(
         raise ValueError("coverage selection misses eligible object visual profiles")
     if set(host_profile_use) != eligible_host_profiles:
         raise ValueError("coverage selection misses eligible host visual profiles")
-    selected_objects = [
-        record for selection in selected for record in selection["objects"]
-    ]
-    selected_scene_classes = sorted(
-        {str(record["scene_class"]) for record in hosts}
-    )
-    environment_categories_by_scene = {
-        scene_class: sorted(
-            {
-                str(record["environment_category"])
-                for record in hosts
-                if str(record["scene_class"]) == scene_class
-            }
-        )
-        for scene_class in selected_scene_classes
-    }
-    selected_camera_families = sorted(
-        {str(cell["camera_view_family_id"]) for cell in cells}
-    )
-    audit = {
-        "unique_object_source_count": len(object_use),
-        "maximum_object_source_reuse": max(object_use.values()),
-        "unique_source_pair_count": len(used_pairs),
-        "unique_host_count": len(host_use),
-        "maximum_host_source_reuse": max(host_use.values()),
-        "eligible_object_visual_profile_count": len(eligible_object_profiles),
-        "selected_object_visual_profile_count": len(object_profile_use),
-        "selected_source_family_pair_counts": dict(
-            sorted(source_family_pair_use.items())
-        ),
-        "selected_camera_source_family_pair_counts": {
-            camera_family_id: {
-                str(source_pair["id"]): camera_source_family_pair_use[
-                    (camera_family_id, str(source_pair["id"]))
-                ]
-                for source_pair in plan["role_ordered_source_family_pairs"]
-            }
-            for camera_family_id in sorted(
-                {str(cell["camera_view_family_id"]) for cell in cells}
-            )
-        },
-        "selected_object_source_family_counts": dict(
-            sorted(
-                Counter(
-                    record["source_family"] for record in selected_objects
-                ).items()
-            )
-        ),
-        "selected_object_shape_counts": dict(
-            sorted(
-                Counter(
-                    str(record["shape_family_id"])
-                    for record in selected_objects
-                ).items()
-            )
-        ),
-        "selected_object_visual_profile_counts_by_shape": {
-            shape: len(
-                {
-                    str(record["visual_profile_id"])
-                    for record in selected_objects
-                    if str(record["shape_family_id"]) == shape
-                }
-            )
-            for shape in sorted(
-                {str(record["shape_family_id"]) for record in selected_objects}
-            )
-        },
-        "selected_host_visual_profile_count": len(host_profile_use),
-        "selected_host_visual_type_counts": dict(sorted(host_type_use.items())),
-        "selected_scene_rule_counts": dict(sorted(scene_rule_use.items())),
-        "selected_motion_scene_rule_counts": {
-            motion_id: {
-                rule_id: motion_scene_rule_use[(motion_id, rule_id)]
-                for rule_id in sorted(scene_rule_use)
-            }
-            for motion_id in sorted({str(cell["motion_id"]) for cell in cells})
-        },
-        "selected_camera_scene_rule_counts": {
-            camera_family: {
-                rule_id: camera_scene_rule_use[(camera_family, rule_id)]
-                for rule_id in sorted(scene_rule_use)
-            }
-            for camera_family in selected_camera_families
-        },
-        "selected_scene_rule_environment_counts": {
-            rule_id: {
-                category: count
-                for (selected_rule_id, category), count in sorted(
-                    scene_rule_environment_use.items()
-                )
-                if selected_rule_id == rule_id
-            }
-            for rule_id in sorted(scene_rule_use)
-        },
-        "selected_host_environment_category_counts": dict(
-            sorted(environment_use.items())
-        ),
-        "selected_scene_environment_category_counts": {
-            scene_class: {
-                category: scene_environment_use[(scene_class, category)]
-                for category in environment_categories_by_scene[scene_class]
-            }
-            for scene_class in selected_scene_classes
-        },
-        "selected_camera_scene_environment_category_counts": {
-            camera_family: {
-                scene_class: {
-                    category: camera_scene_environment_use[
-                        (camera_family, scene_class, category)
-                    ]
-                    for category in environment_categories_by_scene[scene_class]
-                }
-                for scene_class in selected_scene_classes
-            }
-            for camera_family in selected_camera_families
-        },
-        "selected_source_family_pair_scene_environment_category_counts": {
-            source_pair_id: {
-                scene_class: {
-                    category: source_pair_scene_environment_use[
-                        (source_pair_id, scene_class, category)
-                    ]
-                    for category in environment_categories_by_scene[scene_class]
-                }
-                for scene_class in selected_scene_classes
-            }
-            for source_pair_id in sorted(source_family_pair_use)
-        },
-    }
-    return selected, audit
+    return selected
 
 
 def _validate_complete_scene_coverage(
     matrix: dict[str, Any],
     scene_rules: dict[str, Any],
-    audit: dict[str, Any],
+    selections: Sequence[dict[str, Any]],
 ) -> None:
-    """Require a complete matrix to materialize every declared scene pairing."""
+    """Require a full selection to materialize every declared scene pairing."""
+
+    selected_cells = [selection["cell"] for selection in selections]
 
     declared_rules = {str(rule["id"]) for rule in scene_rules["physical_rules"]}
-    selected_rules = set(audit["selected_scene_rule_counts"])
+    selected_rules = {str(cell["scene_rule_id"]) for cell in selected_cells}
     if selected_rules != declared_rules:
         raise ValueError(
             "complete two-object coverage misses physical scene rules: "
@@ -814,12 +1279,8 @@ def _validate_complete_scene_coverage(
         for rule_id in category["allowed_scene_rules"]
     }
     selected_pairs = {
-        (str(rule_id), str(category))
-        for rule_id, counts in audit[
-            "selected_scene_rule_environment_counts"
-        ].items()
-        for category, count in counts.items()
-        if int(count) > 0
+        (str(cell["scene_rule_id"]), str(cell["visual_environment_category"]))
+        for cell in selected_cells
     }
     if selected_pairs != declared_pairs:
         raise ValueError(
@@ -830,22 +1291,41 @@ def _validate_complete_scene_coverage(
         str(intent["id"]): str(intent["kinematic_regime"])
         for intent in matrix["motion_intents"]
     }
+    motion_interaction_classes = {
+        str(intent["id"]): str(intent["interaction_class"])
+        for intent in matrix["motion_intents"]
+    }
     declared_motion_rules = {
         (motion_id, str(rule["id"]))
         for motion_id, regime in motion_regimes.items()
         for rule in scene_rules["physical_rules"]
         if regime in rule["allowed_kinematic_regimes"]
+        and motion_interaction_classes[motion_id]
+        in rule["allowed_interaction_classes"]
+        and bool(allowed_camera_view_families(rule, motion_id))
     }
     selected_motion_rules = {
-        (str(motion_id), str(rule_id))
-        for motion_id, counts in audit["selected_motion_scene_rule_counts"].items()
-        for rule_id, count in counts.items()
-        if int(count) > 0
+        (str(cell["motion_id"]), str(cell["scene_rule_id"]))
+        for cell in selected_cells
     }
     if selected_motion_rules != declared_motion_rules:
         raise ValueError(
             "complete two-object coverage misses motion/scene-rule pairs: "
             f"{sorted(declared_motion_rules - selected_motion_rules)}"
+        )
+    declared_camera_rules = {
+        (str(camera_family), str(rule["id"]))
+        for rule in scene_rules["physical_rules"]
+        for camera_family in rule["allowed_camera_view_families"]
+    }
+    selected_camera_rules = {
+        (str(cell["camera_view_family_id"]), str(cell["scene_rule_id"]))
+        for cell in selected_cells
+    }
+    if selected_camera_rules != declared_camera_rules:
+        raise ValueError(
+            "complete two-object coverage misses camera/scene-rule pairs: "
+            f"{sorted(declared_camera_rules - selected_camera_rules)}"
         )
 
 
@@ -931,7 +1411,7 @@ def main() -> None:
     cells, full_cell_count = coverage_cells(
         matrix, args.limit, scene_rules=scene_rules
     )
-    objects, hosts, source_audit = released_source_pool(
+    objects, hosts = released_source_pool(
         root=root,
         released_base_manifest_path=released_path,
         source_root=source_root,
@@ -939,11 +1419,11 @@ def main() -> None:
         matrix=matrix,
         scene_rules=scene_rules,
     )
-    selections, selection_audit = select_coverage_sources(
+    selections = select_coverage_sources(
         cells, objects, hosts, matrix, scene_rules
     )
     if len(cells) == full_cell_count:
-        _validate_complete_scene_coverage(matrix, scene_rules, selection_audit)
+        _validate_complete_scene_coverage(matrix, scene_rules, selections)
     selected_cells = [selection["cell"] for selection in selections]
     scenes = build_coverage_scenes(selections, matrix, scene_rules)
     samples = []
@@ -988,13 +1468,11 @@ def main() -> None:
             },
         },
         "coverage": {
-            "schema_version": "physweep_two_object_coverage_selection_v6",
+            "schema_version": "physweep_two_object_coverage_selection_v7",
             "full_cell_count": full_cell_count,
             "selected_cell_count": len(cells),
             "complete_cartesian_product": len(cells) == full_cell_count,
             "axis_counts": _axis_counts(selected_cells),
-            "source_pool_audit": source_audit,
-            "selection_audit": selection_audit,
         },
         "samples": samples,
         "status": "sampled_pending_simulation",

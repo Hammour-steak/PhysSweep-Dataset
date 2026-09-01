@@ -1,5 +1,5 @@
 {
-  "schema_version": "physweep_two_object_sampling_matrix_v11",
+  "schema_version": "physweep_two_object_sampling_matrix_v12",
   "objects": {
     "schema_version": "physweep_object_collection_v1",
     "roles": [
@@ -119,7 +119,7 @@
     }
   },
   "coverage_plan": {
-    "schema_version": "physweep_two_object_coverage_plan_v3",
+    "schema_version": "physweep_two_object_coverage_plan_v4",
     "seed": 20260829,
     "role_ordered_scale_pairs": [
       {"id": "small_to_small", "object_a": "small", "object_b": "small"},
@@ -131,6 +131,22 @@
       {"id": "large_to_small", "object_a": "large", "object_b": "small"},
       {"id": "large_to_medium", "object_a": "large", "object_b": "medium"},
       {"id": "large_to_large", "object_a": "large", "object_b": "large"}
+    ],
+    "scene_motion_scale_compatibility": [
+      {
+        "scene_class": "ground_feature",
+        "motion_ids": [
+          "surface_hit_rest_2obj",
+          "surface_head_on_2obj",
+          "surface_catch_up_2obj"
+        ],
+        "allowed_scale_pair_ids": [
+          "medium_to_medium",
+          "medium_to_large",
+          "large_to_medium",
+          "large_to_large"
+        ]
+      }
     ],
     "role_ordered_shape_pairs": [
       {"id": "sphere_to_sphere", "object_a": "sphere", "object_b": "sphere"},
@@ -228,7 +244,7 @@
     "maximum_camera_view_azimuth_deviation_degrees": 8.0,
     "minimum_camera_distance_m": 1.0,
     "maximum_camera_distance_m": 6.0,
-    "maximum_camera_distance_above_minimum_m": 4.5,
+    "maximum_camera_distance_above_minimum_m": 5.0,
     "full_motion_envelope_margin_ndc": 0.03,
     "preferred_full_motion_envelope_span_ndc": 0.60,
     "minimum_per_object_median_span_ndc": 0.065,
@@ -278,7 +294,7 @@
       "kinematic_regime": "supported_supported",
       "layout": "planned_supported_contact",
       "object_motions": ["roll_or_slide_1obj", "roll_or_slide_1obj"],
-      "linear_velocity_m_s": [[0.87, 0.0, 0.0], [0.39, 0.0, 0.0]],
+      "linear_velocity_m_s": [[0.97, 0.0, 0.0], [0.39, 0.0, 0.0]],
       "minimum_displacement_m": [0.20, 0.10],
       "contact_time_s": 0.35,
       "impact_offset_ratio": 0.0

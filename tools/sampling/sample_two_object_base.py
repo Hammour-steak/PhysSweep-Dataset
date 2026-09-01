@@ -14,6 +14,8 @@ from tools.dataset_contract.object_identity_contract import attach_object_identi
 from tools.motion_rules.two_object import apply_two_object_motion
 from tools.scene_rules.two_object import (
     DEFAULT_TWO_OBJECT_SCENE_RULES,
+    allowed_camera_view_families,
+    allowed_scene_classes,
     bind_two_object_scene,
     load_two_object_scene_rules,
     resolved_two_object_scene_rules,
@@ -62,6 +64,7 @@ _COVERAGE_PLAN_FIELDS = {
     "schema_version",
     "seed",
     "role_ordered_scale_pairs",
+    "scene_motion_scale_compatibility",
     "role_ordered_shape_pairs",
     "camera_view_families",
     "role_ordered_source_family_pairs",
@@ -91,7 +94,7 @@ def _validated_intents(
 ) -> list[dict[str, Any]]:
     resolved_scene_rules = resolved_two_object_scene_rules(scene_rules)
     if set(matrix) != _MATRIX_FIELDS or (
-        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v11"
+        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v12"
     ):
         raise ValueError("unsupported two-object sampling matrix")
     objects = matrix.get("objects")
@@ -222,7 +225,7 @@ def _validated_intents(
         not isinstance(coverage, dict)
         or set(coverage) != _COVERAGE_PLAN_FIELDS
         or coverage.get("schema_version")
-        != "physweep_two_object_coverage_plan_v3"
+        != "physweep_two_object_coverage_plan_v4"
     ):
         raise ValueError("two-object coverage plan is incomplete")
     seed = coverage.get("seed")
@@ -366,17 +369,76 @@ def _validated_intents(
     ids = [str(intent.get("id", "")) for intent in intents]
     if any(not motion_id for motion_id in ids) or len(ids) != len(set(ids)):
         raise ValueError("two-object motion intent ids must be unique")
-    admitted_regimes = {
-        str(regime)
+    admitted_motion_contracts = {
+        (str(regime), str(interaction_class))
         for rule in resolved_scene_rules["physical_rules"]
         for regime in rule["allowed_kinematic_regimes"]
+        for interaction_class in rule["allowed_interaction_classes"]
     }
     if any(
-        str(intent.get("kinematic_regime", "")) not in admitted_regimes
+        (
+            str(intent.get("kinematic_regime", "")),
+            str(intent.get("interaction_class", "")),
+        )
+        not in admitted_motion_contracts
         for intent in intents
     ):
         raise ValueError("two-object motion intent has no compatible scene rule")
     intent_id_set = set(ids)
+    scene_motion_scale_compatibility = coverage.get(
+        "scene_motion_scale_compatibility"
+    )
+    compatibility_fields = {
+        "scene_class",
+        "motion_ids",
+        "allowed_scale_pair_ids",
+    }
+    declared_scene_classes = set(allowed_scene_classes(resolved_scene_rules))
+    declared_scale_pair_ids = set(pair_ids)
+    constrained_scene_motions: set[tuple[str, str]] = set()
+    if not isinstance(scene_motion_scale_compatibility, list) or any(
+        not isinstance(record, dict)
+        or set(record) != compatibility_fields
+        or str(record["scene_class"]) not in declared_scene_classes
+        or not isinstance(record["motion_ids"], list)
+        or not record["motion_ids"]
+        or any(str(value) not in intent_id_set for value in record["motion_ids"])
+        or len(record["motion_ids"]) != len(set(map(str, record["motion_ids"])))
+        or not isinstance(record["allowed_scale_pair_ids"], list)
+        or not record["allowed_scale_pair_ids"]
+        or any(
+            str(value) not in declared_scale_pair_ids
+            for value in record["allowed_scale_pair_ids"]
+        )
+        or len(record["allowed_scale_pair_ids"])
+        != len(set(map(str, record["allowed_scale_pair_ids"])))
+        for record in scene_motion_scale_compatibility
+    ):
+        raise ValueError(
+            "two-object scene-motion-scale compatibility is invalid"
+        )
+    for record in scene_motion_scale_compatibility:
+        scene_class = str(record["scene_class"])
+        for motion_id in map(str, record["motion_ids"]):
+            key = (scene_class, motion_id)
+            if key in constrained_scene_motions:
+                raise ValueError(
+                    "two-object scene-motion-scale compatibility overlaps"
+                )
+            intent = next(value for value in intents if str(value["id"]) == motion_id)
+            if not any(
+                str(rule["scene_class"]) == scene_class
+                and str(intent["kinematic_regime"])
+                in rule["allowed_kinematic_regimes"]
+                and str(intent["interaction_class"])
+                in rule["allowed_interaction_classes"]
+                and bool(allowed_camera_view_families(rule, motion_id))
+                for rule in resolved_scene_rules["physical_rules"]
+            ):
+                raise ValueError(
+                    "two-object scale constraint names an incompatible scene motion"
+                )
+            constrained_scene_motions.add(key)
     compatibility = matrix.get("shape_motion_compatibility")
     if (
         not isinstance(compatibility, dict)
@@ -443,6 +505,30 @@ def compatible_shape_pair_ids(
         str(value)
         for value in rules["pair_sets"][str(record["shape_pair_set_id"])]
     )
+
+
+def compatible_scale_pair_ids(
+    matrix: dict[str, Any], motion_id: str, scene_class: str
+) -> tuple[str, ...]:
+    """Return scale pairs admitted for one motion in one scene class."""
+
+    declared = tuple(
+        str(record["id"])
+        for record in matrix["coverage_plan"]["role_ordered_scale_pairs"]
+    )
+    matches = [
+        record
+        for record in matrix["coverage_plan"][
+            "scene_motion_scale_compatibility"
+        ]
+        if str(record["scene_class"]) == scene_class
+        and motion_id in set(map(str, record["motion_ids"]))
+    ]
+    if not matches:
+        return declared
+    if len(matches) != 1:
+        raise ValueError("overlapping two-object scene-motion-scale compatibility")
+    return tuple(map(str, matches[0]["allowed_scale_pair_ids"]))
 
 
 def shape_pair_id(

@@ -90,14 +90,16 @@ environment visual/collision pose.
 The 2obj candidate sampler reuses hash-bound released 1obj metadata, appearance,
 visual assets, and collision proxies. It admits generic primitives, centered
 asset primitives, and exact continuous stacks of centered upright cylinders
-within the declared 1 mm origin tolerance. The 828 base cells cover ten
+within the declared 1 mm origin tolerance. The 993 base cells cover ten
 frozen motions with their admitted ordered shape pairs, all nine ordered size
-pairs, and two flat scene classes. Interacting source pairs have a declared
-50:1 maximum mass ratio and 6:1 maximum per-object geometry aspect ratio;
-independent pairs are not restricted by those rules.
+pairs, two flat scene classes, and an admitted unobstructed-incline class.
+Interacting source pairs have a declared 50:1 maximum mass ratio and 6:1
+maximum per-object geometry aspect ratio; independent pairs are not restricted
+by those rules.
 The separately versioned scene contract
-classifies those hosts into five physical profiles: ground patch, long indoor
-floor, open hardscape, wide raised platform, and long raised support. Six
+classifies those hosts into six physical profiles: ground patch, long indoor
+floor, open hardscape, wide raised platform, long raised support, and an
+unobstructed inclined slab with shallow and standard-slope variants. Six
 pair-relative camera families, four
 ordered generic/asset source-family pairs, and five feasible visual-environment
 categories are balanced without multiplying the base count. Each environment
@@ -105,11 +107,16 @@ explicitly names its compatible physical profiles; complete plans must realize
 every allowed motion/profile and profile/environment pairing at least once. This
 is not yet a production 2obj release.
 
+Camera failures are replaced with `resample_two_object_camera_failures`; it
+freezes passing rows and preserves motion, shape, scale, and scene-class axes.
+Repeated failures may reselect only declared source-family or camera-family
+choices.
+
 Every admitted cell appears once. Independent controls use the three same-shape
 pairs because they do not exercise collision geometry; the six cross-shape
-orders remain covered by interacting motions. Thus 666/828 (80.43%) of the
-complete matrix is interacting. Balanced prefixes preserve that mix while
-retaining all three control types.
+orders remain covered by interacting motions. The complete matrix contains 993
+cells, including 831 interacting cells (83.69%). Balanced prefixes preserve an
+interaction share above 80% while retaining all three control types.
 
 Motion labels must agree with their initial velocities and displacement bounds.
 Supported contact placement predicts Coulomb-friction travel; drop-contact rows
@@ -148,7 +155,7 @@ and a visible pre-contact ascent for every declared arc projectile.
   --output-root outputs/two_object_validation/sweep/bound
 ```
 
-Omit `--limit` for all 828 cells. Post-contact outcomes are measured rather
+Omit `--limit` for all 993 cells. Post-contact outcomes are measured rather
 than preclassified. One camera is frozen only after every member of a
 two-object one-factor group passes; masks use `masks/<object_id>/`.
 

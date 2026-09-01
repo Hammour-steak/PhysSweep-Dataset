@@ -11,6 +11,7 @@ import numpy as np
 from tools.core.rigid_geometry import (
     finite_vector,
     object_contact_offset_m,
+    pose_on_support,
     positive_vector,
     sphere_primitive_center_distance_m,
     upright_footprint_half_extents_m,
@@ -352,9 +353,206 @@ def _support_center(bounds: dict[str, Any]) -> np.ndarray:
     )
 
 
-def _supported_positions_z(
+def _support_frame(
+    support: dict[str, Any],
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Return the topology's longitudinal, lateral, and normal motion frame."""
+
+    frame = support.get("surface_frame")
+    if not isinstance(frame, dict):
+        raise ValueError("two-object support lacks a surface frame")
+    tangent_cross = np.asarray(
+        finite_vector(frame.get("tangent_cross"), 3, "cross-slope tangent"),
+        dtype=np.float64,
+    )
+    tangent_uphill = np.asarray(
+        finite_vector(frame.get("tangent_uphill"), 3, "uphill tangent"),
+        dtype=np.float64,
+    )
+    normal = np.asarray(
+        finite_vector(frame.get("normal"), 3, "support normal"),
+        dtype=np.float64,
+    )
+    basis = np.stack([tangent_cross, tangent_uphill, normal])
+    if not np.allclose(
+        basis @ basis.T, np.eye(3), atol=1.0e-6, rtol=0.0
+    ) or not np.allclose(
+        np.cross(tangent_cross, tangent_uphill),
+        normal,
+        atol=1.0e-6,
+        rtol=0.0,
+    ):
+        raise ValueError("two-object support frame must be right-handed orthonormal")
+    if str(support.get("support_shape")) == "inclined_ramp":
+        # Longitudinal 2obj motion follows the physical slope axis.  Negating
+        # the cross-slope tangent keeps the motion frame right-handed.
+        return tangent_uphill, -tangent_cross, normal
+    return tangent_cross, tangent_uphill, normal
+
+
+def _world_vectors(
+    local_vectors: np.ndarray,
+    support_frame: tuple[np.ndarray, np.ndarray, np.ndarray],
+) -> np.ndarray:
+    """Map [longitudinal, lateral, normal] components into world space."""
+
+    basis = np.stack(support_frame, axis=1)
+    return np.asarray(local_vectors, dtype=np.float64) @ basis.T
+
+
+def interaction_approach_axis(
+    intent: dict[str, Any], support: dict[str, Any]
+) -> np.ndarray:
+    """Return the authoritative world-space approach axis for an interaction."""
+
+    if str(intent.get("interaction_class")) != "interacting":
+        raise ValueError("an independent motion has no contact approach axis")
+    layout = str(intent["layout"])
+    local_velocities = np.asarray(
+        [
+            finite_vector(value, 3, "two-object linear velocity")
+            for value in intent["linear_velocity_m_s"]
+        ],
+        dtype=np.float64,
+    )
+    if local_velocities.shape != (2, 3):
+        raise ValueError("two-object intent requires two linear velocities")
+    support_frame = _support_frame(support)
+    if layout == "planned_supported_contact":
+        relative = local_velocities[0, :2] - local_velocities[1, :2]
+        speed = float(np.linalg.norm(relative))
+        if speed <= _NUMERICAL_EPSILON:
+            raise ValueError("planned contact requires nonzero relative velocity")
+        impact_offset = finite_vector(
+            [intent["impact_offset_ratio"]], 1, "impact offset ratio"
+        )[0]
+        if abs(impact_offset) >= _MAXIMUM_IMPACT_OFFSET_RATIO:
+            raise ValueError(
+                "impact offset ratio exceeds the supported initial-state contract"
+            )
+        angle = math.asin(impact_offset)
+        central = relative / speed
+        contact = np.asarray(
+            [
+                math.cos(angle) * central[0]
+                - math.sin(angle) * central[1],
+                math.sin(angle) * central[0]
+                + math.cos(angle) * central[1],
+                0.0,
+            ],
+            dtype=np.float64,
+        )
+        return _world_vectors(contact[None, :], support_frame)[0]
+    if layout == "ballistic_airborne_contact":
+        elevation = math.radians(
+            finite_vector(
+                [intent["contact_elevation_degrees"]],
+                1,
+                "ballistic contact elevation",
+            )[0]
+        )
+        if not 0.0 < elevation < math.pi / 2.0:
+            raise ValueError(
+                "ballistic contact elevation must lie in (0, 90) degrees"
+            )
+        return np.asarray(
+            [math.cos(elevation), 0.0, -math.sin(elevation)],
+            dtype=np.float64,
+        )
+    if layout == "ballistic_airborne_pair_contact":
+        velocities = _world_vectors(local_velocities, support_frame)
+        relative = velocities[0] - velocities[1]
+        speed = float(np.linalg.norm(relative))
+        if speed <= _NUMERICAL_EPSILON:
+            raise ValueError(
+                "airborne pair contact requires nonzero relative velocity"
+            )
+        return relative / speed
+    raise ValueError(f"unsupported interacting two-object layout: {layout}")
+
+
+def _motion_xy_from_support_xy(
+    support_xy: np.ndarray, support: dict[str, Any]
+) -> np.ndarray:
+    """Convert canonical support x/y into longitudinal/lateral coordinates."""
+
+    values = np.asarray(support_xy, dtype=np.float64)
+    if str(support.get("support_shape")) != "inclined_ramp":
+        return values.copy()
+    longitudinal, lateral, _ = _support_frame(support)
+    horizontal_basis = np.stack(
+        [longitudinal[:2], lateral[:2]], axis=1
+    )
+    if abs(float(np.linalg.det(horizontal_basis))) <= _NUMERICAL_EPSILON:
+        raise ValueError("inclined support has a singular horizontal motion frame")
+    return values @ np.linalg.inv(horizontal_basis).T
+
+
+def _support_xy_from_motion_xy(
+    motion_xy: np.ndarray, support: dict[str, Any]
+) -> np.ndarray:
+    """Convert longitudinal/lateral coordinates into canonical support x/y."""
+
+    values = np.asarray(motion_xy, dtype=np.float64)
+    if str(support.get("support_shape")) != "inclined_ramp":
+        return values.copy()
+    longitudinal, lateral, _ = _support_frame(support)
+    horizontal_basis = np.stack(
+        [longitudinal[:2], lateral[:2]], axis=1
+    )
+    if abs(float(np.linalg.det(horizontal_basis))) <= _NUMERICAL_EPSILON:
+        raise ValueError("inclined support has a singular horizontal motion frame")
+    return values @ horizontal_basis.T
+
+
+def _supported_poses(
+    support: dict[str, Any],
+    geometry: list[dict[str, Any]],
+    positions_xy: np.ndarray,
+    clearance_m: float,
+) -> tuple[np.ndarray, list[list[float]]]:
+    """Place upright primitives on the declared finite support surface."""
+
+    if abs(float(support["surface_frame"]["slope_angle_degrees"])) <= 1.0e-8:
+        surface_z = float(support["surface_center_z_m"])
+        positions = np.asarray(
+            [
+                [
+                    float(position[0]),
+                    float(position[1]),
+                    surface_z + float(record["support_offset_m"]) + clearance_m,
+                ]
+                for record, position in zip(geometry, positions_xy, strict=True)
+            ],
+            dtype=np.float64,
+        )
+        return positions, [[1.0, 0.0, 0.0, 0.0] for _ in geometry]
+    poses = [
+        pose_on_support(
+            support,
+            str(record["shape"]),
+            list(record["size_m"]),
+            float(position[0]),
+            float(position[1]),
+            0.0,
+            clearance_m,
+            pose_profile=str(record["stable_pose_profile"]),
+        )
+        for record, position in zip(geometry, positions_xy, strict=True)
+    ]
+    return (
+        np.asarray([pose["position_m"] for pose in poses], dtype=np.float64),
+        [list(pose["orientation_quaternion_wxyz"]) for pose in poses],
+    )
+
+
+def _flat_supported_positions_z(
     support: dict[str, Any], geometry: list[dict[str, Any]], clearance_m: float
 ) -> list[float]:
+    """Return supported center heights for layouts still restricted to flats."""
+
+    if abs(float(support["surface_frame"]["slope_angle_degrees"])) > 1.0e-8:
+        raise ValueError("airborne two-object layouts require a flat support")
     surface_z = float(support["surface_center_z_m"])
     return [
         surface_z + float(record["support_offset_m"]) + clearance_m
@@ -665,27 +863,28 @@ def apply_two_object_motion(
         raise ValueError("two-object motion ids must be unique")
     geometry = _object_geometry(objects, shape_contract)
     support = scene["simulation"]["support"]
-    if abs(float(support["surface_frame"]["slope_angle_degrees"])) > 1.0e-8:
-        raise ValueError("the initial two-object matrix requires a flat support")
+    support_frame = _support_frame(support)
     bounds = support["safe_surface_bounds"]
-    center = _support_center(bounds)
+    support_center = _support_center(bounds)
+    motion_center = _motion_xy_from_support_xy(support_center, support)
     support_clearance = positive_vector(
         [shared["initial_support_clearance_m"]],
         1,
         "two-object initial support clearance",
     )[0]
-    support_z = _supported_positions_z(support, geometry, support_clearance)
-    velocities = np.asarray(
+    local_velocities = np.asarray(
         [
             finite_vector(value, 3, f"{object_ids[index]} linear velocity")
             for index, value in enumerate(intent["linear_velocity_m_s"])
         ],
         dtype=np.float64,
     )
-    if velocities.shape != (2, 3):
+    if local_velocities.shape != (2, 3):
         raise ValueError("two-object intent requires two linear velocities")
     object_motions = [str(value) for value in intent["object_motions"]]
-    _validate_intent_kinematics(layout, object_motions, velocities)
+    _validate_intent_kinematics(layout, object_motions, local_velocities)
+    velocities = _world_vectors(local_velocities, support_frame)
+    orientations = [[1.0, 0.0, 0.0, 0.0] for _ in objects]
 
     if layout == "planned_supported_contact":
         gravity_magnitude = float(
@@ -696,41 +895,63 @@ def apply_two_object_motion(
         )
         positions_xy, approach_axis, supported_displacements = (
             _planned_supported_contact(
-                center,
+                motion_center,
                 geometry,
-                velocities,
+                local_velocities,
                 intent,
                 supported_deceleration,
             )
         )
-        positions = np.column_stack([positions_xy, support_z])
+        planned_contact_xy = positions_xy + supported_displacements
+        path_xy = np.vstack([positions_xy, planned_contact_xy])
+        envelope_center = 0.5 * (path_xy.min(axis=0) + path_xy.max(axis=0))
+        translation = motion_center - envelope_center
+        positions_xy += translation
+        planned_contact_xy += translation
+        support_positions_xy = _support_xy_from_motion_xy(positions_xy, support)
+        support_contact_xy = _support_xy_from_motion_xy(
+            planned_contact_xy, support
+        )
+        _inside_support(support_positions_xy, geometry, bounds)
+        _inside_support(support_contact_xy, geometry, bounds)
+        positions, orientations = _supported_poses(
+            support, geometry, support_positions_xy, support_clearance
+        )
+        approach_axis = _world_vectors(approach_axis[None, :], support_frame)[0]
     elif layout == "ballistic_airborne_contact":
+        support_z = _flat_supported_positions_z(
+            support, geometry, support_clearance
+        )
         positions, approach_axis = _ballistic_airborne_contact(
-            scene, center, support_z, geometry, velocities, intent
+            scene, support_center, support_z, geometry, velocities, intent
         )
     elif layout == "ballistic_airborne_pair_contact":
+        _flat_supported_positions_z(support, geometry, support_clearance)
         positions, approach_axis = _ballistic_airborne_pair_contact(
-            scene, center, geometry, velocities, intent
+            scene, support_center, geometry, velocities, intent
         )
     elif layout == "parallel_supported_independent":
-        positions, approach_axis = _parallel_supported_independent(
-            center, support_z, geometry, intent
+        support_z = [0.0, 0.0]
+        positions_xy3, approach_axis = _parallel_supported_independent(
+            motion_center, support_z, geometry, intent
         )
+        positions_xy = positions_xy3[:, :2]
+        support_positions_xy = _support_xy_from_motion_xy(positions_xy, support)
+        _inside_support(support_positions_xy, geometry, bounds)
+        positions, orientations = _supported_poses(
+            support, geometry, support_positions_xy, support_clearance
+        )
+        approach_axis = _world_vectors(approach_axis[None, :], support_frame)[0]
     else:
-        positions, approach_axis = _separated_airborne_supported_independent(
-            center, support_z, geometry, intent
+        support_z = _flat_supported_positions_z(
+            support, geometry, support_clearance
         )
-    if layout in {
-        "planned_supported_contact",
-        "ballistic_airborne_contact",
-        "ballistic_airborne_pair_contact",
-    }:
+        positions, approach_axis = _separated_airborne_supported_independent(
+            support_center, support_z, geometry, intent
+        )
+    if layout in {"ballistic_airborne_contact", "ballistic_airborne_pair_contact"}:
         contact_time = float(intent["contact_time_s"])
-        if layout == "planned_supported_contact":
-            planned_contact_positions = positions.copy()
-            planned_contact_positions[:, :2] += supported_displacements
-        else:
-            planned_contact_positions = positions + velocities * contact_time
+        planned_contact_positions = positions + velocities * contact_time
         if layout == "ballistic_airborne_contact":
             gravity = np.asarray(
                 scene["simulation"]["world"]["gravity_m_s2"],
@@ -747,13 +968,26 @@ def apply_two_object_motion(
             [positions[:, :2], planned_contact_positions[:, :2]]
         )
         envelope_center = 0.5 * (path_xy.min(axis=0) + path_xy.max(axis=0))
-        translation = center - envelope_center
+        translation = support_center - envelope_center
         positions[:, :2] += translation
         planned_contact_positions[:, :2] += translation
         _inside_support(positions, geometry, bounds)
         _inside_support(planned_contact_positions, geometry, bounds)
-    else:
+    elif layout == "separated_airborne_supported_independent":
         _inside_support(positions, geometry, bounds)
+
+    if str(intent["interaction_class"]) == "interacting":
+        declared_approach_axis = interaction_approach_axis(intent, support)
+        if not np.allclose(
+            approach_axis,
+            declared_approach_axis,
+            atol=1.0e-12,
+            rtol=0.0,
+        ):
+            raise AssertionError(
+                "motion placement and interaction approach axes diverged"
+            )
+        approach_axis = declared_approach_axis
 
     contact_friction, contact_restitution, minimum_support_fraction = finite_vector(
         [
@@ -804,14 +1038,8 @@ def apply_two_object_motion(
             and geometry[index]["supported_motion_mode"] == "rolling"
         )
         angular = (
-            np.asarray(
-                [
-                    -velocity[1] / float(geometry[index]["support_offset_m"]),
-                    velocity[0] / float(geometry[index]["support_offset_m"]),
-                    0.0,
-                ],
-                dtype=np.float64,
-            )
+            np.cross(support_frame[2], velocity)
+            / float(geometry[index]["support_offset_m"])
             if rolling
             else np.zeros(3, dtype=np.float64)
         )
@@ -822,7 +1050,7 @@ def apply_two_object_motion(
                 else "airborne"
             ),
             "position_m": positions[index].tolist(),
-            "orientation_quaternion_wxyz": [1.0, 0.0, 0.0, 0.0],
+            "orientation_quaternion_wxyz": orientations[index],
             "linear_velocity_m_s": velocity.tolist(),
             "angular_velocity_rad_s": angular.tolist(),
         }
@@ -858,7 +1086,10 @@ def apply_two_object_motion(
         "trajectory_angle_degrees": _trajectory_angle_degrees(velocities),
         "impact_offset_ratio": float(intent.get("impact_offset_ratio", 0.0)),
     }
+    observation_fields = copy.deepcopy(observation)
+    observation_fields.pop("schema_version")
     scene["simulation"]["interaction"] = {
+        "schema_version": "physweep_two_object_interaction_v1",
         "type": (
             "pairwise_collision"
             if interaction_class == "interacting"
@@ -885,10 +1116,17 @@ def apply_two_object_motion(
             view_family["maximum_elevation_degrees"]
         ),
         **copy.deepcopy(shared["interaction_audit"]),
-        **copy.deepcopy(observation),
+        **observation_fields,
     }
     envelope_margin = float(observation["full_motion_envelope_margin_ndc"])
     maximum_envelope_span = 1.0 - 2.0 * envelope_margin
+    support_shape = str(support.get("support_shape"))
+    if support_shape == "inclined_ramp":
+        structure_context = "inclined_surface"
+    elif support_shape == "rectangular_slab":
+        structure_context = "horizontal_surface"
+    else:
+        raise ValueError("two-object support shape has no camera context")
     scene["camera_request"] = {
         "schema_version": "physweep_two_object_camera_request_v1",
         "profile": str(observation["solver_profile_template_id"]),
@@ -896,7 +1134,7 @@ def apply_two_object_motion(
             "version": "physweep_two_object_camera_observation_request_v1",
             "intent": "joint_full_motion_envelope",
             "focus_event": {"type": "fraction", "fraction": 1.0},
-            "structure_context": "horizontal_surface",
+            "structure_context": structure_context,
             "preferred_object_span_ndc": float(
                 observation["preferred_full_motion_envelope_span_ndc"]
             ),

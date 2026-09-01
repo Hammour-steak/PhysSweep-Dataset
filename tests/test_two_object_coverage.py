@@ -9,6 +9,7 @@ from pathlib import Path
 
 from tools.core.hashing import sha256_file
 from tools.scene_rules.two_object import (
+    allowed_camera_view_families,
     resolve_scene_rule,
     validate_two_object_scene_rules,
 )
@@ -16,7 +17,9 @@ from tools.sampling.object_collection import compile_object_collection_scene
 from tools.sampling.sample_two_object_base import _validated_intents
 from tools.sampling.sample_two_object_coverage import (
     _axis_counts,
-    _pair_dynamics_eligible,
+    _dynamics_profiles_eligible,
+    _source_dynamics_profile,
+    _source_meets_rule_camera_extent,
     _validate_complete_scene_coverage,
     coverage_cells,
     released_source_pool,
@@ -74,25 +77,39 @@ class TwoObjectCoverageTests(unittest.TestCase):
             }
 
         light, heavy = source(0.08), source(13.6)
+        extreme_mass_profiles = [
+            _source_dynamics_profile(value) for value in (light, heavy)
+        ]
         self.assertFalse(
-            _pair_dynamics_eligible(
-                light, heavy, matrix, {"interaction_class": "interacting"}
+            _dynamics_profiles_eligible(
+                extreme_mass_profiles,
+                matrix,
+                {"interaction_class": "interacting"},
             )
         )
         self.assertTrue(
-            _pair_dynamics_eligible(
-                light, heavy, matrix, {"interaction_class": "independent"}
+            _dynamics_profiles_eligible(
+                extreme_mass_profiles,
+                matrix,
+                {"interaction_class": "independent"},
             )
         )
         thin = source(1.0, [0.2, 0.05, 0.02])
+        extreme_shape_profiles = [
+            _source_dynamics_profile(value) for value in (thin, source(1.0))
+        ]
         self.assertFalse(
-            _pair_dynamics_eligible(
-                thin, source(1.0), matrix, {"interaction_class": "interacting"}
+            _dynamics_profiles_eligible(
+                extreme_shape_profiles,
+                matrix,
+                {"interaction_class": "interacting"},
             )
         )
         self.assertTrue(
-            _pair_dynamics_eligible(
-                thin, source(1.0), matrix, {"interaction_class": "independent"}
+            _dynamics_profiles_eligible(
+                extreme_shape_profiles,
+                matrix,
+                {"interaction_class": "independent"},
             )
         )
 
@@ -113,6 +130,81 @@ class TwoObjectCoverageTests(unittest.TestCase):
             resolve_scene_rule(rules, support, "airborne_supported")["id"],
             "raised_long_flat",
         )
+        inclined_support = {
+            "scene_class": "ground_feature",
+            "support_shape": "inclined_ramp",
+            "structure_family": "straight_long_shallow",
+            "surface_frame": {"slope_angle_degrees": 9.7},
+        }
+        self.assertEqual(
+            resolve_scene_rule(
+                rules, inclined_support, "supported_supported"
+            )["id"],
+            "inclined_flat_slab",
+        )
+        standard_incline = copy.deepcopy(inclined_support)
+        standard_incline["structure_family"] = "straight_standard"
+        standard_incline["surface_frame"]["slope_angle_degrees"] = 14.036
+        self.assertEqual(
+            resolve_scene_rule(
+                rules, standard_incline, "supported_supported"
+            )["id"],
+            "inclined_flat_slab",
+        )
+        self.assertIsNone(
+            resolve_scene_rule(
+                rules,
+                inclined_support,
+                "supported_supported",
+                "interacting",
+                "side_left_mid",
+                "surface_crossing_2obj",
+            )
+        )
+        self.assertEqual(
+            resolve_scene_rule(
+                rules,
+                inclined_support,
+                "supported_supported",
+                "interacting",
+                "front_left_low",
+                "surface_crossing_2obj",
+            )["id"],
+            "inclined_flat_slab",
+        )
+        self.assertIsNone(
+            resolve_scene_rule(
+                rules, inclined_support, "airborne_supported"
+            )
+        )
+        self.assertIsNone(
+            resolve_scene_rule(
+                rules,
+                inclined_support,
+                "supported_supported",
+                "independent",
+            )
+        )
+        self.assertIsNone(
+            resolve_scene_rule(
+                rules,
+                inclined_support,
+                "supported_supported",
+                "interacting",
+                "front_left_low",
+                "surface_hit_rest_2obj",
+            )
+        )
+        self.assertEqual(
+            resolve_scene_rule(
+                rules,
+                inclined_support,
+                "supported_supported",
+                "interacting",
+                "side_left_mid",
+            )["id"],
+            "inclined_flat_slab",
+        )
         limited = copy.deepcopy(rules)
         limited["physical_rules"][0]["allowed_kinematic_regimes"] = [
             "supported_supported"
@@ -130,6 +222,70 @@ class TwoObjectCoverageTests(unittest.TestCase):
         ].append("unknown")
         with self.assertRaisesRegex(ValueError, "physical scene rule"):
             validate_two_object_scene_rules(unknown_regime)
+        unknown_interaction = copy.deepcopy(rules)
+        unknown_interaction["physical_rules"][0][
+            "allowed_interaction_classes"
+        ].append("unknown")
+        with self.assertRaisesRegex(ValueError, "physical scene rule"):
+            validate_two_object_scene_rules(unknown_interaction)
+        invalid_camera = copy.deepcopy(rules)
+        invalid_camera["physical_rules"][0][
+            "allowed_camera_view_families"
+        ].append("")
+        with self.assertRaisesRegex(ValueError, "physical scene rule"):
+            validate_two_object_scene_rules(invalid_camera)
+        invalid_override = copy.deepcopy(rules)
+        invalid_override["physical_rules"][-1][
+            "camera_view_family_overrides"
+        ]["surface_crossing_2obj"] = ["side_left_mid"]
+        with self.assertRaisesRegex(ValueError, "physical scene rule"):
+            validate_two_object_scene_rules(invalid_override)
+        missing_camera_extent = copy.deepcopy(rules)
+        missing_camera_extent["physical_rules"][-1].pop(
+            "object_camera_plane_readability_by_view_family"
+        )
+        with self.assertRaisesRegex(ValueError, "physical scene rule"):
+            validate_two_object_scene_rules(missing_camera_extent)
+        incomplete_camera_extent = copy.deepcopy(rules)
+        incomplete_camera_extent["physical_rules"][-1][
+            "object_camera_plane_readability_by_view_family"
+        ].pop("rear_right_high")
+        with self.assertRaisesRegex(ValueError, "physical scene rule"):
+            validate_two_object_scene_rules(incomplete_camera_extent)
+        missing_pair_geometry = copy.deepcopy(rules)
+        missing_pair_geometry["physical_rules"][-1].pop(
+            "pair_camera_geometry_view_families"
+        )
+        with self.assertRaisesRegex(ValueError, "physical scene rule"):
+            validate_two_object_scene_rules(missing_pair_geometry)
+        incomplete_pair_geometry = copy.deepcopy(rules)
+        incomplete_pair_geometry["physical_rules"][-1][
+            "pair_camera_geometry_view_families"
+        ].pop()
+        with self.assertRaisesRegex(ValueError, "physical scene rule"):
+            validate_two_object_scene_rules(incomplete_pair_geometry)
+        flat_camera_extent = copy.deepcopy(rules)
+        flat_camera_extent["physical_rules"][0][
+            "object_camera_plane_readability_by_view_family"
+        ] = {
+            "side_left_mid": {
+                "geometry_size_axes": [1, 2],
+                "minimum_extent_m": 0.195,
+            }
+        }
+        with self.assertRaisesRegex(ValueError, "physical scene rule"):
+            validate_two_object_scene_rules(flat_camera_extent)
+        unknown_extent_family = copy.deepcopy(rules)
+        unknown_extent_family["physical_rules"][-1][
+            "object_camera_plane_readability_by_view_family"
+        ] = {
+            "unknown": {
+                "geometry_size_axes": [1, 2],
+                "minimum_extent_m": 0.195,
+            }
+        }
+        with self.assertRaisesRegex(ValueError, "physical scene rule"):
+            validate_two_object_scene_rules(unknown_extent_family)
         string_slope = copy.deepcopy(rules)
         string_slope["physical_rules"][0][
             "maximum_abs_slope_degrees"
@@ -141,51 +297,117 @@ class TwoObjectCoverageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "ids must be unique"):
             validate_two_object_scene_rules(numeric_id)
 
+    def test_inclined_camera_source_gate_rejects_thin_objects(self) -> None:
+        rule = load_scene_rules()["physical_rules"][-1]
+        side_cell = {"camera_view_family_id": "side_left_mid"}
+        crossing_cell = {"camera_view_family_id": "front_left_low"}
+
+        def source(size: list[float]) -> dict:
+            return {
+                "metadata": {
+                    "simulation": {
+                        "objects": [{"geometry": {"size_m": size}}]
+                    }
+                }
+            }
+
+        self.assertTrue(
+            _source_meets_rule_camera_extent(
+                source([0.205863, 0.205863, 0.205863]), rule, side_cell
+            )
+        )
+        self.assertFalse(
+            _source_meets_rule_camera_extent(
+                source([0.115425, 0.115425, 0.192375]), rule, side_cell
+            )
+        )
+        self.assertTrue(
+            _source_meets_rule_camera_extent(
+                source([0.115425, 0.115425, 0.192375]),
+                rule,
+                crossing_cell,
+            )
+        )
+        self.assertFalse(
+            _source_meets_rule_camera_extent(
+                source([0.145816, 0.028575, 0.114854]),
+                rule,
+                crossing_cell,
+            )
+        )
+        self.assertFalse(
+            _source_meets_rule_camera_extent(
+                source([0.165004, 0.22, 0.059764]),
+                rule,
+                crossing_cell,
+            )
+        )
+
     def test_complete_scene_coverage_rejects_declared_but_unselected_rules(
         self,
     ) -> None:
         matrix = load_matrix()
         rules = load_scene_rules()
-        audit = {
-            "selected_scene_rule_counts": {
-                rule["id"]: 1 for rule in rules["physical_rules"]
-            },
-            "selected_scene_rule_environment_counts": {
-                rule["id"]: {} for rule in rules["physical_rules"]
-            },
-            "selected_motion_scene_rule_counts": {
-                intent["id"]: {
-                    rule["id"]: 1
-                    for rule in rules["physical_rules"]
-                    if intent["kinematic_regime"]
-                    in rule["allowed_kinematic_regimes"]
-                }
-                for intent in matrix["motion_intents"]
-            },
-        }
-        for category in rules["visual_environment_coverage"]["categories"]:
-            for rule_id in category["allowed_scene_rules"]:
-                audit["selected_scene_rule_environment_counts"][rule_id][
-                    category["id"]
-                ] = 1
-        _validate_complete_scene_coverage(matrix, rules, audit)
-        audit["selected_scene_rule_counts"].pop("ground_open_hardscape")
+        selections = []
+        for intent in matrix["motion_intents"]:
+            motion_id = str(intent["id"])
+            for rule in rules["physical_rules"]:
+                if (
+                    intent["kinematic_regime"]
+                    not in rule["allowed_kinematic_regimes"]
+                    or intent["interaction_class"]
+                    not in rule["allowed_interaction_classes"]
+                ):
+                    continue
+                families = allowed_camera_view_families(rule, motion_id)
+                for family in families:
+                    for category in rules["visual_environment_coverage"][
+                        "categories"
+                    ]:
+                        if rule["id"] not in category["allowed_scene_rules"]:
+                            continue
+                        selections.append(
+                            {
+                                "cell": {
+                                    "motion_id": motion_id,
+                                    "scene_rule_id": str(rule["id"]),
+                                    "camera_view_family_id": family,
+                                    "visual_environment_category": str(
+                                        category["id"]
+                                    ),
+                                }
+                            }
+                        )
+        _validate_complete_scene_coverage(matrix, rules, selections)
+        missing_rule = [
+            selection
+            for selection in selections
+            if selection["cell"]["scene_rule_id"] != "ground_open_hardscape"
+        ]
         with self.assertRaisesRegex(ValueError, "misses physical scene rules"):
-            _validate_complete_scene_coverage(matrix, rules, audit)
-        audit["selected_scene_rule_counts"]["ground_open_hardscape"] = 1
-        audit["selected_scene_rule_environment_counts"][
-            "ground_open_hardscape"
-        ].pop("outdoor_courtyard")
+            _validate_complete_scene_coverage(matrix, rules, missing_rule)
+        missing_environment = [
+            selection
+            for selection in selections
+            if not (
+                selection["cell"]["scene_rule_id"] == "ground_patch_flat"
+                and selection["cell"]["visual_environment_category"]
+                == "outdoor_courtyard"
+            )
+        ]
         with self.assertRaisesRegex(ValueError, "misses scene/environment pairs"):
-            _validate_complete_scene_coverage(matrix, rules, audit)
-        audit["selected_scene_rule_environment_counts"][
-            "ground_open_hardscape"
-        ]["outdoor_courtyard"] = 1
-        audit["selected_motion_scene_rule_counts"]["air_air_collision_2obj"][
-            "ground_open_hardscape"
-        ] = 0
+            _validate_complete_scene_coverage(matrix, rules, missing_environment)
+        missing_motion_rule = [
+            selection
+            for selection in selections
+            if not (
+                selection["cell"]["motion_id"] == "air_air_collision_2obj"
+                and selection["cell"]["scene_rule_id"]
+                == "ground_open_hardscape"
+            )
+        ]
         with self.assertRaisesRegex(ValueError, "misses motion/scene-rule pairs"):
-            _validate_complete_scene_coverage(matrix, rules, audit)
+            _validate_complete_scene_coverage(matrix, rules, missing_motion_rule)
 
     def test_asset_source_adapter_accepts_strict_centered_proxies(self) -> None:
         matrix = load_matrix()
@@ -357,7 +579,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
     def test_matrix_declares_complete_ordered_cartesian_coverage(self) -> None:
         matrix = load_matrix()
         self.assertEqual(
-            matrix["schema_version"], "physweep_two_object_sampling_matrix_v11"
+            matrix["schema_version"], "physweep_two_object_sampling_matrix_v12"
         )
         scene_rules = load_scene_rules()
         validate_two_object_scene_rules(scene_rules)
@@ -369,6 +591,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
                 "ground_open_hardscape",
                 "raised_wide_flat",
                 "raised_long_flat",
+                "inclined_flat_slab",
             ],
         )
         intents = {record["id"]: record for record in matrix["motion_intents"]}
@@ -383,8 +606,21 @@ class TwoObjectCoverageTests(unittest.TestCase):
             intents["surface_catch_up_2obj"]["contact_time_s"], 0.35
         )
         self.assertEqual(
+            intents["surface_catch_up_2obj"]["linear_velocity_m_s"],
+            [[0.97, 0.0, 0.0], [0.39, 0.0, 0.0]],
+        )
+        self.assertEqual(
             intents["air_drop_hit_supported_2obj"]["linear_velocity_m_s"],
             [[0.12, 0.0, 0.0], [0.0, 0.0, 0.0]],
+        )
+        self.assertEqual(
+            matrix["pair_observation"]["maximum_camera_distance_m"], 6.0
+        )
+        self.assertEqual(
+            matrix["pair_observation"][
+                "maximum_camera_distance_above_minimum_m"
+            ],
+            5.0,
         )
         cells, full_count = coverage_cells(matrix)
         self.assertEqual(
@@ -393,24 +629,70 @@ class TwoObjectCoverageTests(unittest.TestCase):
             ],
             ["sphere_to_sphere", "cuboid_to_cuboid", "cylinder_to_cylinder"],
         )
-        self.assertEqual(full_count, 828)
-        self.assertEqual(len(cells), 828)
+        self.assertEqual(full_count, 993)
+        self.assertEqual(len(cells), 993)
         interaction_counts = Counter(cell["interaction_class"] for cell in cells)
         self.assertEqual(
             interaction_counts,
-            {"interacting": 666, "independent": 162},
+            {"interacting": 831, "independent": 162},
         )
         self.assertGreater(interaction_counts["interacting"] / full_count, 0.80)
         counts = _axis_counts(cells)
         self.assertEqual(
             counts["interaction_class"],
-            {"independent": 162, "interacting": 666},
+            {"independent": 162, "interacting": 831},
         )
-        self.assertEqual(set(counts["motion"].values()), {18, 54, 162})
-        self.assertEqual(set(counts["ordered_scale_pair"].values()), {92})
-        self.assertEqual(set(counts["scene_class"].values()), {414})
-        self.assertEqual(set(counts["camera_view_family"].values()), {138})
+        self.assertEqual(
+            set(counts["motion"].values()), {18, 54, 66, 198, 243}
+        )
+        self.assertEqual(
+            set(counts["ordered_scale_pair"].values()), {101, 122}
+        )
+        self.assertEqual(
+            counts["scene_class"],
+            {"ground_feature": 165, "ground_flat": 414, "raised_flat": 414},
+        )
+        self.assertLessEqual(
+            max(counts["camera_view_family"].values())
+            - min(counts["camera_view_family"].values()),
+            1,
+        )
+        incline_cells = [
+            cell for cell in cells if cell["scene_class"] == "ground_feature"
+        ]
+        large_incline_scale_pairs = {
+            "medium_to_medium",
+            "medium_to_large",
+            "large_to_medium",
+            "large_to_large",
+        }
+        for cell in incline_cells:
+            if cell["motion_id"] != "surface_crossing_2obj":
+                self.assertIn(cell["scale_pair_id"], large_incline_scale_pairs)
+        self.assertEqual(
+            {
+                cell["scale_pair_id"]
+                for cell in incline_cells
+                if cell["motion_id"] == "surface_crossing_2obj"
+            },
+            {
+                record["id"]
+                for record in matrix["coverage_plan"][
+                    "role_ordered_scale_pairs"
+                ]
+            },
+        )
         family_ids = set(counts["camera_view_family"])
+        scene_camera_families = {
+            "ground_feature": {
+                "side_left_mid",
+                "side_right_mid",
+                "front_left_low",
+                "rear_right_high",
+            },
+            "ground_flat": family_ids,
+            "raised_flat": family_ids,
+        }
         for axis in (
             "motion_id",
             "shape_pair_id",
@@ -422,28 +704,19 @@ class TwoObjectCoverageTests(unittest.TestCase):
                 conditional[str(cell[axis])][
                     str(cell["camera_view_family_id"])
                 ] += 1
-            self.assertTrue(
-                all(
-                    set(axis_counts) == family_ids
-                    for axis_counts in conditional.values()
-                ),
-                axis,
-            )
-            maximum_spread = max(
-                max(counts.values()) - min(counts.values())
-                for counts in conditional.values()
-            )
-            self.assertLessEqual(
-                maximum_spread,
-                4 if axis in {"shape_pair_id", "scale_pair_id"} else 3,
-                axis,
-            )
+            for axis_value, axis_counts in conditional.items():
+                expected_families = (
+                    scene_camera_families[axis_value]
+                    if axis == "scene_class"
+                    else family_ids
+                )
+                self.assertEqual(set(axis_counts), expected_families, axis_value)
 
     def test_balanced_smoke_prefix_covers_every_axis(self) -> None:
         cells, full_count = coverage_cells(load_matrix(), 72)
-        self.assertEqual(full_count, 828)
+        self.assertEqual(full_count, 993)
         interaction_counts = Counter(cell["interaction_class"] for cell in cells)
-        self.assertEqual(interaction_counts, {"interacting": 58, "independent": 14})
+        self.assertEqual(interaction_counts, {"interacting": 61, "independent": 11})
         self.assertGreater(interaction_counts["interacting"] / len(cells), 0.80)
         counts = _axis_counts(cells)
         intents = {
@@ -464,8 +737,20 @@ class TwoObjectCoverageTests(unittest.TestCase):
             - min(counts["ordered_scale_pair"].values()),
             2,
         )
-        self.assertEqual(set(counts["scene_class"].values()), {36})
-        self.assertEqual(set(counts["camera_view_family"].values()), {12})
+        self.assertEqual(set(counts["scene_class"]), {
+            "ground_feature", "ground_flat", "raised_flat"
+        })
+        self.assertLessEqual(
+            max(counts["scene_class"].values())
+            - min(counts["scene_class"].values()),
+            7,
+        )
+        self.assertEqual(len(counts["camera_view_family"]), 6)
+        self.assertLessEqual(
+            max(counts["camera_view_family"].values())
+            - min(counts["camera_view_family"].values()),
+            6,
+        )
 
     def test_matrix_rejects_missing_scale_cell_and_weakened_uniqueness(self) -> None:
         matrix = load_matrix()
@@ -477,6 +762,24 @@ class TwoObjectCoverageTests(unittest.TestCase):
         missing_shape["coverage_plan"]["role_ordered_shape_pairs"].pop()
         with self.assertRaisesRegex(ValueError, "full product"):
             _validated_intents(missing_shape)
+        invalid_scale_compatibility = copy.deepcopy(matrix)
+        invalid_scale_compatibility["coverage_plan"][
+            "scene_motion_scale_compatibility"
+        ][0]["allowed_scale_pair_ids"] = []
+        with self.assertRaisesRegex(ValueError, "scene-motion-scale"):
+            _validated_intents(invalid_scale_compatibility)
+        overlapping_scale_compatibility = copy.deepcopy(matrix)
+        overlapping_scale_compatibility["coverage_plan"][
+            "scene_motion_scale_compatibility"
+        ].append(
+            copy.deepcopy(
+                overlapping_scale_compatibility["coverage_plan"][
+                    "scene_motion_scale_compatibility"
+                ][0]
+            )
+        )
+        with self.assertRaisesRegex(ValueError, "overlaps"):
+            _validated_intents(overlapping_scale_compatibility)
         unknown_shape_pair = copy.deepcopy(matrix)
         unknown_shape_pair["shape_motion_compatibility"]["pair_sets"][
             "all_shape_pairs"
@@ -520,6 +823,14 @@ class TwoObjectCoverageTests(unittest.TestCase):
         ] = 0.90
         with self.assertRaisesRegex(ValueError, "interaction mix"):
             coverage_cells(impossible_interaction_mix)
+        exact_interaction_mix = copy.deepcopy(matrix)
+        cells, _ = coverage_cells(exact_interaction_mix)
+        exact_interaction_mix["coverage_plan"][
+            "minimum_interacting_fraction"
+        ] = sum(
+            cell["interaction_class"] == "interacting" for cell in cells
+        ) / len(cells)
+        self.assertEqual(len(coverage_cells(exact_interaction_mix)[0]), len(cells))
         missing_environment = copy.deepcopy(scene_rules)
         missing_environment["visual_environment_coverage"]["categories"].pop()
         missing_environment["visual_environment_coverage"]["categories"][0][
@@ -555,54 +866,78 @@ class TwoObjectCoverageTests(unittest.TestCase):
                                 }
                             )
         hosts = []
-        environment_categories = [
-            record["id"]
-            for record in load_scene_rules()["visual_environment_coverage"][
-                "categories"
+        scene_rules = load_scene_rules()
+        environments_by_rule = {
+            str(rule["id"]): [
+                str(category["id"])
+                for category in scene_rules["visual_environment_coverage"][
+                    "categories"
+                ]
+                if str(rule["id"]) in category["allowed_scene_rules"]
             ]
-        ]
-        for scene_class in ("ground_flat", "raised_flat"):
+            for rule in scene_rules["physical_rules"]
+        }
+        for rule in scene_rules["physical_rules"]:
+            scene_class = str(rule["scene_class"])
+            scene_rule_id = str(rule["id"])
+            environment_categories = environments_by_rule[scene_rule_id]
             for profile_index in range(3):
-                for source_index in range(6):
+                for source_index in range(3):
                     source_id = (
-                        f"host_{scene_class}_{profile_index}_{source_index}"
+                        f"host_{scene_rule_id}_{profile_index}_{source_index}"
                     )
                     hosts.append(
                         {
                             "metadata": {},
                             "source": {"scene_id": source_id},
-                            "scene_rule_id": (
-                                "ground_patch_flat"
-                                if scene_class == "ground_flat"
-                                else (
-                                    "raised_wide_flat"
-                                    if source_index % 2 == 0
-                                    else "raised_long_flat"
-                                )
-                            ),
+                            "scene_rule_id": scene_rule_id,
                             "scene_class": scene_class,
                             "visual_profile_id": f"host_profile_{profile_index}",
                             "visual_type": "procedural_room",
                             "environment_category": environment_categories[
                                 (profile_index + source_index)
-                                % (
-                                    len(environment_categories)
-                                    if scene_class == "ground_flat"
-                                    else len(environment_categories) - 1
-                                )
+                                % len(environment_categories)
                             ],
                         }
                     )
-        selected, audit = select_coverage_sources(
-            cells, objects, hosts, matrix
-        )
+        selected = select_coverage_sources(cells, objects, hosts, matrix)
         self.assertEqual(len(selected), 18)
-        self.assertEqual(audit["unique_source_pair_count"], 18)
-        self.assertEqual(audit["unique_host_count"], 18)
-        self.assertLessEqual(audit["maximum_object_source_reuse"], 2)
-        self.assertLessEqual(audit["maximum_host_source_reuse"], 2)
+        self.assertTrue(
+            all(
+                selection["cell"]["cell_id"].startswith(
+                    f"{cell['cell_id']}__"
+                )
+                for cell, selection in zip(cells, selected, strict=True)
+            )
+        )
+        selected_object_ids = [
+            str(record["source"]["scene_id"])
+            for selection in selected
+            for record in selection["objects"]
+        ]
+        selected_pairs = {
+            tuple(
+                sorted(
+                    str(record["source"]["scene_id"])
+                    for record in selection["objects"]
+                )
+            )
+            for selection in selected
+        }
+        selected_host_ids = [
+            str(selection["host"]["source"]["scene_id"])
+            for selection in selected
+        ]
+        self.assertEqual(len(selected_pairs), 18)
+        self.assertEqual(len(set(selected_host_ids)), 18)
+        self.assertLessEqual(max(Counter(selected_object_ids).values()), 2)
+        self.assertLessEqual(max(Counter(selected_host_ids).values()), 2)
+        source_pair_counts = Counter(
+            str(selection["cell"]["source_family_pair_id"])
+            for selection in selected
+        )
         self.assertEqual(
-            set(audit["selected_source_family_pair_counts"]),
+            set(source_pair_counts),
             {
                 "generic_to_generic",
                 "generic_to_asset",
@@ -610,16 +945,21 @@ class TwoObjectCoverageTests(unittest.TestCase):
                 "asset_to_asset",
             },
         )
-        source_pair_counts = audit["selected_source_family_pair_counts"].values()
-        self.assertLessEqual(max(source_pair_counts) - min(source_pair_counts), 1)
+        self.assertLessEqual(
+            max(source_pair_counts.values()) - min(source_pair_counts.values()), 1
+        )
+        camera_source_pair_counts = defaultdict(Counter)
+        for selection in selected:
+            cell = selection["cell"]
+            camera_source_pair_counts[cell["camera_view_family_id"]][
+                cell["source_family_pair_id"]
+            ] += 1
         self.assertTrue(
             all(
                 max(counts.values()) - min(counts.values()) <= 1
-                for counts in audit[
-                    "selected_camera_source_family_pair_counts"
-                ].values()
+                for counts in camera_source_pair_counts.values()
             ),
-            audit["selected_camera_source_family_pair_counts"],
+            camera_source_pair_counts,
         )
         for selection in selected:
             cell = selection["cell"]
@@ -655,14 +995,18 @@ class TwoObjectCoverageTests(unittest.TestCase):
             ),
             per_scene_environment,
         )
-        for scene_counts in audit[
-            "selected_camera_scene_environment_category_counts"
-        ].values():
+        camera_scene_environment = defaultdict(lambda: defaultdict(Counter))
+        for selection in selected:
+            cell = selection["cell"]
+            camera_scene_environment[cell["camera_view_family_id"]][
+                cell["scene_class"]
+            ][cell["visual_environment_category"]] += 1
+        for scene_counts in camera_scene_environment.values():
             for counts in scene_counts.values():
                 self.assertLessEqual(max(counts.values()) - min(counts.values()), 2)
         self.assertEqual(
-            set(audit["selected_scene_rule_counts"]),
-            {"ground_patch_flat", "raised_wide_flat", "raised_long_flat"},
+            {selection["cell"]["scene_rule_id"] for selection in selected},
+            {str(rule["id"]) for rule in scene_rules["physical_rules"]},
         )
 
     def test_source_selection_allows_matching_size_and_appearance(self) -> None:
@@ -698,9 +1042,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
                 "environment_category": "minimal",
             }
         ]
-        selected, _ = select_coverage_sources(
-            [cell], objects, hosts, load_matrix()
-        )
+        selected = select_coverage_sources([cell], objects, hosts, load_matrix())
         left, right = selected[0]["objects"]
         self.assertEqual(left["scale_bin"], right["scale_bin"])
         self.assertEqual(
@@ -949,7 +1291,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
                     },
                 },
             )
-            objects, hosts, audit = released_source_pool(
+            objects, hosts = released_source_pool(
                 root=root,
                 released_base_manifest_path=released_path,
                 source_root=source_root,
@@ -959,7 +1301,6 @@ class TwoObjectCoverageTests(unittest.TestCase):
             )
             self.assertEqual(len(objects), 2)
             self.assertEqual(len(hosts), 2)
-            self.assertEqual(audit["released_base_count"], 2)
             uncovered_rule = copy.deepcopy(scene_rules)
             missing = copy.deepcopy(uncovered_rule["physical_rules"][0])
             missing["id"] = "ground_unrepresented_flat"

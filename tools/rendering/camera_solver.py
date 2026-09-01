@@ -13,7 +13,9 @@ from tools.core.camera_geometry import (
     camera_azimuth_offsets,
     inclined_surface_side_readability,
     pair_approach_axis_xy,
+    pair_view_azimuth_candidates,
     pair_view_azimuth_degrees,
+    pair_view_elevation_candidates,
 )
 from tools.dataset_contract.object_identity_contract import (
     require_simulation_objects,
@@ -154,6 +156,8 @@ def _two_object_camera_state(
 def _two_object_observation_contract(
     interaction: dict[str, Any],
 ) -> dict[str, Any]:
+    if interaction.get("schema_version") != "physweep_two_object_interaction_v1":
+        raise ValueError("unsupported two-object interaction contract")
     values = {
         "view_family_id": str(interaction["camera_view_family_id"]),
         "solver_profile_template_id": str(
@@ -260,22 +264,38 @@ def _two_object_observation_contract(
     return values
 
 
+def _two_object_structure_context(metadata: dict[str, Any]) -> str:
+    """Validate the camera structure context against the physical support."""
+
+    request = metadata.get("camera_request")
+    observation = request.get("observation") if isinstance(request, dict) else None
+    if not isinstance(observation, dict):
+        raise ValueError("joint camera request lacks an observation contract")
+    context = str(observation.get("structure_context", ""))
+    support_shape = str(
+        metadata.get("simulation", {}).get("support", {}).get("support_shape", "")
+    )
+    if support_shape == "inclined_ramp":
+        expected = "inclined_surface"
+    elif support_shape == "rectangular_slab":
+        expected = "horizontal_surface"
+    else:
+        raise ValueError("joint camera support shape has no structure context")
+    if context != expected:
+        raise ValueError("joint camera structure context contradicts its support")
+    return context
+
+
 def _two_object_elevation_candidates(
     contract: dict[str, float],
 ) -> tuple[float, ...]:
     """Try the preferred elevation, then deterministic interior alternatives."""
 
-    preferred = contract["preferred_elevation"]
-    minimum = contract["minimum_elevation"]
-    maximum = contract["maximum_elevation"]
-    candidates = (
-        preferred,
-        0.5 * (preferred + maximum),
-        0.5 * (preferred + minimum),
-        0.25 * preferred + 0.75 * maximum,
-        0.25 * preferred + 0.75 * minimum,
+    return pair_view_elevation_candidates(
+        contract["minimum_elevation"],
+        contract["preferred_elevation"],
+        contract["maximum_elevation"],
     )
-    return tuple(dict.fromkeys(candidates))
 
 
 def _two_object_azimuth_candidates(
@@ -283,26 +303,11 @@ def _two_object_azimuth_candidates(
 ) -> tuple[float, ...]:
     """Stay inside one view family while preferring stronger pair readability."""
 
-    requested = pair_view_azimuth_degrees(
-        interaction["approach_axis_xyz"], contract["relative_azimuth"]
+    return pair_view_azimuth_candidates(
+        interaction["approach_axis_xyz"],
+        contract["relative_azimuth"],
+        contract["maximum_view_azimuth_deviation"],
     )
-    relative = float(contract["relative_azimuth"])
-    side_target = 90.0 if relative >= 0.0 else -90.0
-    toward_side = side_target - relative
-    if abs(toward_side) <= 1.0e-8:
-        return (requested,)
-    maximum_deviation = float(contract["maximum_view_azimuth_deviation"])
-    serialization_margin = min(1.0e-3, 0.01 * maximum_deviation)
-    extent = min(maximum_deviation - serialization_margin, abs(toward_side))
-    direction = math.copysign(1.0, toward_side)
-    offsets = (
-        0.0,
-        direction * extent,
-        direction * 0.5 * extent,
-        -direction * 0.5 * extent,
-        -direction * extent,
-    )
-    return tuple(requested + value for value in dict.fromkeys(offsets))
 
 
 def _camera_group_id(metadata: dict[str, Any]) -> str:
@@ -347,6 +352,7 @@ def audit_two_object_camera(
         )
     ):
         raise ValueError("joint camera request contradicts its pair contract")
+    _two_object_structure_context(metadata)
     position = np.asarray(camera["position_m"], dtype=np.float64)
     target = np.asarray(camera["target_m"], dtype=np.float64)
     lens = float(camera["focal_length_mm"])
@@ -663,11 +669,12 @@ def _solve_two_object_camera(
     virtual_request["profile"] = contract["solver_profile_template_id"]
     virtual_request["focal_length_mm"] = contract["focal_length_mm"]
     joint_observation = virtual_request["observation"]
+    structure_context = _two_object_structure_context(metadata)
     joint_observation.update(
         {
             "intent": "joint_full_motion_envelope",
             "focus_event": {"type": "fraction", "fraction": 1.0},
-            "structure_context": "horizontal_surface",
+            "structure_context": structure_context,
             "preferred_object_span_ndc": preferred_envelope_span,
             "minimum_median_object_span_ndc": minimum_object_span,
             "minimum_anchor_visible_fraction": contract[
@@ -723,7 +730,8 @@ def _solve_two_object_camera(
         envelope_upper, (positions.shape[0], 1)
     )
     profile = str(virtual_metadata["camera_request"]["profile"])
-    failures = []
+    failure_count = 0
+    failure_examples: list[str] = []
     camera = None
     selected_azimuth = None
     selected_elevation = None
@@ -745,6 +753,7 @@ def _solve_two_object_camera(
             view_rule = matching_profiles[0]["overrides"]["view_rule"]
             view_rule["azimuth_degrees"] = candidate_azimuth
             view_rule["elevation_degrees"] = candidate_elevation
+
             try:
                 candidate = solve_camera(
                     virtual_metadata, virtual_trajectory, joint_rules
@@ -768,10 +777,15 @@ def _solve_two_object_camera(
                             f"{member_metadata['scene_id']}: {error}"
                         ) from error
             except ValueError as error:
-                failures.append(
-                    f"azimuth={candidate_azimuth:.6f},"
-                    f"elevation={candidate_elevation:.6f}: {error}"
-                )
+                failure_count += 1
+                message = " ".join(str(error).split())
+                if len(message) > 640:
+                    message = message[:637] + "..."
+                if len(failure_examples) < 3:
+                    failure_examples.append(
+                        f"azimuth={candidate_azimuth:.6f},"
+                        f"elevation={candidate_elevation:.6f}: {message}"
+                    )
                 continue
             camera = candidate
             camera["diagnostics"].update(candidate_diagnostics)
@@ -788,7 +802,8 @@ def _solve_two_object_camera(
     ):
         raise ValueError(
             "joint camera could not solve a contract candidate; "
-            + " | ".join(failures)
+            f"failed_candidates={failure_count}; "
+            f"examples={failure_examples}"
         )
     camera["solver_version"] = (
         "joint_full_motion_envelope_group_camera_v4"
@@ -812,7 +827,7 @@ def _solve_two_object_camera(
     camera["diagnostics"]["pair_selected_elevation_degrees"] = round(
         selected_elevation, 6
     )
-    camera["diagnostics"]["pair_camera_candidate_failure_count"] = len(failures)
+    camera["diagnostics"]["pair_camera_candidate_failure_count"] = failure_count
     camera["diagnostics"]["pair_envelope_span_target_ndc"] = round(
         preferred_envelope_span, 6
     )
@@ -1431,11 +1446,13 @@ def segments_intersect_box(
     return possible & (upper_t >= 0.0) & (lower_t <= 0.985)
 
 
-def unoccluded_fraction(
+def _unoccluded_mask(
     camera_position: np.ndarray,
     points: np.ndarray,
     colliders: list[dict[str, Any]],
-) -> float:
+) -> np.ndarray:
+    """Evaluate one camera against shared blockers for every target point."""
+
     blockers = [
         collider
         for collider in colliders
@@ -1444,13 +1461,22 @@ def unoccluded_fraction(
     ]
     points = np.asarray(points, dtype=np.float64)
     if not len(points):
-        return 0.0
+        return np.zeros(0, dtype=bool)
     blocked = np.zeros(len(points), dtype=bool)
     for collider in blockers:
         blocked |= segments_intersect_box(camera_position, points, collider)
         if np.all(blocked):
             break
-    return float((~blocked).mean())
+    return ~blocked
+
+
+def unoccluded_fraction(
+    camera_position: np.ndarray,
+    points: np.ndarray,
+    colliders: list[dict[str, Any]],
+) -> float:
+    visible = _unoccluded_mask(camera_position, points, colliders)
+    return float(visible.mean()) if len(visible) else 0.0
 
 
 def camera_occlusion_colliders(metadata: dict[str, Any]) -> list[dict[str, Any]]:
@@ -1476,7 +1502,9 @@ def camera_occlusion_colliders(metadata: dict[str, Any]) -> list[dict[str, Any]]
 
 
 def solve_camera(
-    metadata: dict[str, Any], trajectory: dict[str, np.ndarray], rules: dict[str, Any]
+    metadata: dict[str, Any],
+    trajectory: dict[str, np.ndarray],
+    rules: dict[str, Any],
 ) -> dict[str, Any]:
     objects = require_simulation_objects(
         metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
@@ -1952,20 +1980,32 @@ def solve_camera(
                         float(np.ptp(projected_focus[:, 0])),
                         float(np.ptp(projected_focus[:, 1])),
                     )
-                    primary_unoccluded = unoccluded_fraction(
-                        position, positions[center_indices], colliders
-                    )
-                    full_unoccluded = unoccluded_fraction(
-                        position, positions[full_occlusion_indices], colliders
-                    )
-                    target_unoccluded = unoccluded_fraction(
-                        position, target[None, :], colliders
-                    )
-                    required_anchors_unoccluded = unoccluded_fraction(
-                        position,
+                    occlusion_point_groups = (
+                        positions[center_indices],
+                        positions[full_occlusion_indices],
+                        target[None, :],
                         context_points[required_anchor_indices],
+                    )
+                    occlusion_counts = [
+                        len(group) for group in occlusion_point_groups
+                    ]
+                    occlusion_visible = _unoccluded_mask(
+                        position,
+                        np.vstack(occlusion_point_groups),
                         colliders,
                     )
+                    occlusion_offsets = np.cumsum([0, *occlusion_counts])
+
+                    def visible_fraction(group_index: int) -> float:
+                        start = int(occlusion_offsets[group_index])
+                        stop = int(occlusion_offsets[group_index + 1])
+                        group = occlusion_visible[start:stop]
+                        return float(group.mean()) if len(group) else 0.0
+
+                    primary_unoccluded = visible_fraction(0)
+                    full_unoccluded = visible_fraction(1)
+                    target_unoccluded = visible_fraction(2)
+                    required_anchors_unoccluded = visible_fraction(3)
                     admissible = (
                         initial_inside
                         and initial_object_inside
@@ -2054,7 +2094,6 @@ def solve_camera(
     attempted_blends = []
     attempted_focal_lengths = []
     used_safety_elevation_fallback = False
-
     def search_focal_length(focal_length_mm: float) -> list[dict[str, Any]]:
         nonlocal used_safety_elevation_fallback
         for target_blend in dict.fromkeys(
@@ -2207,12 +2246,47 @@ def solve_camera(
             candidates,
             key=lambda record: (-record["anchor_fraction"], record["score"]),
         )
+
+        def failure_summary(record: dict[str, Any] | None) -> dict[str, Any] | None:
+            if record is None:
+                return None
+            return {
+                "score": round(float(record["score"]), 6),
+                "distance_m": round(float(record["distance"]), 6),
+                "focal_length_mm": round(float(record["focal_length_mm"]), 6),
+                "azimuth_degrees": round(float(record["azimuth_degrees"]), 6),
+                "elevation_degrees": round(
+                    float(record["elevation_degrees"]), 6
+                ),
+                "failed_constraints": sorted(
+                    key
+                    for key, passed in record["constraints"].items()
+                    if not passed
+                ),
+                "object_span_ndc": round(float(record["object_span"]), 6),
+                "median_object_span_ndc": round(
+                    float(record["median_object_span"]), 6
+                ),
+                "focus_span_ndc": round(float(record["focus_span"]), 6),
+                "full_center_fraction": round(
+                    float(record["full_center_fraction"]), 6
+                ),
+                "support_context_fraction": round(
+                    float(record["context_fraction"]), 6
+                ),
+                "support_anchor_fraction": round(
+                    float(record["anchor_fraction"]), 6
+                ),
+            }
+
         raise ValueError(
             f"camera solver found no admissible pose for {metadata['scene_id']}: "
-            f"best={best}; closest_object_threshold={closest_to_object_threshold}; "
-            f"largest_object={largest_object}; "
-            f"best_structure_target={best_structure_target}; "
-            f"best_anchor_coverage={best_anchor_coverage}"
+            f"best={failure_summary(best)}; "
+            "closest_object_threshold="
+            f"{failure_summary(closest_to_object_threshold)}; "
+            f"largest_object={failure_summary(largest_object)}; "
+            f"best_structure_target={failure_summary(best_structure_target)}; "
+            f"best_anchor_coverage={failure_summary(best_anchor_coverage)}"
         )
     return {
         "solver_version": "motion_structure_camera_v12",
