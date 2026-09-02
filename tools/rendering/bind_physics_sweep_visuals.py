@@ -136,9 +136,10 @@ def bind_one(
         with np.load(trajectory_path) as source:
             trajectory = {key: source[key] for key in source.files}
         trajectory = object_trajectory_view(sweep, trajectory)
-        inherited_camera["diagnostics"].update(
-            audit_two_object_camera(sweep, trajectory, inherited_camera)
-        )
+        # Validate every member again against its immutable trajectory, but do
+        # not write member-specific diagnostics into the shared camera record.
+        # The complete group was already audited when this camera was solved.
+        audit_two_object_camera(sweep, trajectory, inherited_camera)
     bound["visualization"]["binding_version"] = (
         "physweep_pybullet_sweep_visual_binding_v1"
     )

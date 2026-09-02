@@ -273,10 +273,8 @@ class SweepVisualBindingTest(unittest.TestCase):
             )
             camera_audit.assert_called_once()
             self.assertEqual(
-                bound["visualization"]["camera"]["diagnostics"][
-                    "joint_motion_envelope_visible_fraction"
-                ],
-                1.0,
+                bound["visualization"]["camera"]["diagnostics"],
+                {"base_selection": True},
             )
             self.assertEqual(
                 bound["visualization"]["camera_inheritance"][
