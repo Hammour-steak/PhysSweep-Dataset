@@ -150,9 +150,7 @@ def main() -> None:
 
     branches: dict[
         str, list[tuple[dict[str, Any], dict[str, Any], dict[str, str]]]
-    ] = {
-        name: [] for name in branch_by_schema.values()
-    }
+    ] = {}
     for record in selected:
         scene_id = str(record["scene_id"])
         physics = physics_by_scene.get(scene_id)
@@ -178,7 +176,9 @@ def main() -> None:
         branch = branch_by_schema.get(str(record["source_schema_version"]))
         if branch is None:
             raise ValueError(f"unsupported render schema: {record['source_schema_version']}")
-        branches[branch].append((record, physics, dispatched_paths(root, physics)))
+        branches.setdefault(branch, []).append(
+            (record, physics, dispatched_paths(root, physics))
+        )
 
     if output_root.exists():
         if not args.overwrite:
@@ -187,18 +187,22 @@ def main() -> None:
     output_root.mkdir(parents=True)
 
     generic_records = []
-    for _record, physics, paths in branches["generic"]:
+    for _record, physics, paths in branches.get("generic", []):
         generic_records.append({**physics, **paths})
-    generic_manifest = {
-        "schema_version": "physweep_pybullet_batch_record_v1",
-        "dataset_id": f"{release['dataset_id']}__sweep_generic",
-        "sample_count": len(generic_records),
-        "passed_count": len(generic_records),
-        "rejected_count": 0,
-        "error_count": 0,
-        "records": generic_records,
-    }
-    write_json(output_root / "generic" / "physics_manifest.json", generic_manifest)
+    if generic_records:
+        generic_manifest = {
+            "schema_version": "physweep_pybullet_batch_record_v1",
+            "dataset_id": f"{release['dataset_id']}__sweep_generic",
+            "sample_count": len(generic_records),
+            "passed_count": len(generic_records),
+            "rejected_count": 0,
+            "error_count": 0,
+            "records": generic_records,
+        }
+        write_json(
+            output_root / "generic" / "physics_manifest.json",
+            generic_manifest,
+        )
 
     for branch in sorted(set(branches) - {"generic"}):
         render_records = []

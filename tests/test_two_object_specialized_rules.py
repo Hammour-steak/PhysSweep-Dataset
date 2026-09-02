@@ -63,6 +63,14 @@ class TwoObjectSpecializedRulesTests(unittest.TestCase):
             )
             self.assertFalse(family["background_contract"]["collision_enabled"])
 
+    def test_marble_run_declares_its_audited_friction_domain(self) -> None:
+        self.assertEqual(
+            self.families["marble_run"]["sweep_domains"],
+            {"contact_friction": [0.05, 1.0]},
+        )
+        self.assertNotIn("sweep_domains", self.families["billiards"])
+        self.assertNotIn("sweep_domains", self.families["passive_pinball"])
+
     def test_billiards_profiles_resolve_two_separated_spheres(self) -> None:
         backend = json.loads(
             (ROOT / "configs/pybullet_backend.json").read_text(encoding="utf-8")

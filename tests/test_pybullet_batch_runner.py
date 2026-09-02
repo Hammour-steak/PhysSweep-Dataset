@@ -119,6 +119,23 @@ class PyBulletBatchRunnerTests(unittest.TestCase):
         self.assertEqual(dataset_id, "physweep_two_object")
         self.assertEqual(samples, [sample])
 
+    def test_unified_two_object_manifest_is_normalized(self) -> None:
+        record = {
+            "scene_id": "unified",
+            "metadata_path": "scenes/unified/metadata.json",
+            "source_schema_version": "physweep_pybullet_rigid_metadata_v1",
+        }
+        dataset_id, samples = manifest_samples(
+            {
+                "schema_version": "physweep_two_object_base_manifest_v1",
+                "dataset_id": "physweep_two_object",
+                "sample_count": 1,
+                "records": [record],
+            }
+        )
+        self.assertEqual(dataset_id, "physweep_two_object")
+        self.assertEqual(samples, [record])
+
     def test_sweep_manifest_is_normalized(self) -> None:
         dataset_id, samples = manifest_samples(
             {

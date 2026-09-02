@@ -205,6 +205,29 @@ class PhysicsSweepTests(unittest.TestCase):
             inputs = collect_inputs(root, None, None, manifest)
         self.assertEqual(inputs, [metadata.resolve()])
 
+    def test_unified_two_object_manifest_uses_declared_records(self):
+        root = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory(dir=root) as temp:
+            temp_path = Path(temp)
+            metadata = temp_path / "scene" / "metadata.json"
+            metadata.parent.mkdir(parents=True)
+            metadata.write_text("{}", encoding="utf-8")
+            manifest = temp_path / "manifest.json"
+            manifest.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "physweep_two_object_base_manifest_v1",
+                        "sample_count": 1,
+                        "records": [
+                            {"metadata_path": str(metadata.relative_to(root))}
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            inputs = collect_inputs(root, None, None, manifest)
+        self.assertEqual(inputs, [metadata.resolve()])
+
     def test_manifest_input_cannot_be_mixed_with_directory_scanning(self):
         root = Path(__file__).resolve().parents[1]
         with self.assertRaisesRegex(ValueError, "not both"):
@@ -621,6 +644,48 @@ class PhysicsSweepTests(unittest.TestCase):
         )
         resolved = derived["sweep"]["resolved_object_physics"]
         self.assertEqual([item["object_id"] for item in resolved], ["obj_0", "obj_1"])
+
+    def test_metadata_sweep_domain_overrides_the_global_friction_domain(self):
+        root = Path(__file__).resolve().parents[1]
+        config_path = root / "configs/physics_sweep.json"
+        config = load_json(config_path)
+        base = {
+            "schema_version": "physweep_marble_run_scene_v1",
+            "scene_id": "two_marble_scene",
+            "physics": {"sweep_domains": {"contact_friction": [0.05, 1.0]}},
+            "simulation": {
+                "objects": [
+                    {
+                        "object_id": object_id,
+                        "body_model": "rigid_body",
+                        "material": {
+                            "mass_kg": 0.1,
+                            "contact_friction": 0.1,
+                            "contact_restitution": 0.35,
+                        },
+                        "initial_state": {},
+                    }
+                    for object_id in ("object_a", "object_b")
+                ]
+            },
+        }
+        with tempfile.TemporaryDirectory(dir=root) as temp:
+            base_path = Path(temp) / "base.json"
+            base_path.write_text(json.dumps(base), encoding="utf-8")
+            derived = derive_one(
+                base,
+                base_path,
+                root,
+                config,
+                config_path,
+                "contact_friction",
+                0,
+                {},
+                {},
+                target_object_index=0,
+            )
+        self.assertEqual(derived["sweep"]["allowed_domain"], [0.05, 1.0])
+        self.assertEqual(derived["sweep"]["value"], 0.05)
 
     def test_each_supported_axis_changes_only_its_runtime_field(self):
         root = Path(__file__).resolve().parents[1]

@@ -23,6 +23,17 @@ class PrepareSweepRenderManifestTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             select_complete_groups([{"parent": "a", "scene_id": "a_0"}], {"a"})
 
+    def test_two_object_groups_contain_twenty_five_samples(self) -> None:
+        records = [
+            {"parent": "a", "scene_id": f"a_{index}"} for index in range(25)
+        ]
+        self.assertEqual(
+            len(select_complete_groups(records, {"a"}, object_count=2)),
+            25,
+        )
+        with self.assertRaisesRegex(ValueError, "25-sample groups"):
+            select_complete_groups(records[:-1], {"a"}, object_count=2)
+
     def test_dispatched_paths_verify_simulation_provenance(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()

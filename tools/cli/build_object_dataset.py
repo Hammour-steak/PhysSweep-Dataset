@@ -3,9 +3,10 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 from tools.core.hashing import sha256_file
 from tools.core.paths import resolve_project_path_within_root
@@ -181,3 +182,53 @@ def verify_dataset(
             expected_object_count=expected_object_count,
         ),
     }
+
+
+def run_cli(
+    *,
+    description: str,
+    default_config: Path,
+    project_root: Path,
+    load_config_fn: Callable[[Path], dict[str, Any]],
+    publish_dataset_fn: Callable[..., dict[str, Any]],
+    verify_dataset_fn: Callable[[Path], dict[str, Any]],
+) -> None:
+    """Run the shared object-dataset publication CLI."""
+
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument("--root", type=Path, default=project_root)
+    parser.add_argument("--config", type=Path, default=default_config)
+    parser.add_argument("--release-project-root", type=Path)
+    parser.add_argument("--release-manifest", type=Path)
+    parser.add_argument(
+        "--pipeline",
+        nargs=4,
+        action="append",
+        metavar=("NAME", "SOURCE_SCHEMA", "PROJECT_ROOT", "RENDER_ROOT"),
+    )
+    parser.add_argument("--workers", type=int, default=32)
+    parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--verify-only", action="store_true")
+    args = parser.parse_args()
+    root = args.root.resolve()
+    config_path = args.config if args.config.is_absolute() else root / args.config
+    config = load_config_fn(config_path)
+    release_root = root / config["release_root"]
+    if args.verify_only:
+        result = verify_dataset_fn(release_root)
+    else:
+        if args.release_project_root is None or args.release_manifest is None:
+            raise SystemExit(
+                "--release-project-root and --release-manifest are required when publishing"
+            )
+        if not args.pipeline:
+            raise SystemExit("at least one --pipeline is required")
+        result = publish_dataset_fn(
+            release_project_root=args.release_project_root,
+            release_manifest=args.release_manifest,
+            release_root=release_root,
+            pipeline_specs=pipeline_specs(args.pipeline),
+            workers=args.workers,
+            resume=args.resume,
+        )
+    print(json.dumps(result, indent=2, sort_keys=True))
