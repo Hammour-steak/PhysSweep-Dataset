@@ -289,6 +289,12 @@ def main() -> None:
                 "motion_profile": scene["semantics"]["motion_profile"],
                 "metadata_path": metadata_path.relative_to(root).as_posix(),
                 "metadata_sha256": sha256_file(metadata_path),
+                "render_output": {
+                    "inspection_frame_dir": scene["render"][
+                        "inspection_frame_dir"
+                    ],
+                    "video_path": scene["render"]["video_path"],
+                },
             }
         )
     manifest = {
