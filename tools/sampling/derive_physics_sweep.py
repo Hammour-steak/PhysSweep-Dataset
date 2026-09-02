@@ -304,6 +304,13 @@ def _friction_domain(
                 expected["minimum_displacement_m"],
             )
         )
+        required_contact_distance = expected.get(
+            "required_pre_contact_displacement_m"
+        )
+        if required_contact_distance is not None:
+            minimum_distance = max(
+                minimum_distance, float(required_contact_distance)
+            )
     except (KeyError, TypeError, ValueError) as error:
         raise ValueError(
             f"{motion_family} lacks the analytic support-frame contract "
@@ -355,7 +362,26 @@ def _friction_domain(
     configured_low, configured_high = [
         float(value) for value in axis_rules["domain"]
     ]
-    if "transition_margin" in axis_rules:
+    if required_contact_distance is not None:
+        minimum_closing_speed = float(
+            metadata["simulation"]["interaction"][
+                "minimum_pre_contact_closing_speed_m_s"
+            ]
+        )
+        if not 0.0 <= minimum_closing_speed < speed:
+            raise ValueError(
+                "contact-preserving friction sweep has no closing-speed margin"
+            )
+        theoretical_max = (
+            (speed * speed - minimum_closing_speed * minimum_closing_speed)
+            / (2.0 * minimum_distance)
+            + gravity_tangent_component
+        ) / normal_acceleration
+        safety = float(axis_rules["contact_preservation_safety"])
+        if not 0.0 < safety < 1.0:
+            raise ValueError("contact-preservation safety must lie in (0, 1)")
+        feasible_high = max(base_value, theoretical_max * safety)
+    elif "transition_margin" in axis_rules:
         # A high-friction endpoint deliberately crosses the calculated motion
         # transition; downstream audits still enforce hard physical checks.
         transition_threshold = theoretical_max

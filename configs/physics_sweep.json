@@ -54,6 +54,7 @@
       "domain": [0.02, 1.0],
       "domain_policy": "runtime_domain_with_transition_crossing",
       "transition_margin": 1.25,
+      "contact_preservation_safety": 0.9,
       "range_policy": {
         "mode": "relative_multipliers",
         "lower_multiplier": 0.25,

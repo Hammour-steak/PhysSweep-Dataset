@@ -107,10 +107,11 @@ explicitly names its compatible physical profiles; complete plans must realize
 every allowed motion/profile and profile/environment pairing at least once. This
 is not yet a production 2obj release.
 
-Camera failures are replaced with `resample_two_object_camera_failures`; it
-freezes passing rows and preserves motion, shape, scale, and scene-class axes.
-Repeated failures may reselect only declared source-family or camera-family
-choices.
+Generic physics or camera failures are replaced with
+`resample_two_object_failures`; it freezes passing rows and preserves motion,
+shape, scale, and scene-class axes. Repeated camera failures may reselect only
+declared source-family or camera-family choices. Reviewed specialized fixtures
+remain fixed and fail closed.
 
 Every admitted cell appears once. Independent controls use the three same-shape
 pairs because they do not exercise collision geometry; the six cross-shape
@@ -125,37 +126,19 @@ Trajectory audit also enforces pair contact intent, bounded independent rest,
 and a visible pre-contact ascent for every declared arc projectile.
 
 ```bash
-.venv/bin/python -m tools.sampling.sample_two_object_coverage \
+.venv/bin/python -m tools.cli.generate_two_object_dataset \
+  --work-id two_object_release \
   --released-base-manifest outputs/one_object/base/manifest.json \
   --source-root <one-object-generation-root> \
   --source-manifest <release/metadata_manifest.json> \
-  --scene-rules configs/two_object_scene_rules.json \
-  --limit 72 --output-dir outputs/two_object_validation/base
-
-.venv/bin/python -m tools.physics.run_pybullet_batch \
-  --manifest outputs/two_object_validation/base/manifest.json \
-  --output-root outputs/two_object_validation/base/physics --workers 9
-
-.venv/bin/python -m tools.sampling.derive_physics_sweep \
-  --base-manifest outputs/two_object_validation/base/manifest.json \
-  --output-dir outputs/two_object_validation/sweep/metadata
-
-.venv/bin/python -m tools.physics.run_pybullet_batch \
-  --manifest outputs/two_object_validation/sweep/metadata/manifest.json \
-  --output-root outputs/two_object_validation/sweep/physics --workers 20
-
-.venv/bin/python -m tools.rendering.bind_pybullet_visuals \
-  --manifest outputs/two_object_validation/base/physics/manifest.json \
-  --camera-group-manifest outputs/two_object_validation/sweep/physics/manifest.json \
-  --output-root outputs/two_object_validation/base/bound --workers 9
-
-.venv/bin/python -m tools.rendering.bind_physics_sweep_visuals \
-  --sweep-manifest outputs/two_object_validation/sweep/physics/manifest.json \
-  --base-bound-manifest outputs/two_object_validation/base/bound/bound_manifest.json \
-  --output-root outputs/two_object_validation/sweep/bound
+  --billiards-template <reviewed-billiards-metadata.json> \
+  --passive-pinball-template <reviewed-pinball-metadata.json> \
+  --marble-run-template <reviewed-marble-run-metadata.json> \
+  --physics-workers 24 --render-workers 64 --gpus 0,1,2,3
 ```
 
-Omit `--limit` for all 993 cells. Post-contact outcomes are measured rather
+Use `--generic-limit` only for a smoke prefix; omit it for all 993 cells.
+Post-contact outcomes are measured rather
 than preclassified. One camera is frozen only after every member of a
 two-object one-factor group passes; masks use `masks/<object_id>/`.
 

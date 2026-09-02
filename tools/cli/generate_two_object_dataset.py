@@ -19,6 +19,10 @@ from tools.cli.dataset_generation import (
     run_once,
     verify_render_manifest,
 )
+from tools.cli.two_object_admission import (
+    PHYSICS_SWEEP_CONFIG,
+    admit_two_object_groups,
+)
 from tools.core.hashing import sha256_file
 from tools.core.json_io import read_json
 from tools.core.paths import safe_scene_id
@@ -34,6 +38,11 @@ GENERIC_SCHEMA = "physweep_pybullet_rigid_metadata_v1"
 OBJECT_COUNT = 2
 SPECIALIZED_BASE_COUNT = 9
 BLENDER_RUNTIME = Path("runtime/blender-3.4.0-linux-x64/blender")
+TWO_OBJECT_MATRIX = Path("configs/two_object_sampling_matrix.json")
+TWO_OBJECT_SCENE_RULES = Path("configs/two_object_scene_rules.json")
+TWO_OBJECT_SPECIALIZED_RULES = Path(
+    "configs/two_object_specialized_scene_rules.json"
+)
 
 
 def generation_layout(root: Path, work_id: str, release_root: Path) -> Layout:
@@ -60,6 +69,7 @@ def generation_plan(
     templates: dict[str, Path],
     generic_limit: int | None,
     seed: int,
+    max_admission_attempts: int,
 ) -> dict[str, Any]:
     layout = generation_layout(root, work_id, release_root)
     source_manifest_path = (
@@ -74,6 +84,7 @@ def generation_plan(
             "generic_limit": generic_limit,
             "specialized_base_count": SPECIALIZED_BASE_COUNT,
             "seed": int(seed),
+            "max_admission_attempts": int(max_admission_attempts),
         },
         "layout": {
             key: value.resolve().relative_to(root.resolve()).as_posix()
@@ -85,11 +96,19 @@ def generation_plan(
             "specialized_templates": {
                 family: _source_binding(path) for family, path in templates.items()
             },
+            "rule_contracts": {
+                name: _source_binding(root / path)
+                for name, path in {
+                    "sampling_matrix": TWO_OBJECT_MATRIX,
+                    "generic_scene_rules": TWO_OBJECT_SCENE_RULES,
+                    "specialized_scene_rules": TWO_OBJECT_SPECIALIZED_RULES,
+                    "physics_sweep": PHYSICS_SWEEP_CONFIG,
+                }.items()
+            },
         },
         "stages": [
             "sample_generic_and_specialized_base",
-            "assemble_and_audit_base",
-            "derive_and_audit_per_object_sweep",
+            "admit_complete_physics_and_camera_groups",
             "stage_and_render_base_with_group_camera",
             "publish_source_release",
             "stage_and_render_sweep",
@@ -344,6 +363,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=20260902)
     parser.add_argument("--physics-workers", type=int, default=24)
     parser.add_argument("--render-workers", type=int, default=64)
+    parser.add_argument("--max-admission-attempts", type=int, default=8)
     parser.add_argument("--gpus", default="0,1,2,3")
     parser.add_argument("--release-root", type=Path, default=Path("outputs/two_object"))
     parser.add_argument("--resume", action="store_true")
@@ -355,6 +375,8 @@ def main() -> None:
     args = parse_args()
     if min(args.physics_workers, args.render_workers) < 1:
         raise ValueError("worker values must be positive")
+    if args.max_admission_attempts < 1:
+        raise ValueError("--max-admission-attempts must be positive")
     if args.generic_limit is not None and args.generic_limit < 1:
         raise ValueError("--generic-limit must be positive")
     if not [value for value in args.gpus.split(",") if value.strip()]:
@@ -377,6 +399,7 @@ def main() -> None:
         templates=templates,
         generic_limit=args.generic_limit,
         seed=args.seed,
+        max_admission_attempts=args.max_admission_attempts,
     )
     if args.plan_only:
         print(json.dumps(plan, indent=2, sort_keys=True))
@@ -398,6 +421,10 @@ def main() -> None:
         str(source_root),
         "--source-manifest",
         str(args.source_manifest),
+        "--matrix",
+        str(root / TWO_OBJECT_MATRIX),
+        "--scene-rules",
+        str(root / TWO_OBJECT_SCENE_RULES),
         "--output-dir",
         str(generic_root),
     ]
@@ -417,6 +444,8 @@ def main() -> None:
             "tools.sampling.sample_two_object_specialized",
             "--root",
             str(root),
+            "--rules",
+            str(root / TWO_OBJECT_SPECIALIZED_RULES),
             "--billiards-template",
             str(templates["billiards"]),
             "--passive-pinball-template",
@@ -432,25 +461,17 @@ def main() -> None:
         completion=specialized_root / "manifest.json",
         resume=args.resume,
     )
-    run_once(
-        [
-            sys.executable,
-            "-m",
-            "tools.sampling.assemble_two_object_base",
-            "--root",
-            str(root),
-            "--generic-manifest",
-            str(generic_root / "manifest.json"),
-            "--specialized-manifest",
-            str(specialized_root / "manifest.json"),
-            "--output",
-            str(layout.base_manifest),
-        ],
+    admitted = admit_two_object_groups(
         root=root,
-        completion=layout.base_manifest,
+        layout=layout,
+        initial_generic_manifest=generic_root / "manifest.json",
+        specialized_manifest=specialized_root / "manifest.json",
+        physics_workers=args.physics_workers,
+        camera_workers=args.render_workers,
+        max_attempts=args.max_admission_attempts,
         resume=args.resume,
     )
-    base = read_json(layout.base_manifest)
+    base = read_json(admitted.base)
     if (
         int(base.get("object_count", -1)) != OBJECT_COUNT
         or sum(
@@ -465,59 +486,6 @@ def main() -> None:
         )
     ):
         raise ValueError("assembled two-object base differs from the request")
-    base_physics = layout.base_dataset / "physics"
-    run_once(
-        [
-            sys.executable,
-            "-m",
-            "tools.physics.run_pybullet_batch",
-            "--root",
-            str(root),
-            "--manifest",
-            str(layout.base_manifest),
-            "--output-root",
-            str(base_physics),
-            "--workers",
-            str(args.physics_workers),
-        ],
-        root=root,
-        completion=base_physics / "manifest.json",
-        resume=args.resume,
-    )
-    run_once(
-        [
-            sys.executable,
-            "-m",
-            "tools.sampling.derive_physics_sweep",
-            "--root",
-            str(root),
-            "--base-manifest",
-            str(layout.base_manifest),
-            "--output-dir",
-            str(layout.sweep_metadata),
-        ],
-        root=root,
-        completion=layout.sweep_metadata / "manifest.json",
-        resume=args.resume,
-    )
-    run_once(
-        [
-            sys.executable,
-            "-m",
-            "tools.physics.run_pybullet_batch",
-            "--root",
-            str(root),
-            "--manifest",
-            str(layout.sweep_metadata / "manifest.json"),
-            "--output-root",
-            str(layout.sweep_physics),
-            "--workers",
-            str(args.physics_workers),
-        ],
-        root=root,
-        completion=layout.sweep_physics / "manifest.json",
-        resume=args.resume,
-    )
     run_once(
         [
             sys.executable,
@@ -526,9 +494,9 @@ def main() -> None:
             "--root",
             str(root),
             "--base-manifest",
-            str(layout.base_manifest),
+            str(admitted.base),
             "--physics-manifest",
-            str(base_physics / "manifest.json"),
+            str(admitted.base_physics),
             "--output-root",
             str(layout.base_render),
         ],
@@ -539,7 +507,7 @@ def main() -> None:
     render_base(
         root=root,
         layout=layout,
-        sweep_physics_manifest=layout.sweep_physics / "manifest.json",
+        sweep_physics_manifest=admitted.sweep_physics,
         workers=args.render_workers,
         gpus=args.gpus,
         resume=args.resume,
@@ -547,9 +515,9 @@ def main() -> None:
     if not (layout.source_release / "manifest.json").is_file():
         publish_source_release(
             root=root,
-            base_manifest_path=layout.base_manifest,
-            sweep_metadata_manifest_path=layout.sweep_metadata / "manifest.json",
-            sweep_physics_manifest_path=layout.sweep_physics / "manifest.json",
+            base_manifest_path=admitted.base,
+            sweep_metadata_manifest_path=admitted.sweep_metadata,
+            sweep_physics_manifest_path=admitted.sweep_physics,
             output=layout.source_release,
             object_count=OBJECT_COUNT,
             dataset_id="physweep_two_object",

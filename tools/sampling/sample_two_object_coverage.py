@@ -672,6 +672,8 @@ def select_coverage_sources(
     hosts: Sequence[dict[str, Any]],
     matrix: dict[str, Any],
     scene_rules: dict[str, Any] | None = None,
+    *,
+    require_all_profiles: bool = True,
 ) -> list[dict[str, Any]]:
     """Assign compatible sources while balancing profiles and source reuse."""
 
@@ -1248,11 +1250,12 @@ def select_coverage_sources(
         plan["selection_policy"]["object_visual_profile_coverage"]
     )
     if (
-        object_profile_policy == "all_eligible"
+        require_all_profiles
+        and object_profile_policy == "all_eligible"
         and set(object_profile_use) != eligible_object_profiles
     ):
         raise ValueError("coverage selection misses eligible object visual profiles")
-    if set(host_profile_use) != eligible_host_profiles:
+    if require_all_profiles and set(host_profile_use) != eligible_host_profiles:
         raise ValueError("coverage selection misses eligible host visual profiles")
     return selected
 
@@ -1420,7 +1423,12 @@ def main() -> None:
         scene_rules=scene_rules,
     )
     selections = select_coverage_sources(
-        cells, objects, hosts, matrix, scene_rules
+        cells,
+        objects,
+        hosts,
+        matrix,
+        scene_rules,
+        require_all_profiles=len(cells) == full_cell_count,
     )
     if len(cells) == full_cell_count:
         _validate_complete_scene_coverage(matrix, scene_rules, selections)

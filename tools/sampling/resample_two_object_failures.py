@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Replace failed 2obj camera selections without changing coverage cells."""
+"""Replace failed 2obj source assignments without weakening release rules."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from typing import Any, Sequence
 
 from tools.core.hashing import sha256_file
 from tools.core.json_io import read_json, write_json
+from tools.core.paths import resolve_project_path_within_root
 from tools.sampling.sample_two_object_coverage import (
     _axis_counts,
     _dynamics_profiles_eligible,
@@ -31,13 +32,6 @@ from tools.scene_rules.two_object import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-
-def _resolve(root: Path, value: str | Path) -> Path:
-    path = Path(value)
-    resolved = (path if path.is_absolute() else root / path).resolve()
-    resolved.relative_to(root)
-    return resolved
 
 
 def _source_id(record: dict[str, Any]) -> str:
@@ -124,10 +118,10 @@ def replace_failed_selections(
         raise ValueError("two-object base selections contain duplicate scene ids")
     unknown = failed_scene_ids.difference(by_scene_id)
     if unknown:
-        raise ValueError(f"camera failures are absent from the base: {sorted(unknown)}")
+        raise ValueError(f"replacement failures are absent from the base: {sorted(unknown)}")
     failure_modes = failure_modes or {}
     if not set(failure_modes).issubset(failed_scene_ids):
-        raise ValueError("camera failure modes contain a passing scene")
+        raise ValueError("failure modes contain a passing scene")
 
     plan = matrix["coverage_plan"]
     seed = int(plan["seed"])
@@ -201,7 +195,11 @@ def replace_failed_selections(
         )
         if current_camera_family not in camera_families:
             raise ValueError("two-object cell camera family is no longer allowed")
-        if attempt > 1 and len(camera_families) > 1:
+        if (
+            attempt > 1
+            and failure_modes.get(scene_id, "generic") != "physics"
+            and len(camera_families) > 1
+        ):
             next_index = (
                 camera_families.index(current_camera_family) + 1
             ) % len(camera_families)
@@ -389,17 +387,39 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--base-manifest", type=Path, required=True)
-    parser.add_argument("--camera-failure-manifest", type=Path, required=True)
+    parser.add_argument("--failure-manifest", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     return parser.parse_args()
+
+
+def replacement_coverage(
+    base: dict[str, Any],
+    selections: Sequence[dict[str, Any]],
+    matrix: dict[str, Any],
+    scene_rules: dict[str, Any],
+) -> dict[str, Any]:
+    """Preserve the source plan's full-versus-prefix coverage semantics."""
+
+    complete = bool(
+        base.get("coverage", {}).get("complete_cartesian_product", False)
+    )
+    if complete:
+        _validate_complete_scene_coverage(matrix, scene_rules, selections)
+    return {
+        "schema_version": "physweep_two_object_coverage_selection_v7",
+        "full_cell_count": int(base["coverage"]["full_cell_count"]),
+        "selected_cell_count": len(selections),
+        "complete_cartesian_product": complete,
+        "axis_counts": _axis_counts([value["cell"] for value in selections]),
+    }
 
 
 def main() -> None:
     args = parse_args()
     root = args.root.resolve()
-    base_path = _resolve(root, args.base_manifest)
-    failure_path = _resolve(root, args.camera_failure_manifest)
-    output_dir = _resolve(root, args.output_dir)
+    base_path = resolve_project_path_within_root(root, args.base_manifest)
+    failure_path = resolve_project_path_within_root(root, args.failure_manifest)
+    output_dir = resolve_project_path_within_root(root, args.output_dir)
     if output_dir.exists() and any(output_dir.iterdir()):
         raise FileExistsError("two-object replacement output must be empty")
 
@@ -411,14 +431,19 @@ def main() -> None:
         or not isinstance(base.get("samples"), list)
         or int(base.get("sample_count", -1)) != len(base["samples"])
         or failures.get("schema_version")
-        != "physweep_pybullet_binding_failure_manifest_v1"
+        not in {
+            "physweep_pybullet_binding_failure_manifest_v1",
+            "physweep_two_object_admission_failure_manifest_v1",
+        }
         or not isinstance(failure_records, list)
         or int(failures.get("failed_count", -1)) != len(failure_records)
     ):
         raise ValueError("two-object replacement input manifest is invalid")
 
-    matrix_path = _resolve(root, base["matrix"]["path"])
-    rules_path = _resolve(root, base["scene_rules"]["path"])
+    matrix_path = resolve_project_path_within_root(root, base["matrix"]["path"])
+    rules_path = resolve_project_path_within_root(
+        root, base["scene_rules"]["path"]
+    )
     if (
         sha256_file(matrix_path) != str(base["matrix"]["sha256"])
         or sha256_file(rules_path) != str(base["scene_rules"]["sha256"])
@@ -429,7 +454,7 @@ def main() -> None:
 
     source_release = base["source_release"]
     source_root = Path(source_release["source_project_root"]).resolve()
-    released_path = _resolve(
+    released_path = resolve_project_path_within_root(
         root, source_release["released_base_manifest"]["path"]
     )
     source_manifest_path = (
@@ -456,7 +481,9 @@ def main() -> None:
     prior_selections = []
     prior_metadata = {}
     for sample in base["samples"]:
-        metadata_path = _resolve(root, sample["metadata_path"])
+        metadata_path = resolve_project_path_within_root(
+            root, sample["metadata_path"]
+        )
         if sha256_file(metadata_path) != str(sample["metadata_sha256"]):
             raise ValueError("two-object base metadata changed after sampling")
         metadata = read_json(metadata_path)
@@ -484,8 +511,16 @@ def main() -> None:
     failed_scene_ids = {str(value["scene_id"]) for value in failure_records}
     if len(failed_scene_ids) != len(failure_records):
         raise ValueError("two-object camera failure manifest repeats a scene")
+    camera_failures = (
+        failures.get("schema_version")
+        == "physweep_pybullet_binding_failure_manifest_v1"
+    )
     failure_modes = {
-        str(value["scene_id"]): camera_failure_mode(str(value.get("error", "")))
+        str(value["scene_id"]): (
+            camera_failure_mode(str(value.get("error", "")))
+            if camera_failures
+            else "physics"
+        )
         for value in failure_records
     }
     prior_replacement = base.get("replacement", {})
@@ -510,7 +545,6 @@ def main() -> None:
         failure_modes=failure_modes,
         previously_rejected=previous_rejected,
     )
-    _validate_complete_scene_coverage(matrix, scene_rules, selections)
     scenes = build_coverage_scenes(selections, matrix, scene_rules)
     samples = []
     for scene in scenes:
@@ -545,7 +579,6 @@ def main() -> None:
             }
         )
     ]
-    selected_cells = [value["cell"] for value in selections]
     manifest = {
         "schema_version": "physweep_pybullet_base_manifest_v1",
         "dataset_id": str(base["dataset_id"]),
@@ -553,20 +586,16 @@ def main() -> None:
         "matrix": copy.deepcopy(base["matrix"]),
         "scene_rules": copy.deepcopy(base["scene_rules"]),
         "source_release": copy.deepcopy(source_release),
-        "coverage": {
-            "schema_version": "physweep_two_object_coverage_selection_v7",
-            "full_cell_count": int(base["coverage"]["full_cell_count"]),
-            "selected_cell_count": len(samples),
-            "complete_cartesian_product": True,
-            "axis_counts": _axis_counts(selected_cells),
-        },
+        "coverage": replacement_coverage(
+            base, selections, matrix, scene_rules
+        ),
         "replacement": {
             "attempt": attempt,
-            "selection_policy": "camera_failure_mode_extent_v5",
+            "selection_policy": "failure_aware_source_reselection_v1",
             "source_base_manifest": base_path.relative_to(root).as_posix(),
             "source_base_manifest_sha256": sha256_file(base_path),
-            "camera_failure_manifest": failure_path.relative_to(root).as_posix(),
-            "camera_failure_manifest_sha256": sha256_file(failure_path),
+            "failure_manifest": failure_path.relative_to(root).as_posix(),
+            "failure_manifest_sha256": sha256_file(failure_path),
             "replaced_count": len(failed_scene_ids),
             "rejected_assignments": rejected_assignments,
         },

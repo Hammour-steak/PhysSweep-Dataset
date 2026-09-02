@@ -5,10 +5,11 @@ import json
 import unittest
 from pathlib import Path
 
-from tools.sampling.resample_two_object_camera_failures import (
+from tools.sampling.resample_two_object_failures import (
     _replacement_camera_priority,
     camera_failure_mode,
     replace_failed_selections,
+    replacement_coverage,
     selection_signature,
 )
 
@@ -164,6 +165,19 @@ class TwoObjectReplacementTests(unittest.TestCase):
                 later["cell"]["object_b_source_family"],
             ],
         )
+        coverage = replacement_coverage(
+            {
+                "coverage": {
+                    "full_cell_count": 993,
+                    "complete_cartesian_product": False,
+                }
+            },
+            result,
+            matrix,
+            rules,
+        )
+        self.assertEqual(coverage["selected_cell_count"], 2)
+        self.assertFalse(coverage["complete_cartesian_product"])
 
 
 if __name__ == "__main__":

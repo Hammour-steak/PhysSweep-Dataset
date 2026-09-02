@@ -1040,9 +1040,24 @@ class TwoObjectCoverageTests(unittest.TestCase):
                 "visual_profile_id": "host_profile",
                 "visual_type": "procedural_room",
                 "environment_category": "minimal",
-            }
+            },
+            {
+                "metadata": {},
+                "source": {"scene_id": "unused_prefix_host"},
+                "scene_rule_id": "ground_patch_flat",
+                "scene_class": "ground_flat",
+                "visual_profile_id": "unused_prefix_profile",
+                "visual_type": "procedural_room",
+                "environment_category": "minimal",
+            },
         ]
-        selected = select_coverage_sources([cell], objects, hosts, load_matrix())
+        selected = select_coverage_sources(
+            [cell],
+            objects,
+            hosts,
+            load_matrix(),
+            require_all_profiles=False,
+        )
         left, right = selected[0]["objects"]
         self.assertEqual(left["scale_bin"], right["scale_bin"])
         self.assertEqual(

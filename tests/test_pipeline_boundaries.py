@@ -382,16 +382,75 @@ class PipelineBoundaryTest(unittest.TestCase):
             self.assertNotIn(forbidden, dataset_imports)
 
     def test_two_object_sweep_is_audited_before_the_group_camera_is_frozen(self):
-        source = (
-            ROOT / "tools/cli/generate_two_object_dataset.py"
+        admission_source = (
+            ROOT / "tools/cli/two_object_admission.py"
         ).read_text(encoding="utf-8")
         self.assertLess(
-            source.index('"tools.sampling.derive_physics_sweep"'),
-            source.index(
+            admission_source.index('"tools.sampling.derive_physics_sweep"'),
+            admission_source.index(
                 '"tools.rendering.prepare_two_object_base_render_manifests"'
             ),
         )
-        self.assertIn('"--camera-group-manifest"', source)
+        self.assertIn('"--camera-group-manifest"', admission_source)
+        self.assertIn('"--allow-audit-rejections"', admission_source)
+        self.assertIn(
+            '"tools.sampling.resample_two_object_failures"', admission_source
+        )
+
+    def test_two_object_sweep_rejection_maps_to_its_generic_parent(self):
+        module = load_module(
+            "two_object_admission_entry",
+            ROOT / "tools/cli/two_object_admission.py",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            metadata_path = root / "sweep.json"
+            metadata_path.write_text(
+                json.dumps(
+                    {
+                        "scene_id": "base__sweep_object_a_contact_friction_04",
+                        "sweep": {"parent_scene_id": "base"},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            manifest_path = root / "physics.json"
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "physweep_pybullet_batch_record_v1",
+                        "sample_count": 1,
+                        "passed_count": 0,
+                        "rejected_count": 1,
+                        "error_count": 0,
+                        "records": [
+                            {
+                                "ok": True,
+                                "audit_passed": False,
+                                "scene_id": (
+                                    "base__sweep_object_a_contact_friction_04"
+                                ),
+                                "metadata_path": str(metadata_path),
+                                "metadata_sha256": module.sha256_file(metadata_path),
+                                "failed_checks": ["adapter_hard_invariants"],
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            failures = module._physics_rejections(
+                root, manifest_path, {"base"}, sweep=True
+            )
+        self.assertEqual(
+            failures,
+            [
+                {
+                    "scene_id": "base",
+                    "error": "adapter_hard_invariants",
+                }
+            ],
+        )
 
     def test_two_object_renderer_records_video_samples_before_mask_rendering(self):
         source = (

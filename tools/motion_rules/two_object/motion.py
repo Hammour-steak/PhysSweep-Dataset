@@ -885,6 +885,7 @@ def apply_two_object_motion(
     _validate_intent_kinematics(layout, object_motions, local_velocities)
     velocities = _world_vectors(local_velocities, support_frame)
     orientations = [[1.0, 0.0, 0.0, 0.0] for _ in objects]
+    required_pre_contact_displacements: np.ndarray | None = None
 
     if layout == "planned_supported_contact":
         gravity_magnitude = float(
@@ -901,6 +902,18 @@ def apply_two_object_motion(
                 intent,
                 supported_deceleration,
             )
+        )
+        signed_closing_contributions = np.asarray(
+            [
+                float(local_velocities[0] @ approach_axis),
+                -float(local_velocities[1] @ approach_axis),
+            ],
+            dtype=np.float64,
+        )
+        required_pre_contact_displacements = np.where(
+            signed_closing_contributions > _NUMERICAL_EPSILON,
+            np.linalg.norm(supported_displacements, axis=1),
+            0.0,
         )
         planned_contact_xy = positions_xy + supported_displacements
         path_xy = np.vstack([positions_xy, planned_contact_xy])
@@ -1067,6 +1080,14 @@ def apply_two_object_motion(
                 else 0.0
             ),
         }
+        if (
+            required_pre_contact_displacements is not None
+            and required_pre_contact_displacements[index]
+            > _NUMERICAL_EPSILON
+        ):
+            expected["required_pre_contact_displacement_m"] = float(
+                required_pre_contact_displacements[index]
+            )
         relation_key = (
             "required_object_contact_id"
             if interaction_class == "interacting"

@@ -202,8 +202,52 @@ class PhysicsSweepTests(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
+
             inputs = collect_inputs(root, None, None, manifest)
         self.assertEqual(inputs, [metadata.resolve()])
+
+    def test_required_pair_contact_caps_the_friction_domain(self):
+        metadata = {
+            "schema_version": "physweep_pybullet_rigid_metadata_v1",
+            "simulation": {
+                "world": {"gravity_m_s2": [0.0, 0.0, -9.81]},
+                "support": {
+                    "surface_frame": {
+                        "normal": [0.0, 0.0, 1.0],
+                        "slope_angle_degrees": 0.0,
+                    }
+                },
+                "interaction": {
+                    "minimum_pre_contact_closing_speed_m_s": 0.18
+                },
+                "objects": [
+                    {
+                        "expected_motion": {
+                            "motion_family": "roll_or_slide_1obj",
+                            "minimum_displacement_m": 0.18,
+                            "required_pre_contact_displacement_m": 0.4,
+                        },
+                        "initial_state": {
+                            "linear_velocity_m_s": [0.72, 0.0, 0.0]
+                        },
+                    }
+                ],
+            },
+        }
+        domain = _friction_domain(
+            metadata,
+            {
+                "domain": [0.02, 1.0],
+                "transition_margin": 1.25,
+                "contact_preservation_safety": 0.9,
+                "range_policy": {"mode": "global"},
+            },
+            0.04,
+            "contact_friction",
+            0,
+        )
+        self.assertGreater(domain[1], 0.04)
+        self.assertLess(domain[1], 0.06)
 
     def test_unified_two_object_manifest_uses_declared_records(self):
         root = Path(__file__).resolve().parents[1]
