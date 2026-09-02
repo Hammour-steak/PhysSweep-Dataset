@@ -393,6 +393,14 @@ class PipelineBoundaryTest(unittest.TestCase):
         )
         self.assertIn('"--camera-group-manifest"', source)
 
+    def test_two_object_renderer_records_video_samples_before_mask_rendering(self):
+        source = (
+            ROOT / "tools/rendering/render_two_object_specialized_scene.py"
+        ).read_text(encoding="utf-8")
+        capture = "video_render_samples = int(scene.eevee.taa_render_samples)"
+        self.assertLess(source.index(capture), source.index("render_instance_masks("))
+        self.assertIn('"render_samples": video_render_samples', source)
+
     def test_specialized_render_records_hash_the_bound_metadata(self):
         for name in (
             "render_asset_proxy_scene.py",

@@ -246,6 +246,7 @@ def render(
     video_encoding = configure_h264_output(
         scene, fps=int(scene.render.fps), frame_count=frame_count
     )
+    video_render_samples = int(scene.eevee.taa_render_samples)
     require_render_finished(
         bpy.ops.render.render(animation=True),
         label=f"video animation render for {metadata['scene_id']}",
@@ -277,7 +278,7 @@ def render(
         "instance_mask_output": masks,
         "camera": camera,
         "render_engine": scene.render.engine,
-        "render_samples": int(scene.eevee.taa_render_samples),
+        "render_samples": video_render_samples,
         "video_encoding": video_encoding,
         "render_only_context_object_count": len(environment_objects),
         "fixture_object_count": len(fixture_objects),
