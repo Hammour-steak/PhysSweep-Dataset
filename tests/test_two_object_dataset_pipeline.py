@@ -11,9 +11,15 @@ from tools.sampling.assemble_two_object_base import assemble_base_manifest
 
 
 def metadata(scene_id: str, schema: str) -> dict:
+    motion_family = (
+        "surface_dual_independent_2obj"
+        if schema == "physweep_pybullet_rigid_metadata_v1"
+        else "two_ball_direct_collision"
+    )
     document = {
         "scene_id": scene_id,
         "schema_version": schema,
+        "semantics": {"motion": {"family": motion_family}},
         "simulation": {
             "objects": [
                 {

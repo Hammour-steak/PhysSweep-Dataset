@@ -652,6 +652,9 @@ class PhysicsSweepTests(unittest.TestCase):
         base = {
             "schema_version": "physweep_marble_run_scene_v1",
             "scene_id": "two_marble_scene",
+            "semantics": {
+                "motion": {"family": "two_marble_catch_up_collision"}
+            },
             "physics": {"sweep_domains": {"contact_friction": [0.05, 1.0]}},
             "simulation": {
                 "objects": [
