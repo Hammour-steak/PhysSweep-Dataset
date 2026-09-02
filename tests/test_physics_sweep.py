@@ -657,6 +657,9 @@ class PhysicsSweepTests(unittest.TestCase):
             },
             "physics": {"sweep_domains": {"contact_friction": [0.05, 1.0]}},
             "simulation": {
+                "interaction": {
+                    "motion_pattern": "two_marble_catch_up_collision"
+                },
                 "objects": [
                     {
                         "object_id": object_id,

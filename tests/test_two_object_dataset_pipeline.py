@@ -21,6 +21,7 @@ def metadata(scene_id: str, schema: str) -> dict:
         "schema_version": schema,
         "semantics": {"motion": {"family": motion_family}},
         "simulation": {
+            "interaction": {"motion_pattern": motion_family},
             "objects": [
                 {
                     "object_id": object_id,
