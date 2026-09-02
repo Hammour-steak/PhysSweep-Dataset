@@ -168,7 +168,7 @@ class TwoObjectReplacementTests(unittest.TestCase):
         coverage = replacement_coverage(
             {
                 "coverage": {
-                    "full_cell_count": 993,
+                    "full_cell_count": 1155,
                     "complete_cartesian_product": False,
                 }
             },

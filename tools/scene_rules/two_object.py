@@ -93,7 +93,7 @@ def validate_two_object_scene_rules(contract: dict[str, Any]) -> None:
     if (
         not isinstance(contract, dict)
         or set(contract) != _TOP_LEVEL_FIELDS
-        or contract.get("schema_version") != "physweep_two_object_scene_rules_v2"
+        or contract.get("schema_version") != "physweep_two_object_scene_rules_v3"
     ):
         raise ValueError("unsupported two-object scene-rules contract")
     host = contract.get("host_eligibility")
@@ -188,7 +188,6 @@ def validate_two_object_scene_rules(contract: dict[str, Any]) -> None:
                 not isinstance(motion_id, str)
                 or not motion_id
                 or not isinstance(allowed, list)
-                or not allowed
                 or len(allowed) != len(set(allowed))
                 or not set(allowed).issubset(camera_view_families)
                 for motion_id, allowed in camera_overrides.items()

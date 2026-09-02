@@ -302,6 +302,40 @@ class ObjectIdentityContractTests(unittest.TestCase):
         )
         self.assertNotIn("physassets", str(metadata["object_identity"]))
 
+    def test_every_generic_two_object_motion_has_an_explicit_caption(self) -> None:
+        expected_fragments = {
+            "surface_hit_rest_2obj": "which starts at rest",
+            "surface_head_on_2obj": "move toward each other",
+            "surface_glancing_opposed_2obj": "opposed, offset paths",
+            "surface_crossing_2obj": "crossing paths",
+            "surface_catch_up_2obj": "catches up",
+            "air_drop_hit_supported_2obj": "falls under gravity",
+            "air_projectile_hit_supported_2obj": "launched upward and forward",
+            "air_air_collision_2obj": "airborne paths",
+            "surface_single_independent_2obj": "remains at rest",
+            "surface_dual_independent_2obj": "without contacting each other",
+            "air_supported_independent_2obj": "they do not contact",
+        }
+        for family, fragment in expected_fragments.items():
+            with self.subTest(family=family):
+                metadata = {
+                    "semantic_sampling": {
+                        "five_dimensions": {"motion": {"family": family}}
+                    },
+                    "simulation": {
+                        "support": {"semantic_type": "wood_floor"},
+                        "interaction": {"motion_pattern": family},
+                        "objects": [
+                            {"object_id": "object_a", "semantic_type": "ball"},
+                            {"object_id": "object_b", "semantic_type": "box"},
+                        ],
+                    },
+                }
+                attach_object_identity(metadata)
+                caption = metadata["object_identity"]["text"]["caption"]
+                self.assertIn(fragment, caption)
+                self.assertNotIn("_2obj", caption)
+
     def test_two_identical_labels_remain_two_identity_mentions(self) -> None:
         metadata = {
             "semantic_sampling": {

@@ -1,5 +1,5 @@
 {
-  "schema_version": "physweep_two_object_scene_rules_v2",
+  "schema_version": "physweep_two_object_scene_rules_v3",
   "host_eligibility": {
     "required_collider_roles": ["primary_support"],
     "allowed_collider_roles": [
@@ -169,6 +169,7 @@
       "camera_view_family_overrides": {
         "surface_hit_rest_2obj": ["side_left_mid", "side_right_mid"],
         "surface_head_on_2obj": ["side_left_mid", "side_right_mid"],
+        "surface_glancing_opposed_2obj": [],
         "surface_crossing_2obj": ["front_left_low", "rear_right_high"],
         "surface_catch_up_2obj": ["side_left_mid", "side_right_mid"]
       }

@@ -1,5 +1,5 @@
 {
-  "schema_version": "physweep_two_object_sampling_matrix_v12",
+  "schema_version": "physweep_two_object_sampling_matrix_v13",
   "objects": {
     "schema_version": "physweep_object_collection_v1",
     "roles": [
@@ -47,6 +47,10 @@
       {
         "motion_id": "surface_head_on_2obj",
         "shape_pair_set_id": "supported_head_on"
+      },
+      {
+        "motion_id": "surface_glancing_opposed_2obj",
+        "shape_pair_set_id": "all_shape_pairs"
       },
       {
         "motion_id": "surface_crossing_2obj",
@@ -276,6 +280,17 @@
       "minimum_displacement_m": [0.18, 0.06],
       "contact_time_s": 0.619048,
       "impact_offset_ratio": 0.0
+    },
+    {
+      "id": "surface_glancing_opposed_2obj",
+      "interaction_class": "interacting",
+      "kinematic_regime": "supported_supported",
+      "layout": "planned_supported_contact",
+      "object_motions": ["roll_or_slide_1obj", "roll_or_slide_1obj"],
+      "linear_velocity_m_s": [[0.62, 0.0, 0.0], [-0.36, -0.36, 0.0]],
+      "minimum_displacement_m": [0.16, 0.13],
+      "contact_time_s": 0.46,
+      "impact_offset_ratio": 0.22
     },
     {
       "id": "surface_crossing_2obj",

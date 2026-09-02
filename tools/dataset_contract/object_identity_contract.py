@@ -382,6 +382,10 @@ def _two_object_caption(
             f"{left} and {right} move toward each other across the {support} "
             "and collide"
         ),
+        "surface_glancing_opposed_2obj": (
+            f"{left} and {right} approach along opposed, offset paths across "
+            f"the {support} and collide obliquely"
+        ),
         "surface_crossing_2obj": (
             f"{left} and {right} move along crossing paths across the {support} "
             "and collide"
