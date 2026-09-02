@@ -351,12 +351,15 @@ def _billiards_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
                 "inertia_policy": "pybullet_from_collision_proxy_and_mass",
             }
         )
+    two_object = len(objects) == 2
     return {
         "backend_binding": {
             "backend_id": "pybullet_rigid",
-            "adapter_id": "billiards_v4",
+            "adapter_id": (
+                "billiards_two_object_v1" if two_object else "billiards_v4"
+            ),
             "capability": "one_or_more_spheres_with_exact_table_support",
-            "supported_dynamic_object_counts": [1, 3],
+            "supported_dynamic_object_counts": [2] if two_object else [1, 3],
         },
         "time": {
             "duration_s": float(physics["duration_s"]),
@@ -370,6 +373,9 @@ def _billiards_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
             "static_support_binding": copy.deepcopy(physics["static_support_binding"]),
             "profile": str(physics["profile"]),
             "backend": backend,
+            "two_object_quality": copy.deepcopy(
+                physics.get("two_object_quality")
+            ),
         },
     }
 
@@ -447,7 +453,94 @@ def _single_sphere_fixture_scene(
     }
 
 
+def _two_sphere_fixture_scene(
+    metadata: dict[str, Any],
+    root: Path,
+    *,
+    label: str,
+    backend_schema: str,
+    adapter_id: str,
+    capability: str,
+) -> dict[str, Any]:
+    identities = _identity_objects(metadata)
+    simulation = metadata["simulation"]
+    source_objects = simulation["objects"]
+    if len(source_objects) != 2 or len(identities) != 2:
+        raise ValueError(f"{label} two-object adapter requires exactly two objects")
+    identity_ids = [str(record["object_id"]) for record in identities]
+    source_ids = [str(record["object_id"]) for record in source_objects]
+    if source_ids != identity_ids:
+        raise ValueError(f"{label} object identity differs from simulation")
+    physics = metadata["physics"]
+    backend = _load_pinned_json(root, physics["backend_config"], f"{label} backend")
+    if backend.get("schema_version") != backend_schema:
+        raise ValueError(f"unsupported {label} backend config")
+    profile = str(physics["profile"])
+    if profile != str(metadata["semantics"]["profile"]):
+        raise ValueError(f"{label} physics and semantic profiles differ")
+    if profile not in backend["profiles"]:
+        raise ValueError(f"undeclared {label} fixture profile: {profile}")
+    quality = physics.get("two_object_quality")
+    if not isinstance(quality, dict):
+        raise ValueError(f"{label} two-object quality contract is missing")
+    resolved = _resolved_materials(metadata, source_ids)
+    objects = []
+    for index, source in enumerate(source_objects):
+        proxy = source["collision_proxy"]
+        if proxy.get("type") != "sphere" or float(proxy.get("radius_m", 0.0)) <= 0.0:
+            raise ValueError(f"{label} dynamic collision proxy must be a sphere")
+        initial = source["initial_state"]
+        objects.append(
+            {
+                "object_id": source_ids[index],
+                "object_index": index,
+                "collision_proxy": copy.deepcopy(proxy),
+                "initial_state": {
+                    "position_m": _finite_vector(initial["position_m"], 3, "position"),
+                    "orientation_quaternion_xyzw": _finite_quaternion(
+                        initial["orientation_quaternion_xyzw"], "orientation"
+                    ),
+                    "linear_velocity_m_s": _finite_vector(
+                        initial["linear_velocity_m_s"], 3, "linear velocity"
+                    ),
+                    "angular_velocity_rad_s": _finite_vector(
+                        initial["angular_velocity_rad_s"], 3, "angular velocity"
+                    ),
+                },
+                "material": _material(resolved.get(source_ids[index], source["material"])),
+                "inertia_policy": "pybullet_from_collision_proxy_and_mass",
+            }
+        )
+    return {
+        "backend_binding": {
+            "backend_id": "pybullet_rigid",
+            "adapter_id": adapter_id,
+            "capability": capability,
+            "supported_dynamic_object_counts": [2],
+        },
+        "time": copy.deepcopy(simulation["time"]),
+        "world": copy.deepcopy(simulation["world"]),
+        "objects": objects,
+        "adapter_payload": {
+            "profile": profile,
+            "fixture": copy.deepcopy(physics["fixture"]),
+            "fixture_source": copy.deepcopy(physics.get("fixture_source")),
+            "quality": copy.deepcopy(quality),
+            "backend": backend,
+        },
+    }
+
+
 def _passive_pinball_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
+    if len(_identity_objects(metadata)) == 2:
+        return _two_sphere_fixture_scene(
+            metadata,
+            root,
+            label="passive-pinball",
+            backend_schema="physweep_passive_pinball_backend_v1",
+            adapter_id="passive_pinball_two_object_v1",
+            capability="two_spheres_with_exact_passive_pinfield_fixture",
+        )
     return _single_sphere_fixture_scene(
         metadata,
         root,
@@ -459,6 +552,15 @@ def _passive_pinball_scene(metadata: dict[str, Any], root: Path) -> dict[str, An
 
 
 def _marble_run_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
+    if len(_identity_objects(metadata)) == 2:
+        return _two_sphere_fixture_scene(
+            metadata,
+            root,
+            label="marble-run",
+            backend_schema="physweep_marble_run_backend_v1",
+            adapter_id="marble_run_two_object_v1",
+            capability="two_spheres_with_exact_passive_track_fixture",
+        )
     return _single_sphere_fixture_scene(
         metadata,
         root,

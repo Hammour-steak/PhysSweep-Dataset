@@ -414,6 +414,42 @@ def _two_object_caption(
             f"{left} falls under gravity beside {right}, which remains at rest "
             f"on the {support}; they do not contact"
         ),
+        "two_ball_direct_collision": (
+            f"{left} moves directly across a billiards table and collides with "
+            f"{right}, which starts at rest"
+        ),
+        "two_ball_glancing_collision": (
+            f"{left} approaches at an offset across a billiards table and "
+            f"collides obliquely with {right}"
+        ),
+        "two_ball_opposed_collision": (
+            f"{left} and {right} move toward each other across a billiards "
+            "table and collide"
+        ),
+        "two_ball_top_collision": (
+            f"{left} and {right} move toward each other above a passive "
+            "pinball field and collide"
+        ),
+        "two_ball_offset_collision": (
+            f"{left} and {right} approach along offset paths above a passive "
+            "pinball field and collide"
+        ),
+        "two_ball_diagonal_catch_up_collision": (
+            f"{left} catches up diagonally with {right} above a passive "
+            "pinball field and collides with it"
+        ),
+        "two_marble_catch_up_collision": (
+            f"{left} catches up with {right} on a passive marble-run channel "
+            "and collides with it"
+        ),
+        "two_marble_delayed_catch_up_collision": (
+            f"{left} starts farther behind, catches up with {right} on a "
+            "passive marble-run channel, and collides with it"
+        ),
+        "two_marble_counterflow_collision": (
+            f"{left} and {right} move toward each other along a passive "
+            "marble-run channel and collide"
+        ),
     }
     if pattern not in clauses:
         raise ValueError(

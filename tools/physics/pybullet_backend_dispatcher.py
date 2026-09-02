@@ -21,6 +21,9 @@ from tools.physics.generate_passive_pinball_scene import simulate as simulate_pa
 from tools.physics.resolved_simulation_scene import compile_resolved_scene
 from tools.physics.asset_proxy_simulation import simulate_scene as simulate_asset_proxy
 from tools.physics.simulate_pybullet_rigid import simulate as simulate_generic_rigid
+from tools.physics.two_object_specialized_simulation import (
+    simulate_two_object_specialized,
+)
 
 DISPATCH_RECORD_VERSION = "physweep_dispatched_simulation_record_v1"
 TRAJECTORY_LAYOUT_VERSION = "physweep_object_trajectory_v2"
@@ -266,7 +269,13 @@ def _adapter_hard_results(
         ]
     if not isinstance(records, dict):
         raise ValueError(f"{adapter_id} adapter returned invalid audit checks")
-    if adapter_id in {"passive_pinball_v1", "marble_run_v1"}:
+    if adapter_id in {
+        "passive_pinball_v1",
+        "marble_run_v1",
+        "billiards_two_object_v1",
+        "passive_pinball_two_object_v1",
+        "marble_run_two_object_v1",
+    }:
         return [bool(passed) for passed in records.values()]
     hard_exact = {
         "finite_trajectory",
@@ -482,6 +491,12 @@ def dispatch_simulation(
         trajectory, adapter_audit = _passive_pinball(scene, root)
     elif adapter_id == "marble_run_v1":
         trajectory, adapter_audit = _marble_run(scene, root)
+    elif adapter_id in {
+        "billiards_two_object_v1",
+        "passive_pinball_two_object_v1",
+        "marble_run_two_object_v1",
+    }:
+        trajectory, adapter_audit = simulate_two_object_specialized(scene, root)
     else:
         raise ValueError(f"unsupported adapter: {adapter_id}")
     audit = _common_audit(scene, trajectory, adapter_audit)

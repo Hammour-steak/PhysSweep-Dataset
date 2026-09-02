@@ -43,7 +43,7 @@ RENDER_RECORD_IMPLEMENTATION_SCHEMAS = frozenset(
 
 
 def renderer_table(root: Path) -> dict[str, tuple[str, str, str, str]]:
-    return {
+    result = {
         record["renderer_id"]: (
             record["renderer_script"],
             record["render_manifest_schema"],
@@ -52,6 +52,13 @@ def renderer_table(root: Path) -> dict[str, tuple[str, str, str, str]]:
         )
         for record in specialized_by_pipeline(root).values()
     }
+    result["two_object_specialized"] = (
+        "tools/rendering/render_two_object_specialized_scene.py",
+        "physweep_two_object_specialized_render_manifest_v1",
+        "render_manifest.json",
+        "two_object_specialized",
+    )
+    return result
 
 
 def output_path(root: Path, value: str | Path) -> Path:
@@ -470,7 +477,7 @@ def render_source_records(
         renderers = renderer_table(root)
     if renderer not in renderers:
         raise ValueError(f"unknown specialized renderer: {renderer}")
-    source_records = manifest.get("records")
+    source_records = manifest.get("records", manifest.get("samples"))
     if source_records is None:
         raise ValueError("render manifest has no records")
     expected_schema = renderers[renderer][3]
@@ -479,7 +486,14 @@ def render_source_records(
         metadata_path = project_path(root, record["metadata_path"])
         metadata_path.relative_to(root)
         metadata = load_json(metadata_path)
-        if str(metadata["schema_version"]) != expected_schema:
+        if expected_schema == "two_object_specialized":
+            if (
+                str(metadata.get("schema_version")) not in MASK_REQUIRED_SCHEMAS
+                or int(metadata.get("semantics", {}).get("dynamic_object_count", -1))
+                != 2
+            ):
+                raise ValueError("render manifest contains a non-specialized scene")
+        elif str(metadata["schema_version"]) != expected_schema:
             raise ValueError("render manifest contains the wrong scene schema")
         metadata_scene_id = safe_scene_id(metadata["scene_id"])
         if "scene_id" not in record:
