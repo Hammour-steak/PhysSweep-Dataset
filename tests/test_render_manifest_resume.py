@@ -33,6 +33,50 @@ def write_json(path: Path, value: object) -> None:
 
 
 class RenderManifestResumeTests(unittest.TestCase):
+    def test_two_object_specialized_renderer_accepts_all_three_fixture_schemas(self) -> None:
+        renderers = {
+            "two_object_specialized": (
+                "tools/rendering/render_two_object_specialized_scene.py",
+                "physweep_two_object_specialized_render_manifest_v1",
+                "render_manifest.json",
+                "two_object_specialized",
+            )
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            samples = []
+            for index, schema in enumerate(
+                (
+                    "physweep_billiards_scene_v4",
+                    "physweep_passive_pinball_scene_v1",
+                    "physweep_marble_run_scene_v1",
+                )
+            ):
+                scene_id = f"scene_{index}"
+                path = root / f"{scene_id}.json"
+                write_json(
+                    path,
+                    {
+                        "schema_version": schema,
+                        "scene_id": scene_id,
+                        "semantics": {"dynamic_object_count": 2},
+                    },
+                )
+                samples.append(
+                    {"scene_id": scene_id, "metadata_path": path.name}
+                )
+            records = render_source_records(
+                root,
+                {"samples": samples},
+                "two_object_specialized",
+                renderers,
+            )
+        self.assertEqual([record["scene_id"] for record in records], [
+            "scene_0",
+            "scene_1",
+            "scene_2",
+        ])
+
     def test_every_specialized_renderer_requires_materialized_masks(self) -> None:
         self.assertEqual(
             MASK_REQUIRED_SCHEMAS,

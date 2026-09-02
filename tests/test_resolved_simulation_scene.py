@@ -60,6 +60,28 @@ class ResolvedSimulationSceneTests(unittest.TestCase):
         self.assertEqual(scene["backend_binding"]["adapter_id"], "marble_run_v1")
         self.assertEqual([record["object_id"] for record in scene["objects"]], ["marble"])
 
+    def test_marble_run_two_object_adapter_is_explicit(self):
+        metadata = self.marble_run_metadata()
+        second = copy.deepcopy(metadata["simulation"]["objects"][0])
+        metadata["simulation"]["objects"][0]["object_id"] = "object_a"
+        second["object_id"] = "object_b"
+        second["initial_state"]["position_m"][0] = 0.08
+        metadata["simulation"]["objects"].append(second)
+        metadata["object_identity"]["objects"] = [
+            {"object_id": "object_a", "role": "dynamic"},
+            {"object_id": "object_b", "role": "dynamic"},
+        ]
+        metadata["physics"]["two_object_quality"] = {
+            "maximum_first_pair_contact_time_s": 0.5,
+            "maximum_penetration_m": 0.001,
+        }
+        scene = compile_resolved_scene(metadata, ROOT)
+        self.assertEqual(
+            scene["backend_binding"]["adapter_id"],
+            "marble_run_two_object_v1",
+        )
+        self.assertEqual(scene["backend_binding"]["supported_dynamic_object_counts"], [2])
+
     def billiards_metadata(self):
         backend = ROOT / "configs/pybullet_backend.json"
         return {
@@ -95,6 +117,26 @@ class ResolvedSimulationSceneTests(unittest.TestCase):
         scene = compile_resolved_scene(self.billiards_metadata(), ROOT)
         self.assertEqual(scene["backend_binding"]["adapter_id"], "billiards_v4")
         self.assertEqual([record["object_id"] for record in scene["objects"]], ["ball_0"])
+
+    def test_billiards_two_object_adapter_is_explicit(self):
+        metadata = self.billiards_metadata()
+        second = copy.deepcopy(metadata["physics"]["initial_states"][0])
+        second["object_id"] = "ball_1"
+        second["position_m"][0] = 0.2
+        metadata["physics"]["initial_states"].append(second)
+        metadata["physics"]["two_object_quality"] = {
+            "maximum_first_pair_contact_time_s": 1.0,
+            "maximum_penetration_m": 0.001,
+        }
+        metadata["object_identity"]["objects"].append(
+            {"object_id": "ball_1", "role": "dynamic"}
+        )
+        scene = compile_resolved_scene(metadata, ROOT)
+        self.assertEqual(
+            scene["backend_binding"]["adapter_id"],
+            "billiards_two_object_v1",
+        )
+        self.assertEqual(scene["backend_binding"]["supported_dynamic_object_counts"], [2])
 
     def generic_metadata(self):
         return {
