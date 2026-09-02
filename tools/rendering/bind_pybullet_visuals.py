@@ -189,7 +189,15 @@ def bind_scene(
     with np.load(trajectory_path) as source:
         trajectory = {key: source[key] for key in source.files}
     trajectory = object_trajectory_view(metadata, trajectory)
-    if camera_group_samples is None:
+    dynamic_object_count = sum(
+        record.get("role") == "dynamic"
+        for record in metadata.get("object_identity", {}).get("objects", [])
+    )
+    if dynamic_object_count == 2 and camera_group_samples is None:
+        camera = solve_two_object_camera_group(
+            metadata, [(metadata, trajectory)], rules
+        )
+    elif camera_group_samples is None:
         camera = solve_camera(metadata, trajectory, rules)
     else:
         camera_group = []
