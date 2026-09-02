@@ -20,7 +20,6 @@ from tools.cli.dataset_generation import (
     verify_render_manifest,
 )
 from tools.core.json_io import read_json as load_json
-from tools.core.json_io import write_json_atomic_sorted as write_json
 from tools.core.paths import safe_scene_id
 from tools.core.sweep_values import SWEEP_VARIANTS_PER_TARGET, sweep_group_size
 from tools.physics.specialized_backend_registry import load_specialized_backends
