@@ -147,6 +147,9 @@ def build_specialized_scene(
         )
         for declared, state in zip(profile["objects"], states):
             state["semantic_type"] = str(declared["semantic_label"])
+            state["velocity_m_s"] = state.pop("linear_velocity_m_s")
+            state.pop("orientation_quaternion_xyzw")
+            state.pop("angular_velocity_rad_s")
         physics["initial_states"] = states
         anchor = [0.0, 0.0, bed_z]
     elif family_id == "passive_pinball":
