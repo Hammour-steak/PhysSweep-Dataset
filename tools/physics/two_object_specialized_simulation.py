@@ -340,7 +340,10 @@ def simulate_two_object_specialized(
     finally:
         pb.disconnect(client)
 
-    quality = scene["adapter_payload"]["quality"]
+    payload = scene["adapter_payload"]
+    quality = payload.get("quality", payload.get("two_object_quality"))
+    if not isinstance(quality, dict):
+        raise ValueError("specialized two-object quality contract is missing")
     first_pair_time = (
         None if first_pair_step is None else first_pair_step / float(simulation_hz)
     )
