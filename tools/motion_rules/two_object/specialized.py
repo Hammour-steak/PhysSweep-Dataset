@@ -75,6 +75,21 @@ def _validate_source(root: Path, family: dict[str, Any]) -> None:
         raise ValueError(f"{family['id']} source config schema changed")
 
 
+def _load_declared_source(
+    root: Path, binding: dict[str, Any], label: str
+) -> tuple[Path, dict[str, Any]]:
+    if not isinstance(binding, dict) or set(binding) != {"path", "schema_version"}:
+        raise ValueError(f"{label} source binding is incomplete")
+    path = _project_path(root, str(binding["path"]))
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    document = json.loads(path.read_text(encoding="utf-8"))
+    source_version = document.get("schema_version", document.get("version"))
+    if source_version != binding["schema_version"]:
+        raise ValueError(f"{label} source schema changed")
+    return path, document
+
+
 def _validate_profile(family_id: str, profile: dict[str, Any]) -> None:
     if profile.get("interaction_class") != "interacting":
         raise ValueError(f"{profile.get('id')} must be an interacting profile")
@@ -151,6 +166,26 @@ def validate_two_object_specialized_rules(
 ) -> None:
     if contract.get("schema_version") != SCHEMA_VERSION:
         raise ValueError("unsupported two-object specialized-scene rules")
+    visual_sources = contract.get("visual_sources")
+    if not isinstance(visual_sources, dict) or set(visual_sources) != {
+        "scene_profiles",
+        "visual_sampling",
+        "hdri_manifest",
+    }:
+        raise ValueError("specialized visual sources are incomplete")
+    _, scene_profiles_document = _load_declared_source(
+        root.resolve(), visual_sources["scene_profiles"], "scene profiles"
+    )
+    _load_declared_source(
+        root.resolve(), visual_sources["visual_sampling"], "visual sampling"
+    )
+    _load_declared_source(
+        root.resolve(), visual_sources["hdri_manifest"], "HDRI manifest"
+    )
+    scene_profiles = {
+        str(record["id"]): record
+        for record in scene_profiles_document.get("profiles", [])
+    }
     object_contract = contract.get("object_contract")
     if not isinstance(object_contract, dict):
         raise ValueError("specialized object contract is missing")
@@ -184,10 +219,32 @@ def validate_two_object_specialized_rules(
         ):
             raise ValueError(f"{family_id} fixture or camera contract is incomplete")
         camera_views = _camera_view_index(camera)
+        background = family.get("background_contract")
+        if (
+            not isinstance(background, dict)
+            or background.get("physics_role") != "render_only_context"
+            or background.get("collision_enabled") is not False
+            or background.get("full_fixture_visible_with_every_camera") is not True
+            or float(background.get("minimum_back_wall_distance_m", 0.0)) <= 0.0
+        ):
+            raise ValueError(f"{family_id} background contract is incomplete")
+        background_ids = [str(value) for value in background.get("profile_ids", [])]
+        if (
+            len(background_ids) < 3
+            or len(background_ids) != len(set(background_ids))
+            or any(value not in scene_profiles for value in background_ids)
+            or any(
+                str(scene_profiles[value].get("visual_type", "procedural_room"))
+                != "procedural_room"
+                for value in background_ids
+            )
+        ):
+            raise ValueError(f"{family_id} background profile pool is invalid")
         profiles = family.get("profiles")
         if not isinstance(profiles, list) or len(profiles) < 3:
             raise ValueError(f"{family_id} requires at least three profiles")
         assigned_views: set[str] = set()
+        assigned_backgrounds: set[str] = set()
         for profile in profiles:
             profile_id = str(profile.get("id", ""))
             if not profile_id or profile_id in profile_ids:
@@ -198,13 +255,20 @@ def validate_two_object_specialized_rules(
             if view_id not in camera_views:
                 raise ValueError(f"{profile_id} references an unknown camera view")
             assigned_views.add(view_id)
+            background_id = str(profile.get("background_profile_id", ""))
+            if background_id not in background_ids:
+                raise ValueError(f"{profile_id} references an unknown background")
+            assigned_backgrounds.add(background_id)
         if assigned_views != set(camera_views):
             raise ValueError(f"{family_id} does not exercise every camera view")
+        if assigned_backgrounds != set(background_ids):
+            raise ValueError(f"{family_id} does not exercise every background")
     expected_policy = {
         "fixture_is_static": True,
         "pair_contact_is_deferred": True,
         "post_contact_outcome_is_not_preclassified": True,
         "one_factor_sweep_keeps_fixture_and_both_initial_states_fixed": True,
+        "one_factor_sweep_keeps_background_fixed": True,
         "object_identity_order_is_fixed": True,
     }
     if contract.get("policy") != expected_policy:

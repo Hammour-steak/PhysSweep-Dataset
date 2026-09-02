@@ -21,8 +21,9 @@ release matrix.
 `two_object_specialized_scene_rules.json` separately defines two-sphere
 interaction, placement, camera, and quality contracts for billiards, passive
 pinball, and marble-run fixtures. Each family has three distinct contact
-profiles and three bounded camera views. The rules reference frozen 1obj
-backend configs without changing their published semantics or hashes.
+profiles, bounded camera views, and render-only procedural backgrounds. The
+rules reference frozen 1obj backend configs without changing their published
+semantics or hashes.
 
 See `docs/PHYSWEEP_ASSET_PIPELINE.md` for asset admission and
 `docs/PHYSWEEP_SAMPLING_ARCHITECTURE.md` for generation.

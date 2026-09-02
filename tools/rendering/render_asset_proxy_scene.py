@@ -229,6 +229,9 @@ def add_environment(binding: dict[str, Any], camera: dict[str, Any]) -> list[Any
     room = binding["room"]
     half_extent = float(room["half_extent_m"])
     height = float(room["height_m"])
+    center_xy = [float(value) for value in room.get("center_xy_m", [0.0, 0.0])]
+    if len(center_xy) != 2:
+        raise ValueError("room center must contain two values")
     repeat_per_m = float(room["texture_repeat_per_m"])
     floor_material = pbr_material(
         "room_floor_pbr", room["floor_material"], 2.0 * half_extent * repeat_per_m
@@ -236,31 +239,64 @@ def add_environment(binding: dict[str, Any], camera: dict[str, Any]) -> list[Any
     wall_material = pbr_material(
         "room_wall_pbr", room["wall_material"], 2.0 * half_extent * repeat_per_m
     )
-    bpy.ops.mesh.primitive_plane_add(size=1.0, location=(0.0, 0.0, -0.002))
+    bpy.ops.mesh.primitive_plane_add(
+        size=1.0, location=(center_xy[0], center_xy[1], -0.002)
+    )
     floor = bpy.context.object
     floor.name = "room_floor"
     floor.scale = (2.0 * half_extent, 2.0 * half_extent, 1.0)
     floor.data.materials.append(floor_material)
 
-    camera_side = mathutils.Vector((camera["position_m"][0], camera["position_m"][1]))
+    camera_side = mathutils.Vector(
+        (
+            float(camera["position_m"][0]) - center_xy[0],
+            float(camera["position_m"][1]) - center_xy[1],
+        )
+    )
     camera_side.normalize()
     wall_specs = (
-        ((0.0, half_extent, 0.5 * height), 0.0, (0.0, 1.0)),
-        ((0.0, -half_extent, 0.5 * height), 180.0, (0.0, -1.0)),
-        ((half_extent, 0.0, 0.5 * height), 90.0, (1.0, 0.0)),
-        ((-half_extent, 0.0, 0.5 * height), -90.0, (-1.0, 0.0)),
+        ((center_xy[0], center_xy[1] + half_extent, 0.5 * height), 0.0, (0.0, 1.0)),
+        ((center_xy[0], center_xy[1] - half_extent, 0.5 * height), 180.0, (0.0, -1.0)),
+        ((center_xy[0] + half_extent, center_xy[1], 0.5 * height), 90.0, (1.0, 0.0)),
+        ((center_xy[0] - half_extent, center_xy[1], 0.5 * height), -90.0, (-1.0, 0.0)),
     )
     result = [floor]
-    for index, (location, yaw, side) in enumerate(wall_specs):
-        if camera_side.dot(mathutils.Vector(side)) > 0.1:
-            continue
-        bpy.ops.mesh.primitive_plane_add(size=1.0, location=location)
-        wall = bpy.context.object
-        wall.name = f"room_wall_{index:02d}"
-        wall.rotation_euler = (math.radians(90.0), 0.0, math.radians(yaw))
-        wall.scale = (2.0 * half_extent, height, 1.0)
-        wall.data.materials.append(wall_material)
-        result.append(wall)
+    if room.get("wall_mode", "camera_open_room") == "camera_open_room":
+        for index, (location, yaw, side) in enumerate(wall_specs):
+            if camera_side.dot(mathutils.Vector(side)) > 0.1:
+                continue
+            bpy.ops.mesh.primitive_plane_add(size=1.0, location=location)
+            wall = bpy.context.object
+            wall.name = f"room_wall_{index:02d}"
+            wall.rotation_euler = (math.radians(90.0), 0.0, math.radians(yaw))
+            wall.scale = (2.0 * half_extent, height, 1.0)
+            wall.data.materials.append(wall_material)
+            result.append(wall)
+    elif room["wall_mode"] != "profile_backdrop_only":
+        raise ValueError(f"unsupported room wall mode: {room['wall_mode']}")
+    for record in binding.get("backdrop_objects", []):
+        if record.get("collision_enabled") is not False:
+            raise ValueError("specialized backdrop objects must be render-only")
+        if record.get("primitive") != "box":
+            raise ValueError("specialized backdrop supports only boxes")
+        bpy.ops.mesh.primitive_cube_add(
+            size=1.0,
+            location=tuple(float(value) for value in record["position_m"]),
+        )
+        obj = bpy.context.object
+        obj.name = str(record["id"])
+        obj.dimensions = tuple(float(value) for value in record["size_m"])
+        obj.rotation_euler = tuple(
+            math.radians(float(value))
+            for value in record["rotation_euler_degrees"]
+        )
+        obj.data.materials.append(
+            floor_material
+            if str(record["material_role"]) == "support_surface"
+            else wall_material
+        )
+        obj["physweep_physics_role"] = "render_only_context"
+        result.append(obj)
     return result
 
 

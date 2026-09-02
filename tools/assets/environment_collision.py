@@ -210,6 +210,145 @@ def clear_set_piece_from_motion_lane(
     ], shift
 
 
+def procedural_room_objects(
+    scene_visual: dict[str, Any],
+    *,
+    scene_anchor: list[float],
+    outward: list[float],
+    lateral: list[float],
+    wall_distance: float,
+    wall_yaw_degrees: float,
+    motion_lanes: list[dict[str, Any]] | None = None,
+    dynamic_object_count: int = 0,
+    collision_enabled: bool = True,
+) -> list[dict[str, Any]]:
+    """Compile one procedural room layout for physical or render-only use."""
+
+    wall_center = [
+        scene_anchor[0] - outward[0] * wall_distance,
+        scene_anchor[1] - outward[1] * wall_distance,
+    ]
+    result: list[dict[str, Any]] = []
+
+    def append(record: dict[str, Any]) -> None:
+        record["collision_enabled"] = bool(collision_enabled)
+        result.append(record)
+
+    if bool(scene_visual.get("wall_enabled", True)):
+        append(
+            _box(
+                collider_id="environment_back_wall",
+                role="room_wall",
+                material_role="back_wall",
+                size_m=[6.5, 0.06, 2.8],
+                position_m=[wall_center[0], wall_center[1], 1.4],
+                yaw_degrees=wall_yaw_degrees,
+            )
+        )
+        append(
+            _box(
+                collider_id="environment_wall_baseboard",
+                role="room_detail",
+                material_role="support_structure",
+                size_m=[6.5, 0.08, 0.10],
+                position_m=[
+                    wall_center[0] + outward[0] * 0.04,
+                    wall_center[1] + outward[1] * 0.04,
+                    0.05,
+                ],
+                yaw_degrees=wall_yaw_degrees,
+            )
+        )
+
+    side_wall = scene_visual.get("side_wall")
+    if side_wall:
+        side = float(side_wall["side"])
+        side_distance = float(side_wall["distance_m"])
+        side_depth = float(side_wall["depth_m"])
+        side_center = [
+            wall_center[0]
+            + lateral[0] * side * side_distance
+            + outward[0] * side_depth / 2.0,
+            wall_center[1]
+            + lateral[1] * side * side_distance
+            + outward[1] * side_depth / 2.0,
+        ]
+        append(
+            _box(
+                collider_id="environment_side_wall",
+                role="room_wall",
+                material_role="back_wall",
+                size_m=[side_depth, 0.06, 2.8],
+                position_m=[side_center[0], side_center[1], 1.4],
+                yaw_degrees=wall_yaw_degrees + 90.0,
+            )
+        )
+
+    for decor in scene_visual.get("decor", []):
+        lateral_offset, depth_offset, z = [
+            float(value) for value in decor["offset_lateral_depth_z"]
+        ]
+        append(
+            _box(
+                collider_id=f"environment_decor_{decor['id']}",
+                role="room_detail",
+                material_role=str(decor["material_role"]),
+                size_m=[float(value) for value in decor["size_m"]],
+                position_m=[
+                    wall_center[0]
+                    + lateral[0] * lateral_offset
+                    + outward[0] * depth_offset,
+                    wall_center[1]
+                    + lateral[1] * lateral_offset
+                    + outward[1] * depth_offset,
+                    z,
+                ],
+                yaw_degrees=wall_yaw_degrees,
+            )
+        )
+
+    for piece in scene_visual.get("set_pieces", []):
+        lateral_offset, outward_offset, z = [
+            float(value) for value in piece["offset_lateral_outward_z"]
+        ]
+        center = [
+            scene_anchor[0]
+            + lateral[0] * lateral_offset
+            + outward[0] * outward_offset,
+            scene_anchor[1]
+            + lateral[1] * lateral_offset
+            + outward[1] * outward_offset,
+        ]
+        original_center = list(center)
+        lane_shift = 0.0
+        if motion_lanes is not None:
+            for motion_lane in motion_lanes:
+                center, shift = clear_set_piece_from_motion_lane(
+                    center,
+                    [float(piece["size_m"][0]), float(piece["size_m"][1])],
+                    motion_lane,
+                    lateral_offset,
+                )
+                if dynamic_object_count == 1:
+                    lane_shift = shift
+            if dynamic_object_count == 2:
+                lane_shift = math.hypot(
+                    center[0] - original_center[0], center[1] - original_center[1]
+                )
+        record = _box(
+            collider_id=f"environment_piece_{piece['id']}",
+            role="room_detail",
+            material_role=str(piece["material_role"]),
+            size_m=[float(value) for value in piece["size_m"]],
+            position_m=[center[0], center[1], z],
+            yaw_degrees=wall_yaw_degrees,
+        )
+        if motion_lanes is not None:
+            record["dynamic_lane_shift_m"] = round(lane_shift, 12)
+        append(record)
+    return result
+
+
 def compile_environment_binding(
     metadata: dict[str, Any],
     camera_axis: list[dict[str, Any]],
@@ -287,125 +426,28 @@ def compile_environment_binding(
         )
     )
     wall_distance = max(wall_distance, dynamic_clearance)
-    wall_center = [
-        scene_anchor[0] - outward[0] * wall_distance,
-        scene_anchor[1] - outward[1] * wall_distance,
-    ]
     wall_yaw = azimuth_degrees - 90.0
-    visual_objects: list[dict[str, Any]] = []
-    colliders: list[dict[str, Any]] = []
     motion_lanes = (
         [dynamic_motion_lane(metadata)]
         if len(objects) == 1
         else _two_object_motion_lanes(metadata)
     )
     motion_lanes = [lane for lane in motion_lanes if lane is not None]
-
-    if not integrated_ground and bool(scene_visual.get("wall_enabled", True)):
-        wall = _box(
-            collider_id="environment_back_wall",
-            role="room_wall",
-            material_role="back_wall",
-            size_m=[6.5, 0.06, 2.8],
-            position_m=[wall_center[0], wall_center[1], 1.4],
-            yaw_degrees=wall_yaw,
+    visual_objects = (
+        []
+        if integrated_ground
+        else procedural_room_objects(
+            scene_visual,
+            scene_anchor=scene_anchor,
+            outward=outward,
+            lateral=lateral,
+            wall_distance=wall_distance,
+            wall_yaw_degrees=wall_yaw,
+            motion_lanes=motion_lanes,
+            dynamic_object_count=len(objects),
         )
-        baseboard = _box(
-            collider_id="environment_wall_baseboard",
-            role="room_detail",
-            material_role="support_structure",
-            size_m=[6.5, 0.08, 0.10],
-            position_m=[
-                wall_center[0] + outward[0] * 0.04,
-                wall_center[1] + outward[1] * 0.04,
-                0.05,
-            ],
-            yaw_degrees=wall_yaw,
-        )
-        visual_objects.extend([wall, baseboard])
-        colliders.extend(copy.deepcopy([wall, baseboard]))
-
-    side_wall = scene_visual.get("side_wall")
-    if side_wall and not integrated_ground:
-        side = float(side_wall["side"])
-        side_distance = float(side_wall["distance_m"])
-        side_depth = float(side_wall["depth_m"])
-        side_center = [
-            wall_center[0]
-            + lateral[0] * side * side_distance
-            + outward[0] * side_depth / 2.0,
-            wall_center[1]
-            + lateral[1] * side * side_distance
-            + outward[1] * side_depth / 2.0,
-        ]
-        record = _box(
-            collider_id="environment_side_wall",
-            role="room_wall",
-            material_role="back_wall",
-            size_m=[side_depth, 0.06, 2.8],
-            position_m=[side_center[0], side_center[1], 1.4],
-            yaw_degrees=wall_yaw + 90.0,
-        )
-        visual_objects.append(record)
-        colliders.append(copy.deepcopy(record))
-
-    for decor in ([] if integrated_ground else scene_visual.get("decor", [])):
-        lateral_offset, depth_offset, z = [
-            float(value) for value in decor["offset_lateral_depth_z"]
-        ]
-        center = [
-            wall_center[0] + lateral[0] * lateral_offset + outward[0] * depth_offset,
-            wall_center[1] + lateral[1] * lateral_offset + outward[1] * depth_offset,
-        ]
-        record = _box(
-            collider_id=f"environment_decor_{decor['id']}",
-            role="room_detail",
-            material_role=str(decor["material_role"]),
-            size_m=[float(value) for value in decor["size_m"]],
-            position_m=[center[0], center[1], z],
-            yaw_degrees=wall_yaw,
-        )
-        visual_objects.append(record)
-        colliders.append(copy.deepcopy(record))
-
-    for piece in ([] if integrated_ground else scene_visual.get("set_pieces", [])):
-        lateral_offset, outward_offset, z = [
-            float(value) for value in piece["offset_lateral_outward_z"]
-        ]
-        center = [
-            scene_anchor[0]
-            + lateral[0] * lateral_offset
-            + outward[0] * outward_offset,
-            scene_anchor[1]
-            + lateral[1] * lateral_offset
-            + outward[1] * outward_offset,
-        ]
-        original_center = list(center)
-        lane_shift = 0.0
-        for motion_lane in motion_lanes:
-            center, shift = clear_set_piece_from_motion_lane(
-                center,
-                [float(piece["size_m"][0]), float(piece["size_m"][1])],
-                motion_lane,
-                lateral_offset,
-            )
-            if len(objects) == 1:
-                lane_shift = shift
-        if len(objects) == 2:
-            lane_shift = math.hypot(
-                center[0] - original_center[0], center[1] - original_center[1]
-            )
-        record = _box(
-            collider_id=f"environment_piece_{piece['id']}",
-            role="room_detail",
-            material_role=str(piece["material_role"]),
-            size_m=[float(value) for value in piece["size_m"]],
-            position_m=[center[0], center[1], z],
-            yaw_degrees=wall_yaw,
-        )
-        record["dynamic_lane_shift_m"] = round(lane_shift, 12)
-        visual_objects.append(record)
-        colliders.append(copy.deepcopy(record))
+    )
+    colliders = copy.deepcopy(visual_objects)
 
     if str(scene_visual.get("visual_type", "procedural_room")) == "mesh_backdrop":
         if not integrated_ground:

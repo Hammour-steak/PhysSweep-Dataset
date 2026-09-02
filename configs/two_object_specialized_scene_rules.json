@@ -1,5 +1,19 @@
 {
   "schema_version": "physweep_two_object_specialized_scene_rules_v1",
+  "visual_sources": {
+    "scene_profiles": {
+      "path": "configs/scene_visual_profiles.json",
+      "schema_version": "physweep_scene_visual_profiles_v2"
+    },
+    "visual_sampling": {
+      "path": "configs/visual_sampling.json",
+      "schema_version": "physweep_visual_sampling_v2"
+    },
+    "hdri_manifest": {
+      "path": "assets/manifests/hdri_admission.json",
+      "schema_version": "physweep_hdri_admission_v1"
+    }
+  },
   "object_contract": {
     "object_count": 2,
     "object_ids": ["object_a", "object_b"],
@@ -14,6 +28,13 @@
       "source_config": {
         "path": "configs/pybullet_backend.json",
         "schema_version": "physweep_pybullet_backend_v1"
+      },
+      "background_contract": {
+        "physics_role": "render_only_context",
+        "profile_ids": ["minimal_wall", "corner_room", "shelf_wall"],
+        "minimum_back_wall_distance_m": 2.6,
+        "collision_enabled": false,
+        "full_fixture_visible_with_every_camera": true
       },
       "fixture_contract": {
         "representation": "exact_static_proxy",
@@ -37,6 +58,7 @@
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
           "camera_view_family_id": "table_left_oblique",
+          "background_profile_id": "minimal_wall",
           "description": "A cue ball strikes a stationary object ball centrally on the pool table.",
           "objects": [
             {
@@ -64,6 +86,7 @@
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
           "camera_view_family_id": "table_right_oblique",
+          "background_profile_id": "corner_room",
           "description": "A cue ball approaches at an offset and glances off a stationary object ball.",
           "objects": [
             {
@@ -91,6 +114,7 @@
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
           "camera_view_family_id": "table_high_overview",
+          "background_profile_id": "shelf_wall",
           "description": "Two balls approach one another from opposite directions and collide centrally on the pool table.",
           "objects": [
             {
@@ -121,6 +145,13 @@
         "path": "configs/passive_pinball_backend.json",
         "schema_version": "physweep_passive_pinball_backend_v1"
       },
+      "background_contract": {
+        "physics_role": "render_only_context",
+        "profile_ids": ["industrial_bay", "workshop_grid", "lab_storage"],
+        "minimum_back_wall_distance_m": 2.4,
+        "collision_enabled": false,
+        "full_fixture_visible_with_every_camera": true
+      },
       "fixture_contract": {
         "representation": "compound_exact_analytic_static_fixture",
         "source_family": "passive_pinball",
@@ -143,6 +174,7 @@
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
           "camera_view_family_id": "pinfield_left_oblique",
+          "background_profile_id": "industrial_bay",
           "description": "Two pinballs approach one another above the first peg row, collide, and then descend through the passive field.",
           "objects": [
             {
@@ -171,6 +203,7 @@
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
           "camera_view_family_id": "pinfield_right_oblique",
+          "background_profile_id": "workshop_grid",
           "description": "Two vertically offset pinballs collide obliquely before entering different paths through the passive field.",
           "objects": [
             {
@@ -199,6 +232,7 @@
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
           "camera_view_family_id": "pinfield_high_overview",
+          "background_profile_id": "lab_storage",
           "description": "A faster upper-left pinball catches a slower lower-right pinball diagonally before both split through the passive field.",
           "objects": [
             {
@@ -230,6 +264,13 @@
         "path": "configs/marble_run_backend.json",
         "schema_version": "physweep_marble_run_backend_v1"
       },
+      "background_contract": {
+        "physics_role": "render_only_context",
+        "profile_ids": ["gallery_panels", "lab_storage", "studio_workfloor"],
+        "minimum_back_wall_distance_m": 2.4,
+        "collision_enabled": false,
+        "full_fixture_visible_with_every_camera": true
+      },
       "fixture_contract": {
         "representation": "compound_exact_static_triangle_mesh_and_analytic_boxes",
         "source_family": "marble_run",
@@ -252,6 +293,7 @@
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
           "camera_view_family_id": "track_left_oblique",
+          "background_profile_id": "gallery_panels",
           "description": "A trailing marble catches and strikes a leading marble on the first passive channel before both traverse the track.",
           "objects": [
             {
@@ -280,6 +322,7 @@
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
           "camera_view_family_id": "track_right_oblique",
+          "background_profile_id": "lab_storage",
           "description": "A widely spaced trailing marble catches a leading marble later on the first passive channel before both traverse the track.",
           "objects": [
             {
@@ -308,6 +351,7 @@
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
           "camera_view_family_id": "track_high_overview",
+          "background_profile_id": "studio_workfloor",
           "description": "Two marbles enter the first passive channel in opposite directions, collide, and then traverse the track sequence.",
           "objects": [
             {
@@ -339,6 +383,7 @@
     "pair_contact_is_deferred": true,
     "post_contact_outcome_is_not_preclassified": true,
     "one_factor_sweep_keeps_fixture_and_both_initial_states_fixed": true,
+    "one_factor_sweep_keeps_background_fixed": true,
     "object_identity_order_is_fixed": true
   }
 }

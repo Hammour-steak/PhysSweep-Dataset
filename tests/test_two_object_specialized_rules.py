@@ -1,11 +1,17 @@
 from __future__ import annotations
 
 import json
+import random
+import tempfile
 import unittest
 from pathlib import Path
 
 import numpy as np
 
+from tools.assets.visual_environment_binding import (
+    choose_specialized_environment,
+    render_only_backdrop_objects,
+)
 from tools.motion_rules.two_object.specialized import (
     family_index,
     load_two_object_specialized_rules,
@@ -49,6 +55,13 @@ class TwoObjectSpecializedRulesTests(unittest.TestCase):
                 {profile["camera_view_family_id"] for profile in family["profiles"]},
                 view_ids,
             )
+            background_ids = set(family["background_contract"]["profile_ids"])
+            self.assertEqual(len(background_ids), 3)
+            self.assertEqual(
+                {profile["background_profile_id"] for profile in family["profiles"]},
+                background_ids,
+            )
+            self.assertFalse(family["background_contract"]["collision_enabled"])
 
     def test_billiards_profiles_resolve_two_separated_spheres(self) -> None:
         backend = json.loads(
@@ -160,6 +173,96 @@ class TwoObjectSpecializedRulesTests(unittest.TestCase):
                     for view in family["camera_contract"]["view_families"]
                 },
             )
+
+    def test_specialized_backdrop_is_render_only_and_behind_the_fixture(self) -> None:
+        scene_profiles = json.loads(
+            (ROOT / "configs/scene_visual_profiles.json").read_text(encoding="utf-8")
+        )["profiles"]
+        by_id = {profile["id"]: profile for profile in scene_profiles}
+        camera = {"position_m": [0.0, 4.0, 2.0]}
+        for family in self.families.values():
+            minimum = family["background_contract"][
+                "minimum_back_wall_distance_m"
+            ]
+            for profile_id in family["background_contract"]["profile_ids"]:
+                objects = render_only_backdrop_objects(
+                    by_id[profile_id], camera, [0.0, 0.0, 0.0], minimum
+                )
+                self.assertGreaterEqual(len(objects), 2)
+                self.assertTrue(
+                    all(record["collision_enabled"] is False for record in objects)
+                )
+                wall = objects[0]
+                self.assertLessEqual(wall["position_m"][1], -float(minimum))
+
+    def test_specialized_environment_binding_is_complete_and_deterministic(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for material_id in ("floor", "wall"):
+                texture_dir = (
+                    root
+                    / "assets/library/polyhaven/materials"
+                    / material_id
+                    / "textures"
+                )
+                texture_dir.mkdir(parents=True)
+                for suffix in ("diff", "rough", "nor_gl"):
+                    (texture_dir / f"{material_id}_{suffix}_4k.png").write_bytes(
+                        suffix.encode("ascii")
+                    )
+            rules = {
+                "hdri_roles_by_environment": {"minimal": ["studio_soft"]},
+                "hdri_strength_ranges_by_environment": {"minimal": [0.2, 0.3]},
+                "room_floor_pools_by_environment": {"minimal": ["floor"]},
+                "wall_pools_by_environment": {"minimal": ["wall"]},
+                "asset_proxy_render": {
+                    "color_management": {},
+                    "light_scale": {},
+                    "area_lights": [],
+                },
+            }
+            profile = {
+                "id": "minimal_wall",
+                "environment_category": "minimal",
+                "back_wall_distance_m": 2.35,
+                "decor": [],
+            }
+            contract = {
+                "physics_role": "render_only_context",
+                "profile_ids": ["minimal_wall"],
+                "minimum_back_wall_distance_m": 2.6,
+                "collision_enabled": False,
+            }
+            hdri = [
+                {
+                    "name": "studio",
+                    "source_path": "assets/studio.hdr",
+                    "sha256": "0" * 64,
+                    "role": "studio_soft",
+                    "tier": "primary",
+                    "sample_weight": 1.0,
+                }
+            ]
+            arguments = {
+                "family_id": "billiards",
+                "background_contract": contract,
+                "scene_profile": profile,
+                "camera": {"position_m": [0.0, 4.0, 2.0]},
+                "scene_anchor_m": [0.0, 0.0, 0.0],
+                "hdri_records": hdri,
+                "visual_rules": rules,
+            }
+            first = choose_specialized_environment(
+                root, **arguments, rng=random.Random(41)
+            )
+            second = choose_specialized_environment(
+                root, **arguments, rng=random.Random(41)
+            )
+            self.assertEqual(first, second)
+            self.assertEqual(first["physics_role"], "render_only_context")
+            self.assertFalse(first["collision_enabled"])
+            self.assertEqual(first["room"]["wall_mode"], "profile_backdrop_only")
+            self.assertTrue(first["backdrop_objects"])
 
 
 if __name__ == "__main__":
