@@ -381,6 +381,18 @@ class PipelineBoundaryTest(unittest.TestCase):
         for forbidden in ("torch", "wan_training", "train_wan", "cache_wan"):
             self.assertNotIn(forbidden, dataset_imports)
 
+    def test_two_object_sweep_is_audited_before_the_group_camera_is_frozen(self):
+        source = (
+            ROOT / "tools/cli/generate_two_object_dataset.py"
+        ).read_text(encoding="utf-8")
+        self.assertLess(
+            source.index('"tools.sampling.derive_physics_sweep"'),
+            source.index(
+                '"tools.rendering.prepare_two_object_base_render_manifests"'
+            ),
+        )
+        self.assertIn('"--camera-group-manifest"', source)
+
     def test_specialized_render_records_hash_the_bound_metadata(self):
         for name in (
             "render_asset_proxy_scene.py",

@@ -88,8 +88,8 @@ def generation_plan(
         "stages": [
             "sample_generic_and_specialized_base",
             "assemble_and_audit_base",
-            "stage_and_render_base",
             "derive_and_audit_per_object_sweep",
+            "stage_and_render_base_with_group_camera",
             "publish_source_release",
             "stage_and_render_sweep",
             "materialize_canonical_base_and_sweep",
@@ -114,7 +114,13 @@ def generation_plan(
 
 
 def render_base(
-    *, root: Path, layout: Layout, workers: int, gpus: str, resume: bool
+    *,
+    root: Path,
+    layout: Layout,
+    sweep_physics_manifest: Path,
+    workers: int,
+    gpus: str,
+    resume: bool,
 ) -> None:
     plan = read_json(layout.base_render / "render_plan.json")
     counts = {str(key): int(value) for key, value in plan["branch_counts"].items()}
@@ -133,6 +139,8 @@ def render_base(
                 str(layout.base_render / "generic"),
                 "--workers",
                 str(min(workers, counts["generic"])),
+                "--camera-group-manifest",
+                str(sweep_physics_manifest),
             ],
             root=root,
             completion=bound,
@@ -436,7 +444,6 @@ def main() -> None:
     base = read_json(layout.base_manifest)
     if (
         int(base.get("object_count", -1)) != OBJECT_COUNT
-        or int(base.get("family_counts", {}).get("specialized", 0)) != 0
         or sum(
             int(base.get("family_counts", {}).get(family, 0))
             for family in SPECIALIZED_FAMILIES
@@ -472,31 +479,6 @@ def main() -> None:
         [
             sys.executable,
             "-m",
-            "tools.rendering.prepare_two_object_base_render_manifests",
-            "--root",
-            str(root),
-            "--base-manifest",
-            str(layout.base_manifest),
-            "--physics-manifest",
-            str(base_physics / "manifest.json"),
-            "--output-root",
-            str(layout.base_render),
-        ],
-        root=root,
-        completion=layout.base_render / "render_plan.json",
-        resume=args.resume,
-    )
-    render_base(
-        root=root,
-        layout=layout,
-        workers=args.render_workers,
-        gpus=args.gpus,
-        resume=args.resume,
-    )
-    run_once(
-        [
-            sys.executable,
-            "-m",
             "tools.sampling.derive_physics_sweep",
             "--root",
             str(root),
@@ -525,6 +507,32 @@ def main() -> None:
         ],
         root=root,
         completion=layout.sweep_physics / "manifest.json",
+        resume=args.resume,
+    )
+    run_once(
+        [
+            sys.executable,
+            "-m",
+            "tools.rendering.prepare_two_object_base_render_manifests",
+            "--root",
+            str(root),
+            "--base-manifest",
+            str(layout.base_manifest),
+            "--physics-manifest",
+            str(base_physics / "manifest.json"),
+            "--output-root",
+            str(layout.base_render),
+        ],
+        root=root,
+        completion=layout.base_render / "render_plan.json",
+        resume=args.resume,
+    )
+    render_base(
+        root=root,
+        layout=layout,
+        sweep_physics_manifest=layout.sweep_physics / "manifest.json",
+        workers=args.render_workers,
+        gpus=args.gpus,
         resume=args.resume,
     )
     if not (layout.source_release / "manifest.json").is_file():
