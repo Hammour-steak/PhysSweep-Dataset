@@ -23,8 +23,11 @@
       },
       "camera_contract": {
         "mode": "bounded_table_orbit",
-        "yaw_offset_degrees": [-30.0, -15.0, 0.0, 15.0, 30.0],
-        "elevation_degrees": [24.0, 30.0, 36.0],
+        "view_families": [
+          {"id": "table_left_oblique", "azimuth_offset_degrees": -18.0, "elevation_offset_degrees": 0.0, "distance_scale": 1.0},
+          {"id": "table_right_oblique", "azimuth_offset_degrees": 18.0, "elevation_offset_degrees": 0.0, "distance_scale": 1.0},
+          {"id": "table_high_overview", "azimuth_offset_degrees": 0.0, "elevation_offset_degrees": 10.0, "distance_scale": 1.06}
+        ],
         "full_fixture_visible": true,
         "full_pair_motion_envelope_visible": true
       },
@@ -33,6 +36,7 @@
           "id": "two_ball_direct_collision",
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
+          "camera_view_family_id": "table_left_oblique",
           "description": "A cue ball strikes a stationary object ball centrally on the pool table.",
           "objects": [
             {
@@ -59,6 +63,7 @@
           "id": "two_ball_glancing_collision",
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
+          "camera_view_family_id": "table_right_oblique",
           "description": "A cue ball approaches at an offset and glances off a stationary object ball.",
           "objects": [
             {
@@ -72,6 +77,33 @@
               "semantic_label": "object ball",
               "position_xy_m": [0.02, 0.0],
               "linear_velocity_xy_m_s": [0.0, 0.0]
+            }
+          ],
+          "quality": {
+            "minimum_initial_surface_gap_m": 0.08,
+            "maximum_first_pair_contact_time_s": 1.0,
+            "maximum_penetration_m": 0.001,
+            "rail_contact_before_pair_contact_is_forbidden": true
+          }
+        },
+        {
+          "id": "two_ball_opposed_collision",
+          "interaction_class": "interacting",
+          "contact_requirement": "must_contact",
+          "camera_view_family_id": "table_high_overview",
+          "description": "Two balls approach one another from opposite directions and collide centrally on the pool table.",
+          "objects": [
+            {
+              "object_id": "object_a",
+              "semantic_label": "left moving ball",
+              "position_xy_m": [-0.4, 0.0],
+              "linear_velocity_xy_m_s": [0.55, 0.0]
+            },
+            {
+              "object_id": "object_b",
+              "semantic_label": "right moving ball",
+              "position_xy_m": [0.24, 0.0],
+              "linear_velocity_xy_m_s": [-0.4, 0.0]
             }
           ],
           "quality": {
@@ -97,6 +129,11 @@
       },
       "camera_contract": {
         "mode": "passive_pinball_front_oblique",
+        "view_families": [
+          {"id": "pinfield_left_oblique", "azimuth_offset_degrees": -12.0, "elevation_offset_degrees": 0.0, "distance_scale": 1.0},
+          {"id": "pinfield_right_oblique", "azimuth_offset_degrees": 12.0, "elevation_offset_degrees": 0.0, "distance_scale": 1.0},
+          {"id": "pinfield_high_overview", "azimuth_offset_degrees": 0.0, "elevation_offset_degrees": 7.0, "distance_scale": 1.04}
+        ],
         "full_fixture_visible": true,
         "full_pair_motion_envelope_visible": true
       },
@@ -105,6 +142,7 @@
           "id": "two_ball_top_collision",
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
+          "camera_view_family_id": "pinfield_left_oblique",
           "description": "Two pinballs approach one another above the first peg row, collide, and then descend through the passive field.",
           "objects": [
             {
@@ -132,6 +170,7 @@
           "id": "two_ball_offset_collision",
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
+          "camera_view_family_id": "pinfield_right_oblique",
           "description": "Two vertically offset pinballs collide obliquely before entering different paths through the passive field.",
           "objects": [
             {
@@ -154,6 +193,34 @@
             "minimum_path_length_per_object_m": 0.8,
             "minimum_distinct_fixture_contacts_per_object": 2
           }
+        },
+        {
+          "id": "two_ball_diagonal_catch_up_collision",
+          "interaction_class": "interacting",
+          "contact_requirement": "must_contact",
+          "camera_view_family_id": "pinfield_high_overview",
+          "description": "A faster upper-left pinball catches a slower lower-right pinball diagonally before both split through the passive field.",
+          "objects": [
+            {
+              "object_id": "object_a",
+              "semantic_label": "trailing pinball",
+              "local_position_m": [-0.035, 0.04],
+              "local_velocity_m_s": [0.18, 0.65]
+            },
+            {
+              "object_id": "object_b",
+              "semantic_label": "leading pinball",
+              "local_position_m": [0.035, 0.11],
+              "local_velocity_m_s": [-0.05, 0.0]
+            }
+          ],
+          "quality": {
+            "minimum_initial_surface_gap_m": 0.02,
+            "maximum_first_pair_contact_time_s": 0.2,
+            "maximum_penetration_m": 0.001,
+            "minimum_path_length_per_object_m": 0.8,
+            "minimum_distinct_fixture_contacts_per_object": 2
+          }
         }
       ]
     },
@@ -171,6 +238,11 @@
       },
       "camera_contract": {
         "mode": "marble_run_front_oblique",
+        "view_families": [
+          {"id": "track_left_oblique", "azimuth_offset_degrees": -11.0, "elevation_offset_degrees": 0.0, "distance_scale": 1.0},
+          {"id": "track_right_oblique", "azimuth_offset_degrees": 11.0, "elevation_offset_degrees": 0.0, "distance_scale": 1.0},
+          {"id": "track_high_overview", "azimuth_offset_degrees": 0.0, "elevation_offset_degrees": 8.0, "distance_scale": 1.04}
+        ],
         "full_fixture_visible": true,
         "full_pair_motion_envelope_visible": true
       },
@@ -179,6 +251,7 @@
           "id": "two_marble_catch_up_collision",
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
+          "camera_view_family_id": "track_left_oblique",
           "description": "A trailing marble catches and strikes a leading marble on the first passive channel before both traverse the track.",
           "objects": [
             {
@@ -203,26 +276,55 @@
           }
         },
         {
-          "id": "two_marble_close_release_collision",
+          "id": "two_marble_delayed_catch_up_collision",
           "interaction_class": "interacting",
           "contact_requirement": "must_contact",
-          "description": "Two closely spaced marbles enter the first passive channel with different speeds and collide near release.",
+          "camera_view_family_id": "track_right_oblique",
+          "description": "A widely spaced trailing marble catches a leading marble later on the first passive channel before both traverse the track.",
           "objects": [
             {
               "object_id": "object_a",
               "semantic_label": "trailing marble",
-              "initial_track_offset_m": -0.005,
-              "track_velocity_m_s": 0.4
+              "initial_track_offset_m": -0.02,
+              "track_velocity_m_s": 0.25
             },
             {
               "object_id": "object_b",
               "semantic_label": "leading marble",
-              "initial_track_offset_m": 0.05,
-              "track_velocity_m_s": 0.05
+              "initial_track_offset_m": 0.13,
+              "track_velocity_m_s": 0.0
             }
           ],
           "quality": {
-            "minimum_initial_surface_gap_m": 0.005,
+            "minimum_initial_surface_gap_m": 0.05,
+            "maximum_first_pair_contact_time_s": 0.75,
+            "maximum_penetration_m": 0.001,
+            "minimum_path_length_per_object_m": 1.5,
+            "required_track_contact_ids": ["track_1", "track_2"]
+          }
+        },
+        {
+          "id": "two_marble_counterflow_collision",
+          "interaction_class": "interacting",
+          "contact_requirement": "must_contact",
+          "camera_view_family_id": "track_high_overview",
+          "description": "Two marbles enter the first passive channel in opposite directions, collide, and then traverse the track sequence.",
+          "objects": [
+            {
+              "object_id": "object_a",
+              "semantic_label": "right-moving marble",
+              "initial_track_offset_m": -0.01,
+              "track_velocity_m_s": 0.35
+            },
+            {
+              "object_id": "object_b",
+              "semantic_label": "left-moving marble",
+              "initial_track_offset_m": 0.09,
+              "track_velocity_m_s": -0.25
+            }
+          ],
+          "quality": {
+            "minimum_initial_surface_gap_m": 0.02,
             "maximum_first_pair_contact_time_s": 0.35,
             "maximum_penetration_m": 0.001,
             "minimum_path_length_per_object_m": 1.5,

@@ -120,6 +120,32 @@ def _validate_profile(family_id: str, profile: dict[str, Any]) -> None:
         raise ValueError(f"{profile.get('id')} has invalid pair-contact bounds")
 
 
+def _camera_view_index(camera: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    views = camera.get("view_families")
+    if not isinstance(views, list) or len(views) < 3:
+        raise ValueError("specialized camera contract requires at least three views")
+    result: dict[str, dict[str, Any]] = {}
+    for view in views:
+        view_id = str(view.get("id", ""))
+        if not view_id or view_id in result:
+            raise ValueError("specialized camera view ids must be unique and non-empty")
+        azimuth = float(view.get("azimuth_offset_degrees"))
+        elevation = float(view.get("elevation_offset_degrees"))
+        distance_scale = float(view.get("distance_scale"))
+        if (
+            not all(
+                math.isfinite(value)
+                for value in (azimuth, elevation, distance_scale)
+            )
+            or abs(azimuth) > 30.0
+            or abs(elevation) > 15.0
+            or not 0.85 <= distance_scale <= 1.15
+        ):
+            raise ValueError(f"invalid specialized camera view: {view_id}")
+        result[view_id] = view
+    return result
+
+
 def validate_two_object_specialized_rules(
     contract: dict[str, Any], root: Path = PROJECT_ROOT
 ) -> None:
@@ -157,15 +183,23 @@ def validate_two_object_specialized_rules(
             or camera.get("full_pair_motion_envelope_visible") is not True
         ):
             raise ValueError(f"{family_id} fixture or camera contract is incomplete")
+        camera_views = _camera_view_index(camera)
         profiles = family.get("profiles")
-        if not isinstance(profiles, list) or len(profiles) < 2:
-            raise ValueError(f"{family_id} requires at least two profiles")
+        if not isinstance(profiles, list) or len(profiles) < 3:
+            raise ValueError(f"{family_id} requires at least three profiles")
+        assigned_views: set[str] = set()
         for profile in profiles:
             profile_id = str(profile.get("id", ""))
             if not profile_id or profile_id in profile_ids:
                 raise ValueError(f"duplicate or empty specialized profile: {profile_id}")
             profile_ids.add(profile_id)
             _validate_profile(family_id, profile)
+            view_id = str(profile.get("camera_view_family_id", ""))
+            if view_id not in camera_views:
+                raise ValueError(f"{profile_id} references an unknown camera view")
+            assigned_views.add(view_id)
+        if assigned_views != set(camera_views):
+            raise ValueError(f"{family_id} does not exercise every camera view")
     expected_policy = {
         "fixture_is_static": True,
         "pair_contact_is_deferred": True,
@@ -257,6 +291,54 @@ def resolve_marble_run_initial_states(
         )
     validate_resolved_initial_clearance(result, 2.0 * float(ball_radius_m), profile)
     return result
+
+
+def resolve_specialized_camera_binding(
+    family: dict[str, Any],
+    profile: dict[str, Any],
+    base_binding: dict[str, Any],
+) -> dict[str, Any]:
+    """Apply a small reviewed orbit offset without weakening fixture coverage."""
+
+    views = _camera_view_index(family["camera_contract"])
+    view_id = str(profile["camera_view_family_id"])
+    if view_id not in views:
+        raise ValueError(f"unknown specialized camera view: {view_id}")
+    view = views[view_id]
+    position = np.asarray(
+        _finite_vector(base_binding.get("position_m"), 3, "camera position"),
+        dtype=np.float64,
+    )
+    target = np.asarray(
+        _finite_vector(base_binding.get("target_m"), 3, "camera target"),
+        dtype=np.float64,
+    )
+    offset = position - target
+    distance = float(np.linalg.norm(offset))
+    if not math.isfinite(distance) or distance <= 0.0:
+        raise ValueError("specialized base camera has zero distance")
+    azimuth = math.atan2(float(offset[1]), float(offset[0])) + math.radians(
+        float(view["azimuth_offset_degrees"])
+    )
+    base_elevation = math.asin(float(offset[2]) / distance)
+    elevation = base_elevation + math.radians(float(view["elevation_offset_degrees"]))
+    if not math.radians(-80.0) < elevation < math.radians(80.0):
+        raise ValueError("specialized camera elevation is outside the safe orbit")
+    distance *= float(view["distance_scale"])
+    horizontal = distance * math.cos(elevation)
+    resolved = copy.deepcopy(base_binding)
+    resolved["position_m"] = [
+        round(float(target[0]) + horizontal * math.cos(azimuth), 9),
+        round(float(target[1]) + horizontal * math.sin(azimuth), 9),
+        round(float(target[2]) + distance * math.sin(elevation), 9),
+    ]
+    resolved["view_family_id"] = view_id
+    resolved["specialized_orbit_offset"] = {
+        "azimuth_degrees": float(view["azimuth_offset_degrees"]),
+        "elevation_degrees": float(view["elevation_offset_degrees"]),
+        "distance_scale": float(view["distance_scale"]),
+    }
+    return resolved
 
 
 def validate_resolved_initial_clearance(
