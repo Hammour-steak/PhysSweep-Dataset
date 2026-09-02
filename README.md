@@ -4,7 +4,8 @@ PhysSweep generates reproducible physics-controlled video datasets. It combines 
 
 ## Dataset
 
-PhysSweep builds the one-object dataset with:
+PhysSweep publishes object-count-specific datasets under
+`outputs/{one_object,two_object}/{base,sweep}`. The one-object release has:
 
 - 3,200 base scenes;
 - one-factor sweeps over mass, contact friction, and restitution;
@@ -12,6 +13,12 @@ PhysSweep builds the one-object dataset with:
 - 13 unique samples per base scene;
 - 4-second, 24 FPS, 1280 x 720 videos;
 - scene metadata, dense rigid trajectories, videos, instance masks, and audit manifests.
+
+The two-object pipeline reuses released assets, proxies, materials, lighting,
+physics adapters, and release contracts. Each base has 24 one-factor variants:
+four non-base values for each of three axes on each target object. Generic
+interactions and the billiards, passive-pinball, and marble-run fixtures share
+one hash-bound 25-sample group contract.
 
 ## Setup
 
@@ -45,6 +52,11 @@ Verify an existing dataset without modifying it:
 python -m tools.cli.build_one_object_dataset --verify-only
 ```
 
+`tools.cli.generate_two_object_dataset` builds the corresponding two-object
+release from an explicit released 1obj base manifest, its frozen generation
+manifest, and one reviewed template for each specialized fixture. Use `--help`
+to see the required source bindings; no source path is inferred.
+
 ## Structure
 
 - `assets/`: asset manifests, curation records, and proxy indexes.
@@ -53,7 +65,7 @@ python -m tools.cli.build_one_object_dataset --verify-only
 - `tools/motion_rules/{one_object,two_object}/`: isolated object-count motion
   rules; shared assets, physics, rendering, and release contracts stay common.
 - `tools/release/`: object-count-aware layout, source validation, and per-target
-  sweep grouping; active runtime adapters remain explicitly 1obj.
+  sweep grouping; each runtime adapter declares its supported object counts.
 - `docs/`: dataset contracts and methodology.
 - `tests/`: physics, rendering, pipeline, and repository checks.
 

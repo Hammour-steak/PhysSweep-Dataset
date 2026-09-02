@@ -1,8 +1,14 @@
 # PhysSweep Dataset Specification
 
-PhysSweep is a reproducible physics-video dataset built from immutable scene metadata. Version 1 focuses on controllable one-object rigid motion.
+PhysSweep is a reproducible physics-video dataset built from immutable scene
+metadata. Canonical releases are separated by object count, while assets,
+physics adapters, rendering, and publication contracts are reused explicitly.
 
-Each base scene stores the random seed, all five matrix-axis choices, exact geometry, mass and contact parameters, initial pose and velocity, support colliders, visual asset ids, camera request, render request, rule hashes, and backend hashes.
+Each base scene stores the random seed, declared matrix choices, exact geometry,
+mass and contact parameters, initial pose and velocity for every object, support
+colliders, visual asset ids, camera request, render request, rule hashes, and
+backend hashes. Stable object ids join text, dense trajectories, masks, and
+per-target sweeps.
 
 Generation has four stages:
 
