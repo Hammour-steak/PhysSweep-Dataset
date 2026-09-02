@@ -1,0 +1,242 @@
+{
+  "schema_version": "physweep_two_object_specialized_scene_rules_v1",
+  "object_contract": {
+    "object_count": 2,
+    "object_ids": ["object_a", "object_b"],
+    "shape": "sphere",
+    "body_model": "rigid_body",
+    "initial_contact_is_forbidden": true,
+    "active_mechanisms_supported": false
+  },
+  "scene_families": [
+    {
+      "id": "billiards",
+      "source_config": {
+        "path": "configs/pybullet_backend.json",
+        "schema_version": "physweep_pybullet_backend_v1"
+      },
+      "fixture_contract": {
+        "representation": "exact_static_proxy",
+        "source_family": "billiards",
+        "dynamic_shape": "sphere",
+        "allowed_object_semantics": ["cue_ball", "object_ball"]
+      },
+      "camera_contract": {
+        "mode": "bounded_table_orbit",
+        "yaw_offset_degrees": [-30.0, -15.0, 0.0, 15.0, 30.0],
+        "elevation_degrees": [24.0, 30.0, 36.0],
+        "full_fixture_visible": true,
+        "full_pair_motion_envelope_visible": true
+      },
+      "profiles": [
+        {
+          "id": "two_ball_direct_collision",
+          "interaction_class": "interacting",
+          "contact_requirement": "must_contact",
+          "description": "A cue ball strikes a stationary object ball centrally on the pool table.",
+          "objects": [
+            {
+              "object_id": "object_a",
+              "semantic_label": "cue ball",
+              "position_xy_m": [-0.52, 0.0],
+              "linear_velocity_xy_m_s": [0.8, 0.0]
+            },
+            {
+              "object_id": "object_b",
+              "semantic_label": "object ball",
+              "position_xy_m": [0.02, 0.0],
+              "linear_velocity_xy_m_s": [0.0, 0.0]
+            }
+          ],
+          "quality": {
+            "minimum_initial_surface_gap_m": 0.08,
+            "maximum_first_pair_contact_time_s": 1.0,
+            "maximum_penetration_m": 0.001,
+            "rail_contact_before_pair_contact_is_forbidden": true
+          }
+        },
+        {
+          "id": "two_ball_glancing_collision",
+          "interaction_class": "interacting",
+          "contact_requirement": "must_contact",
+          "description": "A cue ball approaches at an offset and glances off a stationary object ball.",
+          "objects": [
+            {
+              "object_id": "object_a",
+              "semantic_label": "cue ball",
+              "position_xy_m": [-0.52, -0.08],
+              "linear_velocity_xy_m_s": [0.82, 0.1]
+            },
+            {
+              "object_id": "object_b",
+              "semantic_label": "object ball",
+              "position_xy_m": [0.02, 0.0],
+              "linear_velocity_xy_m_s": [0.0, 0.0]
+            }
+          ],
+          "quality": {
+            "minimum_initial_surface_gap_m": 0.08,
+            "maximum_first_pair_contact_time_s": 1.0,
+            "maximum_penetration_m": 0.001,
+            "rail_contact_before_pair_contact_is_forbidden": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "passive_pinball",
+      "source_config": {
+        "path": "configs/passive_pinball_backend.json",
+        "schema_version": "physweep_passive_pinball_backend_v1"
+      },
+      "fixture_contract": {
+        "representation": "compound_exact_analytic_static_fixture",
+        "source_family": "passive_pinball",
+        "dynamic_shape": "sphere",
+        "allowed_object_semantics": ["pinball"]
+      },
+      "camera_contract": {
+        "mode": "passive_pinball_front_oblique",
+        "full_fixture_visible": true,
+        "full_pair_motion_envelope_visible": true
+      },
+      "profiles": [
+        {
+          "id": "two_ball_top_collision",
+          "interaction_class": "interacting",
+          "contact_requirement": "must_contact",
+          "description": "Two pinballs approach one another above the first peg row, collide, and then descend through the passive field.",
+          "objects": [
+            {
+              "object_id": "object_a",
+              "semantic_label": "left pinball",
+              "local_position_m": [-0.04, 0.055],
+              "local_velocity_m_s": [0.5, 0.0]
+            },
+            {
+              "object_id": "object_b",
+              "semantic_label": "right pinball",
+              "local_position_m": [0.04, 0.055],
+              "local_velocity_m_s": [-0.5, 0.0]
+            }
+          ],
+          "quality": {
+            "minimum_initial_surface_gap_m": 0.01,
+            "maximum_first_pair_contact_time_s": 0.2,
+            "maximum_penetration_m": 0.001,
+            "minimum_path_length_per_object_m": 0.8,
+            "minimum_distinct_fixture_contacts_per_object": 2
+          }
+        },
+        {
+          "id": "two_ball_offset_collision",
+          "interaction_class": "interacting",
+          "contact_requirement": "must_contact",
+          "description": "Two vertically offset pinballs collide obliquely before entering different paths through the passive field.",
+          "objects": [
+            {
+              "object_id": "object_a",
+              "semantic_label": "upper-left pinball",
+              "local_position_m": [-0.04, 0.045],
+              "local_velocity_m_s": [0.55, 0.03]
+            },
+            {
+              "object_id": "object_b",
+              "semantic_label": "lower-right pinball",
+              "local_position_m": [0.04, 0.065],
+              "local_velocity_m_s": [-0.45, -0.01]
+            }
+          ],
+          "quality": {
+            "minimum_initial_surface_gap_m": 0.01,
+            "maximum_first_pair_contact_time_s": 0.2,
+            "maximum_penetration_m": 0.001,
+            "minimum_path_length_per_object_m": 0.8,
+            "minimum_distinct_fixture_contacts_per_object": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "marble_run",
+      "source_config": {
+        "path": "configs/marble_run_backend.json",
+        "schema_version": "physweep_marble_run_backend_v1"
+      },
+      "fixture_contract": {
+        "representation": "compound_exact_static_triangle_mesh_and_analytic_boxes",
+        "source_family": "marble_run",
+        "dynamic_shape": "sphere",
+        "allowed_object_semantics": ["marble"]
+      },
+      "camera_contract": {
+        "mode": "marble_run_front_oblique",
+        "full_fixture_visible": true,
+        "full_pair_motion_envelope_visible": true
+      },
+      "profiles": [
+        {
+          "id": "two_marble_catch_up_collision",
+          "interaction_class": "interacting",
+          "contact_requirement": "must_contact",
+          "description": "A trailing marble catches and strikes a leading marble on the first passive channel before both traverse the track.",
+          "objects": [
+            {
+              "object_id": "object_a",
+              "semantic_label": "trailing marble",
+              "initial_track_offset_m": -0.01,
+              "track_velocity_m_s": 0.4
+            },
+            {
+              "object_id": "object_b",
+              "semantic_label": "leading marble",
+              "initial_track_offset_m": 0.05,
+              "track_velocity_m_s": 0.0
+            }
+          ],
+          "quality": {
+            "minimum_initial_surface_gap_m": 0.01,
+            "maximum_first_pair_contact_time_s": 0.35,
+            "maximum_penetration_m": 0.001,
+            "minimum_path_length_per_object_m": 1.5,
+            "required_track_contact_ids": ["track_1", "track_2"]
+          }
+        },
+        {
+          "id": "two_marble_close_release_collision",
+          "interaction_class": "interacting",
+          "contact_requirement": "must_contact",
+          "description": "Two closely spaced marbles enter the first passive channel with different speeds and collide near release.",
+          "objects": [
+            {
+              "object_id": "object_a",
+              "semantic_label": "trailing marble",
+              "initial_track_offset_m": -0.005,
+              "track_velocity_m_s": 0.4
+            },
+            {
+              "object_id": "object_b",
+              "semantic_label": "leading marble",
+              "initial_track_offset_m": 0.05,
+              "track_velocity_m_s": 0.05
+            }
+          ],
+          "quality": {
+            "minimum_initial_surface_gap_m": 0.005,
+            "maximum_first_pair_contact_time_s": 0.35,
+            "maximum_penetration_m": 0.001,
+            "minimum_path_length_per_object_m": 1.5,
+            "required_track_contact_ids": ["track_1", "track_2"]
+          }
+        }
+      ]
+    }
+  ],
+  "policy": {
+    "fixture_is_static": true,
+    "pair_contact_is_deferred": true,
+    "post_contact_outcome_is_not_preclassified": true,
+    "one_factor_sweep_keeps_fixture_and_both_initial_states_fixed": true,
+    "object_identity_order_is_fixed": true
+  }
+}

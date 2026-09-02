@@ -18,5 +18,10 @@ unobstructed-incline scene admission plus full two-object group-envelope camera
 thresholds. It is still a bounded reference configuration, not a production
 release matrix.
 
+`two_object_specialized_scene_rules.json` separately defines two-sphere
+interaction, placement, camera, and quality contracts for billiards, passive
+pinball, and marble-run fixtures. It references the frozen 1obj backend
+configs without changing their published semantics or hashes.
+
 See `docs/PHYSWEEP_ASSET_PIPELINE.md` for asset admission and
 `docs/PHYSWEEP_SAMPLING_ARCHITECTURE.md` for generation.
