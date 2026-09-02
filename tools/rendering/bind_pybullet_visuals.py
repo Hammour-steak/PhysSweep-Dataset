@@ -448,15 +448,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def manifest_rules_path(root: Path, manifest: dict[str, Any]) -> Path:
-    scene_rules = manifest.get("scene_rules")
-    declared = manifest.get("rules_path") or (
-        scene_rules.get("path") if isinstance(scene_rules, dict) else None
-    )
+    declared = manifest.get("rules_path")
     path = root / str(declared) if declared else ACTIVE_RULES_PATH
     path = path.resolve()
-    expected = manifest.get("rules_sha256") or (
-        scene_rules.get("sha256") if isinstance(scene_rules, dict) else None
-    )
+    expected = manifest.get("rules_sha256")
     if expected is not None and sha256(path) != str(expected):
         raise ValueError(f"rules hash mismatch: {path}")
     return path
