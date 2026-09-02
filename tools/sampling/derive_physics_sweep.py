@@ -613,11 +613,11 @@ def collect_inputs(
         base_manifest = under_root(base_manifest)
         manifest = load_json(base_manifest)
         schema = str(manifest.get("schema_version", ""))
-        entry_key = (
-            "samples"
-            if schema == "physweep_pybullet_base_manifest_v1"
-            else "records"
-        )
+        sample_schemas = {
+            "physweep_pybullet_base_manifest_v1",
+            "physweep_two_object_specialized_base_manifest_v1",
+        }
+        entry_key = "samples" if schema in sample_schemas else "records"
         entries = manifest.get(entry_key)
         if not isinstance(entries, list):
             raise ValueError(f"base manifest has no {entry_key} list")

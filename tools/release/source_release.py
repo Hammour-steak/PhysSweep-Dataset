@@ -266,6 +266,7 @@ def publish_source_release(
         release = {
             "schema_version": release_schema,
             "dataset_id": dataset_id,
+            "object_count": object_count,
             "sample_count": len(metadata_records),
             "base_count": base_count,
             "derived_count": derived_count,

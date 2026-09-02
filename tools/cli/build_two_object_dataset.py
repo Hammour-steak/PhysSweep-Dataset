@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish or verify the canonical one-object dataset."""
+"""Publish or verify the canonical two-object dataset."""
 
 from __future__ import annotations
 
@@ -24,8 +24,8 @@ from tools.release.sweep_release_view import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG = Path("configs/datasets/one_object.json")
-EXPECTED_OBJECT_COUNT = 1
+DEFAULT_CONFIG = Path("configs/datasets/two_object.json")
+EXPECTED_OBJECT_COUNT = 2
 
 
 def load_config(path: Path):

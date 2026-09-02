@@ -60,6 +60,9 @@ def manifest_samples(manifest: dict[str, Any]) -> tuple[str, list[dict[str, Any]
     elif schema == "physweep_two_object_specialized_base_manifest_v1":
         samples = list(manifest["samples"])
         dataset_id = str(manifest["dataset_id"])
+    elif schema == "physweep_two_object_base_manifest_v1":
+        samples = list(manifest["records"])
+        dataset_id = str(manifest["dataset_id"])
     elif schema in {
         "physweep_physics_sweep_manifest_v1",
         "physweep_physics_sweep_manifest_v2",

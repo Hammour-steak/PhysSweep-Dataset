@@ -16,6 +16,7 @@ from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic as write_json
 from tools.core.paths import resolve_project_path as project_path
 from tools.core.sweep_values import sweep_group_size
+from tools.dataset_contract.object_identity_contract import attach_object_identity
 from tools.physics.specialized_backend_registry import specialized_by_schema
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -36,18 +37,21 @@ def relative(root: Path, path: Path) -> str:
 
 
 def select_complete_groups(
-    metadata_records: list[dict[str, Any]], selected_parents: set[str]
+    metadata_records: list[dict[str, Any]],
+    selected_parents: set[str],
+    *,
+    object_count: int = 1,
 ) -> list[dict[str, Any]]:
     selected = [
         record for record in metadata_records if str(record["parent"]) in selected_parents
     ]
     counts = Counter(str(record["parent"]) for record in selected)
     if set(counts) != selected_parents or any(
-        value != sweep_group_size(1) for value in counts.values()
+        value != sweep_group_size(object_count) for value in counts.values()
     ):
         raise ValueError(
             "selected sweep records do not form complete "
-            f"{sweep_group_size(1)}-sample groups"
+            f"{sweep_group_size(object_count)}-sample groups"
         )
     return selected
 
@@ -106,6 +110,9 @@ def main() -> None:
         raise ValueError("sweep render plan output must remain under root/outputs")
 
     release = load_json(release_path)
+    object_count = int(release.get("object_count", 1))
+    if object_count < 1:
+        raise ValueError("source release object count must be positive")
     metadata_path = project_path(root, release["metadata_manifest"])
     physics_path = project_path(root, release["physics_manifest"])
     if sha256(metadata_path) != str(release["metadata_manifest_sha256"]):
@@ -126,7 +133,11 @@ def main() -> None:
     }
     if not selected_parents:
         raise ValueError("staged manifest contains no base metadata paths")
-    selected = select_complete_groups(metadata_manifest["records"], selected_parents)
+    selected = select_complete_groups(
+        metadata_manifest["records"],
+        selected_parents,
+        object_count=object_count,
+    )
     selected_scene_ids = [str(record["scene_id"]) for record in selected]
     if len(selected_scene_ids) != len(set(selected_scene_ids)):
         raise ValueError("selected sweep records contain duplicate scene ids")
@@ -180,7 +191,7 @@ def main() -> None:
         generic_records.append({**physics, **paths})
     generic_manifest = {
         "schema_version": "physweep_pybullet_batch_record_v1",
-        "dataset_id": "one_object_sweep_review_generic",
+        "dataset_id": f"{release['dataset_id']}__sweep_generic",
         "sample_count": len(generic_records),
         "passed_count": len(generic_records),
         "rejected_count": 0,
@@ -204,6 +215,18 @@ def main() -> None:
             }
             bound.setdefault("physics", {}).update(paths)
             scene_id = str(record["scene_id"])
+            frame_dir = output_root / branch / "frames" / scene_id
+            video_path = output_root / branch / "videos" / f"{scene_id}.mp4"
+            mask_path = output_root / branch / "masks" / scene_id
+            bound.setdefault("render", {})["inspection_frame_dir"] = relative(
+                root, frame_dir
+            )
+            bound["render"]["video_path"] = relative(root, video_path)
+            attach_object_identity(
+                bound,
+                trajectory_path=paths["trajectory_path"],
+                mask_path=relative(root, mask_path),
+            )
             bound_path = output_root / branch / "metadata" / f"{scene_id}.json"
             write_json(bound_path, bound)
             render_record = {
@@ -211,12 +234,8 @@ def main() -> None:
                 "metadata_path": relative(root, bound_path),
                 "metadata_sha256": sha256(bound_path),
                 "render_output": {
-                    "video_path": relative(
-                        root, output_root / branch / "videos" / f"{scene_id}.mp4"
-                    ),
-                    "inspection_frame_dir": relative(
-                        root, output_root / branch / "frames" / scene_id
-                    ),
+                    "video_path": relative(root, video_path),
+                    "inspection_frame_dir": relative(root, frame_dir),
                 },
             }
             render_records.append(render_record)
@@ -228,7 +247,7 @@ def main() -> None:
             ].append(render_record)
         manifest = {
             "schema_version": f"physweep_sweep_{branch}_render_manifest_v1",
-            "dataset_id": f"one_object_sweep_review_{branch}",
+            "dataset_id": f"{release['dataset_id']}__sweep_{branch}",
             "output_root": relative(root, output_root / branch),
             "sample_count": len(render_records),
             "records": render_records,
@@ -237,7 +256,9 @@ def main() -> None:
         for partition, records in partitioned_records.items():
             partition_manifest = {
                 **manifest,
-                "dataset_id": f"one_object_sweep_review_{branch}_{partition}",
+                "dataset_id": (
+                    f"{release['dataset_id']}__sweep_{branch}_{partition}"
+                ),
                 "sample_count": len(records),
                 "records": records,
             }
@@ -253,6 +274,7 @@ def main() -> None:
         "source_staged_base_manifest": relative(root, staged_path),
         "source_staged_base_manifest_sha256": sha256(staged_path),
         "group_count": len(selected_parents),
+        "object_count": object_count,
         "sample_count": len(selected),
         "branch_counts": {name: len(records) for name, records in branches.items()},
     }
