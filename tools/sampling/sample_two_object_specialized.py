@@ -161,6 +161,10 @@ def build_specialized_scene(
         anchor = [float(value) for value in scene["camera"]["target_m"]]
 
     scene["physics"]["two_object_quality"] = copy.deepcopy(profile["quality"])
+    if family.get("sweep_domains"):
+        scene["physics"]["sweep_domains"] = copy.deepcopy(
+            family["sweep_domains"]
+        )
     scene["physics"]["trajectory_path"] = paths["trajectory"]
     scene["physics"]["audit_path"] = paths["audit"]
     scene["physics"]["simulation_record_path"] = paths["simulation_record"]

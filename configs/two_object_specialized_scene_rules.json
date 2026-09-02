@@ -277,6 +277,9 @@
         "dynamic_shape": "sphere",
         "allowed_object_semantics": ["marble"]
       },
+      "sweep_domains": {
+        "contact_friction": [0.05, 1.0]
+      },
       "camera_contract": {
         "mode": "marble_run_front_oblique",
         "view_families": [

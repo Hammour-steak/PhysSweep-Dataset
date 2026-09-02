@@ -457,6 +457,11 @@ def derive_one(
     schema_domain = axis_rules.get("schema_domains", {}).get(_schema(base))
     if schema_domain is not None:
         domain_override = [float(value) for value in schema_domain]
+    metadata_domain = base.get("physics", {}).get("sweep_domains", {}).get(axis)
+    if metadata_domain is not None:
+        if not isinstance(metadata_domain, list) or len(metadata_domain) != 2:
+            raise ValueError(f"invalid metadata sweep domain for {axis}")
+        domain_override = [float(value) for value in metadata_domain]
     allowed_domain = allowed_sweep_domain(
         base_value,
         axis_rules,

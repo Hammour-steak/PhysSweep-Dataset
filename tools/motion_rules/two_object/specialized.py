@@ -218,6 +218,20 @@ def validate_two_object_specialized_rules(
             or camera.get("full_pair_motion_envelope_visible") is not True
         ):
             raise ValueError(f"{family_id} fixture or camera contract is incomplete")
+        sweep_domains = family.get("sweep_domains", {})
+        if (
+            not isinstance(sweep_domains, dict)
+            or set(sweep_domains).difference(
+                {"mass_kg", "contact_friction", "contact_restitution"}
+            )
+            or any(
+                not isinstance(domain, list)
+                or len(domain) != 2
+                or not 0.0 <= float(domain[0]) < float(domain[1])
+                for domain in sweep_domains.values()
+            )
+        ):
+            raise ValueError(f"{family_id} sweep domains are invalid")
         camera_views = _camera_view_index(camera)
         background = family.get("background_contract")
         if (
