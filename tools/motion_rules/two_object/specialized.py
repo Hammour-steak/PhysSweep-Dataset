@@ -333,11 +333,6 @@ def resolve_specialized_camera_binding(
         round(float(target[2]) + distance * math.sin(elevation), 9),
     ]
     resolved["view_family_id"] = view_id
-    resolved["specialized_orbit_offset"] = {
-        "azimuth_degrees": float(view["azimuth_offset_degrees"]),
-        "elevation_degrees": float(view["elevation_offset_degrees"]),
-        "distance_scale": float(view["distance_scale"]),
-    }
     return resolved
 
 
