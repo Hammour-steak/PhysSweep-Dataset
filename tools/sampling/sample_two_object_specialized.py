@@ -5,14 +5,14 @@ from __future__ import annotations
 
 import argparse
 import copy
-import json
 from pathlib import Path
 from typing import Any
 
 from tools.assets.visual_environment_binding import (
     resolve_specialized_environment_binding,
 )
-from tools.core.hashing import sha256_file
+from tools.core.hashing import relative_file_binding, sha256_file
+from tools.core.json_io import read_json, write_json_atomic
 from tools.dataset_contract.object_identity_contract import attach_object_identity
 from tools.motion_rules.two_object.specialized import (
     family_index,
@@ -35,23 +35,9 @@ SOURCE_SCHEMAS = {
 }
 
 
-def _read(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
-def _write(path: Path, value: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
-    temporary.replace(path)
-
-
 def _binding(root: Path, path: Path) -> dict[str, str]:
-    resolved = (root / path).resolve() if not path.is_absolute() else path.resolve()
-    relative = resolved.relative_to(root.resolve())
-    if not resolved.is_file():
-        raise FileNotFoundError(resolved)
-    return {"path": relative.as_posix(), "sha256": sha256_file(resolved)}
+    resolved = root / path if not path.is_absolute() else path
+    return relative_file_binding(root, resolved)
 
 
 def _output_paths(
@@ -275,13 +261,13 @@ def main() -> None:
     scenes = build_specialized_scenes(
         root,
         output,
-        {family: _read(path) for family, path in template_paths.items()},
+        {family: read_json(path) for family, path in template_paths.items()},
         contract,
         seed=int(args.seed),
     )
     samples = []
     for metadata_path, scene in scenes:
-        _write(metadata_path, scene)
+        write_json_atomic(metadata_path, scene)
         samples.append(
             {
                 "scene_id": scene["scene_id"],
@@ -309,7 +295,7 @@ def main() -> None:
         "status": "sampled_pending_simulation",
     }
     manifest_path = output / "manifest.json"
-    _write(manifest_path, manifest)
+    write_json_atomic(manifest_path, manifest)
     print(manifest_path)
 
 

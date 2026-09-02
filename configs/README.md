@@ -23,7 +23,9 @@ interaction, placement, camera, and quality contracts for billiards, passive
 pinball, and marble-run fixtures. Each family has three distinct contact
 profiles, bounded camera views, and render-only procedural backgrounds. The
 rules reference frozen 1obj backend configs without changing their published
-semantics or hashes.
+semantics or hashes. `tools/sampling/sample_two_object_specialized.py` binds the
+rules to canonical fixture templates; the shared physics and render manifest
+runners then produce and verify all three families through one 2obj adapter.
 
 See `docs/PHYSWEEP_ASSET_PIPELINE.md` for asset admission and
 `docs/PHYSWEEP_SAMPLING_ARCHITECTURE.md` for generation.

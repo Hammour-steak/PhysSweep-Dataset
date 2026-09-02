@@ -23,7 +23,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from tools.assets.blender_asset_import import clear_scene
 from tools.core.hashing import sha256_file as sha256
-from tools.core.json_io import read_json
+from tools.core.json_io import read_json, write_json_atomic
 from tools.dataset_contract.immutable_scene_contract import validate_simulation_record
 from tools.dataset_contract.trajectory_contract import adapter_trajectory_view
 from tools.rendering.blender_scene import look_at, parse_scene_render_args
@@ -285,7 +285,7 @@ def render(
         "wall_time_s": round(time.perf_counter() - started, 6),
     }
     record_path = frame_dir / "render_record.json"
-    record_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    write_json_atomic(record_path, record)
     print(json.dumps(record, indent=2))
     return record
 
