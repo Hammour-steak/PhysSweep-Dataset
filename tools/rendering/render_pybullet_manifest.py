@@ -509,8 +509,13 @@ def main() -> None:
     if not script.is_file():
         raise FileNotFoundError(script)
     started = time.perf_counter()
-    blender = project_path(root, args.blender)
-    blender.relative_to(root)
+    declared_blender = Path(args.blender)
+    if not declared_blender.is_absolute():
+        declared_blender = root / declared_blender
+    declared_blender.absolute().relative_to(root)
+    blender = declared_blender.resolve()
+    if not blender.is_file():
+        raise FileNotFoundError(blender)
     jobs = [
         (
             str(root),

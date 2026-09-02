@@ -33,6 +33,7 @@ PLAN_SCHEMA = "physweep_two_object_generation_plan_v1"
 GENERIC_SCHEMA = "physweep_pybullet_rigid_metadata_v1"
 OBJECT_COUNT = 2
 SPECIALIZED_BASE_COUNT = 9
+BLENDER_RUNTIME = Path("runtime/blender-3.4.0-linux-x64/blender")
 
 
 def generation_layout(root: Path, work_id: str, release_root: Path) -> Layout:
@@ -154,6 +155,8 @@ def render_base(
             str(root),
             "--manifest",
             str(bound),
+            "--blender",
+            str(BLENDER_RUNTIME),
             "--workers",
             str(workers),
             "--gpus",
@@ -180,6 +183,8 @@ def render_base(
             "two_object_specialized",
             "--manifest",
             str(layout.base_render / branch / "render_input_manifest.json"),
+            "--blender",
+            str(BLENDER_RUNTIME),
             "--workers",
             str(workers),
             "--gpus",
@@ -247,6 +252,8 @@ def render_sweep(
                 kind,
                 "--result-manifest",
                 str(result),
+                "--blender",
+                str(BLENDER_RUNTIME),
                 "--workers",
                 str(workers),
                 "--gpus",
@@ -288,6 +295,8 @@ def render_sweep(
                 ),
                 "--result-manifest",
                 str(result),
+                "--blender",
+                str(BLENDER_RUNTIME),
                 "--workers",
                 str(workers),
                 "--gpus",

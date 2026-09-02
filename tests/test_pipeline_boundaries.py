@@ -401,6 +401,18 @@ class PipelineBoundaryTest(unittest.TestCase):
         self.assertLess(source.index(capture), source.index("render_instance_masks("))
         self.assertIn('"render_samples": video_render_samples', source)
 
+    def test_two_object_generator_binds_blender_below_the_data_root(self):
+        module = load_module(
+            "two_object_generation_runtime_entry",
+            ROOT / "tools/cli/generate_two_object_dataset.py",
+        )
+        self.assertEqual(
+            module.BLENDER_RUNTIME,
+            Path("runtime/blender-3.4.0-linux-x64/blender"),
+        )
+        source = Path(module.__file__).read_text(encoding="utf-8")
+        self.assertGreaterEqual(source.count('str(BLENDER_RUNTIME)'), 4)
+
     def test_specialized_render_records_hash_the_bound_metadata(self):
         for name in (
             "render_asset_proxy_scene.py",
