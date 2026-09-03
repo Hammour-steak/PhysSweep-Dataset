@@ -782,7 +782,7 @@ class PyBulletSimulationTests(unittest.TestCase):
         camera = solve_camera(scene, first, self.rules)
         self.assertEqual(
             camera["solver_version"],
-            "joint_full_motion_envelope_camera_v4",
+            "joint_full_motion_envelope_camera_v5",
         )
         diagnostics = camera["diagnostics"]
         self.assertEqual(diagnostics["object_count"], 2)
@@ -791,6 +791,12 @@ class PyBulletSimulationTests(unittest.TestCase):
         )
         self.assertEqual(
             diagnostics["joint_motion_envelope_visible_fraction"], 1.0
+        )
+        self.assertEqual(
+            diagnostics["preferred_object_span_ndc"],
+            scene["simulation"]["interaction"][
+                "preferred_full_motion_envelope_span_ndc"
+            ],
         )
         self.assertGreaterEqual(
             diagnostics[
@@ -846,7 +852,7 @@ class PyBulletSimulationTests(unittest.TestCase):
         )
         self.assertEqual(
             group_camera["solver_version"],
-            "joint_full_motion_envelope_group_camera_v4",
+            "joint_full_motion_envelope_group_camera_v5",
         )
         self.assertEqual(
             group_camera["diagnostics"]["camera_group"]["member_count"], 2
@@ -1175,7 +1181,7 @@ class PyBulletSimulationTests(unittest.TestCase):
                 diagnostics = camera["diagnostics"]
                 self.assertEqual(
                     camera["solver_version"],
-                    "joint_full_motion_envelope_camera_v4",
+                    "joint_full_motion_envelope_camera_v5",
                 )
                 self.assertEqual(
                     diagnostics["joint_motion_envelope_visible_fraction"],

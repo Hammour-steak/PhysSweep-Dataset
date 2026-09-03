@@ -806,9 +806,9 @@ def _solve_two_object_camera(
             f"examples={failure_examples}"
         )
     camera["solver_version"] = (
-        "joint_full_motion_envelope_group_camera_v4"
+        "joint_full_motion_envelope_group_camera_v5"
         if audit_members
-        else "joint_full_motion_envelope_camera_v4"
+        else "joint_full_motion_envelope_camera_v5"
     )
     camera["diagnostics"]["pair_camera_view_family_id"] = contract[
         "view_family_id"
@@ -1624,7 +1624,11 @@ def solve_camera(
     sensor_width = 32.0
     aspect = 16.0 / 9.0
     planar_object_size = max(float(object_size[0]), float(object_size[1]))
-    object_size_scale = min(1.60, max(0.80, math.sqrt(planar_object_size / 0.18)))
+    object_size_scale = (
+        1.0
+        if str(observation["intent"]) == "joint_full_motion_envelope"
+        else min(1.60, max(0.80, math.sqrt(planar_object_size / 0.18)))
+    )
     preferred_span = float(observation["preferred_object_span_ndc"]) * object_size_scale
     minimum_median_object_span = float(
         observation["minimum_median_object_span_ndc"]
