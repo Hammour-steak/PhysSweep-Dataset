@@ -90,7 +90,7 @@ environment visual/collision pose.
 The 2obj candidate sampler reuses hash-bound released 1obj metadata, appearance,
 visual assets, and collision proxies. It admits generic primitives, centered
 asset primitives, and exact continuous stacks of centered upright cylinders
-within the declared 1 mm origin tolerance. The 1155 base cells cover eleven
+within the declared 1 mm origin tolerance. The 1317 base cells cover twelve
 frozen motions with their admitted ordered shape pairs, all nine ordered size
 pairs, two flat scene classes, and an admitted unobstructed-incline class.
 Interacting source pairs have a declared 50:1 maximum mass ratio and 6:1
@@ -107,6 +107,9 @@ explicitly names its compatible physical profiles; complete plans must realize
 every allowed motion/profile and profile/environment pairing at least once. This
 is not yet a production 2obj release.
 
+The pair camera targets 55% of normalized frame width for the complete motion
+envelope, preserving object readability while retaining nearby scene context.
+
 Generic physics or camera failures are replaced with
 `resample_two_object_failures`; it freezes passing rows and preserves motion,
 shape, scale, and scene-class axes. Repeated camera failures may reselect only
@@ -115,8 +118,8 @@ remain fixed and fail closed.
 
 Every admitted cell appears once. Independent controls use the three same-shape
 pairs because they do not exercise collision geometry; the six cross-shape
-orders remain covered by interacting motions. The complete matrix contains 1155
-cells, including 993 interacting cells (85.97%). Balanced prefixes preserve an
+orders remain covered by interacting motions. The complete matrix contains 1317
+cells, including 1155 interacting cells (87.70%). Balanced prefixes preserve an
 interaction share above 80% while retaining all three control types.
 
 Motion labels must agree with their initial velocities and displacement bounds.
@@ -137,7 +140,7 @@ and a visible pre-contact ascent for every declared arc projectile.
   --physics-workers 24 --render-workers 64 --gpus 0,1,2,3
 ```
 
-Use `--generic-limit` only for a smoke prefix; omit it for all 1155 cells.
+Use `--generic-limit` only for a smoke prefix; omit it for all 1317 cells.
 Post-contact outcomes are measured rather
 than preclassified. One camera is frozen only after every member of a
 two-object one-factor group passes; masks use `masks/<object_id>/`.

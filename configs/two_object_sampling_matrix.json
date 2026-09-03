@@ -1,5 +1,5 @@
 {
-  "schema_version": "physweep_two_object_sampling_matrix_v13",
+  "schema_version": "physweep_two_object_sampling_matrix_v14",
   "objects": {
     "schema_version": "physweep_object_collection_v1",
     "roles": [
@@ -42,6 +42,10 @@
     "rules": [
       {
         "motion_id": "surface_hit_rest_2obj",
+        "shape_pair_set_id": "all_shape_pairs"
+      },
+      {
+        "motion_id": "surface_glancing_hit_rest_2obj",
         "shape_pair_set_id": "all_shape_pairs"
       },
       {
@@ -250,7 +254,7 @@
     "maximum_camera_distance_m": 6.0,
     "maximum_camera_distance_above_minimum_m": 5.0,
     "full_motion_envelope_margin_ndc": 0.03,
-    "preferred_full_motion_envelope_span_ndc": 0.60,
+    "preferred_full_motion_envelope_span_ndc": 0.55,
     "minimum_per_object_median_span_ndc": 0.065,
     "minimum_per_object_unoccluded_fraction": 0.70,
     "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio": 0.75,
@@ -269,6 +273,17 @@
       "minimum_displacement_m": [0.18, 0.0],
       "contact_time_s": 0.72,
       "impact_offset_ratio": 0.0
+    },
+    {
+      "id": "surface_glancing_hit_rest_2obj",
+      "interaction_class": "interacting",
+      "kinematic_regime": "supported_supported",
+      "layout": "planned_supported_contact",
+      "object_motions": ["roll_or_slide_1obj", "rest"],
+      "linear_velocity_m_s": [[0.68, 0.24, 0.0], [0.0, 0.0, 0.0]],
+      "minimum_displacement_m": [0.17, 0.0],
+      "contact_time_s": 0.58,
+      "impact_offset_ratio": 0.28
     },
     {
       "id": "surface_head_on_2obj",

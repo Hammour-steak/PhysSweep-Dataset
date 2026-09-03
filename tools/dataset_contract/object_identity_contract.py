@@ -378,6 +378,10 @@ def _two_object_caption(
             f"{left} moves across the {support} and collides with {right}, "
             "which starts at rest"
         ),
+        "surface_glancing_hit_rest_2obj": (
+            f"{left} approaches along an offset path across the {support} and "
+            f"collides obliquely with {right}, which starts at rest"
+        ),
         "surface_head_on_2obj": (
             f"{left} and {right} move toward each other across the {support} "
             "and collide"

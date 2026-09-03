@@ -94,7 +94,7 @@ def _validated_intents(
 ) -> list[dict[str, Any]]:
     resolved_scene_rules = resolved_two_object_scene_rules(scene_rules)
     if set(matrix) != _MATRIX_FIELDS or (
-        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v13"
+        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v14"
     ):
         raise ValueError("unsupported two-object sampling matrix")
     objects = matrix.get("objects")

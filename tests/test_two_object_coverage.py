@@ -120,7 +120,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
         self.assertNotIn("host_eligibility", matrix["candidate_pool"])
         rules = load_scene_rules()
         self.assertEqual(
-            rules["schema_version"], "physweep_two_object_scene_rules_v3"
+            rules["schema_version"], "physweep_two_object_scene_rules_v4"
         )
         validate_two_object_scene_rules(rules)
         support = {
@@ -153,6 +153,16 @@ class TwoObjectCoverageTests(unittest.TestCase):
                 "interacting",
                 "front_left_low",
                 "surface_glancing_opposed_2obj",
+            )
+        )
+        self.assertIsNone(
+            resolve_scene_rule(
+                rules,
+                inclined_support,
+                "supported_supported",
+                "interacting",
+                "front_left_low",
+                "surface_glancing_hit_rest_2obj",
             )
         )
         standard_incline = copy.deepcopy(inclined_support)
@@ -592,7 +602,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
     def test_matrix_declares_complete_ordered_cartesian_coverage(self) -> None:
         matrix = load_matrix()
         self.assertEqual(
-            matrix["schema_version"], "physweep_two_object_sampling_matrix_v13"
+            matrix["schema_version"], "physweep_two_object_sampling_matrix_v14"
         )
         scene_rules = load_scene_rules()
         validate_two_object_scene_rules(scene_rules)
@@ -614,6 +624,14 @@ class TwoObjectCoverageTests(unittest.TestCase):
         )
         self.assertEqual(
             intents["surface_crossing_2obj"]["impact_offset_ratio"], 0.10
+        )
+        self.assertEqual(
+            intents["surface_glancing_hit_rest_2obj"]["linear_velocity_m_s"],
+            [[0.68, 0.24, 0.0], [0.0, 0.0, 0.0]],
+        )
+        self.assertEqual(
+            intents["surface_glancing_hit_rest_2obj"]["impact_offset_ratio"],
+            0.28,
         )
         self.assertEqual(
             intents["surface_glancing_opposed_2obj"]["linear_velocity_m_s"],
@@ -643,6 +661,10 @@ class TwoObjectCoverageTests(unittest.TestCase):
             ],
             5.0,
         )
+        self.assertEqual(
+            matrix["pair_observation"]["preferred_full_motion_envelope_span_ndc"],
+            0.55,
+        )
         cells, full_count = coverage_cells(matrix)
         self.assertEqual(
             matrix["shape_motion_compatibility"]["pair_sets"][
@@ -650,28 +672,60 @@ class TwoObjectCoverageTests(unittest.TestCase):
             ],
             ["sphere_to_sphere", "cuboid_to_cuboid", "cylinder_to_cylinder"],
         )
-        self.assertEqual(full_count, 1155)
-        self.assertEqual(len(cells), 1155)
+        self.assertEqual(full_count, 1317)
+        self.assertEqual(len(cells), 1317)
         interaction_counts = Counter(cell["interaction_class"] for cell in cells)
         self.assertEqual(
             interaction_counts,
-            {"interacting": 993, "independent": 162},
+            {"interacting": 1155, "independent": 162},
         )
         self.assertGreater(interaction_counts["interacting"] / full_count, 0.80)
         counts = _axis_counts(cells)
         self.assertEqual(
             counts["interaction_class"],
-            {"independent": 162, "interacting": 993},
+            {"independent": 162, "interacting": 1155},
         )
         self.assertEqual(
             set(counts["motion"].values()), {18, 54, 66, 162, 198, 243}
         )
         self.assertEqual(
-            set(counts["ordered_scale_pair"].values()), {119, 140}
+            set(counts["ordered_scale_pair"].values()), {137, 158}
         )
         self.assertEqual(
             counts["scene_class"],
-            {"ground_feature": 165, "ground_flat": 495, "raised_flat": 495},
+            {"ground_feature": 165, "ground_flat": 576, "raised_flat": 576},
+        )
+        glancing_rest_cells = [
+            cell
+            for cell in cells
+            if cell["motion_id"] == "surface_glancing_hit_rest_2obj"
+        ]
+        self.assertEqual(len(glancing_rest_cells), 162)
+        self.assertEqual(
+            {cell["scene_class"] for cell in glancing_rest_cells},
+            {"ground_flat", "raised_flat"},
+        )
+        self.assertEqual(
+            {cell["shape_pair_id"] for cell in glancing_rest_cells},
+            {
+                record["id"]
+                for record in matrix["coverage_plan"][
+                    "role_ordered_shape_pairs"
+                ]
+            },
+        )
+        self.assertEqual(
+            {cell["scale_pair_id"] for cell in glancing_rest_cells},
+            {
+                record["id"]
+                for record in matrix["coverage_plan"][
+                    "role_ordered_scale_pairs"
+                ]
+            },
+        )
+        self.assertEqual(
+            {cell["camera_view_family_id"] for cell in glancing_rest_cells},
+            set(counts["camera_view_family"]),
         )
         self.assertLessEqual(
             max(counts["camera_view_family"].values())
@@ -736,9 +790,9 @@ class TwoObjectCoverageTests(unittest.TestCase):
 
     def test_balanced_smoke_prefix_covers_every_axis(self) -> None:
         cells, full_count = coverage_cells(load_matrix(), 72)
-        self.assertEqual(full_count, 1155)
+        self.assertEqual(full_count, 1317)
         interaction_counts = Counter(cell["interaction_class"] for cell in cells)
-        self.assertEqual(interaction_counts, {"interacting": 62, "independent": 10})
+        self.assertEqual(interaction_counts, {"interacting": 64, "independent": 8})
         self.assertGreater(interaction_counts["interacting"] / len(cells), 0.80)
         counts = _axis_counts(cells)
         intents = {

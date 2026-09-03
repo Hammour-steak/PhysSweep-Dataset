@@ -1011,7 +1011,7 @@ class PyBulletSimulationTests(unittest.TestCase):
         host = self.without_incidental_environment(self.rolling_stress_scene)
         matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
         scenes = build_two_object_matrix(host, matrix)
-        self.assertEqual(len(scenes), 11)
+        self.assertEqual(len(scenes), 12)
         self.assertEqual(
             {
                 scene["simulation"]["interaction"]["schema_version"]
@@ -1026,6 +1026,7 @@ class PyBulletSimulationTests(unittest.TestCase):
             ],
             [
                 "surface_hit_rest_2obj",
+                "surface_glancing_hit_rest_2obj",
                 "surface_head_on_2obj",
                 "surface_glancing_opposed_2obj",
                 "surface_crossing_2obj",
@@ -1039,13 +1040,13 @@ class PyBulletSimulationTests(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            [scene["sample_index"] for scene in scenes], list(range(1, 12))
+            [scene["sample_index"] for scene in scenes], list(range(1, 13))
         )
         classes = [
             scene["simulation"]["interaction"]["interaction_class"]
             for scene in scenes
         ]
-        self.assertEqual(classes.count("interacting"), 8)
+        self.assertEqual(classes.count("interacting"), 9)
         self.assertEqual(classes.count("independent"), 3)
         semantics = {
             scene["simulation"]["interaction"]["motion_pattern"]: scene[
@@ -1055,6 +1056,11 @@ class PyBulletSimulationTests(unittest.TestCase):
         }
         self.assertIsNone(
             semantics["surface_hit_rest_2obj"]["trajectory_angle_degrees"]
+        )
+        self.assertIsNone(
+            semantics["surface_glancing_hit_rest_2obj"][
+                "trajectory_angle_degrees"
+            ]
         )
         self.assertEqual(
             semantics["surface_head_on_2obj"]["trajectory_angle_degrees"],
@@ -1080,6 +1086,10 @@ class PyBulletSimulationTests(unittest.TestCase):
         self.assertEqual(
             semantics["surface_glancing_opposed_2obj"]["impact_offset_ratio"],
             0.22,
+        )
+        self.assertEqual(
+            semantics["surface_glancing_hit_rest_2obj"]["impact_offset_ratio"],
+            0.28,
         )
         self.assertEqual(
             semantics["air_air_collision_2obj"]["trajectory_angle_degrees"],

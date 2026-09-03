@@ -93,7 +93,7 @@ def validate_two_object_scene_rules(contract: dict[str, Any]) -> None:
     if (
         not isinstance(contract, dict)
         or set(contract) != _TOP_LEVEL_FIELDS
-        or contract.get("schema_version") != "physweep_two_object_scene_rules_v3"
+        or contract.get("schema_version") != "physweep_two_object_scene_rules_v4"
     ):
         raise ValueError("unsupported two-object scene-rules contract")
     host = contract.get("host_eligibility")

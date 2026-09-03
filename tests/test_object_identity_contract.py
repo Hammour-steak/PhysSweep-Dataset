@@ -305,6 +305,7 @@ class ObjectIdentityContractTests(unittest.TestCase):
     def test_every_generic_two_object_motion_has_an_explicit_caption(self) -> None:
         expected_fragments = {
             "surface_hit_rest_2obj": "which starts at rest",
+            "surface_glancing_hit_rest_2obj": "an offset path",
             "surface_head_on_2obj": "move toward each other",
             "surface_glancing_opposed_2obj": "opposed, offset paths",
             "surface_crossing_2obj": "crossing paths",
