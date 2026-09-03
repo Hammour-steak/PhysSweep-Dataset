@@ -44,6 +44,10 @@ _OBSERVATION_FIELDS = {
     "maximum_camera_distance_above_minimum_m",
     "full_motion_envelope_margin_ndc",
     "preferred_full_motion_envelope_span_ndc",
+    "minimum_full_motion_center_visible_fraction",
+    "minimum_initial_aabb_visible_fraction",
+    "minimum_full_motion_aabb_visible_fraction",
+    "minimum_pair_keyframe_aabb_visible_fraction",
     "minimum_per_object_median_span_ndc",
     "minimum_per_object_unoccluded_fraction",
     "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio",
@@ -130,7 +134,7 @@ def _validate_contracts(
         raise ValueError("two-object observation fields are incomplete")
     if (
         observation.get("schema_version")
-        != "physweep_two_object_camera_observation_v2"
+        != "physweep_two_object_camera_observation_v3"
     ):
         raise ValueError("unsupported two-object camera observation")
     (
@@ -141,6 +145,10 @@ def _validate_contracts(
         maximum_distance_above_minimum,
         envelope_margin,
         preferred_envelope_span,
+        minimum_center_visible_fraction,
+        minimum_initial_aabb_visible_fraction,
+        minimum_aabb_visible_fraction,
+        minimum_keyframe_aabb_visible_fraction,
         minimum_object_span,
         minimum_unoccluded_fraction,
         projected_separation_ratio,
@@ -156,6 +164,10 @@ def _validate_contracts(
             observation["maximum_camera_distance_above_minimum_m"],
             observation["full_motion_envelope_margin_ndc"],
             observation["preferred_full_motion_envelope_span_ndc"],
+            observation["minimum_full_motion_center_visible_fraction"],
+            observation["minimum_initial_aabb_visible_fraction"],
+            observation["minimum_full_motion_aabb_visible_fraction"],
+            observation["minimum_pair_keyframe_aabb_visible_fraction"],
             observation["minimum_per_object_median_span_ndc"],
             observation["minimum_per_object_unoccluded_fraction"],
             observation[
@@ -165,7 +177,7 @@ def _validate_contracts(
             observation["minimum_support_anchor_visible_fraction"],
             observation["minimum_support_anchor_unoccluded_fraction"],
         ],
-        13,
+        17,
         "two-object observation values",
     )
     if not str(observation["solver_profile_template_id"]).strip():
@@ -209,6 +221,16 @@ def _validate_contracts(
         raise ValueError("full-motion envelope margin must lie in [0, 0.20)")
     if not 0.0 < preferred_envelope_span <= 1.0 - 2.0 * envelope_margin:
         raise ValueError("preferred full-motion envelope span is invalid")
+    if not (
+        0.0 < minimum_aabb_visible_fraction <= minimum_center_visible_fraction <= 1.0
+        and minimum_aabb_visible_fraction
+        <= minimum_initial_aabb_visible_fraction
+        <= 1.0
+        and minimum_aabb_visible_fraction
+        <= minimum_keyframe_aabb_visible_fraction
+        <= 1.0
+    ):
+        raise ValueError("two-object motion-visibility fractions are invalid")
     if not 0.0 < minimum_object_span <= preferred_envelope_span:
         raise ValueError("minimum per-object span is invalid")
     if not 0.0 < minimum_unoccluded_fraction <= 1.0:
@@ -1110,7 +1132,7 @@ def apply_two_object_motion(
     observation_fields = copy.deepcopy(observation)
     observation_fields.pop("schema_version")
     scene["simulation"]["interaction"] = {
-        "schema_version": "physweep_two_object_interaction_v1",
+        "schema_version": "physweep_two_object_interaction_v2",
         "type": (
             "pairwise_collision"
             if interaction_class == "interacting"
@@ -1149,7 +1171,7 @@ def apply_two_object_motion(
     else:
         raise ValueError("two-object support shape has no camera context")
     scene["camera_request"] = {
-        "schema_version": "physweep_two_object_camera_request_v1",
+        "schema_version": "physweep_two_object_camera_request_v2",
         "profile": str(observation["solver_profile_template_id"]),
         "observation": {
             "version": "physweep_two_object_camera_observation_request_v1",
@@ -1170,7 +1192,9 @@ def apply_two_object_motion(
             ),
         },
         "focal_length_mm": float(observation["focal_length_mm"]),
-        "minimum_full_trajectory_center_visible_fraction": 1.0,
+        "minimum_full_trajectory_center_visible_fraction": float(
+            observation["minimum_full_motion_center_visible_fraction"]
+        ),
         "minimum_primary_trajectory_center_visible_fraction": 1.0,
         "full_trajectory_camera_target_blend": 1.0,
         "minimum_initial_object_span_ndc": float(
@@ -1209,6 +1233,5 @@ def apply_two_object_motion(
         "maximum_camera_distance_m": float(
             observation["maximum_camera_distance_m"]
         ),
-        "allow_partial_exit": False,
     }
     return scene

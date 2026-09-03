@@ -128,7 +128,7 @@ def bind_one(
     if isinstance(objects, list) and len(objects) == 2:
         inherited_camera = bound["visualization"]["camera"]
         if inherited_camera.get("solver_version") != (
-            "joint_full_motion_envelope_group_camera_v5"
+            "joint_full_motion_envelope_group_camera_v6"
         ):
             raise ValueError(
                 f"two-object sweep lacks a group-envelope camera: {scene_id}"
@@ -151,7 +151,7 @@ def bind_one(
     }
     if isinstance(objects, list) and len(objects) == 2:
         camera_inheritance["derived_trajectory_camera_audit"] = (
-            "joint_full_motion_envelope_camera_v5"
+            "joint_full_motion_envelope_camera_v6"
         )
     bound["visualization"]["camera_inheritance"] = camera_inheritance
     render = bound["visualization"]["render"]

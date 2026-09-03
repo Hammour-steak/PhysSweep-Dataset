@@ -602,7 +602,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
     def test_matrix_declares_complete_ordered_cartesian_coverage(self) -> None:
         matrix = load_matrix()
         self.assertEqual(
-            matrix["schema_version"], "physweep_two_object_sampling_matrix_v14"
+            matrix["schema_version"], "physweep_two_object_sampling_matrix_v15"
         )
         scene_rules = load_scene_rules()
         validate_two_object_scene_rules(scene_rules)
@@ -664,6 +664,30 @@ class TwoObjectCoverageTests(unittest.TestCase):
         self.assertEqual(
             matrix["pair_observation"]["preferred_full_motion_envelope_span_ndc"],
             0.55,
+        )
+        self.assertEqual(
+            matrix["pair_observation"][
+                "minimum_full_motion_center_visible_fraction"
+            ],
+            1.0,
+        )
+        self.assertEqual(
+            matrix["pair_observation"][
+                "minimum_initial_aabb_visible_fraction"
+            ],
+            1.0,
+        )
+        self.assertEqual(
+            matrix["pair_observation"][
+                "minimum_full_motion_aabb_visible_fraction"
+            ],
+            0.90,
+        )
+        self.assertEqual(
+            matrix["pair_observation"][
+                "minimum_pair_keyframe_aabb_visible_fraction"
+            ],
+            1.0,
         )
         cells, full_count = coverage_cells(matrix)
         self.assertEqual(

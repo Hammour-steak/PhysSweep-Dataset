@@ -156,7 +156,7 @@ def _two_object_camera_state(
 def _two_object_observation_contract(
     interaction: dict[str, Any],
 ) -> dict[str, Any]:
-    if interaction.get("schema_version") != "physweep_two_object_interaction_v1":
+    if interaction.get("schema_version") != "physweep_two_object_interaction_v2":
         raise ValueError("unsupported two-object interaction contract")
     values = {
         "view_family_id": str(interaction["camera_view_family_id"]),
@@ -185,6 +185,18 @@ def _two_object_observation_contract(
         "envelope_margin": float(interaction["full_motion_envelope_margin_ndc"]),
         "preferred_envelope_span": float(
             interaction["preferred_full_motion_envelope_span_ndc"]
+        ),
+        "minimum_center_visible": float(
+            interaction["minimum_full_motion_center_visible_fraction"]
+        ),
+        "minimum_initial_aabb_visible": float(
+            interaction["minimum_initial_aabb_visible_fraction"]
+        ),
+        "minimum_aabb_visible": float(
+            interaction["minimum_full_motion_aabb_visible_fraction"]
+        ),
+        "minimum_keyframe_aabb_visible": float(
+            interaction["minimum_pair_keyframe_aabb_visible_fraction"]
         ),
         "minimum_object_span": float(
             interaction["minimum_per_object_median_span_ndc"]
@@ -250,6 +262,16 @@ def _two_object_observation_contract(
         <= values["preferred_envelope_span"]
         or not 0.0 < values["minimum_unoccluded"] <= 1.0
         or not 0.0 < values["minimum_keyframe_separation_ratio"] <= 1.0
+        or not 0.0
+        < values["minimum_aabb_visible"]
+        <= values["minimum_center_visible"]
+        <= 1.0
+        or not values["minimum_aabb_visible"]
+        <= values["minimum_initial_aabb_visible"]
+        <= 1.0
+        or not values["minimum_aabb_visible"]
+        <= values["minimum_keyframe_aabb_visible"]
+        <= 1.0
         or any(
             not 0.0 <= values[key] <= 1.0
             for key in (
@@ -262,6 +284,57 @@ def _two_object_observation_contract(
         raise ValueError("joint full-motion envelope constraints are invalid")
     values["maximum_envelope_span"] = maximum_envelope_span
     return values
+
+
+def _two_object_keyframe(
+    object_ids: Sequence[str],
+    interaction_class: str,
+    positions: np.ndarray,
+    trajectory: dict[str, np.ndarray],
+) -> tuple[int, str]:
+    pair_contacts = np.asarray(
+        trajectory[f"{object_ids[0]}__object_contact_count__{object_ids[1]}"],
+        dtype=np.int32,
+    )
+    if pair_contacts.shape != (positions.shape[0],):
+        raise ValueError("pair-contact trajectory length is inconsistent")
+    collision_indices = np.flatnonzero(pair_contacts > 0)
+    if interaction_class == "interacting":
+        if not collision_indices.size:
+            raise ValueError("joint camera requires the declared pair collision")
+        return int(collision_indices[0]), "first_contact"
+    if collision_indices.size:
+        raise ValueError("independent joint camera received a pair collision")
+    return (
+        int(np.argmin(np.linalg.norm(positions[:, 1] - positions[:, 0], axis=1))),
+        "closest_approach",
+    )
+
+
+def _two_object_framing_bounds(
+    object_ids: Sequence[str],
+    interaction_class: str,
+    positions: np.ndarray,
+    lower: np.ndarray,
+    upper: np.ndarray,
+    trajectory: dict[str, np.ndarray],
+    minimum_aabb_visible_fraction: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Frame the strict prefix through interaction and every later center."""
+
+    keyframe, _ = _two_object_keyframe(
+        object_ids, interaction_class, positions, trajectory
+    )
+    required_frames = max(
+        keyframe + 1,
+        int(math.ceil(positions.shape[0] * minimum_aabb_visible_fraction)),
+    )
+    framing_lower = lower[:required_frames].min(axis=(0, 1))
+    framing_upper = upper[:required_frames].max(axis=(0, 1))
+    return (
+        np.minimum(framing_lower, positions.min(axis=(0, 1))),
+        np.maximum(framing_upper, positions.max(axis=(0, 1))),
+    )
 
 
 def _two_object_structure_context(metadata: dict[str, Any]) -> str:
@@ -341,7 +414,7 @@ def audit_two_object_camera(
     if (
         not isinstance(pair_request, dict)
         or pair_request.get("schema_version")
-        != "physweep_two_object_camera_request_v1"
+        != "physweep_two_object_camera_request_v2"
         or str(pair_request.get("profile", ""))
         != contract["solver_profile_template_id"]
         or not math.isclose(
@@ -411,6 +484,9 @@ def audit_two_object_camera(
     aspect = 16.0 / 9.0
     envelope_margin = contract["envelope_margin"]
     blockers = camera_occlusion_colliders(metadata)
+    pair_keyframe, pair_keyframe_kind = _two_object_keyframe(
+        object_ids, interaction_class, positions, trajectory
+    )
     envelope_lower = lower.min(axis=(0, 1))
     envelope_upper = upper.max(axis=(0, 1))
     envelope_corners = _aabb_corners(envelope_lower, envelope_upper)
@@ -419,11 +495,6 @@ def audit_two_object_camera(
     )
     envelope_visible = _frame_visibility_mask(projected_envelope, envelope_margin)
     envelope_visible_fraction = float(envelope_visible.mean())
-    if not bool(envelope_visible.all()):
-        raise ValueError(
-            "joint camera does not contain the complete full-motion envelope: "
-            f"visible_fraction={envelope_visible_fraction:.6f}"
-        )
     envelope_projected_span = _projected_span(projected_envelope)
     per_object: dict[str, dict[str, float]] = {}
     for object_index, object_id in enumerate(object_ids):
@@ -445,7 +516,11 @@ def audit_two_object_camera(
             aspect,
         ).reshape(object_corners.shape)
         aabb_visible = _frame_visibility_mask(projected_corners, envelope_margin)
-        aabb_visible_fraction = float(aabb_visible.mean())
+        aabb_visible_fraction = float(aabb_visible.all(axis=1).mean())
+        initial_aabb_visible_fraction = float(aabb_visible[0].mean())
+        keyframe_aabb_visible_fraction = float(
+            aabb_visible[pair_keyframe].mean()
+        )
         projected_spans = np.maximum(
             np.ptp(projected_corners[..., 0], axis=1),
             np.ptp(projected_corners[..., 1], axis=1),
@@ -457,13 +532,21 @@ def audit_two_object_camera(
         per_object[object_id] = {
             "full_center_visible_fraction": center_visible,
             "full_motion_aabb_visible_fraction": aabb_visible_fraction,
-            "initial_aabb_visible_fraction": float(aabb_visible[0].mean()),
+            "initial_aabb_visible_fraction": initial_aabb_visible_fraction,
+            "pair_keyframe_aabb_visible_fraction": (
+                keyframe_aabb_visible_fraction
+            ),
             "initial_span_ndc": float(projected_spans[0]),
             "median_span_ndc": median_span,
             "static_unoccluded_fraction": static_unoccluded,
         }
         if (
-            not bool(aabb_visible.all())
+            center_visible < contract["minimum_center_visible"]
+            or initial_aabb_visible_fraction
+            < contract["minimum_initial_aabb_visible"]
+            or aabb_visible_fraction < contract["minimum_aabb_visible"]
+            or keyframe_aabb_visible_fraction
+            < contract["minimum_keyframe_aabb_visible"]
             or median_span < contract["minimum_object_span"]
             or static_unoccluded < contract["minimum_unoccluded"]
         ):
@@ -472,25 +555,6 @@ def audit_two_object_camera(
                 f"{per_object[object_id]}"
             )
 
-    pair_contacts = np.asarray(
-        trajectory[f"{object_ids[0]}__object_contact_count__{object_ids[1]}"],
-        dtype=np.int32,
-    )
-    if pair_contacts.shape != (positions.shape[0],):
-        raise ValueError("pair-contact trajectory length is inconsistent")
-    collision_indices = np.flatnonzero(pair_contacts > 0)
-    if interaction_class == "interacting":
-        if not collision_indices.size:
-            raise ValueError("joint camera requires the declared pair collision")
-        pair_keyframe = int(collision_indices[0])
-        pair_keyframe_kind = "first_contact"
-    else:
-        if collision_indices.size:
-            raise ValueError("independent joint camera received a pair collision")
-        pair_keyframe = int(
-            np.argmin(np.linalg.norm(positions[:, 1] - positions[:, 0], axis=1))
-        )
-        pair_keyframe_kind = "closest_approach"
     keyframe_projection = project_points(
         positions[pair_keyframe], position, target, lens, sensor_width, aspect
     )
@@ -581,6 +645,20 @@ def audit_two_object_camera(
         )
     return {
         "object_count": 2,
+        "required_visibility": {
+            "full_motion_center_visible_fraction": contract[
+                "minimum_center_visible"
+            ],
+            "initial_aabb_visible_fraction": contract[
+                "minimum_initial_aabb_visible"
+            ],
+            "full_motion_aabb_visible_fraction": contract[
+                "minimum_aabb_visible"
+            ],
+            "pair_keyframe_aabb_visible_fraction": contract[
+                "minimum_keyframe_aabb_visible"
+            ],
+        },
         "per_object_visibility": per_object,
         "joint_motion_envelope_world_bounds_m": {
             "min": [round(float(value), 6) for value in envelope_lower],
@@ -642,10 +720,47 @@ def _solve_two_object_camera(
     minimum_object_span = contract["minimum_object_span"]
     maximum_envelope_span = contract["maximum_envelope_span"]
     camera_group_id = _camera_group_id(metadata)
-    joint_lower = lower.min(axis=1)
-    joint_upper = upper.max(axis=1)
-    envelope_lower = joint_lower.min(axis=0)
-    envelope_upper = joint_upper.max(axis=0)
+    framing_members = []
+    if audit_members:
+        for member_metadata, member_trajectory in audit_members:
+            (
+                _,
+                member_ids,
+                _,
+                member_class,
+                member_positions,
+                member_lower,
+                member_upper,
+            ) = _two_object_camera_state(member_metadata, member_trajectory)
+            framing_members.append(
+                _two_object_framing_bounds(
+                    member_ids,
+                    member_class,
+                    member_positions,
+                    member_lower,
+                    member_upper,
+                    member_trajectory,
+                    contract["minimum_aabb_visible"],
+                )
+            )
+    else:
+        framing_members.append(
+            _two_object_framing_bounds(
+                object_ids,
+                interaction_class,
+                positions,
+                lower,
+                upper,
+                trajectory,
+                contract["minimum_aabb_visible"],
+            )
+        )
+    envelope_lower = np.min(
+        np.stack([bounds[0] for bounds in framing_members]), axis=0
+    )
+    envelope_upper = np.max(
+        np.stack([bounds[1] for bounds in framing_members]), axis=0
+    )
     envelope_size = envelope_upper - envelope_lower
     if bool(np.any(envelope_size <= 0.0)):
         raise ValueError("joint full-motion envelope must have positive size")
@@ -716,7 +831,6 @@ def _solve_two_object_camera(
             ),
             "minimum_primary_trajectory_unoccluded_fraction": 0.0,
             "minimum_full_trajectory_unoccluded_fraction": 0.0,
-            "allow_partial_exit": False,
         }
     )
     virtual_trajectory = dict(trajectory)
@@ -806,9 +920,9 @@ def _solve_two_object_camera(
             f"examples={failure_examples}"
         )
     camera["solver_version"] = (
-        "joint_full_motion_envelope_group_camera_v5"
+        "joint_full_motion_envelope_group_camera_v6"
         if audit_members
-        else "joint_full_motion_envelope_camera_v5"
+        else "joint_full_motion_envelope_camera_v6"
     )
     camera["diagnostics"]["pair_camera_view_family_id"] = contract[
         "view_family_id"

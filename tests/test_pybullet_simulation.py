@@ -782,7 +782,7 @@ class PyBulletSimulationTests(unittest.TestCase):
         camera = solve_camera(scene, first, self.rules)
         self.assertEqual(
             camera["solver_version"],
-            "joint_full_motion_envelope_camera_v5",
+            "joint_full_motion_envelope_camera_v6",
         )
         diagnostics = camera["diagnostics"]
         self.assertEqual(diagnostics["object_count"], 2)
@@ -811,6 +811,27 @@ class PyBulletSimulationTests(unittest.TestCase):
             list(diagnostics["per_object_visibility"]),
             ["object_a", "object_b"],
         )
+        self.assertEqual(
+            diagnostics["required_visibility"],
+            {
+                "full_motion_center_visible_fraction": 1.0,
+                "initial_aabb_visible_fraction": 1.0,
+                "full_motion_aabb_visible_fraction": 0.9,
+                "pair_keyframe_aabb_visible_fraction": 1.0,
+            },
+        )
+        for visibility in diagnostics["per_object_visibility"].values():
+            self.assertEqual(visibility["full_center_visible_fraction"], 1.0)
+            self.assertEqual(visibility["initial_aabb_visible_fraction"], 1.0)
+            self.assertEqual(
+                visibility["pair_keyframe_aabb_visible_fraction"], 1.0
+            )
+            self.assertGreaterEqual(
+                visibility["full_motion_aabb_visible_fraction"],
+                scene["simulation"]["interaction"][
+                    "minimum_full_motion_aabb_visible_fraction"
+                ],
+            )
         derived_camera_scene = copy.deepcopy(scene)
         derived_camera_scene["scene_id"] += "__derived_camera_test"
         derived_camera_scene["sweep"] = {
@@ -852,7 +873,7 @@ class PyBulletSimulationTests(unittest.TestCase):
         )
         self.assertEqual(
             group_camera["solver_version"],
-            "joint_full_motion_envelope_group_camera_v5",
+            "joint_full_motion_envelope_group_camera_v6",
         )
         self.assertEqual(
             group_camera["diagnostics"]["camera_group"]["member_count"], 2
@@ -899,6 +920,7 @@ class PyBulletSimulationTests(unittest.TestCase):
                 scene = build_two_object_scene(
                     host, matrix, "surface_head_on_2obj", sources
                 )
+
                 trajectory, audit = simulate(scene)
                 self.assertTrue(audit["passed"], audit)
                 camera = solve_camera(scene, trajectory, self.rules)
@@ -921,6 +943,46 @@ class PyBulletSimulationTests(unittest.TestCase):
                         "maximum_camera_view_azimuth_deviation_degrees"
                     ],
                 )
+
+    def test_two_object_camera_allows_only_brief_post_event_aabb_exit(self) -> None:
+        template = self.without_incidental_environment(self.rolling_stress_scene)
+        scene = build_two_object_scene(
+            template,
+            load_json(ROOT / "configs/two_object_sampling_matrix.json"),
+            "surface_head_on_2obj",
+        )
+        trajectory, audit = simulate(scene)
+        self.assertTrue(audit["passed"], audit)
+        camera = solve_camera(scene, trajectory, self.rules)
+        object_id = str(scene["simulation"]["objects"][0]["object_id"])
+
+        brief_exit = copy.deepcopy(trajectory)
+        centers = brief_exit[f"{object_id}__position_m"]
+        for suffix, direction in (("aabb_min_m", -1.0), ("aabb_max_m", 1.0)):
+            key = f"{object_id}__{suffix}"
+            brief_exit[key][-4:] = centers[-4:] + direction * 100.0
+        diagnostics = audit_two_object_camera(scene, brief_exit, camera)
+        visibility = diagnostics["per_object_visibility"][object_id]
+        self.assertGreaterEqual(
+            visibility["full_motion_aabb_visible_fraction"],
+            scene["simulation"]["interaction"][
+                "minimum_full_motion_aabb_visible_fraction"
+            ],
+        )
+        self.assertLess(visibility["full_motion_aabb_visible_fraction"], 1.0)
+        self.assertEqual(visibility["full_center_visible_fraction"], 1.0)
+        self.assertEqual(visibility["initial_aabb_visible_fraction"], 1.0)
+        self.assertEqual(
+            visibility["pair_keyframe_aabb_visible_fraction"], 1.0
+        )
+
+        excessive_exit = copy.deepcopy(trajectory)
+        centers = excessive_exit[f"{object_id}__position_m"]
+        for suffix, direction in (("aabb_min_m", -1.0), ("aabb_max_m", 1.0)):
+            key = f"{object_id}__{suffix}"
+            excessive_exit[key][-20:] = centers[-20:] + direction * 100.0
+        with self.assertRaisesRegex(ValueError, "per-object visibility"):
+            audit_two_object_camera(scene, excessive_exit, camera)
 
     def test_two_object_camera_does_not_escape_its_declared_view_family(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)
@@ -1023,7 +1085,7 @@ class PyBulletSimulationTests(unittest.TestCase):
                 scene["simulation"]["interaction"]["schema_version"]
                 for scene in scenes
             },
-            {"physweep_two_object_interaction_v1"},
+            {"physweep_two_object_interaction_v2"},
         )
         self.assertEqual(
             [
@@ -1181,7 +1243,7 @@ class PyBulletSimulationTests(unittest.TestCase):
                 diagnostics = camera["diagnostics"]
                 self.assertEqual(
                     camera["solver_version"],
-                    "joint_full_motion_envelope_camera_v5",
+                    "joint_full_motion_envelope_camera_v6",
                 )
                 self.assertEqual(
                     diagnostics["joint_motion_envelope_visible_fraction"],
@@ -1234,8 +1296,9 @@ class PyBulletSimulationTests(unittest.TestCase):
                     )
                 )
                 for visibility in diagnostics["per_object_visibility"].values():
-                    self.assertEqual(
-                        visibility["full_motion_aabb_visible_fraction"], 1.0
+                    self.assertGreaterEqual(
+                        visibility["full_motion_aabb_visible_fraction"],
+                        interaction["minimum_full_motion_aabb_visible_fraction"],
                     )
                     self.assertGreaterEqual(
                         visibility["median_span_ndc"],
@@ -1547,7 +1610,7 @@ class PyBulletSimulationTests(unittest.TestCase):
         )
         self.assertEqual(
             scene["camera_request"]["schema_version"],
-            "physweep_two_object_camera_request_v1",
+            "physweep_two_object_camera_request_v2",
         )
         self.assertEqual(
             scene["camera_request"]["observation"]["intent"],

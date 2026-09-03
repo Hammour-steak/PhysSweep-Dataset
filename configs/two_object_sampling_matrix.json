@@ -1,5 +1,5 @@
 {
-  "schema_version": "physweep_two_object_sampling_matrix_v14",
+  "schema_version": "physweep_two_object_sampling_matrix_v15",
   "objects": {
     "schema_version": "physweep_object_collection_v1",
     "roles": [
@@ -246,7 +246,7 @@
     }
   },
   "pair_observation": {
-    "schema_version": "physweep_two_object_camera_observation_v2",
+    "schema_version": "physweep_two_object_camera_observation_v3",
     "solver_profile_template_id": "front_left_oblique",
     "focal_length_mm": 44.0,
     "maximum_camera_view_azimuth_deviation_degrees": 8.0,
@@ -255,6 +255,10 @@
     "maximum_camera_distance_above_minimum_m": 5.0,
     "full_motion_envelope_margin_ndc": 0.03,
     "preferred_full_motion_envelope_span_ndc": 0.55,
+    "minimum_full_motion_center_visible_fraction": 1.0,
+    "minimum_initial_aabb_visible_fraction": 1.0,
+    "minimum_full_motion_aabb_visible_fraction": 0.90,
+    "minimum_pair_keyframe_aabb_visible_fraction": 1.0,
     "minimum_per_object_median_span_ndc": 0.065,
     "minimum_per_object_unoccluded_fraction": 0.70,
     "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio": 0.75,

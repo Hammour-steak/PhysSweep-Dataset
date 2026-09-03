@@ -107,8 +107,10 @@ explicitly names its compatible physical profiles; complete plans must realize
 every allowed motion/profile and profile/environment pairing at least once. This
 is not yet a production 2obj release.
 
-The pair camera targets 55% of normalized frame width for the complete motion
-envelope, preserving object readability while retaining nearby scene context.
+The pair camera targets 55% of normalized frame width for the required motion
+envelope. Both centers remain visible throughout; both silhouettes are complete
+initially and at the interaction keyframe, while at least 90% of frames have
+complete per-object AABBs so brief post-event edge exits do not suppress motion.
 
 Generic physics or camera failures are replaced with
 `resample_two_object_failures`; it freezes passing rows and preserves motion,
