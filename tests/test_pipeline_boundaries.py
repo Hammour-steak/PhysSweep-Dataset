@@ -8,7 +8,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from tools.training_export.gt_scene_input import interaction_collider_ids
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -35,26 +34,6 @@ class PipelineBoundaryTest(unittest.TestCase):
             "assets": {"support_asset_id": "table"}, "physics": {"static_support_binding": {}}}, "billiards")
         self.assertEqual(materials, ["yellow", "red"])
 
-    def test_gt_interaction_requires_an_explicit_multi_object_target(self):
-        metadata = {
-            "simulation": {
-                "support": {
-                    "colliders": [{"id": "floor", "role": "primary_support"}]
-                },
-                "objects": [
-                    {"object_id": "a", "expected_motion": {}},
-                    {
-                        "object_id": "b",
-                        "expected_motion": {
-                            "required_collider_contact_id": "floor"
-                        },
-                    },
-                ],
-            }
-        }
-        with self.assertRaisesRegex(ValueError, "controlled_object_id is required"):
-            interaction_collider_ids(metadata)
-        self.assertEqual(interaction_collider_ids(metadata, "b"), ("floor",))
 
     def test_model_source_is_not_part_of_dataset_repository(self):
         self.assertFalse((ROOT / "tools/model_training").exists())
@@ -324,64 +303,8 @@ class PipelineBoundaryTest(unittest.TestCase):
         )
         self.assertEqual(roots["asset"], layout.sweep_render / "asset")
 
-    def test_bound_manifest_bootstraps_scene_export_without_published_dataset(self):
-        module = load_module(
-            "scene_export_entry",
-            ROOT / "tools/training_export/build_gt_training_scenes.py",
-        )
-        with tempfile.TemporaryDirectory() as directory:
-            manifest = Path(directory) / "bound.json"
-            manifest.write_text(
-                json.dumps(
-                    {
-                        "samples": [
-                            {
-                                "scene_id": "scene_a",
-                                "metadata_path": "outputs/release/generic/metadata/scene_a.json",
-                            }
-                        ]
-                    }
-                ),
-                encoding="utf-8",
-            )
-            records = module._base_records_from_bound_manifest(manifest)
-        self.assertEqual(records[0]["base_scene_id"], "scene_a")
-        self.assertEqual(
-            records[0]["conditioning"]["first_frame"],
-            "outputs/release/generic/frames/scene_a/frame_0001.png",
-        )
 
-    def test_published_paths_resolve_only_from_project_root(self):
-        module = load_module(
-            "point_trajectory_export_entry",
-            ROOT / "tools/training_export/export_point_trajectories.py",
-        )
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory) / "physweep"
-            root.mkdir()
-            source = root / "outputs" / "trajectory.npz"
-            source.parent.mkdir()
-            source.write_bytes(b"trajectory")
-            self.assertEqual(
-                module.project_path(root, "outputs/trajectory.npz"), source.resolve()
-            )
-            with self.assertRaisesRegex(ValueError, "project-relative"):
-                module.project_path(root, str(source.resolve()))
-            with self.assertRaisesRegex(ValueError, "project-relative"):
-                module.project_path(root, "../trajectory.npz")
 
-    def test_release_audit_requires_an_explicit_path_base(self):
-        module = load_module(
-            "training_dataset_audit_entry",
-            ROOT / "tools/training_export/audit_training_dataset.py",
-        )
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            release = root / "datasets" / "physweep_training"
-            release.mkdir(parents=True)
-            (release / "summary.json").write_text("{}", encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "project-root-relative"):
-                module.audit(release, root, forbid_approximations=True)
 
     def test_source_ownership_is_one_way(self):
         dataset_source = (ROOT / "tools/cli/build_one_object_dataset.py").read_text()
@@ -497,13 +420,6 @@ class PipelineBoundaryTest(unittest.TestCase):
                 source,
             )
 
-    def test_method_specific_trajectory_rasterization_is_absent(self):
-        source = (
-            ROOT / "tools/training_export/point_trajectory.py"
-        ).read_text(encoding="utf-8")
-        self.assertNotIn("rasterize_projected_tracks", source)
-        self.assertNotIn("cover_center_crop_coordinates", source)
-        self.assertNotIn("depth_normalization", source)
 
     def test_obsolete_scene_condition_schema_is_absent(self):
         self.assertFalse((ROOT / "tools/dataset_contract/scene_condition.py").exists())

@@ -32,7 +32,6 @@ from tools.core.paths import (
     resolve_project_path_within_root,
     safe_scene_id,
 )
-from tools.core.process import run_checked
 from tools.core.rigid_geometry import (
     finite_vector,
     positive_vector,
@@ -209,19 +208,6 @@ class CoreInfrastructureTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "invalid size"):
             positive_vector([1, float("nan")], 2, "size")
 
-    def test_checked_process_reports_bounded_failure_output(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            run_checked([sys.executable, "-c", "print('ok')"], root)
-            with self.assertRaisesRegex(RuntimeError, "expected failure"):
-                run_checked(
-                    [
-                        sys.executable,
-                        "-c",
-                        "import sys; print('expected failure'); sys.exit(3)",
-                    ],
-                    root,
-                )
 
     def test_scene_id_is_one_safe_path_component(self) -> None:
         self.assertEqual(safe_scene_id("group__scene_001"), "group__scene_001")

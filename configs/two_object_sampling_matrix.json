@@ -93,7 +93,7 @@
   "candidate_pool": {
     "schema_version": "physweep_two_object_candidate_pool_v4",
     "source_release": {
-      "released_base_manifest_schema_version": "physweep_base_release_view_v14",
+      "released_base_manifest_schema_version": "physweep_base_release_view_v15",
       "generation_manifest_schema_version": "physweep_release_metadata_manifest_v2",
       "sample_kind": "base"
     },

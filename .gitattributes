@@ -9,5 +9,8 @@
 *.pt binary
 *.pth binary
 *.safetensors binary
-# Frozen catalog hashes include CRLF bytes; do not normalize this file to LF.
-/assets/proxies/objects/records.jsonl text eol=crlf
+# Runtime provenance binds raw file bytes, including line endings. Preserve them
+# in both checkouts and source archives so frozen checksums remain portable.
+*.py -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/configs/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+/assets/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

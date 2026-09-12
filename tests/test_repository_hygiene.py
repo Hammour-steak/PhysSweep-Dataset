@@ -168,7 +168,6 @@ class RepositoryHygieneTest(unittest.TestCase):
             "rendering",
             "sampling",
             "scene_rules",
-            "training_export",
         }
         packages = {
             path.name
@@ -287,15 +286,7 @@ class RepositoryHygieneTest(unittest.TestCase):
         for name in legacy_modules:
             with self.subTest(module=name):
                 self.assertFalse((ROOT / "tools" / "dataset_contract" / name).exists())
-        training_modules = {
-            "coordinate_frames.py",
-            "gt_scene_input.py",
-            "one_object_prompt_contract.py",
-            "point_trajectory.py",
-        }
-        for name in training_modules:
-            with self.subTest(training_module=name):
-                self.assertTrue((ROOT / "tools" / "training_export" / name).is_file())
+        self.assertFalse((ROOT / "tools" / "training_export" / "__init__.py").exists())
         self.assertTrue(
             (ROOT / "tools" / "sampling" / "one_object_semantic_coverage.py").is_file()
         )
@@ -376,24 +367,6 @@ class RepositoryHygieneTest(unittest.TestCase):
         self.assertTrue((motion_rules / "one_object" / "registry.py").is_file())
 
     def test_object_count_boundaries_are_explicit(self) -> None:
-        adapters = (
-            "tools/training_export/export_gt_initial_surface.py",
-        )
-        for relative in adapters:
-            with self.subTest(module=relative):
-                tree = ast.parse((ROOT / relative).read_text(encoding="utf-8"))
-                declarations = [
-                    ast.literal_eval(node.value)
-                    for node in tree.body
-                    if isinstance(node, ast.Assign)
-                    and any(
-                        isinstance(target, ast.Name)
-                        and target.id == "SUPPORTED_DYNAMIC_OBJECT_COUNTS"
-                        for target in node.targets
-                    )
-                ]
-                self.assertEqual(declarations, [(1,)])
-
         two_object_adapters = (
             "tools/assets/environment_collision.py",
             "tools/physics/rigid_trajectory.py",

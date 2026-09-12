@@ -10,7 +10,6 @@ from typing import Any
 
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
-from tools.core.json_io import read_jsonl
 from tools.assets.physical_proxy_catalog import (
     load_catalog,
     records_by_id,
@@ -86,19 +85,7 @@ def validate_object_visual_curation(
         raise ValueError("object visual candidate preflight is incomplete")
     preflight_policy = load_json(preflight_policy_path)
     evidence_policy = preflight_policy["proxy_evidence"]
-    core_path = root / str(evidence_policy["core_index"])
-    overlay_root = root / str(evidence_policy["overlay_root"])
     catalog_path = root / str(evidence_policy["physical_proxy_catalog"])
-    if not core_path.is_file() or not overlay_root.is_dir():
-        raise FileNotFoundError("object proxy evidence source is missing")
-    core_records = read_jsonl(core_path)
-    core_by_sample = {str(record["sample_id"]): record for record in core_records}
-    if len(core_by_sample) != len(core_records):
-        raise ValueError("object proxy evidence has duplicate core sample ids")
-    if set(core_by_sample) != {
-        str(profile["source_review"]["sample_id"]) for profile in profiles
-    }:
-        raise ValueError("object proxy core index differs from active profiles")
     catalog_manifest, catalog_records = load_catalog(
         root, catalog_path, require_runtime_validation=True
     )
@@ -120,37 +107,6 @@ def validate_object_visual_curation(
         raise ValueError(
             "object proxy analytic-drop validation has duplicate asset ids"
         )
-    required_overlay_views = [
-        str(value) for value in evidence_policy["required_overlay_views"]
-    ]
-    expected_proxy_sources = {
-        "core_index": {
-            "path": core_path.relative_to(root).as_posix(),
-            "sha256": sha256(core_path),
-            "record_count": len(core_records),
-        },
-        "overlay_root": {
-            "path": overlay_root.relative_to(root).as_posix(),
-            "required_views": required_overlay_views,
-        },
-        "physical_proxy_catalog": {
-            "path": catalog_path.relative_to(root).as_posix(),
-            "records_sha256": str(catalog_manifest["records_sha256"]),
-        },
-        "physical_proxy_validation": {
-            "path": validation_path.relative_to(root).as_posix(),
-            "sha256": sha256(validation_path),
-            "version": str(validation["version"]),
-            "catalog_records_sha256": str(validation["catalog_records_sha256"]),
-            "record_count": len(validation.get("records", [])),
-        },
-    }
-    actual_proxy_sources = copy.deepcopy(
-        preflight_report.get("proxy_evidence_sources", {})
-    )
-    actual_proxy_sources.get("physical_proxy_catalog", {}).pop("sha256", None)
-    if actual_proxy_sources != expected_proxy_sources:
-        raise ValueError("object proxy evidence source binding is stale")
     preflight_records = preflight_report["records"]
     preflight_by_asset = {
         str(record["visual_asset_id"]): record for record in preflight_records
@@ -246,64 +202,7 @@ def validate_object_visual_curation(
                 raise ValueError(f"candidate preflight evidence is stale: {context}")
             if preflight.get("source_visual") != source_visual:
                 raise ValueError(f"candidate preflight source mismatch: {context}")
-            review_views = preflight.get("review_views", [])
-            if len(review_views) != 4:
-                raise ValueError(f"candidate preflight views are incomplete: {context}")
-            for view in review_views:
-                validate_file(view, f"{context}:raw-review")
             proxy_evidence = preflight.get("proxy_evidence", {})
-            sample_id = str(profile["source_review"]["sample_id"])
-            core_record = core_by_sample.get(sample_id)
-            if (
-                core_record is None
-                or proxy_evidence.get("status") != "verified"
-                or str(proxy_evidence.get("sample_id")) != sample_id
-                or proxy_evidence.get("core_record_sha256")
-                != record_sha256(core_record)
-                or proxy_evidence.get("proxy_method")
-                != str(core_record["method"])
-                or proxy_evidence.get("blender_alignment_fit")
-                != core_record["blender_alignment_fit"]
-                or float(
-                    proxy_evidence.get(
-                        "proxy_to_visual_hull_volume_ratio", float("inf")
-                    )
-                )
-                != float(core_record["proxy_to_visual_hull_volume_ratio"])
-            ):
-                raise ValueError(f"object proxy core evidence is stale: {context}")
-            if (
-                float(proxy_evidence["proxy_to_visual_hull_volume_ratio"])
-                > float(
-                    evidence_policy[
-                        "maximum_proxy_to_visual_hull_volume_ratio"
-                    ]
-                )
-                or not bool(proxy_evidence["blender_alignment_fit"]["passed"])
-                or float(
-                    proxy_evidence["blender_alignment_fit"][
-                        "maximum_relative_error"
-                    ]
-                )
-                > float(evidence_policy["maximum_alignment_relative_error"])
-            ):
-                raise ValueError(f"object proxy evidence exceeds policy: {context}")
-            source_proxy = proxy_evidence.get("source_proxy", {})
-            if str(source_proxy.get("path")) != str(
-                profile["source_review"]["proxy_json"]
-            ):
-                raise ValueError(f"object source proxy path is stale: {context}")
-            validate_file(source_proxy, f"{context}:source-proxy")
-            overlay_views = proxy_evidence.get("overlay_views", [])
-            if (
-                len(overlay_views) != len(required_overlay_views)
-                or {str(item.get("view")) for item in overlay_views}
-                != set(required_overlay_views)
-            ):
-                raise ValueError(f"object proxy overlays are incomplete: {context}")
-            for view in overlay_views:
-                binding = {"path": view["path"], "sha256": view["sha256"]}
-                validate_file(binding, f"{context}:proxy-overlay:{view['view']}")
             catalog_record = catalog_by_asset.get(asset_id)
             if catalog_record is None:
                 raise ValueError(f"object proxy catalog record is missing: {context}")
@@ -397,11 +296,6 @@ def validate_object_visual_curation(
                 raise ValueError(f"repair does not resolve candidate finding: {context}")
             if report.get("reason") != verification.get("repair_reason"):
                 raise ValueError(f"repair reason evidence mismatch: {context}")
-            review_views = report.get("verification", {}).get("review_views", [])
-            if review_views != verification.get("review_views") or len(review_views) != 4:
-                raise ValueError(f"repair review evidence is incomplete: {context}")
-            for view in review_views:
-                validate_file(view, f"{context}:review")
 
     counts = {
         "profiles": len(profiles),
@@ -851,9 +745,7 @@ def load_sampling_bundle(root: Path, bundle_path: Path) -> dict[str, Any]:
         "camera_geometry",
         "environment_collision",
         "batch_runner",
-        "visual_preflight",
         "visual_repair",
-        "visual_curation",
     }
     if bundle.get("policy", {}).get(
         "motion_rules_are_grouped_and_registry_dispatched"

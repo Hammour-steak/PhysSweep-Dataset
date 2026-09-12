@@ -2,3 +2,5 @@ numpy>=2.0,<3
 pybullet==3.2.7
 opencv-python-headless>=4.10,<5
 Pillow==12.3.0
+imageio-ffmpeg>=0.6,<1
+certifi>=2024.8

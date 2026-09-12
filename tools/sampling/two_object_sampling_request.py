@@ -35,10 +35,14 @@ def validate_sampling_request(document: dict, rules: dict) -> None:
     for family, count in counts.items():
         _positive_integer(count, family)
     generic = document['generic_coverage']
-    if set(generic) != {'replicates_per_cell', 'maximum_object_source_reuse', 'maximum_host_source_reuse'}:
+    if set(generic) - {'seed'} != {'replicates_per_cell', 'maximum_object_source_reuse', 'maximum_host_source_reuse'}:
         raise ValueError('generic coverage settings are incomplete')
     for name, value in generic.items():
-        _positive_integer(value, name)
+        if name == 'seed':
+            if type(value) is not int:
+                raise ValueError('seed must be an integer')
+        else:
+            _positive_integer(value, name)
     variations = document['specialized_variation']
     if set(variations) != set(SCENE_FAMILIES):
         raise ValueError('specialized variation must declare all families')
@@ -65,6 +69,8 @@ def effective_matrix(matrix: dict, request: dict | None) -> dict:
             raise ValueError('production quotas require complete-cells-before-repeats coverage')
         settings = request['generic_coverage']
         coverage['replicates_per_cell'] = settings['replicates_per_cell']
+        if 'seed' in settings:
+            coverage['seed'] = settings['seed']
         for key in ('maximum_object_source_reuse', 'maximum_host_source_reuse'):
             coverage['selection_policy'][key] = settings[key]
     return result

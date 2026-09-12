@@ -13,6 +13,6 @@ with timestamps 0 through 4 seconds. Container duration is therefore not require
 to equal physical duration. Timestamp rounding may differ by one container tick;
 coarse time bases and variable frame intervals are rejected.
 
-Every source and published mask frame must have the declared render dimensions.
+Canonical generation does not produce or publish masks.
 Sweep resume applies the same media checks before reusing completed samples.
 These checks enforce artifact consistency; sweep motion outcomes remain advisory.

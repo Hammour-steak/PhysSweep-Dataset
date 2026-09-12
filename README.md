@@ -1,118 +1,90 @@
 # PhysSweep
 
-PhysSweep generates reproducible physics-controlled video datasets. It combines curated visual assets, explicit collision proxies, PyBullet simulation, Blender rendering, immutable metadata, and automated audits.
+Generate physics-controlled videos with one, two or three moving objects.
+The same pipeline samples bases, simulates counterfactual sweeps, renders videos
+and publishes the dataset with verified metadata.
 
-## Dataset
+## Quick start
 
-PhysSweep publishes object-count-specific datasets under
-`outputs/{one_object,two_object,three_object}/{base,sweep}`. The one-object release has:
-
-- 3,200 base scenes;
-- one-factor sweeps over mass, contact friction, and restitution;
-- five values per sweep axis with the base value at the center;
-- 13 unique samples per base scene;
-- 4-second, 24 FPS, 1280 x 720 videos;
-- scene metadata, dense rigid trajectories, videos, and audit manifests.
-
-Each canonical sample contains `metadata.json`, `trajectory.npz`, and `video.mp4`.
-The public base schema is `physweep_base_sample_v12`; sweep uses
-`physweep_sweep_sample_v2`. All three object counts share these schemas.
-Canonical releases do not include masks.
-
-The two-object pipeline reuses released assets, proxies, materials, lighting,
-physics adapters, and release contracts. Each base has 12 one-factor variants:
-four non-base values for each of three axes on `object_a` only. `object_b` keeps
-its base parameters and initial state, but responds normally to collisions. Generic
-interactions and the billiards, passive-pinball, and marble-run fixtures share
-one hash-bound 13-sample group contract. Existing two-target releases remain readable.
-New 2obj mass sweeps use `0.25x, 0.5x, 2x, 4x` of A's unchanged base mass.
-These counterfactual interventions may exceed the asset's base-sampling prior;
-base motion and camera admission happen before sweep generation. Derived 2obj
-trajectories keep speed, penetration, collision, and motion-quality measurements
-as diagnostics, without selecting or replacing bases from sweep outcomes.
-Finite arrays, exact initial state and runtime parameters, valid inertia,
-collision-proxy bindings, and complete groups remain mandatory.
-Sweeps inherit the base camera unchanged and may leave the frame. The 1obj sweep
-parameter rules are unchanged.
-
-## Setup
+The renderer requires Linux x86_64, Python 3.10+ with venv, GCC, EGL development libraries and an NVIDIA driver.
+Provide a [Sketchfab API token](https://sketchfab.com/settings/password) in the
+`SKETCHFAB_API_TOKEN` environment variable to download missing Sketchfab assets.
+Tokens are read from the environment; `.env` files are not loaded automatically.
 
 ```bash
-conda create --override-channels --channel conda-forge \
-  --prefix .venv python=3.10 pip -y
-conda activate "$PWD/.venv"
-pip install -r requirements.txt
+git clone https://github.com/Hammour-steak/PhysSweep-Dataset.git
+cd PhysSweep-Dataset
+python3 generate.py --setup --objects all --count 100 --gpus 0
 ```
 
-## Generate
+This creates `.venv`, installs dependencies, downloads pinned Blender 3.4.0 and
+required resources, and generates 100 bases for **each** of 1obj, 2obj and 3obj.
+Every base has 12 sweep variants: 1,300 samples per object count, 3,900 in total.
+Original models, textures and HDRIs need about 5.7 GB of downloads, plus Blender
+and the compressed source/proxy resource archive. Allow additional disk space
+for physics checkpoints, render intermediates and final videos.
 
-One command runs the registry-driven base and sweep pipeline, renders every
-selected family, publishes a fresh hash-bound source release, and materializes
-the canonical `outputs/one_object/{base,sweep}` dataset:
+With the environment and assets already prepared:
 
 ```bash
-python -m tools.cli.generate_one_object_dataset \
-  --work-id production --count 3200 \
-  --physics-workers 24 --render-workers 64 --gpus 0,1,2,3
+.venv/bin/python generate.py --objects 3 --count 100 --gpus 0
 ```
 
-Use `--plan-only` to inspect the resolved stages and `--resume` to reuse only
-completed, validated stage artifacts. Resume requires the same executable code,
-frozen count, seed, source metadata hash, and source release hash. Existing canonical views
-are verified, never overwritten.
+To prepare everything without sampling, use `python3 generate.py --setup-only`.
+To inspect a request without downloads or file changes, add `--plan-only`.
 
-Verify an existing dataset without modifying it:
+## More controls
 
 ```bash
-python -m tools.cli.build_one_object_dataset --verify-only
+.venv/bin/python generate.py --objects 2 --count 100 --run-id example \
+  --output outputs/example --physics-workers 8 --render-workers 8 --gpus 0,1
 ```
 
-`tools.cli.generate_two_object_dataset` builds the corresponding two-object
-release from an explicit released 1obj base manifest, its frozen generation
-manifest, and one reviewed template for each specialized fixture. Use `--help`
-to see the required source bindings; no source path is inferred.
-Generic coverage and source reuse can first be checked without dataset generation
-using `tools.cli.plan_two_object_coverage`; see
-[the coverage planning contract](docs/PHYSWEEP_TWO_OBJECT_COVERAGE.md).
+Repeat the same command with `--resume` after interruption. Resume verifies the
+frozen inputs and code; use a new run ID and output parent after changing either.
+Existing completed datasets are verified, never overwritten. `--count` always
+means bases, not the total number of videos. The public command requires at least
+24 bases for 1obj, 10 for 2obj, and
+3obj requires at least 9 to cover their selected families. Use the advanced
+3obj entry point to select fewer families for a smaller smoke test.
 
-Generic sampling uses `coverage_plan.seed` from its matrix; `--specialized-seed`
-controls only the three fixture families. Child commands always import the running
-checkout, not a possibly stale `tools/` directory under `--root`.
-The 2obj pipeline freezes each admitted base camera once, then renders all
-base members before derived members. Each sample is rendered only once; there
-is no separate base-video prepass.
+## Output
 
-## Three-object generation
+```text
+outputs/
+  one_object/{base,sweep}/<family>/<scene_id>/
+  two_object/{base,sweep}/<family>/<scene_id>/
+  three_object/{base,sweep}/<family>/<scene_id>/
+```
 
-The current production capabilities are defined by
-[`configs/three_object_rule_matrix.json`](configs/three_object_rule_matrix.json).
-The four families share assets, physics adapters and release code; each base has
-12 counterfactual variants of `object_a`. Sweeps inherit the admitted base camera
-and may leave the frame. Base admission and sweep integrity remain separate.
+Every sample contains `metadata.json`, `trajectory.npz` and `video.mp4`.
+Videos are 1280 × 720, 24 FPS, 4 seconds. There are no masks.
+All object counts use `physweep_base_sample_v12` and
+`physweep_sweep_sample_v2`, with root and family manifests.
+Sweeps vary mass, friction or restitution on object A; the other objects retain
+their base parameters. Every group keeps its admitted base camera. Sweeps may
+leave the frame and are not filtered by base motion-selection rules.
 
-`generate_three_object_dataset` is a checkpoint/pilot entry point, not a complete
-production scheduler. Its D0/D1 and scope gates belong to the recorded development
-workflow. Use `build_three_object_dataset` to publish or verify the shared
-canonical format. See [the current code and release guide](docs/PHYSWEEP_CODE_STATUS.md)
-for source ownership, production entry points and retained trial configurations.
+See [generation details](docs/GENERATION.md), the
+[dataset specification](docs/PHYSWEEP_SPEC.md) and the
+[3obj rule matrix](configs/three_object_rule_matrix.json).
 
-## Structure
+## Repository
 
-- `assets/`: asset manifests, curation records, and proxy indexes.
-- `configs/`: sampling, physics, visual, and release rules.
-- `tools/`: responsibility-based Python packages; invoke commands with `python -m`.
-- `tools/motion_rules/{one_object,two_object,three_object}/`: isolated object-count motion
-  rules; shared assets, physics, rendering, and release contracts stay common.
-- `tools/release/`: object-count-aware layout, source validation, and per-target
-  sweep grouping; each runtime adapter declares its supported object counts.
-- `docs/`: dataset contracts and methodology.
-- `tests/`: physics, rendering, pipeline, and repository checks.
+- `generate.py`: public setup and generation command.
+- `configs/`: asset, motion, camera, scene and sweep rules.
+- `tools/`: sampling, simulation, rendering and shared release code.
+- `assets/`: runtime indexes and attribution; downloaded binaries are ignored.
+- `tests/`: generation and physical-contract regression checks.
 
-## Validate
+Historical trials, asset-search/review utilities and training exports are outside
+the generation repository. Downloaded source metadata lives in
+`assets/source_pool`, separately from newly generated datasets.
 
 ```bash
-python -m compileall -q tools tests
-python -m unittest discover -s tests
+.venv/bin/python -m unittest discover -s tests
 ```
 
-Read the [dataset specification](docs/PHYSWEEP_SPEC.md) and [generation rules](docs/PHYSWEEP_RULEBOOK.md) for the complete contract.
+Third-party assets retain their own licenses. See
+[asset attribution](assets/THIRD_PARTY_ASSETS.json) and
+[runtime resource attribution](assets/RUNTIME_ATTRIBUTION.md).

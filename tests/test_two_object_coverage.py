@@ -1356,7 +1356,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
                     scene_id = record["scene_id"]
                     compact_path = branch_path.parent / scene_id / "metadata.json"
                     compact = {
-                        "schema_version": "physweep_base_sample_v11",
+                        "schema_version": "physweep_base_sample_v12",
                         "scene_id": scene_id,
                         "family": family,
                         "lineage": {
@@ -1375,7 +1375,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
                 write_json(
                     branch_path,
                     {
-                        "schema_version": "physweep_base_pipeline_view_v12",
+                        "schema_version": "physweep_base_pipeline_view_v13",
                         "pipeline": family,
                         "sample_count": len(compact_records),
                         "records": compact_records,
@@ -1390,7 +1390,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
             write_json(
                 released_path,
                 {
-                    "schema_version": "physweep_base_release_view_v14",
+                    "schema_version": "physweep_base_release_view_v15",
                     "dataset_id": "unit_one_object",
                     "sample_count": 2,
                     "pipelines": pipelines,

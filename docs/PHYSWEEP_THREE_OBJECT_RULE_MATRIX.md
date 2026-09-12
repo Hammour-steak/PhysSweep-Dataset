@@ -1,6 +1,6 @@
 # PhysSweep 3obj 正式规则矩阵
 
-状态：规则已用于完成正式批次 `three_object_production_20260909_r7`，1,538 条 base 与 18,456 条 sweep 已发布并通过对齐审计。配额保持为独立输入，详见 [当前代码与发布说明](PHYSWEEP_CODE_STATUS.md)。
+状态：规则已用于完成正式批次 `three_object_production_20260909_r7`，1,538 条 base 与 18,456 条 sweep 已发布并通过对齐审计。配额保持为独立输入，详见 [当前代码与发布说明](GENERATION.md)。
 
 正式入口只有两份配置：
 
@@ -76,8 +76,6 @@
 
 当前不采：三者完全独立、接近同时三体碰撞、空中交互、右偏连锁、任意 multi-mesh 连锁/连续/汇入、混合形状斜面、偏心或非轴对称动态 compound、rattan mesh 支撑、台球撞库/落袋、主动弹珠台、未复核轨道变体、物理后视觉重绑定，以及按 sweep 结果换组。
 
-## 验证与下一关
+## 验证
 
-`tools/sampling/three_object_rule_matrix.py` 只验证结构和能力边界：四个 family、三种 generic subcase、运动与形状兼容、资产清单、特殊夹具容量、相机角度、组契约和无配额状态。它不再复制历史试验 cell 或 scene ID。
-
-multi-mesh base 探针 42 条中 31 条通过物理，27 条继续通过相机并完成 1280×720、97 帧渲染；81 个物体实例中只有 16 个球，包含 65 个不同视觉 ID。随后选择一个由真实圆柱资产、球和方体组成的 pair-control base，完成 1 条 base 加 12 条 sweep 的正式尺寸烟测：13 条物理、相机审计和渲染全部通过，整组使用同一相机，生成 13 个视频且没有 mask。验收报告位于 `outputs/three_object_v6_simplified_pair_group_smoke_20260908_r1/v6_simplified_group_smoke_report.json`。
+`tools/sampling/three_object_rule_matrix.py` 验证结构和能力边界。正式入口按这些规则采样 base、执行物理与相机准入，再生成完整的 13 条 base/sweep 组。发布时检查组完整性、固定相机及共享数据格式。使用方法见 [生成说明](GENERATION.md)。

@@ -298,7 +298,9 @@ def validate_catalog(
         )
         raise ValueError(f"duplicate physical proxy asset ids: {duplicates[:10]}")
     for record in records:
-        validate_record(record, root)
+        # Inactive catalog entries document provenance; only runtime assets need files.
+        active = record["admission"]["sampling_ready"] or record["proxy"]["representation"] == "static_concave_mesh"
+        validate_record(record, root if active else None)
     if manifest.get("counts") != summarize_records(records):
         raise ValueError("physical proxy catalog counts do not match records")
     if root is not None:
