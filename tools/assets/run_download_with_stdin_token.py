@@ -6,11 +6,9 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-from pathlib import Path
 
 
 def main() -> None:
-    project_root = Path(__file__).resolve().parents[2]
     command = [
         sys.executable,
         "-m",

@@ -15,6 +15,27 @@ SWEEP_DERIVED_LEVELS = tuple(
 SWEEP_VARIANTS_PER_TARGET = len(SWEEP_AXES) * len(SWEEP_DERIVED_LEVELS)
 
 
+def sweep_target_indices(
+    object_count: int, indices: list[int] | tuple[int, ...] | None = None,
+) -> tuple[int, ...]:
+    """Validate declared targets separately from the number of dynamic objects.
+
+    Omitted selection preserves the all-object contract of existing releases.
+    """
+    if isinstance(object_count, bool) or not isinstance(object_count, int):
+        raise TypeError("sweep object count must be an integer")
+    if object_count < 1:
+        raise ValueError("sweep object count must be positive")
+    values = tuple(range(object_count)) if indices is None else tuple(indices)
+    if (
+        not values
+        or any(isinstance(i, bool) or not isinstance(i, int) or not 0 <= i < object_count for i in values)
+        or tuple(sorted(set(values))) != values
+    ):
+        raise ValueError("sweep target indices must be ordered, unique and within object count")
+    return values
+
+
 def sweep_group_size(target_count: int) -> int:
     """Return one canonical base plus one-factor variants for every target."""
 
@@ -31,6 +52,25 @@ def round_sweep_value(value: float) -> float:
     return round(float(value), 6)
 
 
+def counterfactual_mass_values(base_value: float, multipliers: list[float]) -> list[float]:
+    """Apply explicit mass interventions, never clipping to a base-sampling prior."""
+    if (
+        not math.isfinite(base_value) or base_value <= 0.0
+        or not isinstance(multipliers, list) or len(multipliers) != SWEEP_LEVEL_COUNT
+        or any(isinstance(v, bool) or not isinstance(v, (int, float))
+               or not math.isfinite(v) or v <= 0.0 for v in multipliers)
+        or multipliers[SWEEP_BASE_LEVEL_INDEX] != 1.0
+        or any(a >= b for a, b in zip(multipliers, multipliers[1:]))
+    ):
+        raise ValueError("mass interventions require five positive ordered multipliers centered at 1")
+    values = [round_sweep_value(base_value * multiplier) for multiplier in multipliers]
+    if any(not math.isfinite(v) or v <= 0.0 for v in values) or any(
+        a >= b for a, b in zip(values, values[1:])
+    ):
+        raise ValueError("mass intervention values must remain positive, finite and distinct after rounding")
+    return values
+
+
 def allowed_sweep_domain(
     base_value: float,
     axis_rules: dict[str, Any],
@@ -39,6 +79,9 @@ def allowed_sweep_domain(
     domain_override: list[float] | None,
 ) -> list[float]:
     if axis == "mass_kg":
+        if axis_rules.get("domain_policy") == "counterfactual_relative_mass":
+            values = counterfactual_mass_values(base_value, axis_rules["level_multipliers"])
+            return [values[0], values[-1]]
         if mass_bounds is None:
             return [base_value * 0.5, base_value * 2.0]
         return [float(mass_bounds[0]), float(mass_bounds[1])]
@@ -83,6 +126,8 @@ def sweep_values(
     domain_override: list[float] | None = None,
     endpoint_policy: dict[str, Any] | None = None,
 ) -> list[float]:
+    if axis == "mass_kg" and axis_rules.get("domain_policy") == "counterfactual_relative_mass":
+        return counterfactual_mass_values(base_value, axis_rules["level_multipliers"])
     allowed_domain = allowed_sweep_domain(
         base_value,
         axis_rules,

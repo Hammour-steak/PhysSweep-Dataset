@@ -3,14 +3,73 @@ from __future__ import annotations
 import copy
 import math
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
-from tools.core.camera_geometry import pair_camera_geometry_eligible
+from tools.core.camera_geometry import pair_camera_geometry_eligible, validate_pair_camera_fallback_views
+from tools.rendering import camera_solver
 from tools.motion_rules.two_object.motion import interaction_approach_axis
 
 
 class CameraGeometryTests(unittest.TestCase):
+    def test_pair_keyframe_uses_actual_contact_or_closest_approach(self) -> None:
+        positions = np.asarray([[[0., 0., 0.], [x, 0., 0.]] for x in (3., 1., 2.)])
+        key = "object_a__object_contact_count__object_b"
+        for contacts, expected in (([0, 0, 0], (1, "closest_approach")),
+                                   ([0, 0, 1], (2, "first_contact"))):
+            with self.subTest(contacts=contacts):
+                self.assertEqual(camera_solver._two_object_keyframe(
+                    ["object_a", "object_b"], positions, {key: np.asarray(contacts)}
+                ), expected)
+        with self.assertRaisesRegex(ValueError, "length is inconsistent"):
+            camera_solver._two_object_keyframe(
+                ["object_a", "object_b"], positions, {key: np.asarray([0])}
+            )
+
+    def test_camera_fallback_contract_and_primary_first_dispatch(self) -> None:
+        view = {
+            "id": "rear_axial_right_low", "relative_azimuth_degrees": -150.0,
+            "preferred_elevation_degrees": 24.0,
+            "minimum_elevation_degrees": 18.0, "maximum_elevation_degrees": 34.0,
+        }
+        validate_pair_camera_fallback_views([view])
+        for invalid in (None, [view, view], [{**view, "id": ""}],
+                        [{**view, "minimum_elevation_degrees": 35.0}],
+                        [{**view, "relative_azimuth_degrees": float("nan")}],
+                        [{**view, "preferred_elevation_degrees": True}],
+                        [{**view, "minimum_per_object_median_span_ndc": 0.01}]):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                validate_pair_camera_fallback_views(invalid)
+        metadata = {
+            "scene_id": "base",
+            "camera_request": {"fallback_view_families": [view]},
+            "simulation": {"interaction": {"camera_view_family_id": "preferred"},
+                           "objects": [{"fixed": True}], "support": {"fixed": True}},
+            "environment_binding": {"fixed": True},
+        }
+        original = copy.deepcopy(metadata)
+        trajectory = {"fixed": np.asarray([1.0])}
+        primary = {"solver_version": "unchanged", "diagnostics": {}}
+        with patch.object(camera_solver, "_solve_two_object_camera_view", return_value=primary) as solve:
+            self.assertIs(camera_solver._solve_two_object_camera(metadata, trajectory, {}), primary)
+            self.assertEqual(solve.call_count, 1)
+        alternative = {"diagnostics": {}}
+        with patch.object(camera_solver, "_solve_two_object_camera_view", side_effect=[ValueError("preferred rejected"), alternative]) as solve, patch.object(camera_solver, "audit_two_object_camera") as audit:
+            actual = camera_solver._solve_two_object_camera(metadata, trajectory, {})
+            self.assertEqual(solve.call_count, 2)
+            audit.assert_called_once()
+            candidate = solve.call_args.args[0]
+            self.assertEqual(candidate["simulation"]["objects"], metadata["simulation"]["objects"])
+            self.assertEqual(candidate["environment_binding"], metadata["environment_binding"])
+            self.assertNotIn("fallback_view_families", candidate["camera_request"])
+            self.assertEqual(candidate["simulation"]["interaction"]["camera_view_family_id"], view["id"])
+            self.assertTrue(actual["solver_version"].endswith("_v8"))
+        self.assertEqual(metadata, original)
+        with patch.object(camera_solver, "_solve_two_object_camera_view", side_effect=ValueError("rejected")):
+            with self.assertRaisesRegex(ValueError, "fallback views exhausted"):
+                camera_solver._solve_two_object_camera(metadata, trajectory, {})
+
     def test_interaction_approach_axis_uses_the_support_motion_frame(self) -> None:
         intent = {
             "interaction_class": "interacting",

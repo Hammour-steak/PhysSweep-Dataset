@@ -4,7 +4,9 @@ import json
 import random
 import tempfile
 import unittest
+from contextlib import ExitStack
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 
@@ -22,12 +24,97 @@ from tools.motion_rules.two_object.specialized import (
     resolve_specialized_camera_binding,
 )
 from tools.physics.generate_passive_pinball_scene import build_fixture
+from tools.core.hashing import sha256_file
+from tools.physics.two_object_specialized_simulation import _marble_fixture
+from tools.physics import two_object_specialized_simulation as specialized_simulation
+from tools.physics.pybullet_backend_dispatcher import _adapter_hard_results
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class TwoObjectSpecializedRulesTests(unittest.TestCase):
+    def test_specialized_sweep_retains_penetration_diagnostics_without_base_rejection(self) -> None:
+        for family, builder in (("billiards", "_billiards_fixture"),
+                                ("passive_pinball", "_pinball_fixture"),
+                                ("marble_run", "_marble_fixture")):
+            for kind in ("base", "sweep"):
+                with self.subTest(family=family, kind=kind), ExitStack() as stack:
+                    scene = {
+                        "backend_binding": {"adapter_id": f"{family}_two_object_v1"},
+                        "variant": {"kind": kind},
+                        "time": {"frame_count": 2, "output_fps": 24, "simulation_hz": 240},
+                        "objects": [{"initial_state": {"position_m": [float(i), 0., 0.]}} for i in (0, 1)],
+                        "adapter_payload": {"quality": {
+                            "maximum_first_pair_contact_time_s": 0.5,
+                            "maximum_penetration_m": 0.001,
+                            "rail_contact_before_pair_contact_is_forbidden": True,
+                            "minimum_path_length_per_object_m": 0.1,
+                            "minimum_distinct_fixture_contacts_per_object": 1,
+                            "required_track_contact_ids": ["track"],
+                        }},
+                    }
+                    pb = MagicMock()
+                    pb.connect.return_value = 1
+                    pb.getBasePositionAndOrientation.side_effect = lambda body: ([float(body), 0., 0.], [0., 0., 0., 1.])
+                    pb.getBaseVelocity.return_value = ([0., 0., 0.], [0., 0., 0.])
+                    pb.getContactPoints.return_value = []
+                    stack.enter_context(patch.object(specialized_simulation, "_pybullet", return_value=pb))
+                    stack.enter_context(patch.object(specialized_simulation, "_configure_world"))
+                    stack.enter_context(patch.object(specialized_simulation, builder, return_value=({}, lambda *_: False)))
+                    stack.enter_context(patch.object(specialized_simulation, "_create_spheres", return_value=([0, 1], np.ones((2, 3)), np.ones((2, 3)), np.zeros((2, 4)))))
+                    _, audit = specialized_simulation.simulate_two_object_specialized(scene, ROOT)
+                    self.assertEqual(audit["passed"], kind == "sweep")
+                    self.assertEqual(all(_adapter_hard_results(scene, audit)), kind == "sweep")
+                    self.assertFalse(audit["checks"]["pair_contact_observed"])
+                    self.assertEqual("pair_contact_observed" in audit["advisories"], kind == "sweep")
+                    # Preserve the raw failure, but apply base quality gates only to base.
+                    pb.getContactPoints.return_value = [(0, 0, 9, 0, 0, 0, 0, 0, -0.1)]
+                    _, invalid = specialized_simulation.simulate_two_object_specialized(scene, ROOT)
+                    self.assertFalse(invalid["passed"])
+                    self.assertEqual(all(_adapter_hard_results(scene, invalid)), kind == "sweep")
+                    self.assertNotIn("maximum_penetration", invalid["advisories"])
+
+    def test_marble_fixture_rejects_missing_or_changed_collision_before_loading(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            collision = root / "track.obj"
+            component = {
+                "id": "track", "collision": {"path": "track.obj", "sha256": "0" * 64},
+                "mesh_scale": [1.0, 1.0, 1.0],
+            }
+            scene = {"adapter_payload": {"fixture": {
+                "mesh_material": {}, "mesh_components": [component],
+            }}}
+            pb = MagicMock()
+            with self.assertRaises(FileNotFoundError):
+                _marble_fixture(pb, scene, root)
+            collision.write_bytes(b"v 0 0 0\n")
+            with self.assertRaisesRegex(ValueError, "collision hash changed"):
+                _marble_fixture(pb, scene, root)
+            pb.createCollisionShape.assert_not_called()
+
+    def test_marble_fixture_reuses_verified_mesh_for_identical_components(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            collision = root / "track.obj"
+            collision.write_bytes(b"v 0 0 0\n")
+            component = {
+                "id": "track", "collision": {"path": "track.obj", "sha256": sha256_file(collision)},
+                "mesh_scale": [1.0, 1.0, 1.0], "base_position_m": [0.0, 0.0, 0.0],
+                "base_orientation_quaternion_xyzw": [0.0, 0.0, 0.0, 1.0],
+            }
+            material = {"contact_friction": 0.3, "contact_restitution": 0.2}
+            scene = {"adapter_payload": {"fixture": {
+                "mesh_material": material, "mesh_components": [component, component],
+                "analytic_material": material, "analytic_colliders": [],
+            }}}
+            pb = MagicMock()
+            with patch("tools.physics.specialized_sphere_simulation.sha256_file", wraps=sha256_file) as digest:
+                _marble_fixture(pb, scene, root)
+            digest.assert_called_once_with(collision)
+            pb.createCollisionShape.assert_called_once()
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.rules = load_two_object_specialized_rules(ROOT)

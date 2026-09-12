@@ -1,0 +1,199 @@
+{
+  "schema_version": "physweep_three_object_pinball_rules_v1",
+  "status": "development_unvalidated",
+  "family": "passive_pinball",
+  "source_schema": "physweep_passive_pinball_scene_v1",
+  "output_schema": "physweep_passive_pinball_three_object_scene_v1",
+  "motion_rules": {
+    "path": "configs/three_object_motion_rules.json",
+    "sha256": "36c8850f0c88ca3be8021b9efef42a44388f730d9063874d6a4082f3d66a7419"
+  },
+  "scene_rules": {
+    "path": "configs/three_object_scene_rules.json",
+    "sha256": "fb9ebaa5e2d20505dabb6c7c99295d18e6358d516b9227c0d2867dcee4d7e115"
+  },
+  "visual_sources": {
+    "scene_profiles": {
+      "path": "configs/scene_visual_profiles.json",
+      "sha256": "71d408f544bd5abd5ca870b385d85418d33fe5095d14d01b49e9c3c160b0273f"
+    },
+    "visual_sampling": {
+      "path": "configs/visual_sampling.json",
+      "sha256": "8d4ff84a9ba7f704dc9b0251c95033102400535c2b5a63923c1c6b7f6ab1bc62"
+    },
+    "hdri_manifest": {
+      "path": "assets/manifests/hdri_admission.json",
+      "sha256": "92cf20d0afd566293e7becc1b9f6debc724fe2f72515c00c2e45ebc43d5bb11d"
+    }
+  },
+  "background_contract": {
+    "physics_role": "render_only_context",
+    "profile_ids": [
+      "industrial_bay",
+      "workshop_grid",
+      "lab_storage"
+    ],
+    "minimum_back_wall_distance_m": 2.4,
+    "collision_enabled": false,
+    "full_fixture_visible_with_every_camera": true
+  },
+  "initial_limits": {
+    "parameter_cases": [
+      {
+        "side": -1,
+        "Q_x_abs_m": 0.135,
+        "gap_m": 0.04,
+        "speed_m_s": 0.4
+      },
+      {
+        "side": -1,
+        "Q_x_abs_m": 0.135,
+        "gap_m": 0.06,
+        "speed_m_s": 0.5
+      },
+      {
+        "side": -1,
+        "Q_x_abs_m": 0.225,
+        "gap_m": 0.04,
+        "speed_m_s": 0.4
+      },
+      {
+        "side": -1,
+        "Q_x_abs_m": 0.225,
+        "gap_m": 0.06,
+        "speed_m_s": 0.5
+      },
+      {
+        "side": -1,
+        "Q_x_abs_m": 0.315,
+        "gap_m": 0.04,
+        "speed_m_s": 0.4
+      },
+      {
+        "side": -1,
+        "Q_x_abs_m": 0.315,
+        "gap_m": 0.06,
+        "speed_m_s": 0.5
+      },
+      {
+        "side": 1,
+        "Q_x_abs_m": 0.135,
+        "gap_m": 0.04,
+        "speed_m_s": 0.4
+      },
+      {
+        "side": 1,
+        "Q_x_abs_m": 0.135,
+        "gap_m": 0.06,
+        "speed_m_s": 0.5
+      },
+      {
+        "side": 1,
+        "Q_x_abs_m": 0.225,
+        "gap_m": 0.04,
+        "speed_m_s": 0.4
+      },
+      {
+        "side": 1,
+        "Q_x_abs_m": 0.225,
+        "gap_m": 0.06,
+        "speed_m_s": 0.5
+      },
+      {
+        "side": 1,
+        "Q_x_abs_m": 0.315,
+        "gap_m": 0.04,
+        "speed_m_s": 0.4
+      },
+      {
+        "side": 1,
+        "Q_x_abs_m": 0.315,
+        "gap_m": 0.06,
+        "speed_m_s": 0.5
+      }
+    ],
+    "R_x_abs_m": 0.6,
+    "initial_down_m": 0.015,
+    "R_initial_down_speed_m_s": 0.05,
+    "normal_surface_gap_m": 0.0005,
+    "edge_margin_m": 0.04,
+    "minimum_initial_surface_gap_m": 0.001
+  },
+  "first_event_min_s": 0.08,
+  "first_event_policy_reason": "Near-vertical pinfield needs an initial encounter before peg deflection; at least two 24fps intervals before contact. Q offset from peg axes. This is a dedicated family rule, not a change to generic D0 rules.",
+  "appearance_palette": {
+    "amber": [
+      0.98,
+      0.62,
+      0.08,
+      1.0
+    ],
+    "blue": [
+      0.16,
+      0.58,
+      0.93,
+      1.0
+    ],
+    "green": [
+      0.35,
+      0.72,
+      0.28,
+      1.0
+    ]
+  },
+  "camera_rules": {
+    "model": "perspective_pinhole",
+    "policy": "base_only_fixed_group",
+    "reference": "initial_P_direction_and_support_normal",
+    "view_families": [
+      {
+        "id": "pinfield_front",
+        "azimuth_degrees": 90.0,
+        "elevation_degrees": 12.0
+      },
+      {
+        "id": "pinfield_left",
+        "azimuth_degrees": 65.0,
+        "elevation_degrees": 18.0
+      },
+      {
+        "id": "pinfield_right",
+        "azimuth_degrees": 115.0,
+        "elevation_degrees": 18.0
+      }
+    ],
+    "focal_length_mm": [
+      35.0,
+      50.0
+    ],
+    "minimum_object_extent_px": 24.0,
+    "frame_margin_fraction": 0.04,
+    "audit_policy": "per_object_projection_and_geometric_occlusion_plus_manual_keyframes",
+    "maximum_occluded_fraction": 0.25,
+    "maximum_candidate_count": 24,
+    "whole_fixture_required": true
+  },
+  "media": {
+    "duration_s": 4.0,
+    "output_fps": 24,
+    "frame_count": 97,
+    "resolution": [
+      1280,
+      720
+    ],
+    "samples": 32,
+    "render_engine": "BLENDER_EEVEE",
+    "motion_blur": false,
+    "masks": false
+  },
+  "candidate_count": 12,
+  "target_roles": [
+    "P",
+    "Q",
+    "R"
+  ],
+  "source_object_reuse_limit": 2,
+  "source_host_reuse_limit": 1,
+  "master_seed": 20260907,
+  "scope": "Twelve finite pinball pair-control initial states, source-sized equal spheres, source fixture, full seven physical material values. Explicit color-only recipes share the existing sphere shader, no texture-source diversity claim. No production quota."
+}

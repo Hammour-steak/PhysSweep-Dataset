@@ -43,7 +43,7 @@ from tools.rendering.video_encoding import (
 )
 from tools.dataset_contract.trajectory_contract import object_trajectory_view
 
-SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2)
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2, 3)
 
 
 def configure_project_root(root: Path) -> Path:
@@ -914,6 +914,10 @@ def validate_instance_mask_output(
             raise ValueError(
                 f"initial instance mask must be nonempty and non-full: {object_id}"
             )
+        if max(soft_edge_fractions) <= 0.0:
+            raise ValueError(
+                f"instance masks lack antialiased coverage edges: {object_id}"
+            )
         object_reports[str(object_id)] = {
             "frame_count": len(frames),
             "pixel_probe_frames": [frames[index] for index in probe_indices],
@@ -946,7 +950,7 @@ def render_unoccluded_instance_masks(
     scene.render.image_settings.color_mode = "RGBA"
     scene.render.image_settings.color_depth = "8"
     if scene.render.engine == "BLENDER_EEVEE":
-        scene.eevee.taa_render_samples = 1
+        scene.eevee.taa_render_samples = max(8, min(int(render["samples"]), 16))
     material = bpy.data.materials.new("physweep_motion_mask")
     material.use_nodes = True
     nodes = material.node_tree.nodes
@@ -1102,6 +1106,10 @@ def render(
 ) -> dict[str, Any]:
     started = time.perf_counter()
     metadata = load_json(metadata_path)
+    is_three = len(metadata.get('simulation', {}).get('objects', [])) == 3
+    if is_three:
+        from tools.motion_rules.three_object.motion import validate_motion_contract
+        validate_motion_contract(metadata)
     if metadata["schema_version"] != "physweep_pybullet_rigid_bound_metadata_v1":
         raise ValueError("renderer requires bound PyBullet rigid metadata")
     source_metadata_path = resolve_project_path(
@@ -1121,6 +1129,9 @@ def render(
         trajectory = {key: source[key] for key in source.files}
     trajectory = object_trajectory_view(metadata, trajectory)
     visual = metadata["visualization"]
+    if is_three:
+        from tools.assets.three_object_resources import validate_resources
+        validate_resources(PROJECT_ROOT, metadata, visual['resource_binding'])
     render_config = dict(visual["render"])
     if instance_mask_dir is not None:
         render_config["instance_mask_dir"] = instance_mask_dir
@@ -1139,6 +1150,12 @@ def render(
         raise ValueError("render and trajectory frame counts differ")
     clear_blender_scene(("meshes", "curves", "materials", "cameras", "lights"))
     setup_scene(render_config)
+    if is_three:
+        from tools.rendering.three_object_visuals import frozen_lighting_report
+        frozen_lighting_report(render_config)
+        bpy.context.scene.eevee.use_motion_blur = False
+        for layer in bpy.context.scene.view_layers:
+            layer.use_pass_object_index = False
     materials = build_static_scene(metadata, visual)
     dynamic_objects = add_dynamic_animation(
         metadata, trajectory, materials["dynamic_objects"]
@@ -1191,22 +1208,20 @@ def render(
         )
         write_json(record_path, record)
         return record
-    lighting_adaptation = apply_material_lightness_adaptation(
-        bpy.context.scene,
-        dynamic_objects,
-        materials["support_objects"],
-    )
     if first_frame_only:
         render_config["inspection_frames"] = [int(render_config["frame_start"])]
-    inspection_paths, rendered_frame_adaptation = adapt_rendered_frame_exposure(
-        render_config
-    )
-    lighting_adaptation["rendered_frame_exposure"] = rendered_frame_adaptation
+    if is_three:
+        lighting_adaptation = frozen_lighting_report(render_config)
+        inspection_paths = render_inspection_frames(render_config)
+    else:
+        lighting_adaptation = apply_material_lightness_adaptation(
+            bpy.context.scene, dynamic_objects, materials["support_objects"],
+        )
+        inspection_paths, rendered_frame_adaptation = adapt_rendered_frame_exposure(render_config)
+        lighting_adaptation["rendered_frame_exposure"] = rendered_frame_adaptation
     video_path, video_encoding = configure_video_output(render_config)
     if first_frame_only:
         video_sha = None
-        instance_mask_output = None
-        mask_validation = None
     else:
         bpy.context.scene.frame_set(int(render_config["frame_start"]))
         require_render_finished(
@@ -1218,22 +1233,8 @@ def render(
             expected_frame_count=expected_frames,
         )
         video_sha = sha256(video_path)
-        instance_mask_output = render_unoccluded_instance_masks(
-            render_config, metadata, dynamic_objects
-        )
-        mask_validation = validate_instance_mask_output(
-            instance_mask_output,
-            list(
-                range(
-                    int(render_config["frame_start"]),
-                    int(render_config["frame_end"]) + 1,
-                )
-            ),
-        )
-    if instance_mask_output is not None:
-        instance_mask_output["validation"] = mask_validation
     record = {
-        "schema_version": "physweep_pybullet_render_record_v1",
+        "schema_version": "physweep_pybullet_render_record_v2",
         "implementation": {
             "path": str(Path(__file__).resolve()),
             "sha256": sha256(Path(__file__).resolve()),
@@ -1249,7 +1250,6 @@ def render(
         "blender_version": bpy.app.version_string,
         "render_engine": bpy.context.scene.render.engine,
         "video_encoding": video_encoding,
-        "instance_mask_output": instance_mask_output,
         "lighting_adaptation": lighting_adaptation,
         "render_scope": "first_frame_only" if first_frame_only else "full_animation",
         "wall_time_s": round(time.perf_counter() - started, 6),

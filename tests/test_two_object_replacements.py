@@ -4,6 +4,7 @@ import copy
 import json
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from tools.sampling.resample_two_object_failures import (
     _replacement_camera_priority,
@@ -164,6 +165,29 @@ class TwoObjectReplacementTests(unittest.TestCase):
                 later["cell"]["object_a_source_family"],
                 later["cell"]["object_b_source_family"],
             ],
+        )
+        generic_only = copy.deepcopy(matrix)
+        generic_only["coverage_plan"]["role_ordered_source_family_pairs"] = [
+            record for record in matrix["coverage_plan"]["role_ordered_source_family_pairs"]
+            if record["id"] == "generic_to_generic"
+        ]
+        older = copy.deepcopy(failed)
+        older["cell"]["cell_id"] = "replacement_cell__front_left_low"
+        older["cell"]["camera_view_family_id"] = "front_left_low"
+        older["objects"] = [objects[0], objects[4]]
+        with patch("tools.sampling.resample_two_object_failures._rank", return_value=0):
+            rotated = replace_failed_selections(
+                [failed, passing], {"failed"}, objects[:6], hosts,
+                generic_only, rules, attempt=2,
+                previously_rejected={selection_signature(older)},
+            )
+        self.assertIs(rotated[1], passing)
+        self.assertNotEqual(rotated[0]["cell"]["camera_view_family_id"], "side_left_mid")
+        # Stable ranking would pick object_1/object_2 again unless failure
+        # history survives the camera token change. It must also skip 1/5.
+        self.assertEqual(
+            [source["source"]["scene_id"] for source in rotated[0]["objects"]],
+            ["object_1", "object_6"],
         )
         coverage = replacement_coverage(
             {

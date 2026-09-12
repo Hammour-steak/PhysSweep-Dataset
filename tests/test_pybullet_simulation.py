@@ -6,6 +6,7 @@ import math
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
@@ -29,7 +30,6 @@ from tools.rendering.camera_solver import (  # noqa: E402
     segment_intersects_box,
     segments_intersect_box,
     solve_camera,
-    solve_two_object_camera_group,
     support_context_points,
     unoccluded_fraction,
 )
@@ -736,8 +736,8 @@ class PyBulletSimulationTests(unittest.TestCase):
         )
         caption = identity["text"]["caption"]
         self.assertEqual(caption.count(source_mention), 2)
-        self.assertIn("move toward each other across the", caption)
-        self.assertTrue(caption.endswith("and collide."), caption)
+        self.assertIn("moving toward each other across the", caption)
+        self.assertNotIn("collide", caption)
         self.assertNotIn(
             "physassets",
             caption,
@@ -782,7 +782,7 @@ class PyBulletSimulationTests(unittest.TestCase):
         camera = solve_camera(scene, first, self.rules)
         self.assertEqual(
             camera["solver_version"],
-            "joint_full_motion_envelope_camera_v6",
+            "joint_full_motion_envelope_camera_v7",
         )
         diagnostics = camera["diagnostics"]
         self.assertEqual(diagnostics["object_count"], 2)
@@ -859,35 +859,18 @@ class PyBulletSimulationTests(unittest.TestCase):
         inherited_diagnostics = audit_two_object_camera(
             inelastic_sweep, inelastic_trajectory, camera
         )
+        invalid_camera = copy.deepcopy(camera)
+        invalid_camera["focal_length_mm"] = 1.0e6
+        with patch(
+            "tools.rendering.camera_solver.unoccluded_fraction",
+            side_effect=AssertionError("rejected projection must not ray-test"),
+        ):
+            with self.assertRaisesRegex(ValueError, "per-object visibility"):
+                audit_two_object_camera(scene, first, invalid_camera)
         self.assertEqual(
             inherited_diagnostics["joint_motion_envelope_visible_fraction"],
             1.0,
         )
-        group_camera = solve_two_object_camera_group(
-            scene,
-            [
-                (derived_camera_scene, first),
-                (inelastic_sweep, inelastic_trajectory),
-            ],
-            self.rules,
-        )
-        self.assertEqual(
-            group_camera["solver_version"],
-            "joint_full_motion_envelope_group_camera_v6",
-        )
-        self.assertEqual(
-            group_camera["diagnostics"]["camera_group"]["member_count"], 2
-        )
-        for member, member_trajectory in (
-            (derived_camera_scene, first),
-            (inelastic_sweep, inelastic_trajectory),
-        ):
-            self.assertEqual(
-                audit_two_object_camera(
-                    member, member_trajectory, group_camera
-                )["joint_motion_envelope_visible_fraction"],
-                1.0,
-            )
 
     def test_two_object_camera_supports_heterogeneous_sphere_scales(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)
@@ -984,10 +967,46 @@ class PyBulletSimulationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "per-object visibility"):
             audit_two_object_camera(scene, excessive_exit, camera)
 
+    def test_two_object_camera_retries_distance_before_discarding_view(self) -> None:
+        scene = build_two_object_scene(
+            self.without_incidental_environment(self.rolling_stress_scene),
+            load_json(ROOT / "configs/two_object_sampling_matrix.json"),
+            "surface_head_on_2obj",
+        )
+        trajectory, physics_audit = simulate(scene)
+        self.assertTrue(physics_audit["passed"], physics_audit)
+        baseline = solve_camera(scene, trajectory, self.rules)
+        rejected_poses = []
+
+        def reject_preferred(metadata, motion, camera):
+            diagnostic = audit_two_object_camera(metadata, motion, camera)
+            if (
+                camera["position_m"] == baseline["position_m"]
+                and camera["target_m"] == baseline["target_m"]
+            ):
+                rejected_poses.append(camera["position_m"])
+                raise ValueError("preferred distance fails actual object audit")
+            return diagnostic
+
+        with patch(
+            "tools.rendering.camera_solver.audit_two_object_camera",
+            side_effect=reject_preferred,
+        ):
+            camera = solve_camera(scene, trajectory, self.rules)
+        self.assertTrue(rejected_poses)
+        self.assertNotEqual(camera["position_m"], baseline["position_m"])
+        for key in (
+            "pair_selected_view_azimuth_degrees",
+            "pair_selected_elevation_degrees",
+        ):
+            self.assertEqual(camera["diagnostics"][key], baseline["diagnostics"][key])
+        audit_two_object_camera(scene, trajectory, camera)
+
     def test_two_object_camera_does_not_escape_its_declared_view_family(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)
         matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
         scene = build_two_object_scene(host, matrix, "surface_head_on_2obj")
+        scene["camera_request"].pop("fallback_view_families", None)
         trajectory, audit = simulate(scene)
         self.assertTrue(audit["passed"], audit)
         preferred = solve_camera(scene, trajectory, self.rules)
@@ -1018,6 +1037,37 @@ class PyBulletSimulationTests(unittest.TestCase):
         binding["binding_sha256"] = binding_sha256(binding)
         with self.assertRaisesRegex(ValueError, "could not solve"):
             solve_camera(blocked, trajectory, self.rules)
+
+    def test_two_object_fallback_is_declared_and_keeps_visibility_thresholds(self) -> None:
+        scene = build_two_object_scene(
+            self.without_incidental_environment(self.rolling_stress_scene),
+            load_json(ROOT / "configs/two_object_sampling_matrix.json"),
+            "surface_head_on_2obj",
+        )
+        trajectory, physics_audit = simulate(scene)
+        self.assertTrue(physics_audit["passed"])
+        camera = solve_camera(scene, trajectory, self.rules)
+        i = scene["simulation"]["interaction"]
+        view = {
+            "id": "original_view_fallback", "relative_azimuth_degrees": i["camera_relative_azimuth_degrees"],
+            "preferred_elevation_degrees": i["preferred_camera_elevation_degrees"],
+            "minimum_elevation_degrees": i["minimum_camera_elevation_degrees"],
+            "maximum_elevation_degrees": i["maximum_camera_elevation_degrees"],
+        }
+        changed = copy.deepcopy(scene)
+        changed["simulation"]["interaction"]["camera_relative_azimuth_degrees"] -= 90.0
+        changed["camera_request"]["fallback_view_families"] = [view]
+        audit = audit_two_object_camera(changed, trajectory, camera)
+        self.assertEqual(audit["camera_view_family_id"], view["id"])
+        self.assertEqual(changed["simulation"]["objects"], scene["simulation"]["objects"])
+        missing = copy.deepcopy(changed)
+        missing["camera_request"].pop("fallback_view_families")
+        with self.assertRaisesRegex(ValueError, "outside its declared view"):
+            audit_two_object_camera(missing, trajectory, camera)
+        tightened = copy.deepcopy(changed)
+        tightened["simulation"]["interaction"]["minimum_per_object_median_span_ndc"] = 0.55
+        with self.assertRaisesRegex(ValueError, "per-object visibility"):
+            audit_two_object_camera(tightened, trajectory, camera)
 
     def test_two_object_camera_uses_contract_interior_elevations(self) -> None:
         candidates = _two_object_elevation_candidates(
@@ -1076,7 +1126,16 @@ class PyBulletSimulationTests(unittest.TestCase):
         )
 
     def test_two_object_motion_matrix_contact_contracts(self) -> None:
-        host = self.without_incidental_environment(self.rolling_stress_scene)
+        # Isolate the motion matrix on open ground. An elevated cabinet can
+        # legitimately hide an object after a larger-amplitude support exit;
+        # that is handled by camera admission, not a universal motion promise.
+        host = self.without_incidental_environment(min(
+            (scene for scene in self.candidates
+             if scene["simulation"]["support"]["scene_class"] == "ground_flat"
+             and scene["simulation"]["objects"][0]["geometry"]["type"] == "sphere"
+             and scene["simulation"]["objects"][0]["expected_motion"]["motion_family"] == "roll_or_slide_1obj"),
+            key=lambda scene: scene["scene_id"],
+        ))
         matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
         scenes = build_two_object_matrix(host, matrix)
         self.assertEqual(len(scenes), 12)
@@ -1241,9 +1300,12 @@ class PyBulletSimulationTests(unittest.TestCase):
                 )
                 camera = solve_camera(scene, trajectory, self.rules)
                 diagnostics = camera["diagnostics"]
-                self.assertEqual(
+                self.assertIn(
                     camera["solver_version"],
-                    "joint_full_motion_envelope_camera_v6",
+                    {
+                        "joint_full_motion_envelope_camera_v7",
+                        "joint_full_motion_envelope_camera_v8",
+                    },
                 )
                 self.assertEqual(
                     diagnostics["joint_motion_envelope_visible_fraction"],
@@ -1350,6 +1412,32 @@ class PyBulletSimulationTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, message):
                     build_two_object_scene(host, invalid, motion_id)
 
+    def test_two_object_sweep_short_travel_is_advisory_but_physics_is_hard(self) -> None:
+        host = self.without_incidental_environment(self.rolling_stress_scene)
+        matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
+        scene = build_two_object_scene(host, matrix, "surface_dual_independent_2obj")
+        trajectory, original = simulate(scene)
+        self.assertTrue(original["passed"], original)
+        scene["simulation"]["objects"][0]["expected_motion"]["minimum_displacement_m"] = 100.0
+        for kind in (None, "base", "sweep"):
+            with self.subTest(kind=kind):
+                candidate = copy.deepcopy(scene)
+                if kind is not None:
+                    candidate["sweep"] = {"kind": kind}
+                audit = audit_trajectory(candidate, trajectory)
+                self.assertEqual(audit["passed"], kind == "sweep")
+                check = next(r for r in audit["checks"] if r["id"] == "object_a__visible_motion")
+                self.assertFalse(check["passed"])
+                self.assertEqual(check.get("severity"), "advisory" if kind == "sweep" else None)
+        damaged = {key: value.copy() for key, value in trajectory.items()}
+        damaged["object_a__minimum_contact_distance_m"][:] = -1.0
+        scene["sweep"] = {"kind": "sweep"}
+        invalid = audit_trajectory(scene, damaged)
+        self.assertFalse(invalid["passed"])
+        penetration = next(r for r in invalid["checks"] if r["id"] == "object_a__bounded_penetration")
+        self.assertFalse(penetration["passed"])
+        self.assertNotEqual(penetration.get("severity"), "advisory")
+
     def test_two_object_audit_enforces_rest_and_arc_semantics(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)
         matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
@@ -1439,6 +1527,37 @@ class PyBulletSimulationTests(unittest.TestCase):
             record["id"] for record in audit["checks"] if not record["passed"]
         }
         self.assertIn("forbidden_pair_collision", failed)
+        declared_independent["sweep"] = {"kind": "sweep"}
+        derived_audit = audit_trajectory(declared_independent, trajectory)
+        self.assertTrue(derived_audit["passed"], derived_audit)
+        self.assertIn("forbidden_pair_collision", {r["id"] for r in derived_audit["advisories"]})
+
+    def test_two_object_contact_outcome_is_required_only_for_base(self) -> None:
+        host = self.without_incidental_environment(self.rolling_stress_scene)
+        matrix = load_json(ROOT / "configs/two_object_sampling_matrix.json")
+        scene = build_two_object_scene(host, matrix, "surface_head_on_2obj")
+        trajectory, original = simulate(scene)
+        self.assertTrue(original["passed"], original)
+        keys = ("object_a__object_contact_count__object_b", "object_b__object_contact_count__object_a")
+        for key in keys:
+            trajectory[key][:] = 0
+        for kind in (None, "base", "sweep"):
+            with self.subTest(kind=kind):
+                candidate = copy.deepcopy(scene)
+                if kind is not None:
+                    candidate["sweep"] = {"kind": kind}
+                audit = audit_trajectory(candidate, trajectory)
+                self.assertEqual(audit["passed"], kind == "sweep", audit)
+                contact = next(r for r in audit["checks"] if r["id"] == "required_pair_collision")
+                self.assertFalse(contact["passed"])
+                self.assertEqual(contact.get("severity"), "advisory" if kind == "sweep" else None)
+        scene["sweep"] = {"kind": "sweep"}
+        trajectory[keys[0]][1] = 1
+        audit = audit_trajectory(scene, trajectory)
+        self.assertFalse(audit["passed"])
+        reciprocal = next(r for r in audit["checks"] if r["id"] == "pair_contact_channels_are_reciprocal")
+        self.assertFalse(reciprocal["passed"])
+        self.assertNotEqual(reciprocal.get("severity"), "advisory")
 
     def test_two_object_audit_requires_explicit_pair_contract(self) -> None:
         host = self.without_incidental_environment(self.rolling_stress_scene)

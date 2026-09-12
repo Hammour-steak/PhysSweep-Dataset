@@ -14,6 +14,7 @@ from tools.cli.build_one_object_dataset import publish_dataset
 from tools.cli.dataset_generation import (
     Layout,
     bind_generation_plan,
+    generation_code_sha256,
     generation_layout as object_generation_layout,
     run,
     run_once,
@@ -47,9 +48,10 @@ def generation_plan(
     seed: int,
 ) -> dict[str, Any]:
     layout = generation_layout(root, work_id, release_root)
-    backends = load_specialized_backends(root)
+    backends = load_specialized_backends(root, object_count=1)
     return {
         "schema_version": PLAN_SCHEMA,
+        "generator_code_sha256": generation_code_sha256(),
         "work_id": work_id,
         "request": {"base_count": count, "seed": seed},
         "layout": {
@@ -111,7 +113,6 @@ def render_base(
                 "--workers",
                 str(min(workers, counts["generic_pybullet"])),
             ],
-            root=root,
             completion=bound,
             resume=resume,
         )
@@ -130,12 +131,12 @@ def render_base(
         ]
         if resume:
             command.append("--resume")
-        run(command, root)
+        run(command)
         verify_render_manifest(
             Path(plan["generic_render_manifest"]), counts["generic_pybullet"]
         )
 
-    for backend in load_specialized_backends(root):
+    for backend in load_specialized_backends(root, object_count=1):
         pipeline = str(backend["pipeline"])
         count = counts.get(pipeline, 0)
         if not count:
@@ -158,7 +159,7 @@ def render_base(
         ]
         if resume:
             command.append("--resume")
-        run(command, root)
+        run(command)
         verify_render_manifest(Path(plan[f"{branch}_render_manifest"]), count)
 
 
@@ -186,7 +187,6 @@ def render_sweep(
                 "--base-manifest",
                 str(base_plan["asset_render_input_manifest"]),
             ],
-            root,
         )
     if counts.get("generic", 0):
         if counts["generic"] % sweep_group_size(1):
@@ -207,7 +207,6 @@ def render_sweep(
                 "--output-root",
                 str(bound_root),
             ],
-            root=root,
             completion=bound,
             resume=resume,
         )
@@ -235,7 +234,7 @@ def render_sweep(
         ]
         if resume:
             base_command.append("--resume")
-        run(base_command, root)
+        run(base_command)
         verify_render_manifest(base_result, base_expected)
         result = bound_root / "derived_render_manifest.json"
         command = [
@@ -257,10 +256,10 @@ def render_sweep(
         ]
         if resume:
             command.append("--resume")
-        run(command, root)
+        run(command)
         verify_render_manifest(result, expected)
 
-    for backend in load_specialized_backends(root):
+    for backend in load_specialized_backends(root, object_count=1):
         branch = str(backend["sweep_branch"])
         count = counts.get(branch, 0)
         if not count:
@@ -289,7 +288,7 @@ def render_sweep(
         ]
         if resume:
             base_command.append("--resume")
-        run(base_command, root)
+        run(base_command)
         verify_render_manifest(base_result, base_expected)
         result = layout.sweep_render / branch / "derived_render_manifest.json"
         command = [
@@ -311,7 +310,7 @@ def render_sweep(
         ]
         if resume:
             command.append("--resume")
-        run(command, root)
+        run(command)
         verify_render_manifest(result, expected)
 
 
@@ -325,7 +324,7 @@ def release_specs(
         GENERIC_SCHEMA: "generic",
         **{
             str(record["source_schema_version"]): str(record["sweep_branch"])
-            for record in load_specialized_backends(root)
+            for record in load_specialized_backends(root, object_count=1)
         },
     }
     missing = selected - set(branches)
@@ -395,7 +394,6 @@ def main() -> None:
             "--physics-workers",
             str(args.physics_workers),
         ],
-        root=root,
         completion=layout.base_manifest,
         resume=args.resume,
     )
@@ -420,7 +418,6 @@ def main() -> None:
             "--selection",
             "all",
         ],
-        root=root,
         completion=layout.base_render / "render_plan.json",
         resume=args.resume,
     )
@@ -443,7 +440,6 @@ def main() -> None:
             "--output-dir",
             str(layout.sweep_metadata),
         ],
-        root=root,
         completion=layout.sweep_metadata / "manifest.json",
         resume=args.resume,
     )
@@ -461,7 +457,6 @@ def main() -> None:
             "--workers",
             str(args.physics_workers),
         ],
-        root=root,
         completion=layout.sweep_physics / "manifest.json",
         resume=args.resume,
     )
@@ -491,7 +486,6 @@ def main() -> None:
             "--output-root",
             str(layout.sweep_render),
         ],
-        root=root,
         completion=layout.sweep_render / "manifest.json",
         resume=args.resume,
     )

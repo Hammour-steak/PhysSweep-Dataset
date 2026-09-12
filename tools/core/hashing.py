@@ -42,6 +42,18 @@ def sha256_json_binding(value: dict[str, Any]) -> str:
     return sha256_json_without_field(value, "binding_sha256")
 
 
+def implementation_file_binding(root: Path, path: Path) -> dict[str, str]:
+    """Bind executed code; external source versions use an absolute evidence path.
+
+    Data bindings remain project-relative and retain their containment checks.
+    Consumers must still compare this path and hash to their expected code file.
+    """
+    resolved = path.resolve(strict=True)
+    name = (resolved.relative_to(root.resolve()).as_posix()
+            if resolved.is_relative_to(root.resolve()) else str(resolved))
+    return {"path": name, "sha256": sha256_file(resolved)}
+
+
 def relative_file_binding(root: Path, path: Path) -> dict[str, str]:
     """Bind a project-local file by relative path and content hash."""
 

@@ -2,6 +2,42 @@
   "schema_version": "physweep_specialized_scene_backends_v1",
   "records": [
     {
+      "pipeline": "marble_run_three_object",
+      "dynamic_object_counts": [
+        3
+      ],
+      "source_schema_version": "physweep_marble_run_three_object_scene_v1",
+      "sweep_branch": "marble_run_three_object",
+      "renderer_id": "marble_run_three_object",
+      "renderer_script": "tools/rendering/render_three_object_marble_scene.py",
+      "render_manifest_schema": "physweep_three_object_specialized_render_manifest_v1",
+      "render_manifest_name": "render_manifest.json"
+    },
+    {
+      "pipeline": "passive_pinball_three_object",
+      "dynamic_object_counts": [
+        3
+      ],
+      "source_schema_version": "physweep_passive_pinball_three_object_scene_v1",
+      "sweep_branch": "passive_pinball_three_object",
+      "renderer_id": "passive_pinball_three_object",
+      "renderer_script": "tools/rendering/render_three_object_pinball_scene.py",
+      "render_manifest_schema": "physweep_three_object_specialized_render_manifest_v1",
+      "render_manifest_name": "render_manifest.json"
+    },
+    {
+      "pipeline": "billiards_three_object",
+      "dynamic_object_counts": [
+        3
+      ],
+      "source_schema_version": "physweep_billiards_three_object_scene_v1",
+      "sweep_branch": "billiards_three_object",
+      "renderer_id": "billiards_three_object",
+      "renderer_script": "tools/rendering/render_three_object_billiards_scene.py",
+      "render_manifest_schema": "physweep_three_object_specialized_render_manifest_v1",
+      "render_manifest_name": "render_manifest.json"
+    },
+    {
       "pipeline": "asset_proxy",
       "source_schema_version": "physweep_asset_proxy_scene_v3",
       "sweep_branch": "asset",

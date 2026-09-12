@@ -10,8 +10,6 @@ import tempfile
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-import numpy as np
-
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json_atomic as write_json
@@ -19,8 +17,6 @@ from tools.core.paths import (
     project_relative_path as root_relative,
     resolve_project_path_within_root as project_path,
 )
-from tools.dataset_contract.trajectory_contract import object_trajectory_view
-from tools.rendering.camera_solver import audit_two_object_camera
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -86,7 +82,11 @@ def bind_one(
     if parent_bound is None:
         raise ValueError(f"parent base bound metadata is missing: {parent_scene_id}")
     parent_bound_path = project_path(root, str(parent_bound["metadata_path"]))
+    if sha256(parent_bound_path) != str(parent_bound["metadata_sha256"]):
+        raise ValueError(f"parent bound metadata changed: {parent_scene_id}")
     parent_metadata = load_json(parent_bound_path)
+    if parent_metadata.get("scene_id") != parent_scene_id:
+        raise ValueError(f"parent bound scene identity differs: {parent_scene_id}")
     if parent_metadata.get("schema_version") != (
         "physweep_pybullet_rigid_bound_metadata_v1"
     ):
@@ -98,7 +98,7 @@ def bind_one(
     )
     audit_path = project_path(root, str(sweep_sample["audit_path"]))
     simulation_record = load_json(simulation_record_path)
-    if simulation_record.get("scene_id") != scene_id:
+    if sweep.get("scene_id") != scene_id or simulation_record.get("scene_id") != scene_id:
         raise ValueError(f"simulation scene mismatch: {scene_id}")
     if simulation_record.get("metadata_path") != str(sweep_path):
         raise ValueError(f"simulation metadata path mismatch: {scene_id}")
@@ -124,22 +124,7 @@ def bind_one(
         "sha256": sha256(simulation_record_path),
     }
     bound["visualization"] = copy.deepcopy(parent_metadata["visualization"])
-    objects = sweep.get("simulation", {}).get("objects", [])
-    if isinstance(objects, list) and len(objects) == 2:
-        inherited_camera = bound["visualization"]["camera"]
-        if inherited_camera.get("solver_version") != (
-            "joint_full_motion_envelope_group_camera_v6"
-        ):
-            raise ValueError(
-                f"two-object sweep lacks a group-envelope camera: {scene_id}"
-            )
-        with np.load(trajectory_path) as source:
-            trajectory = {key: source[key] for key in source.files}
-        trajectory = object_trajectory_view(sweep, trajectory)
-        # Validate every member again against its immutable trajectory, but do
-        # not write member-specific diagnostics into the shared camera record.
-        # The complete group was already audited when this camera was solved.
-        audit_two_object_camera(sweep, trajectory, inherited_camera)
+    # Sweeps inherit the base camera unchanged, including when they leave its frame.
     bound["visualization"]["binding_version"] = (
         "physweep_pybullet_sweep_visual_binding_v1"
     )
@@ -149,10 +134,6 @@ def bind_one(
         "parent_bound_metadata_path": root_relative(root, parent_bound_path),
         "parent_bound_metadata_sha256": sha256(parent_bound_path),
     }
-    if isinstance(objects, list) and len(objects) == 2:
-        camera_inheritance["derived_trajectory_camera_audit"] = (
-            "joint_full_motion_envelope_camera_v6"
-        )
     bound["visualization"]["camera_inheritance"] = camera_inheritance
     render = bound["visualization"]["render"]
     render["video_path"] = root_relative(

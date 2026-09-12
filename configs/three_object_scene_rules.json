@@ -1,0 +1,74 @@
+{
+  "schema_version": "physweep_three_object_scene_rules_v2",
+  "status": "pilot_unvalidated",
+  "family": "generic",
+  "support_shapes": [
+    "rectangular_slab"
+  ],
+  "maximum_abs_slope_degrees": 0.0,
+  "allowed_collider_roles": [
+    "primary_support",
+    "support_structure",
+    "environment_floor"
+  ],
+  "required_collider_roles": [
+    "primary_support"
+  ],
+  "allowed_visual_types": [
+    "procedural_room"
+  ],
+  "layout": {
+    "edge_clearance_in_object_radii": 1.5,
+    "maximum_layout_attempts": 64
+  },
+  "camera": {
+    "model": "perspective_pinhole",
+    "policy": "base_only_fixed_group",
+    "reference": "initial_P_direction_and_support_normal",
+    "view_families": [
+      {
+        "id": "front_oblique",
+        "azimuth_degrees": 45,
+        "elevation_degrees": 25
+      },
+      {
+        "id": "side_oblique",
+        "azimuth_degrees": 90,
+        "elevation_degrees": 30
+      },
+      {
+        "id": "rear_oblique",
+        "azimuth_degrees": 135,
+        "elevation_degrees": 35
+      }
+    ],
+    "focal_length_mm": [
+      35.0,
+      50.0
+    ],
+    "minimum_object_extent_fraction_of_short_side": 0.05,
+    "target_object_extent_fraction_of_short_side": 0.1,
+    "maximum_object_extent_fraction_of_short_side": 0.25,
+    "frame_margin_fraction": 0.04,
+    "maximum_safe_frame_violation_fraction": 0.15,
+    "maximum_out_of_frame_fraction": 0.08,
+    "maximum_frame_overflow_fraction": 0.03,
+    "event_frame_margin_fraction": 0.01,
+    "event_frame_padding": 1,
+    "candidate_distance_factors": [
+      0.88,
+      1.0,
+      1.2,
+      1.45,
+      1.75,
+      2.1,
+      2.5,
+      3.0
+    ],
+    "audit_policy": "bounded_object_screen_fraction_with_limited_non_event_overflow_and_geometric_occlusion",
+    "maximum_occluded_fraction": 0.25,
+    "maximum_candidate_count": 48
+  },
+  "sweep_visibility_policy": "diagnostic_only",
+  "masks": false
+}

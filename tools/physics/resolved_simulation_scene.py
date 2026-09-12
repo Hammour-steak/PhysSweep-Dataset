@@ -8,25 +8,37 @@ import math
 from pathlib import Path
 from typing import Any
 
+from tools.core.integration_configuration import generic_integration_configuration
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.paths import join_project_path as _project_path
 from tools.core.rigid_geometry import finite_vector as _finite_vector
+from tools.core.rigid_geometry import generic_collision_proxy
 
 
 RESOLVED_SCENE_VERSION = "physweep_resolved_simulation_scene_v1"
 GENERIC_SCHEMA = "physweep_pybullet_rigid_metadata_v1"
 ASSET_SCHEMA = "physweep_asset_proxy_scene_v3"
 BILLIARDS_SCHEMA = "physweep_billiards_scene_v4"
+BILLIARDS_THREE_SCHEMA = "physweep_billiards_three_object_scene_v1"
+PASSIVE_PINBALL_THREE_SCHEMA = 'physweep_passive_pinball_three_object_scene_v1'
+MARBLE_RUN_THREE_SCHEMA = 'physweep_marble_run_three_object_scene_v1'
 PASSIVE_PINBALL_SCHEMA = "physweep_passive_pinball_scene_v1"
 MARBLE_RUN_SCHEMA = "physweep_marble_run_scene_v1"
 SUPPORTED_SCHEMAS = {
     GENERIC_SCHEMA,
     ASSET_SCHEMA,
     BILLIARDS_SCHEMA,
+    BILLIARDS_THREE_SCHEMA,
     PASSIVE_PINBALL_SCHEMA,
+    PASSIVE_PINBALL_THREE_SCHEMA,
+    MARBLE_RUN_THREE_SCHEMA,
     MARBLE_RUN_SCHEMA,
 }
+
+TWO_OBJECT_MATERIAL_EXTRAS = (
+    "rolling_friction", "spinning_friction", "linear_damping", "angular_damping",
+)
 
 
 def _load_pinned_json(root: Path, binding: dict[str, Any], label: str) -> dict[str, Any]:
@@ -105,6 +117,19 @@ def _material(value: dict[str, Any]) -> dict[str, float]:
     return result
 
 
+def _two_object_material(
+    source: dict[str, Any], primary: dict[str, Any]
+) -> dict[str, float]:
+    """Keep non-intervened dynamics explicit beside the three sweep axes."""
+    result = _material(primary)
+    for key in TWO_OBJECT_MATERIAL_EXTRAS:
+        value = float(source[key])
+        if not math.isfinite(value) or value < 0.0:
+            raise ValueError(f"invalid two-object material {key}")
+        result[key] = value
+    return result
+
+
 def _variant(metadata: dict[str, Any]) -> dict[str, Any]:
     sweep = metadata.get("sweep")
     if not sweep:
@@ -167,6 +192,9 @@ def _validate_time_and_world(scene: dict[str, Any]) -> None:
 
 
 def _generic_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
+    if len(metadata['simulation']['objects']) == 3:
+        from tools.motion_rules.three_object.motion import validate_motion_contract
+        validate_motion_contract(metadata)
     simulation = metadata["simulation"]
     identities = _identity_objects(metadata)
     source_objects = simulation["objects"]
@@ -186,7 +214,7 @@ def _generic_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
             {
                 "object_id": object_id,
                 "object_index": index,
-                "collision_proxy": copy.deepcopy(source["geometry"]),
+                "collision_proxy": generic_collision_proxy(source),
                 "initial_state": {
                     "position_m": _finite_vector(initial["position_m"], 3, "position"),
                     "orientation_quaternion_wxyz": _finite_quaternion(
@@ -208,9 +236,10 @@ def _generic_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
             "backend_id": "pybullet_rigid",
             "adapter_id": "generic_rigid_v1",
             "capability": "rigid_objects_with_analytic_or_exact_static_support",
-            "supported_dynamic_object_counts": [1, 2],
+            "supported_dynamic_object_counts": [1, 2, 3] if len(source_objects) == 3 else [1, 2],
         },
-        "time": copy.deepcopy(simulation["time"]),
+        "time": {**copy.deepcopy(simulation["time"]),
+                 "simulation_hz": generic_integration_configuration(metadata)["simulation_hz"]},
         "world": copy.deepcopy(simulation["world"]),
         "objects": objects,
         "adapter_payload": {},
@@ -330,7 +359,11 @@ def _billiards_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
             "contact_friction": dynamics["lateral_friction"],
             "contact_restitution": dynamics["restitution"],
         }
-        material = _material(resolved.get(object_id, fallback))
+        material = (
+            _two_object_material(dynamics, resolved.get(object_id, fallback))
+            if len(identities) == 2
+            else _material(resolved.get(object_id, fallback))
+        )
         objects.append(
             {
                 "object_id": object_id,
@@ -378,6 +411,73 @@ def _billiards_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
             ),
         },
     }
+
+
+def _three_sphere_objects(metadata):
+    sources = metadata['simulation']['objects']
+    identities = _identity_objects(metadata)
+    ids = [obj['object_id'] for obj in sources]
+    if ids != [obj['object_id'] for obj in identities]:
+        raise ValueError('three-object specialized identities do not match source objects')
+    resolved = _resolved_materials(metadata, ids)
+    objects = []
+    for index, source in enumerate(sources):
+        material = _two_object_material(source['material'], source['material'])
+        if source['object_id'] in resolved and resolved[source['object_id']] != _material(material):
+            raise ValueError('specialized sweep material evidence disagrees with source object')
+        state = source['initial_state']; w, x, y, z = _finite_quaternion(state['orientation_quaternion_wxyz'], 'orientation')
+        objects.append({'object_id':source['object_id'], 'object_index':index,
+            'collision_proxy':copy.deepcopy(source['collision_proxy']), 'material':material,
+            'inertia_policy':'pybullet_from_collision_proxy_and_mass',
+            'initial_state':{'position_m':_finite_vector(state['position_m'],3,'position'),
+                'orientation_quaternion_xyzw':[x,y,z,w],
+                'linear_velocity_m_s':_finite_vector(state['linear_velocity_m_s'],3,'linear velocity'),
+                'angular_velocity_rad_s':_finite_vector(state['angular_velocity_rad_s'],3,'angular velocity')}})
+    return objects
+
+
+def _billiards_three_scene(metadata: dict[str, Any], root: Path) -> dict[str, Any]:
+    from tools.motion_rules.three_object.billiards import validate_billiards_contract
+    validate_billiards_contract(metadata)
+    physics = metadata['physics']
+    objects = _three_sphere_objects(metadata)
+    backend = _load_pinned_json(root, physics['backend_config'], 'PyBullet backend')
+    return {'backend_binding':{'backend_id':'pybullet_rigid', 'adapter_id':'billiards_three_object_v1',
+            'capability':'three_spheres_with_exact_table_support_and_substep_events', 'supported_dynamic_object_counts':[3]},
+        'time':{key:physics[key] for key in ('duration_s','output_fps','simulation_hz','frame_count')},
+        'world':{'gravity_m_s2':[0.,0.,-9.81]}, 'objects':objects,
+        'adapter_payload':{'static_support_binding':copy.deepcopy(physics['static_support_binding']),
+                          'backend':backend, 'profile':'chain_transfer'}}
+
+
+def _pinball_three_scene(metadata, root):
+    from tools.motion_rules.three_object.pinball import validate_pinball_contract
+    validate_pinball_contract(metadata)
+    p=metadata['physics'];backend=_load_pinned_json(root,p['backend_config'],'pinball backend')
+    if backend.get('schema_version')!='physweep_passive_pinball_backend_v1' or p['profile'] not in backend['profiles']:
+        raise ValueError('unsupported pinball source backend or fixture profile')
+    if metadata['semantics']['profile']!=p['profile']:raise ValueError('pinball fixture source profile mismatch')
+    return {'backend_binding':{'backend_id':'pybullet_rigid','adapter_id':'passive_pinball_three_object_v1',
+        'capability':'three_spheres_with_exact_pinfield_and_substep_events','supported_dynamic_object_counts':[3]},
+        'time':copy.deepcopy(metadata['simulation']['time']),'world':copy.deepcopy(metadata['simulation']['world']),
+        'objects':_three_sphere_objects(metadata),'adapter_payload':{'backend':backend,'fixture':copy.deepcopy(p['fixture']),
+        'fixture_source':copy.deepcopy(p['fixture_source']),'profile':p['profile']}}
+
+
+def _marble_three_scene(metadata, root):
+    from tools.motion_rules.three_object.marble import validate_marble_contract
+    validate_marble_contract(metadata)
+    p=metadata['physics'];backend=_load_pinned_json(root,p['backend_config'],'marble backend')
+    if backend.get('schema_version')!='physweep_marble_run_backend_v1' or p['profile'] not in backend['profiles']:
+        raise ValueError('unsupported marble source backend or fixture profile')
+    if metadata['semantics']['profile']!=p['profile']:raise ValueError('marble fixture source profile mismatch')
+    for component in p['fixture']['mesh_components']:
+        path=_project_path(root,component['collision']['path'])
+        if sha256(path)!=component['collision']['sha256']:raise ValueError('marble collision mesh hash changed')
+    return {'backend_binding':{'backend_id':'pybullet_rigid','adapter_id':'marble_run_three_object_v1',
+        'capability':'three_spheres_with_exact_concave_track_and_substep_events','supported_dynamic_object_counts':[3]},
+        'time':copy.deepcopy(metadata['simulation']['time']),'world':copy.deepcopy(metadata['simulation']['world']),
+        'objects':_three_sphere_objects(metadata),'adapter_payload':{'backend':backend,'fixture':copy.deepcopy(p['fixture']),'profile':p['profile']}}
 
 
 def _single_sphere_fixture_scene(
@@ -507,7 +607,10 @@ def _two_sphere_fixture_scene(
                         initial["angular_velocity_rad_s"], 3, "angular velocity"
                     ),
                 },
-                "material": _material(resolved.get(source_ids[index], source["material"])),
+                "material": _two_object_material(
+                    source["material"],
+                    resolved.get(source_ids[index], source["material"]),
+                ),
                 "inertia_policy": "pybullet_from_collision_proxy_and_mass",
             }
         )
@@ -582,7 +685,10 @@ def compile_resolved_scene(
         GENERIC_SCHEMA: _generic_scene,
         ASSET_SCHEMA: _asset_scene,
         BILLIARDS_SCHEMA: _billiards_scene,
+        BILLIARDS_THREE_SCHEMA: _billiards_three_scene,
         PASSIVE_PINBALL_SCHEMA: _passive_pinball_scene,
+        PASSIVE_PINBALL_THREE_SCHEMA: _pinball_three_scene,
+        MARBLE_RUN_THREE_SCHEMA: _marble_three_scene,
         MARBLE_RUN_SCHEMA: _marble_run_scene,
     }[schema]
     compiled = compiler(metadata, root)

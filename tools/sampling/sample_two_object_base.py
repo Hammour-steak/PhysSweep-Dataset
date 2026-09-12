@@ -69,11 +69,13 @@ _COVERAGE_PLAN_FIELDS = {
     "camera_view_families",
     "role_ordered_source_family_pairs",
     "replicates_per_cell",
+    "replicate_order",
     "minimum_interacting_fraction",
     "selection_policy",
 }
 _SELECTION_POLICY = {
     "source_pair_uniqueness": "unordered_without_replacement",
+    "source_reuse_scope": "all_selected_replicates",
     "host_uniqueness": "balanced_bounded_reuse",
     "host_must_differ_from_object_sources": True,
     "object_visual_profile_coverage": "balanced_eligible",
@@ -94,7 +96,7 @@ def _validated_intents(
 ) -> list[dict[str, Any]]:
     resolved_scene_rules = resolved_two_object_scene_rules(scene_rules)
     if set(matrix) != _MATRIX_FIELDS or (
-        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v15"
+        matrix.get("schema_version") != "physweep_two_object_sampling_matrix_v16"
     ):
         raise ValueError("unsupported two-object sampling matrix")
     objects = matrix.get("objects")
@@ -225,9 +227,11 @@ def _validated_intents(
         not isinstance(coverage, dict)
         or set(coverage) != _COVERAGE_PLAN_FIELDS
         or coverage.get("schema_version")
-        != "physweep_two_object_coverage_plan_v4"
+        != "physweep_two_object_coverage_plan_v5"
     ):
         raise ValueError("two-object coverage plan is incomplete")
+    if coverage["replicate_order"] != "complete_cells_before_repeats":
+        raise ValueError("two-object replicates must complete cells before repeats")
     seed = coverage.get("seed")
     replicates = coverage.get("replicates_per_cell")
     minimum_interacting_fraction = coverage.get("minimum_interacting_fraction")
@@ -351,11 +355,10 @@ def _validated_intents(
         raise ValueError("two-object selection policy is incomplete")
     if any(selection.get(key) != value for key, value in _SELECTION_POLICY.items()):
         raise ValueError("two-object selection policy may not be weakened")
-    if (
-        selection.get("maximum_object_source_reuse") != 2
-        or selection.get("maximum_host_source_reuse") != 2
-    ):
-        raise ValueError("two-object source reuse limits may not be weakened")
+    for key in ("maximum_object_source_reuse", "maximum_host_source_reuse"):
+        value = selection[key]
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise ValueError("two-object source reuse limits must be positive integers")
     policy = matrix.get("policy")
     if not isinstance(policy, dict) or set(policy) != _POLICY_FIELDS:
         raise ValueError("two-object sampling policy is incomplete")

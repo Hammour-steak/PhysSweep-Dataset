@@ -8,6 +8,7 @@ from typing import Any
 
 import numpy as np
 
+from tools.core.camera_geometry import validate_pair_camera_fallback_views
 from tools.core.rigid_geometry import (
     finite_vector,
     object_contact_offset_m,
@@ -130,8 +131,12 @@ def _validate_contracts(
         5,
         "two-object interaction audit values",
     )
-    if set(observation) != _OBSERVATION_FIELDS:
+    if set(observation) - {"fallback_view_families"} != _OBSERVATION_FIELDS:
         raise ValueError("two-object observation fields are incomplete")
+    fallback_views = observation.get("fallback_view_families", [])
+    validate_pair_camera_fallback_views(fallback_views)
+    if any(view["id"] == view_family["id"] for view in fallback_views):
+        raise ValueError("pair camera fallback repeats its preferred view id")
     if (
         observation.get("schema_version")
         != "physweep_two_object_camera_observation_v3"
@@ -907,7 +912,6 @@ def apply_two_object_motion(
     _validate_intent_kinematics(layout, object_motions, local_velocities)
     velocities = _world_vectors(local_velocities, support_frame)
     orientations = [[1.0, 0.0, 0.0, 0.0] for _ in objects]
-    required_pre_contact_displacements: np.ndarray | None = None
 
     if layout == "planned_supported_contact":
         gravity_magnitude = float(
@@ -924,18 +928,6 @@ def apply_two_object_motion(
                 intent,
                 supported_deceleration,
             )
-        )
-        signed_closing_contributions = np.asarray(
-            [
-                float(local_velocities[0] @ approach_axis),
-                -float(local_velocities[1] @ approach_axis),
-            ],
-            dtype=np.float64,
-        )
-        required_pre_contact_displacements = np.where(
-            signed_closing_contributions > _NUMERICAL_EPSILON,
-            np.linalg.norm(supported_displacements, axis=1),
-            0.0,
         )
         planned_contact_xy = positions_xy + supported_displacements
         path_xy = np.vstack([positions_xy, planned_contact_xy])
@@ -1102,14 +1094,6 @@ def apply_two_object_motion(
                 else 0.0
             ),
         }
-        if (
-            required_pre_contact_displacements is not None
-            and required_pre_contact_displacements[index]
-            > _NUMERICAL_EPSILON
-        ):
-            expected["required_pre_contact_displacement_m"] = float(
-                required_pre_contact_displacements[index]
-            )
         relation_key = (
             "required_object_contact_id"
             if interaction_class == "interacting"
@@ -1131,6 +1115,7 @@ def apply_two_object_motion(
     }
     observation_fields = copy.deepcopy(observation)
     observation_fields.pop("schema_version")
+    fallback_views = observation_fields.pop("fallback_view_families", [])
     scene["simulation"]["interaction"] = {
         "schema_version": "physweep_two_object_interaction_v2",
         "type": (
@@ -1233,5 +1218,13 @@ def apply_two_object_motion(
         "maximum_camera_distance_m": float(
             observation["maximum_camera_distance_m"]
         ),
+    }
+    if fallback_views:
+        scene["camera_request"]["fallback_view_families"] = fallback_views
+    request = scene["camera_request"]
+    scene["semantic_sampling"]["five_dimensions"]["camera_observation"] = {
+        "camera_profile": request["profile"],
+        "observation_intent": request["observation"]["intent"],
+        "structure_context": request["observation"]["structure_context"],
     }
     return scene

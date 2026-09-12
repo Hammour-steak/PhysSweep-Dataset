@@ -481,7 +481,7 @@ def main() -> None:
     source_manifest_path = project_path(root, args.manifest)
     source_manifest_path.relative_to(root / "datasets")
     source_manifest = load_json(source_manifest_path)
-    specialized = specialized_by_pipeline(root)
+    specialized = specialized_by_pipeline(root, object_count=1)
     pipeline_order = ["generic_pybullet", *specialized]
     validated_source_records(source_manifest, set(pipeline_order))
     if args.pipeline is not None and args.pipeline not in pipeline_order:

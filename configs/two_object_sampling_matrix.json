@@ -1,5 +1,5 @@
 {
-  "schema_version": "physweep_two_object_sampling_matrix_v15",
+  "schema_version": "physweep_two_object_sampling_matrix_v16",
   "objects": {
     "schema_version": "physweep_object_collection_v1",
     "roles": [
@@ -127,7 +127,7 @@
     }
   },
   "coverage_plan": {
-    "schema_version": "physweep_two_object_coverage_plan_v4",
+    "schema_version": "physweep_two_object_coverage_plan_v5",
     "seed": 20260829,
     "role_ordered_scale_pairs": [
       {"id": "small_to_small", "object_a": "small", "object_b": "small"},
@@ -218,9 +218,11 @@
       {"id": "asset_to_asset", "object_a": "asset", "object_b": "asset"}
     ],
     "replicates_per_cell": 1,
+    "replicate_order": "complete_cells_before_repeats",
     "minimum_interacting_fraction": 0.80,
     "selection_policy": {
       "source_pair_uniqueness": "unordered_without_replacement",
+      "source_reuse_scope": "all_selected_replicates",
       "host_uniqueness": "balanced_bounded_reuse",
       "maximum_object_source_reuse": 2,
       "maximum_host_source_reuse": 2,
@@ -264,7 +266,29 @@
     "minimum_pair_keyframe_projected_center_separation_to_radius_sum_ratio": 0.75,
     "minimum_support_context_visible_fraction": 0.5,
     "minimum_support_anchor_visible_fraction": 1.0,
-    "minimum_support_anchor_unoccluded_fraction": 0.75
+    "minimum_support_anchor_unoccluded_fraction": 0.75,
+    "fallback_view_families": [
+      {
+        "id": "rear_axial_right_low", "relative_azimuth_degrees": -150.0,
+        "preferred_elevation_degrees": 24.0,
+        "minimum_elevation_degrees": 18.0, "maximum_elevation_degrees": 34.0
+      },
+      {
+        "id": "rear_axial_left_low", "relative_azimuth_degrees": 150.0,
+        "preferred_elevation_degrees": 24.0,
+        "minimum_elevation_degrees": 18.0, "maximum_elevation_degrees": 34.0
+      },
+      {
+        "id": "front_axial_right_low", "relative_azimuth_degrees": -30.0,
+        "preferred_elevation_degrees": 24.0,
+        "minimum_elevation_degrees": 18.0, "maximum_elevation_degrees": 34.0
+      },
+      {
+        "id": "front_axial_left_low", "relative_azimuth_degrees": 30.0,
+        "preferred_elevation_degrees": 24.0,
+        "minimum_elevation_degrees": 18.0, "maximum_elevation_degrees": 34.0
+      }
+    ]
   },
   "motion_intents": [
     {
@@ -273,7 +297,7 @@
       "kinematic_regime": "supported_supported",
       "layout": "planned_supported_contact",
       "object_motions": ["roll_or_slide_1obj", "rest"],
-      "linear_velocity_m_s": [[0.72, 0.0, 0.0], [0.0, 0.0, 0.0]],
+      "linear_velocity_m_s": [[0.864, 0.0, 0.0], [0.0, 0.0, 0.0]],
       "minimum_displacement_m": [0.18, 0.0],
       "contact_time_s": 0.72,
       "impact_offset_ratio": 0.0
@@ -284,7 +308,7 @@
       "kinematic_regime": "supported_supported",
       "layout": "planned_supported_contact",
       "object_motions": ["roll_or_slide_1obj", "rest"],
-      "linear_velocity_m_s": [[0.68, 0.24, 0.0], [0.0, 0.0, 0.0]],
+      "linear_velocity_m_s": [[0.816, 0.288, 0.0], [0.0, 0.0, 0.0]],
       "minimum_displacement_m": [0.17, 0.0],
       "contact_time_s": 0.58,
       "impact_offset_ratio": 0.28
@@ -295,7 +319,7 @@
       "kinematic_regime": "supported_supported",
       "layout": "planned_supported_contact",
       "object_motions": ["roll_or_slide_1obj", "roll_or_slide_1obj"],
-      "linear_velocity_m_s": [[0.60, 0.0, 0.0], [-0.24, 0.0, 0.0]],
+      "linear_velocity_m_s": [[0.72, 0.0, 0.0], [-0.288, 0.0, 0.0]],
       "minimum_displacement_m": [0.18, 0.06],
       "contact_time_s": 0.619048,
       "impact_offset_ratio": 0.0
@@ -306,7 +330,7 @@
       "kinematic_regime": "supported_supported",
       "layout": "planned_supported_contact",
       "object_motions": ["roll_or_slide_1obj", "roll_or_slide_1obj"],
-      "linear_velocity_m_s": [[0.62, 0.0, 0.0], [-0.36, -0.36, 0.0]],
+      "linear_velocity_m_s": [[0.744, 0.0, 0.0], [-0.432, -0.432, 0.0]],
       "minimum_displacement_m": [0.16, 0.13],
       "contact_time_s": 0.46,
       "impact_offset_ratio": 0.22
@@ -317,7 +341,7 @@
       "kinematic_regime": "supported_supported",
       "layout": "planned_supported_contact",
       "object_motions": ["roll_or_slide_1obj", "roll_or_slide_1obj"],
-      "linear_velocity_m_s": [[0.60, 0.0, 0.0], [0.0, -0.55, 0.0]],
+      "linear_velocity_m_s": [[0.72, 0.0, 0.0], [0.0, -0.66, 0.0]],
       "minimum_displacement_m": [0.16, 0.14],
       "contact_time_s": 0.50,
       "impact_offset_ratio": 0.10
@@ -328,7 +352,7 @@
       "kinematic_regime": "supported_supported",
       "layout": "planned_supported_contact",
       "object_motions": ["roll_or_slide_1obj", "roll_or_slide_1obj"],
-      "linear_velocity_m_s": [[0.97, 0.0, 0.0], [0.39, 0.0, 0.0]],
+      "linear_velocity_m_s": [[1.164, 0.0, 0.0], [0.468, 0.0, 0.0]],
       "minimum_displacement_m": [0.20, 0.10],
       "contact_time_s": 0.35,
       "impact_offset_ratio": 0.0
@@ -341,7 +365,7 @@
       "object_motions": ["drop_fall_1obj", "rest"],
       "linear_velocity_m_s": [[0.12, 0.0, 0.0], [0.0, 0.0, 0.0]],
       "minimum_displacement_m": [0.40, 0.0],
-      "contact_time_s": 0.35,
+      "contact_time_s": 0.3834057902536162,
       "contact_elevation_degrees": 85.0
     },
     {
@@ -350,7 +374,7 @@
       "kinematic_regime": "airborne_supported",
       "layout": "ballistic_airborne_contact",
       "object_motions": ["arc_projectile_1obj", "rest"],
-      "linear_velocity_m_s": [[0.80, 0.0, 1.40], [0.0, 0.0, 0.0]],
+      "linear_velocity_m_s": [[0.96, 0.0, 1.40], [0.0, 0.0, 0.0]],
       "minimum_displacement_m": [0.15, 0.0],
       "contact_time_s": 0.32,
       "contact_elevation_degrees": 30.0
@@ -361,7 +385,7 @@
       "kinematic_regime": "airborne_airborne",
       "layout": "ballistic_airborne_pair_contact",
       "object_motions": ["arc_projectile_1obj", "arc_projectile_1obj"],
-      "linear_velocity_m_s": [[0.70, 0.0, 1.60], [-0.42, 0.0, 1.60]],
+      "linear_velocity_m_s": [[0.84, 0.0, 1.60], [-0.504, 0.0, 1.60]],
       "minimum_displacement_m": [0.30, 0.30],
       "contact_time_s": 0.42,
       "contact_center_height_above_support_m": 0.65
@@ -372,7 +396,7 @@
       "kinematic_regime": "supported_supported",
       "layout": "parallel_supported_independent",
       "object_motions": ["roll_or_slide_1obj", "rest"],
-      "linear_velocity_m_s": [[0.62, 0.0, 0.0], [0.0, 0.0, 0.0]],
+      "linear_velocity_m_s": [[0.744, 0.0, 0.0], [0.0, 0.0, 0.0]],
       "minimum_displacement_m": [0.25, 0.0],
       "initial_x_offset_m": [-0.35, 0.15],
       "lateral_clearance_m": 0.32
@@ -383,7 +407,7 @@
       "kinematic_regime": "supported_supported",
       "layout": "parallel_supported_independent",
       "object_motions": ["roll_or_slide_1obj", "roll_or_slide_1obj"],
-      "linear_velocity_m_s": [[0.58, 0.0, 0.0], [-0.48, 0.0, 0.0]],
+      "linear_velocity_m_s": [[0.696, 0.0, 0.0], [-0.576, 0.0, 0.0]],
       "minimum_displacement_m": [0.22, 0.18],
       "initial_x_offset_m": [-0.35, 0.35],
       "lateral_clearance_m": 0.32
@@ -396,7 +420,7 @@
       "object_motions": ["drop_fall_1obj", "rest"],
       "linear_velocity_m_s": [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
       "minimum_displacement_m": [0.35, 0.0],
-      "airborne_surface_gap_m": 0.48,
+      "airborne_surface_gap_m": 0.576,
       "lateral_clearance_m": 0.30
     }
   ],

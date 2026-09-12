@@ -8,7 +8,6 @@ import unittest
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
 
 from tools.release.audit_release_provenance import sha256
 from tools.release.base_release_schema import BASE_SAMPLE_SCHEMA, TRAJECTORY_FIELDS
@@ -37,7 +36,7 @@ def make_video(path: Path) -> None:
             "-f",
             "lavfi",
             "-i",
-            "color=c=blue:s=64x64:r=1:d=2",
+            "color=c=blue:s=1280x720:r=1:d=2",
             "-frames:v",
             "2",
             "-codec:v",
@@ -175,6 +174,7 @@ class BaseReleaseViewTests(unittest.TestCase):
                 trajectory.parent.mkdir(parents=True, exist_ok=True)
                 time_s = np.asarray([0.0, 1.0], dtype=np.float64)
                 position = np.zeros((2, 1, 3), dtype=np.float64)
+                position[:, :, 2] = 1.0
                 quaternion = np.zeros((2, 1, 4), dtype=np.float64)
                 quaternion[:, :, 0] = 1.0
                 np.savez_compressed(
@@ -247,15 +247,7 @@ class BaseReleaseViewTests(unittest.TestCase):
                 video.parent.mkdir(parents=True)
                 make_video(video)
                 videos.append(video)
-                mask = render_root / "masks" / scene_id / "ball"
-                mask.mkdir(parents=True)
-                for frame_index in (1, 2):
-                    image = Image.new("RGBA", (1280, 720), (0, 0, 0, 0))
-                    image.putpixel((frame_index, frame_index), (255, 255, 255, 255))
-                    image.save(mask / f"frame_{frame_index:04d}.png")
-                (mask.parent / "mask_manifest.json").write_text(
-                    "render-stage provenance", encoding="utf-8"
-                )
+
                 camera = {
                     "mode": "front",
                     "position_m": [2.0, -2.0, 1.5],
@@ -424,24 +416,14 @@ class BaseReleaseViewTests(unittest.TestCase):
             self.assertFalse((sample / "metadata.json").is_symlink())
             self.assertFalse((sample / "trajectory.npz").is_symlink())
             self.assertFalse((sample / "video.mp4").is_symlink())
-            self.assertFalse((sample / "masks").is_symlink())
-            self.assertTrue((sample / "masks").is_dir())
-            self.assertEqual(
-                {path.name for path in (sample / "masks").iterdir()},
-                {"ball"},
-            )
-            self.assertFalse((sample / "masks/ball").is_symlink())
-            with Image.open(sample / "masks/ball/frame_0001.png") as mask_image:
-                self.assertEqual(mask_image.mode, "L")
-            self.assertFalse((sample / "masks/mask_manifest.json").exists())
+            self.assertFalse((sample / "masks").exists())
+            self.assertFalse((sample / "mask_manifest.json").exists())
             self.assertEqual(
                 {path.name for path in sample.iterdir()},
                 {
                     "metadata.json",
                     "trajectory.npz",
                     "video.mp4",
-                    "masks",
-                    "mask_manifest.json",
                 },
             )
             metadata = json.loads(
@@ -493,8 +475,6 @@ class BaseReleaseViewTests(unittest.TestCase):
                     "metadata.json",
                     "trajectory.npz",
                     "video.mp4",
-                    "masks",
-                    "mask_manifest.json",
                 },
             )
             self.assertEqual(

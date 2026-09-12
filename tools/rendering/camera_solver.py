@@ -5,7 +5,8 @@ from __future__ import annotations
 import copy
 import hashlib
 import math
-from typing import Any, Sequence
+from pathlib import Path
+from typing import Any, Callable, Sequence
 
 import numpy as np
 
@@ -16,13 +17,14 @@ from tools.core.camera_geometry import (
     pair_view_azimuth_candidates,
     pair_view_azimuth_degrees,
     pair_view_elevation_candidates,
+    validate_pair_camera_fallback_views,
 )
 from tools.dataset_contract.object_identity_contract import (
     require_simulation_objects,
 )
 
 
-SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2)
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2, 3)
 
 
 def _aabb_corners(lower: np.ndarray, upper: np.ndarray) -> np.ndarray:
@@ -288,10 +290,10 @@ def _two_object_observation_contract(
 
 def _two_object_keyframe(
     object_ids: Sequence[str],
-    interaction_class: str,
     positions: np.ndarray,
     trajectory: dict[str, np.ndarray],
 ) -> tuple[int, str]:
+    """Frame the observed event; base interaction admission belongs to physics."""
     pair_contacts = np.asarray(
         trajectory[f"{object_ids[0]}__object_contact_count__{object_ids[1]}"],
         dtype=np.int32,
@@ -299,12 +301,8 @@ def _two_object_keyframe(
     if pair_contacts.shape != (positions.shape[0],):
         raise ValueError("pair-contact trajectory length is inconsistent")
     collision_indices = np.flatnonzero(pair_contacts > 0)
-    if interaction_class == "interacting":
-        if not collision_indices.size:
-            raise ValueError("joint camera requires the declared pair collision")
-        return int(collision_indices[0]), "first_contact"
     if collision_indices.size:
-        raise ValueError("independent joint camera received a pair collision")
+        return int(collision_indices[0]), "first_contact"
     return (
         int(np.argmin(np.linalg.norm(positions[:, 1] - positions[:, 0], axis=1))),
         "closest_approach",
@@ -313,7 +311,6 @@ def _two_object_keyframe(
 
 def _two_object_framing_bounds(
     object_ids: Sequence[str],
-    interaction_class: str,
     positions: np.ndarray,
     lower: np.ndarray,
     upper: np.ndarray,
@@ -323,7 +320,7 @@ def _two_object_framing_bounds(
     """Frame the strict prefix through interaction and every later center."""
 
     keyframe, _ = _two_object_keyframe(
-        object_ids, interaction_class, positions, trajectory
+        object_ids, positions, trajectory
     )
     required_frames = max(
         keyframe + 1,
@@ -383,7 +380,7 @@ def _two_object_azimuth_candidates(
     )
 
 
-def _camera_group_id(metadata: dict[str, Any]) -> str:
+def _camera_scene_id(metadata: dict[str, Any]) -> str:
     sweep = metadata.get("sweep")
     if not isinstance(sweep, dict):
         return str(metadata["scene_id"])
@@ -391,6 +388,35 @@ def _camera_group_id(metadata: dict[str, Any]) -> str:
     if parent_id:
         return str(parent_id)
     return str(metadata["scene_id"])
+
+
+def _pair_fallback_views(metadata: dict[str, Any]) -> list[dict[str, Any]]:
+    views = metadata["camera_request"].get("fallback_view_families", [])
+    validate_pair_camera_fallback_views(views)
+    preferred = metadata["simulation"]["interaction"]["camera_view_family_id"]
+    if any(view["id"] == preferred for view in views):
+        raise ValueError("pair camera fallback repeats its preferred view id")
+    return views
+
+
+def _pair_view_metadata(
+    metadata: dict[str, Any], view: dict[str, Any]
+) -> dict[str, Any]:
+    """Evaluate a declared alternative without changing the physical scene."""
+    result = copy.deepcopy(metadata)
+    interaction = result["simulation"]["interaction"]
+    interaction.update({
+        "camera_view_family_id": view["id"],
+        "camera_relative_azimuth_degrees": view["relative_azimuth_degrees"],
+        "preferred_camera_elevation_degrees": view["preferred_elevation_degrees"],
+        "minimum_camera_elevation_degrees": view["minimum_elevation_degrees"],
+        "maximum_camera_elevation_degrees": view["maximum_elevation_degrees"],
+    })
+    request = result["camera_request"]
+    request.pop("fallback_view_families", None)
+    for bound in ("minimum", "maximum"):
+        request[f"{bound}_camera_elevation_degrees"] = view[f"{bound}_elevation_degrees"]
+    return result
 
 
 def audit_two_object_camera(
@@ -404,7 +430,7 @@ def audit_two_object_camera(
         objects,
         object_ids,
         interaction,
-        interaction_class,
+        _,
         positions,
         lower,
         upper,
@@ -447,6 +473,32 @@ def audit_two_object_camera(
     if distance <= 1.0e-8 or horizontal_distance <= 1.0e-8:
         raise ValueError("joint camera view vector is degenerate")
     elevation = math.degrees(math.atan2(float(view_vector[2]), horizontal_distance))
+    actual_azimuth = math.degrees(math.atan2(float(view_vector[1]), float(view_vector[0])))
+    requested_azimuth = pair_view_azimuth_degrees(
+        interaction["approach_axis_xyz"], contract["relative_azimuth"]
+    )
+    view_azimuth_deviation = abs(
+        (actual_azimuth - requested_azimuth + 180.0) % 360.0 - 180.0
+    )
+    fallback_views = _pair_fallback_views(metadata)
+    if not (
+        contract["minimum_elevation"] - 1.0e-6 <= elevation
+        <= contract["maximum_elevation"] + 1.0e-6
+        and view_azimuth_deviation <= contract["maximum_view_azimuth_deviation"] + 1.0e-6
+    ):
+        for view in fallback_views:
+            azimuth = pair_view_azimuth_degrees(
+                interaction["approach_axis_xyz"], view["relative_azimuth_degrees"]
+            )
+            deviation = abs((actual_azimuth - azimuth + 180.0) % 360.0 - 180.0)
+            if (
+                view["minimum_elevation_degrees"] - 1.0e-6 <= elevation
+                <= view["maximum_elevation_degrees"] + 1.0e-6
+                and deviation <= contract["maximum_view_azimuth_deviation"] + 1.0e-6
+            ):
+                audit = audit_two_object_camera(_pair_view_metadata(metadata, view), trajectory, camera)
+                audit["preferred_camera_view_family_id"] = contract["view_family_id"]
+                return audit
     if not (
         contract["minimum_elevation"] - 1.0e-6
         <= elevation
@@ -462,16 +514,6 @@ def audit_two_object_camera(
     approach_axis = np.asarray(
         pair_approach_axis_xy(interaction["approach_axis_xyz"]), dtype=np.float64
     )
-    horizontal_view = view_vector[:2] / horizontal_distance
-    actual_azimuth = math.degrees(
-        math.atan2(float(horizontal_view[1]), float(horizontal_view[0]))
-    )
-    requested_azimuth = pair_view_azimuth_degrees(
-        interaction["approach_axis_xyz"], contract["relative_azimuth"]
-    )
-    view_azimuth_deviation = abs(
-        (actual_azimuth - requested_azimuth + 180.0) % 360.0 - 180.0
-    )
     if (
         view_azimuth_deviation
         > contract["maximum_view_azimuth_deviation"] + 1.0e-6
@@ -485,7 +527,7 @@ def audit_two_object_camera(
     envelope_margin = contract["envelope_margin"]
     blockers = camera_occlusion_colliders(metadata)
     pair_keyframe, pair_keyframe_kind = _two_object_keyframe(
-        object_ids, interaction_class, positions, trajectory
+        object_ids, positions, trajectory
     )
     envelope_lower = lower.min(axis=(0, 1))
     envelope_upper = upper.max(axis=(0, 1))
@@ -526,9 +568,6 @@ def audit_two_object_camera(
             np.ptp(projected_corners[..., 1], axis=1),
         )
         median_span = float(np.median(projected_spans))
-        static_unoccluded = unoccluded_fraction(
-            position, positions[:, object_index], blockers
-        )
         per_object[object_id] = {
             "full_center_visible_fraction": center_visible,
             "full_motion_aabb_visible_fraction": aabb_visible_fraction,
@@ -538,7 +577,6 @@ def audit_two_object_camera(
             ),
             "initial_span_ndc": float(projected_spans[0]),
             "median_span_ndc": median_span,
-            "static_unoccluded_fraction": static_unoccluded,
         }
         if (
             center_visible < contract["minimum_center_visible"]
@@ -548,8 +586,17 @@ def audit_two_object_camera(
             or keyframe_aabb_visible_fraction
             < contract["minimum_keyframe_aabb_visible"]
             or median_span < contract["minimum_object_span"]
-            or static_unoccluded < contract["minimum_unoccluded"]
         ):
+            raise ValueError(
+                f"joint camera violates per-object visibility for {object_id}: "
+                f"{per_object[object_id]}"
+            )
+        # Do not ray-test candidates already rejected by the image bounds.
+        static_unoccluded = unoccluded_fraction(
+            position, positions[:, object_index], blockers
+        )
+        per_object[object_id]["static_unoccluded_fraction"] = static_unoccluded
+        if static_unoccluded < contract["minimum_unoccluded"]:
             raise ValueError(
                 f"joint camera violates per-object visibility for {object_id}: "
                 f"{per_object[object_id]}"
@@ -690,10 +737,36 @@ def _solve_two_object_camera(
     metadata: dict[str, Any],
     trajectory: dict[str, np.ndarray],
     rules: dict[str, Any],
-    *,
-    audit_members: Sequence[
-        tuple[dict[str, Any], dict[str, np.ndarray]]
-    ] = (),
+) -> dict[str, Any]:
+    """Keep the preferred solution; only then try metadata-declared alternatives."""
+    views = _pair_fallback_views(metadata)
+    try:
+        return _solve_two_object_camera_view(metadata, trajectory, rules)
+    except ValueError as primary_error:
+        if not views:
+            raise
+        errors = []
+        for view in views:
+            try:
+                camera = _solve_two_object_camera_view(
+                    _pair_view_metadata(metadata, view), trajectory, rules,
+                )
+                audit_two_object_camera(metadata, trajectory, camera)
+            except ValueError as error:
+                errors.append(f"{view['id']}: {str(error)[:320]}")
+                continue
+            camera["solver_version"] = "joint_full_motion_envelope_camera_v8"
+            camera["diagnostics"]["preferred_camera_view_family_id"] = metadata[
+                "simulation"
+            ]["interaction"]["camera_view_family_id"]
+            return camera
+        raise ValueError(f"{primary_error}; fallback views exhausted: {errors}") from primary_error
+
+
+def _solve_two_object_camera_view(
+    metadata: dict[str, Any],
+    trajectory: dict[str, np.ndarray],
+    rules: dict[str, Any],
 ) -> dict[str, Any]:
     """Frame and audit the complete spatiotemporal envelope of both objects."""
 
@@ -701,7 +774,7 @@ def _solve_two_object_camera(
         objects,
         object_ids,
         interaction,
-        interaction_class,
+        _,
         positions,
         lower,
         upper,
@@ -711,7 +784,6 @@ def _solve_two_object_camera(
         "maximum_view_azimuth_deviation"
     ]
     minimum_elevation = contract["minimum_elevation"]
-    preferred_elevation = contract["preferred_elevation"]
     maximum_elevation = contract["maximum_elevation"]
     maximum_camera_distance = contract["maximum_camera_distance"]
     maximum_distance_above_minimum = contract["maximum_distance_above_minimum"]
@@ -719,47 +791,9 @@ def _solve_two_object_camera(
     preferred_envelope_span = contract["preferred_envelope_span"]
     minimum_object_span = contract["minimum_object_span"]
     maximum_envelope_span = contract["maximum_envelope_span"]
-    camera_group_id = _camera_group_id(metadata)
-    framing_members = []
-    if audit_members:
-        for member_metadata, member_trajectory in audit_members:
-            (
-                _,
-                member_ids,
-                _,
-                member_class,
-                member_positions,
-                member_lower,
-                member_upper,
-            ) = _two_object_camera_state(member_metadata, member_trajectory)
-            framing_members.append(
-                _two_object_framing_bounds(
-                    member_ids,
-                    member_class,
-                    member_positions,
-                    member_lower,
-                    member_upper,
-                    member_trajectory,
-                    contract["minimum_aabb_visible"],
-                )
-            )
-    else:
-        framing_members.append(
-            _two_object_framing_bounds(
-                object_ids,
-                interaction_class,
-                positions,
-                lower,
-                upper,
-                trajectory,
-                contract["minimum_aabb_visible"],
-            )
-        )
-    envelope_lower = np.min(
-        np.stack([bounds[0] for bounds in framing_members]), axis=0
-    )
-    envelope_upper = np.max(
-        np.stack([bounds[1] for bounds in framing_members]), axis=0
+    envelope_lower, envelope_upper = _two_object_framing_bounds(
+        object_ids, positions, lower, upper, trajectory,
+        contract["minimum_aabb_visible"],
     )
     envelope_size = envelope_upper - envelope_lower
     if bool(np.any(envelope_size <= 0.0)):
@@ -767,7 +801,7 @@ def _solve_two_object_camera(
     envelope_center = 0.5 * (envelope_lower + envelope_upper)
     virtual_id = "camera_joint_dynamic_envelope"
     virtual_metadata = copy.deepcopy(metadata)
-    virtual_metadata["scene_id"] = camera_group_id
+    virtual_metadata["scene_id"] = _camera_scene_id(metadata)
     scene_visual = virtual_metadata["appearance"]["scene_visual"]
     scene_visual.pop("camera_context", None)
     composition = scene_visual.get("composition")
@@ -849,11 +883,14 @@ def _solve_two_object_camera(
     camera = None
     selected_azimuth = None
     selected_elevation = None
-    selected_member_diagnostics: list[dict[str, Any]] = []
     requested_azimuth = pair_view_azimuth_degrees(
         interaction["approach_axis_xyz"], contract["relative_azimuth"]
     )
     azimuth_candidates = _two_object_azimuth_candidates(interaction, contract)
+
+    def audit_candidate(candidate: dict[str, Any]) -> None:
+        audit_two_object_camera(metadata, trajectory, candidate)
+
     for candidate_elevation in _two_object_elevation_candidates(contract):
         for candidate_azimuth in azimuth_candidates:
             joint_rules = copy.deepcopy(rules)
@@ -870,26 +907,14 @@ def _solve_two_object_camera(
 
             try:
                 candidate = solve_camera(
-                    virtual_metadata, virtual_trajectory, joint_rules
+                    virtual_metadata,
+                    virtual_trajectory,
+                    joint_rules,
+                    candidate_audit=audit_candidate,
                 )
                 candidate_diagnostics = audit_two_object_camera(
                     metadata, trajectory, candidate
                 )
-                member_diagnostics = []
-                for member_metadata, member_trajectory in audit_members:
-                    try:
-                        member_diagnostics.append(
-                            audit_two_object_camera(
-                                member_metadata,
-                                member_trajectory,
-                                candidate,
-                            )
-                        )
-                    except ValueError as error:
-                        raise ValueError(
-                            "camera group member failed: "
-                            f"{member_metadata['scene_id']}: {error}"
-                        ) from error
             except ValueError as error:
                 failure_count += 1
                 message = " ".join(str(error).split())
@@ -903,9 +928,8 @@ def _solve_two_object_camera(
                 continue
             camera = candidate
             camera["diagnostics"].update(candidate_diagnostics)
-            selected_azimuth = candidate_azimuth
-            selected_elevation = candidate_elevation
-            selected_member_diagnostics = member_diagnostics
+            selected_azimuth = candidate["diagnostics"]["azimuth_degrees"]
+            selected_elevation = candidate["diagnostics"]["elevation_degrees"]
             break
         if camera is not None:
             break
@@ -919,11 +943,7 @@ def _solve_two_object_camera(
             f"failed_candidates={failure_count}; "
             f"examples={failure_examples}"
         )
-    camera["solver_version"] = (
-        "joint_full_motion_envelope_group_camera_v6"
-        if audit_members
-        else "joint_full_motion_envelope_camera_v6"
-    )
+    camera["solver_version"] = "joint_full_motion_envelope_camera_v7"
     camera["diagnostics"]["pair_camera_view_family_id"] = contract[
         "view_family_id"
     ]
@@ -945,159 +965,7 @@ def _solve_two_object_camera(
     camera["diagnostics"]["pair_envelope_span_target_ndc"] = round(
         preferred_envelope_span, 6
     )
-    if audit_members:
-        representative = selected_member_diagnostics[0]
-        camera["diagnostics"].update(
-            {
-                key: value
-                for key, value in representative.items()
-                if key.startswith("pair_keyframe_")
-            }
-        )
-        camera["diagnostics"]["camera_group"] = {
-            "group_id": camera_group_id,
-            "member_count": len(audit_members),
-            "all_members_audited": True,
-            "minimum_joint_motion_envelope_visible_fraction": min(
-                record["joint_motion_envelope_visible_fraction"]
-                for record in selected_member_diagnostics
-            ),
-            "minimum_per_object_median_span_ndc": {
-                object_id: round(
-                    min(
-                        record["per_object_visibility"][object_id][
-                            "median_span_ndc"
-                        ]
-                        for record in selected_member_diagnostics
-                    ),
-                    6,
-                )
-                for object_id in object_ids
-            },
-            "minimum_per_object_unoccluded_fraction": {
-                object_id: round(
-                    min(
-                        record["per_object_visibility"][object_id][
-                            "static_unoccluded_fraction"
-                        ]
-                        for record in selected_member_diagnostics
-                    ),
-                    6,
-                )
-                for object_id in object_ids
-            },
-        }
     return camera
-
-
-def solve_two_object_camera_group(
-    metadata: dict[str, Any],
-    members: Sequence[tuple[dict[str, Any], dict[str, np.ndarray]]],
-    rules: dict[str, Any],
-) -> dict[str, Any]:
-    """Freeze one camera that passes every trajectory in a one-factor group."""
-
-    if not members:
-        raise ValueError("two-object camera group has no members")
-    base_objects, base_ids, base_interaction, base_class, *_ = (
-        _two_object_camera_state(metadata, members[0][1])
-    )
-    base_contract = _two_object_observation_contract(base_interaction)
-    group_id = _camera_group_id(metadata)
-    base_camera_request = metadata["camera_request"]
-    base_support = metadata["simulation"]["support"]
-    binding_sha256 = str(
-        metadata.get("environment_binding", {}).get("binding_sha256", "")
-    )
-    if not binding_sha256:
-        raise ValueError("two-object camera group lacks an environment binding")
-    base_static_objects = [
-        {
-            "object_id": obj["object_id"],
-            "geometry": obj["geometry"],
-            "initial_state": obj["initial_state"],
-        }
-        for obj in base_objects
-    ]
-    normalized = []
-    seen_members = set()
-    for member_metadata, member_trajectory in sorted(
-        members,
-        key=lambda item: (
-            item[0].get("sweep", {}).get("kind") != "base",
-            str(item[0]["scene_id"]),
-        ),
-    ):
-        member_id = str(member_metadata["scene_id"])
-        if member_id in seen_members:
-            raise ValueError(f"duplicate camera group member: {member_id}")
-        seen_members.add(member_id)
-        (
-            member_objects,
-            member_ids,
-            member_interaction,
-            member_class,
-            *_,
-        ) = _two_object_camera_state(member_metadata, member_trajectory)
-        member_static_objects = [
-            {
-                "object_id": obj["object_id"],
-                "geometry": obj["geometry"],
-                "initial_state": obj["initial_state"],
-            }
-            for obj in member_objects
-        ]
-        if (
-            _camera_group_id(member_metadata) != group_id
-            or member_ids != base_ids
-            or member_class != base_class
-            or member_static_objects != base_static_objects
-            or member_metadata["camera_request"] != base_camera_request
-            or member_metadata["simulation"]["support"] != base_support
-            or _two_object_observation_contract(member_interaction)
-            != base_contract
-            or not np.allclose(
-                member_interaction["approach_axis_xyz"],
-                base_interaction["approach_axis_xyz"],
-                atol=1.0e-12,
-                rtol=0.0,
-            )
-            or str(
-                member_metadata.get("environment_binding", {}).get(
-                    "binding_sha256", ""
-                )
-            )
-            != binding_sha256
-        ):
-            raise ValueError(
-                f"incompatible two-object camera group member: {member_id}"
-            )
-        normalized.append((member_metadata, member_trajectory))
-
-    trajectory_keys = [
-        key
-        for object_id in base_ids
-        for key in (
-            f"{object_id}__position_m",
-            f"{object_id}__aabb_min_m",
-            f"{object_id}__aabb_max_m",
-        )
-    ]
-    trajectory_keys.append(
-        f"{base_ids[0]}__object_contact_count__{base_ids[1]}"
-    )
-    aggregate = {
-        key: np.concatenate(
-            [trajectory[key] for _, trajectory in normalized], axis=0
-        )
-        for key in trajectory_keys
-    }
-    return _solve_two_object_camera(
-        metadata,
-        aggregate,
-        rules,
-        audit_members=normalized,
-    )
 
 
 def project_points(
@@ -1619,11 +1487,21 @@ def solve_camera(
     metadata: dict[str, Any],
     trajectory: dict[str, np.ndarray],
     rules: dict[str, Any],
+    *,
+    candidate_audit: Callable[[dict[str, Any]], None] | None = None,
+    root: Path | None = None,
 ) -> dict[str, Any]:
     objects = require_simulation_objects(
         metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
     )
+    if len(objects) == 3:
+        if candidate_audit is not None:
+            raise ValueError('three-object camera admission is supplied internally')
+        from tools.rendering.three_object_camera import solve_three_object_camera
+        return solve_three_object_camera(metadata, trajectory, root=root)
     if len(objects) == 2:
+        if candidate_audit is not None:
+            raise ValueError("pair camera candidate audit is supplied internally")
         return _solve_two_object_camera(metadata, trajectory, rules)
     request = metadata["camera_request"]
     profile = str(request["profile"])
@@ -1886,6 +1764,8 @@ def solve_camera(
     full_occlusion_indices = np.unique(
         np.linspace(0, len(positions) - 1, min(18, len(positions)), dtype=int)
     )
+    evaluated_pair_targets: set[tuple[Any, ...]] = set()
+
     def evaluate_target(
         motion_target: np.ndarray,
         target_blend: float,
@@ -1894,6 +1774,16 @@ def solve_camera(
         absolute_elevations: tuple[float, ...] | None = None,
         target_mode: str = "motion",
     ) -> list[dict[str, Any]]:
+        if candidate_audit is not None:
+            # A stationary virtual envelope gives identical blend/bias targets.
+            # Do not exhaust the same rejected pose grid repeatedly.
+            key = (
+                tuple(motion_target), focal_length_mm,
+                wide_azimuth, absolute_elevations,
+            )
+            if key in evaluated_pair_targets:
+                return []
+            evaluated_pair_targets.add(key)
         result = []
         azimuth_offsets = camera_azimuth_offsets(
             maximum_deviation_degrees=maximum_local_azimuth_deviation,
@@ -2212,6 +2102,37 @@ def solve_camera(
     attempted_blends = []
     attempted_focal_lengths = []
     used_safety_elevation_fallback = False
+    candidate_audit_errors: dict[tuple[float, ...], str | None] = {}
+
+    def accept_candidates(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        accepted = [record for record in records if record["admissible"]]
+        if candidate_audit is None:
+            return accepted
+        # The envelope's preferred size is a soft composition target. A pair
+        # must satisfy its actual object/group constraints before we select it.
+        for record in sorted(accepted, key=lambda value: value["score"]):
+            pose = {
+                "position_m": [round(float(v), 6) for v in record["position"]],
+                "target_m": [round(float(v), 6) for v in record["target"]],
+                "focal_length_mm": round(float(record["focal_length_mm"]), 6),
+                "sensor_width_mm": sensor_width,
+            }
+            key = (*pose["position_m"], *pose["target_m"], pose["focal_length_mm"])
+            if key not in candidate_audit_errors:
+                try:
+                    candidate_audit(pose)
+                except ValueError as error:
+                    candidate_audit_errors[key] = str(error)
+                else:
+                    candidate_audit_errors[key] = None
+            error = candidate_audit_errors[key]
+            if error is None:
+                return [record]
+            record["admissible"] = False
+            record["constraints"]["candidate_audit"] = False
+            record["candidate_audit_error"] = error
+        return []
+
     def search_focal_length(focal_length_mm: float) -> list[dict[str, Any]]:
         nonlocal used_safety_elevation_fallback
         for target_blend in dict.fromkeys(
@@ -2232,9 +2153,7 @@ def solve_camera(
                 focal_length_mm,
             )
             candidates.extend(target_candidates)
-            accepted = [
-                record for record in target_candidates if record["admissible"]
-            ]
+            accepted = accept_candidates(target_candidates)
             if accepted:
                 return accepted
         if structure_target is not None:
@@ -2246,9 +2165,7 @@ def solve_camera(
                 target_mode="motion_and_required_structure",
             )
             candidates.extend(target_candidates)
-            accepted = [
-                record for record in target_candidates if record["admissible"]
-            ]
+            accepted = accept_candidates(target_candidates)
             if accepted:
                 return accepted
         for initial_bias in (0.20, 0.35, 0.50):
@@ -2268,9 +2185,7 @@ def solve_camera(
                 wide_azimuth=initial_bias >= 0.35,
             )
             candidates.extend(target_candidates)
-            accepted = [
-                record for record in target_candidates if record["admissible"]
-            ]
+            accepted = accept_candidates(target_candidates)
             if accepted:
                 return accepted
         safety_elevations = (20.0, 24.0, 27.0, 32.0, 38.0, 42.0, 48.0)
@@ -2293,9 +2208,7 @@ def solve_camera(
                 absolute_elevations=safety_elevations,
             )
             candidates.extend(target_candidates)
-            accepted = [
-                record for record in target_candidates if record["admissible"]
-            ]
+            accepted = accept_candidates(target_candidates)
             if accepted:
                 used_safety_elevation_fallback = True
                 return accepted
@@ -2346,6 +2259,15 @@ def solve_camera(
             if candidate is best
         )
     if not best["admissible"]:
+        if candidate_audit_errors:
+            rejected = min(
+                (record for record in candidates if "candidate_audit_error" in record),
+                key=lambda record: record["score"],
+            )
+            raise ValueError(
+                "camera candidates failed object/group audit: "
+                f"{rejected['candidate_audit_error']}"
+            )
         largest_object = max(candidates, key=lambda record: record["object_span"])
         closest_to_object_threshold = min(
             candidates,

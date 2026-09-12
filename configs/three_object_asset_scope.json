@@ -1,0 +1,315 @@
+{
+  "schema_version": "physweep_three_object_asset_scope_v1",
+  "status": "validated_source_capacity",
+  "generic_visuals": {
+    "asset_ids": [
+      "physassets_10282",
+      "physassets_10311",
+      "physassets_10348",
+      "physassets_10575",
+      "physassets_10754",
+      "physassets_11709",
+      "physassets_11899",
+      "physassets_11905",
+      "physassets_12070",
+      "physassets_12411",
+      "physassets_12633",
+      "physassets_12656",
+      "physassets_12670",
+      "physassets_12676",
+      "physassets_1297",
+      "physassets_13003",
+      "physassets_13094",
+      "physassets_13102",
+      "physassets_13207",
+      "physassets_13291",
+      "physassets_13383",
+      "physassets_13740",
+      "physassets_14083",
+      "physassets_1439",
+      "physassets_14593",
+      "physassets_14797",
+      "physassets_14934",
+      "physassets_15118",
+      "physassets_15157",
+      "physassets_15389",
+      "physassets_15412",
+      "physassets_1559",
+      "physassets_15897",
+      "physassets_15974",
+      "physassets_16047",
+      "physassets_16089",
+      "physassets_1619",
+      "physassets_16210",
+      "physassets_16301",
+      "physassets_16599",
+      "physassets_16906",
+      "physassets_17381",
+      "physassets_17617",
+      "physassets_17826",
+      "physassets_18020",
+      "physassets_18415",
+      "physassets_18691",
+      "physassets_19683",
+      "physassets_19920",
+      "physassets_2026",
+      "physassets_20426",
+      "physassets_20799",
+      "physassets_21246",
+      "physassets_2592",
+      "physassets_2957",
+      "physassets_3013",
+      "physassets_3415",
+      "physassets_3431",
+      "physassets_3756",
+      "physassets_38",
+      "physassets_4357",
+      "physassets_487",
+      "physassets_5429",
+      "physassets_5822",
+      "physassets_5837",
+      "physassets_6107",
+      "physassets_6527",
+      "physassets_7009",
+      "physassets_7218",
+      "physassets_7249",
+      "physassets_732",
+      "physassets_7375",
+      "physassets_8032",
+      "physassets_8079",
+      "physassets_8294",
+      "physassets_8335",
+      "physassets_8393",
+      "physassets_873",
+      "physassets_8777",
+      "physassets_8925",
+      "physassets_9429",
+      "physassets_9463",
+      "physassets_9549",
+      "physassets_961"
+    ],
+    "count_by_proxy_shape": {
+      "cuboid": 35,
+      "cylinder": 27,
+      "sphere": 22
+    },
+    "policy": "usable in any role when the selected motion shape pattern permits the proxy shape"
+  },
+  "dynamic_assets": {
+    "true_nonball_role_safe": [
+      {
+        "asset_id": "sketchfab_046b94a7775e496aac26ad8c699496e6",
+        "semantic_name": "ceramic bowl",
+        "normalization": "eligible",
+        "shape": "cylinder",
+        "proxy": "compound",
+        "scale": "small",
+        "size_m": [
+          0.158,
+          0.158,
+          0.081
+        ]
+      },
+      {
+        "asset_id": "sketchfab_1551616939cc4da7a9d731dfddd4090f",
+        "semantic_name": "plastic cup",
+        "normalization": "eligible",
+        "shape": "cylinder",
+        "proxy": "compound",
+        "scale": "small",
+        "size_m": [
+          0.106,
+          0.106,
+          0.12
+        ]
+      },
+      {
+        "asset_id": "sketchfab_4ae035ea89ea40bbaa82403b9c36afab",
+        "semantic_name": "wooden crate",
+        "normalization": "eligible",
+        "shape": "cuboid",
+        "proxy": "cuboid",
+        "scale": "large",
+        "size_m": [
+          0.42,
+          0.294843,
+          0.14441
+        ]
+      },
+      {
+        "asset_id": "sketchfab_640b0c8287274629a7f4ff3ce74a5999",
+        "semantic_name": "tin can",
+        "normalization": "eligible",
+        "shape": "cylinder",
+        "proxy": "cylinder",
+        "scale": "small",
+        "size_m": [
+          0.09326,
+          0.09326,
+          0.12
+        ]
+      },
+      {
+        "asset_id": "sketchfab_76fa80950b1f48a8ad6a8441fe443241",
+        "semantic_name": "cardboard box",
+        "normalization": "eligible",
+        "shape": "cuboid",
+        "proxy": "cuboid",
+        "scale": "large",
+        "size_m": [
+          0.42,
+          0.347399,
+          0.213304
+        ]
+      },
+      {
+        "asset_id": "sketchfab_b0902ff83cf946c984f9f7e0197ddb7f",
+        "semantic_name": "remote control",
+        "normalization": "eligible",
+        "shape": "cuboid",
+        "proxy": "cuboid",
+        "scale": "medium",
+        "size_m": [
+          0.2,
+          0.053081,
+          0.025348
+        ]
+      },
+      {
+        "asset_id": "sketchfab_beb69bc08a8f487ab8c5207fb155cbf2",
+        "semantic_name": "glass bottle",
+        "normalization": "eligible",
+        "shape": "cylinder",
+        "proxy": "compound",
+        "scale": "large",
+        "size_m": [
+          0.073,
+          0.073,
+          0.30000000000000004
+        ]
+      },
+      {
+        "asset_id": "sketchfab_dae37cc4869a4155b6999efe26df710c",
+        "semantic_name": "closed magazine",
+        "normalization": "eligible",
+        "shape": "cuboid",
+        "proxy": "cuboid",
+        "scale": "large",
+        "size_m": [
+          0.28,
+          0.162074,
+          0.008282
+        ]
+      },
+      {
+        "asset_id": "sketchfab_ebb7c4102dc94ef7ba14d9c5df43c448",
+        "semantic_name": "decorated dinner plate",
+        "normalization": "eligible",
+        "shape": "cylinder",
+        "proxy": "cylinder",
+        "scale": "large",
+        "size_m": [
+          0.28,
+          0.28,
+          0.018179
+        ]
+      },
+      {
+        "asset_id": "sketchfab_f4d11e48cc52479c802ec2cf0d629f68",
+        "semantic_name": "smartphone",
+        "normalization": "eligible",
+        "shape": "cuboid",
+        "proxy": "cuboid",
+        "scale": "small",
+        "size_m": [
+          0.16,
+          0.078929,
+          0.009826
+        ]
+      }
+    ],
+    "sphere_assets": [
+      {
+        "asset_id": "sketchfab_f33ed1f09bef4d9bb757c25c1304ec96",
+        "semantic_name": "rubber band ball",
+        "normalization": "eligible",
+        "shape": "sphere",
+        "proxy": "sphere",
+        "scale": "small",
+        "size_m": [
+          0.16,
+          0.16,
+          0.16
+        ]
+      }
+    ],
+    "excluded": [
+      {
+        "asset_id": "sketchfab_3be00aa2664f4bc0b5be8b8630c2d540",
+        "semantic_name": "gas cylinder",
+        "normalization": "off_center_compound_proxy"
+      },
+      {
+        "asset_id": "sketchfab_76a3f7bf75d049458dfaa48aa342e0b8",
+        "semantic_name": "baluster vase",
+        "normalization": "off_center_compound_proxy"
+      },
+      {
+        "asset_id": "sketchfab_81578532781542c590668ab67d1121e9",
+        "semantic_name": "four-way lug wrench",
+        "normalization": "non_axisymmetric_compound_proxy"
+      },
+      {
+        "asset_id": "sketchfab_cb444316e5cd4b9498c98804e6daaafc",
+        "semantic_name": "toy car",
+        "normalization": "non_axisymmetric_compound_proxy"
+      },
+      {
+        "asset_id": "sketchfab_d1e446a8f9df4df3923cf230bceef54f",
+        "semantic_name": "ceramic mug",
+        "normalization": "non_axisymmetric_compound_proxy"
+      }
+    ],
+    "policy": {
+      "true_nonball_motion": "flat pair_control only",
+      "true_nonball_layout": "axis_aligned",
+      "allowed_roles": [
+        "P",
+        "Q",
+        "R"
+      ],
+      "maximum_true_assets_per_scene": 1,
+      "compound_requirement": "centered axisymmetric released proxy",
+      "admission": "complete base physics and camera admission; failed candidates are replaced inside the same cell"
+    }
+  },
+  "exact_support_assets": {
+    "allowed_asset_ids": [
+      "sketchfab_bg_93bf119e2bb443b49006c6b12efe06ae",
+      "support_school_picnic_8e2a51a4",
+      "support_old_table_e53a5ef2",
+      "support_wood_table_4618e562",
+      "support_workbench_01c0b599",
+      "support_pub_table_9e540ae2",
+      "support_school_desk_4044a253",
+      "support_weathered_round_6cd4d250",
+      "sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf",
+      "sketchfab_bg_2039a113435b47d585b2c51e4f3a096d",
+      "sketchfab_bg_459ebb7c75a14feb8ad690d00a085b9f",
+      "sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d",
+      "sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa",
+      "sketchfab_bg_bb73599044cf49e186b75842d63a280e",
+      "support_concrete_desk_ce2eb8c2",
+      "support_dining_table_ed94c79a",
+      "support_work_table_239b18eb",
+      "support_writing_desk_f411b33b"
+    ],
+    "excluded": [
+      {
+        "asset_id": "support_rattan_coffee_c434f22e",
+        "reason": "reviewed safe support region is insufficient"
+      }
+    ],
+    "policy": "static exact proxy only; dynamic objects remain spheres in this support subcase"
+  }
+}

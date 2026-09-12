@@ -1,0 +1,121 @@
+{
+  "schema_version": "physweep_three_object_sampling_matrix_v1",
+  "status": "pilot_unvalidated",
+  "object_ids": [
+    "object_a",
+    "object_b",
+    "object_c"
+  ],
+  "sweep_target_indices": [
+    0
+  ],
+  "motion_rules": "three_object_d5a_motion_rules.json",
+  "scene_rules": "three_object_scene_rules.json",
+  "sweep_config": "three_object_physics_sweep.json",
+  "dataset_config": "datasets/three_object.json",
+  "template_ids": [
+    "chain_transfer",
+    "successive_hits",
+    "converging_hits",
+    "pair_control"
+  ],
+  "candidate_budget": 16,
+  "master_seed": 20260907,
+  "ordering": "stable_cell_id_then_candidate_index",
+  "seed_derivation": "sha256_canonical_json_first_64_bits",
+  "seed_domains": [
+    "physics",
+    "appearance",
+    "camera"
+  ],
+  "maximum_source_attempts_per_candidate": 64,
+  "source": {
+    "families": [
+      "generic",
+      "asset"
+    ],
+    "release_schema": "physweep_base_release_view_v15",
+    "pipeline_schema": "physweep_base_pipeline_view_v13",
+    "sample_schema": "physweep_base_sample_v12",
+    "generation_manifest_schema": "physweep_release_metadata_manifest_v2",
+    "generation_metadata_schemas": {
+      "generic": "physweep_pybullet_rigid_metadata_v1",
+      "asset": "physweep_asset_proxy_scene_v3"
+    },
+    "asset_eligibility": {
+      "body_model": "rigid_body",
+      "required_pose_profile": "support_normal",
+      "asset_proxy_policy": "centered_primitive_or_upright_axisymmetric_compound",
+      "asset_proxy_maximum_aabb_center_offset_m": 0.001,
+      "asset_scale_bin_maximum_extent_m": {
+        "small": 0.18,
+        "medium": 0.23,
+        "large": null
+      }
+    },
+    "distinct_object_sources": true
+  },
+  "source_budgets": {
+    "maximum_object_uses": 3,
+    "maximum_host_uses": 1
+  },
+  "physical_dimensions": [
+    "template",
+    "shape_by_role",
+    "scale_by_role",
+    "host",
+    "target_role"
+  ],
+  "visual_dimensions": [
+    "object_visual_by_role",
+    "support_visual",
+    "environment_category",
+    "lighting",
+    "requested_camera_family"
+  ],
+  "required_cross_reports": [
+    [
+      "template",
+      "host"
+    ],
+    [
+      "template",
+      "final_camera_family"
+    ],
+    [
+      "target_role",
+      "object_visual"
+    ]
+  ],
+  "appearance_policy": "preserve_bound_object_and_host_assets",
+  "allocation_policy": "feasible_cells_round_robin_stable_commit",
+  "unavailable_cell_policy": "report_no_reallocation",
+  "duplicate_policy": {
+    "physical": "exact_label_permutation_invariant",
+    "max_visual_variants_per_physical_scene": 1,
+    "world_rotations": "distinct",
+    "mirrors": "distinct",
+    "near_duplicates": "report_only"
+  },
+  "shared_resources": [
+    "configs/production_video.json",
+    "configs/visual_sampling.json",
+    "configs/scene_visual_profiles.json",
+    "configs/physical_proxy_pipeline.json",
+    "configs/pybullet_backend.json",
+    "assets/manifests/polyhaven_render_library.json",
+    "assets/manifests/hdri_admission.json"
+  ],
+  "geometry_scope": "mixed_flat_R_v1",
+  "coverage_mode": "primitive_asset_proxy_v1",
+  "required_asset_ids": [
+    "sketchfab_4ae035ea89ea40bbaa82403b9c36afab",
+    "sketchfab_640b0c8287274629a7f4ff3ce74a5999",
+    "sketchfab_76fa80950b1f48a8ad6a8441fe443241",
+    "sketchfab_b0902ff83cf946c984f9f7e0197ddb7f",
+    "sketchfab_dae37cc4869a4155b6999efe26df710c",
+    "sketchfab_ebb7c4102dc94ef7ba14d9c5df43c448",
+    "sketchfab_f33ed1f09bef4d9bb757c25c1304ec96",
+    "sketchfab_f4d11e48cc52479c802ec2cf0d629f68"
+  ]
+}

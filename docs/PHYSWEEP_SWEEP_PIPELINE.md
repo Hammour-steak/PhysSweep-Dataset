@@ -60,9 +60,8 @@ The multi-object shape is the same as the one-object shape:
 
 With no target filter, the derivation command emits one sweep group for each
 dynamic object. `--target-object-id` can restrict a run to selected objects.
-The current PyBullet simulation backend still executes one dynamic object at a
-time; this schema change prepares the sweep contract for the future 2/3-object
-backend without silently pretending that backend is already available.
+The generic and specialized 2obj adapters simulate both objects together; selecting
+only A for derivation does not freeze B's motion.
 
 ## Common Endpoint Rule
 
@@ -84,6 +83,14 @@ hard boundary is rejected because it cannot occupy the third of five distinct
 ordered levels. The middle values are never hand-tuned per video.
 
 The endpoint sources are recorded in `configs/physics_sweep.json`.
+New 2obj runs select `configs/two_object_physics_sweep.json`, a hash-pinned overlay
+of those unchanged shared rules. Its mass levels are exactly
+`[0.25, 0.5, 1, 2, 4] * base_mass` (rounded to metadata precision), not clipped to
+the asset's base-sampling prior. Base sampling is unchanged. Nonpositive,
+nonfinite, or collapsed rounded levels are rejected; physics integrity checks
+still apply to every member. Friction and restitution keep the shared rules.
+The overlay rejects 1obj/3obj input and old admitted groups cannot be resumed
+under its different configuration binding.
 The sweep manifest records the SHA256 of every derived metadata file, its
 parent metadata, the sweep configuration, the derivation implementation, and
 all material-prior sources. Any later mutation is therefore detectable before
@@ -91,14 +98,19 @@ simulation or release.
 
 Each axis has five conceptual levels. The canonical base is stored once as
 `kind: base`, with `target_object_id`, `parameter`, and `value` set to null. It is
-not semantically attached to the mass axis or to any object. Every object/axis
+not semantically attached to the mass axis or to any object. Every selected object/axis
 pair then contributes four non-base variants. A one-object scene with three
-five-level axes therefore produces 13 unique samples per base. A two-object
-scene produces 25 and a three-object scene produces 37. The range is resolved from
+five-level axes therefore produces 13 unique samples per base. The current 2obj
+pipeline also produces 13: only `object_a` is swept, while `object_b` retains its
+parameters and initial state and is still simulated normally. The reusable
+deriver supports explicit target selection (`--target-object-index 0`); its
+unfiltered all-target mode and existing 25/37-member releases remain supported.
+The range is resolved from
 the frozen base record before levels are generated:
 
-- mass uses logarithmic levels inside the reviewed asset mass range, clipped to
-  a base-relative `0.5x..2.0x` band;
+- the default/1obj mass rule uses logarithmic levels inside the reviewed asset
+  mass range, clipped to a base-relative `0.5x..2.0x` band; the new 2obj overlay
+  uses the explicit counterfactual multipliers above;
 - friction uses a base-relative band clipped by the runtime domain
   `[0.02, 1.0]`. Generic rigid records with a required travel distance also
   place the high endpoint about 25% beyond the calculated stop/transition
@@ -132,6 +144,20 @@ A sweep is allowed to change the observed motion mode. For example, a low
 restitution bounce can impact and settle without a visible rebound. These
 changes are recorded as semantic advisories; penetration, finite-state,
 energy, speed, parameter-binding, and proxy checks remain hard failures. A
+two-object base must satisfy its declared interaction. Its derived sweeps may
+lose or gain pair contact, change contact timing/order, or shorten travel;
+these are observations, not rejection criteria. Physics integrity and one-factor
+binding remain hard checks. Camera solving and visibility admission use only the
+base trajectory, with actual contact or closest approach as the keyframe. All
+sweeps copy that base camera unchanged: objects may leave the frame, shrink in
+projection, or become occluded without rejecting or resampling the group. Dense
+trajectories remain complete. Canonical releases are maskless; base visibility
+requirements remain enforced. The 2obj renderer reuses the hash-bound admitted base camera;
+it does not solve the camera again or render a separate base-video prepass.
+All base members finish before any derived member is rendered.
+2obj captions describe initial motion without promising a collision. 2obj
+friction levels use the configured domain and range policy, without an analytic
+contact-preserving cap. A
 surface motion that declares `allow_support_exit_after_primary_motion` is
 checked for support contact through its primary contact window, after which a
 physical exit from the support is allowed.
@@ -159,7 +185,11 @@ defaults, not current research sweep axes.
 
 ## Specialized render evidence
 
-New asset-proxy and billiards metadata declares
+Canonical 1obj/2obj/3obj releases publish metadata, trajectory and video only.
+The mask evidence below applies to retained mask-enabled rendering contracts,
+not the current public sample format.
+
+Historical mask-enabled asset-proxy and billiards metadata declares
 `physweep_specialized_render_evidence_v2`. A reusable render must then bind the
 exact renderer and shared evidence implementation hashes, record the production
 sample count, and provide a hash-complete instance-mask manifest for every
@@ -237,17 +267,23 @@ inertia_diagonal_kg_m2         [N, 3]
 
 The common audit requires an exact time axis, finite normalized orientations,
 exact frame-zero state, valid contact counts, exact runtime mass/friction/
-restitution, positive inertia, and every adapter's hard collision and energy
-invariants. A sweep may make a base motion stop before an intended edge or
-support transition; those motion-completion checks are advisory for sweep
-records only. Penetration, bounds, energy, collision-proxy, and runtime-parameter
-checks remain hard failures.
+restitution, positive inertia, and matching collision-proxy definitions.
+For 2obj, motion and camera quality select the base before sweeps are derived.
+Derived trajectories are not selected by speed, penetration, bounds, energy,
+collision occurrence, timing, or motion-completion thresholds. Raw adapter
+measurements and failure flags are preserved as diagnostics; the dispatcher
+records `base_quality_rules_diagnostic_for_two_object_sweep_v1` and enforces
+execution and metadata integrity only. A sweep integrity error stops the run
+for investigation and never triggers base resampling. Canonical `kind: base`
+members keep base admission rules. Existing 1obj admission is unchanged.
 
 Release admission is group-atomic. The shared source publisher joins immutable
 sweep metadata and simulation manifests and requires one canonical base plus all
-twelve variants for every target object. Thus 1obj/2obj/3obj groups contain
-13/25/37 records. One failed record rejects the complete base group; individual
-videos are never repaired, silently omitted, or replaced after rendering.
+twelve variants for every declared target object. Dynamic object count is not
+sweep target count: new 2obj groups have 13 records, with target index `[0]`
+recorded in the source release and render plan. Missing or corrupt records block
+publication of an incomplete group; 2obj trajectory-quality diagnostics do not.
+Individual videos are never repaired, silently omitted, or replaced after rendering.
 
 The consumer group index preserves the published one-target v1 shape for 1obj.
 For multiple objects, v2 keeps one base record and nests one ordered 12-variant
@@ -255,12 +291,11 @@ grid under each `{target_object_id, target_object_index}` pair. Verification
 binds that index back to `physics.objects` order in every sample.
 
 The resolved scene format and release grouping are object-count aware, but each
-runtime adapter declares its current capability: generic rigid, reviewed
-asset-proxy, passive-pinball, and marble-run support one dynamic object, while
-billiards supports one or three balls. Two- and three-object runtime adapters
-must reuse the ordered object contract without falling back to a 1obj solver.
+runtime adapter declares its current capability. Generic rigid pairs and the
+three specialized 2obj fixture adapters preserve both dynamic objects; selecting
+one sweep target never selects a 1obj solver or removes the other object's GT.
 
-Raw angular-speed limits remain useful diagnostics, but sweep records use the
+For the existing 1obj path, raw angular-speed limits remain useful diagnostics, but sweep records use the
 shape-scaled rotational surface speed as the hard rotational bound. This avoids
 rejecting a physically valid small object merely because the same surface speed
 corresponds to a larger angular velocity.

@@ -24,6 +24,7 @@ REQUIRED_FIELDS = (
 def load_specialized_backends(
     root: Path = PROJECT_ROOT,
     path: Path | str = DEFAULT_REGISTRY,
+    *, object_count: int | None = None,
 ) -> list[dict[str, Any]]:
     root = root.resolve()
     registry_path = Path(path)
@@ -53,6 +54,11 @@ def load_specialized_backends(
                 f"specialized backend record {index} has invalid fields: {invalid}"
             )
         record = {field: source[field] for field in REQUIRED_FIELDS}
+        if 'dynamic_object_counts' in source:
+            counts=source['dynamic_object_counts']
+            if not isinstance(counts,list) or not counts or any(type(n) is not int or n<1 for n in counts) or len(set(counts))!=len(counts):
+                raise ValueError('invalid specialized object-count scope')
+            record['dynamic_object_counts']=list(counts)
         renderer = (root / record["renderer_script"]).resolve()
         renderer.relative_to(root)
         if not renderer.is_file():
@@ -62,11 +68,11 @@ def load_specialized_backends(
         values = [record[field] for record in result]
         if len(values) != len(set(values)):
             raise ValueError(f"duplicate specialized backend {field}")
-    return result
+    return [r for r in result if object_count is None or object_count in r.get('dynamic_object_counts',[object_count])]
 
 
-def specialized_by_pipeline(root: Path = PROJECT_ROOT) -> dict[str, dict[str, Any]]:
-    return {record["pipeline"]: record for record in load_specialized_backends(root)}
+def specialized_by_pipeline(root: Path = PROJECT_ROOT, *, object_count: int | None = None) -> dict[str, dict[str, Any]]:
+    return {record["pipeline"]: record for record in load_specialized_backends(root,object_count=object_count)}
 
 
 def specialized_by_schema(root: Path = PROJECT_ROOT) -> dict[str, dict[str, Any]]:

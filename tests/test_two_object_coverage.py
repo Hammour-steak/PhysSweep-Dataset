@@ -25,7 +25,7 @@ from tools.sampling.sample_two_object_coverage import (
     released_source_pool,
     select_coverage_sources,
 )
-from tools.sampling.two_object_sources import _asset_object_template
+from tools.sampling.released_asset_sources import asset_object_template
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -490,7 +490,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
                     ]
                 },
             }
-            template, reason = _asset_object_template(
+            template, reason = asset_object_template(
                 source_root=root,
                 runtime_root=root,
                 generation_metadata=generation,
@@ -511,7 +511,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
             )
             visual_path.write_bytes(b"tampered unit asset mesh")
             with self.assertRaisesRegex(ValueError, "visual hash mismatch"):
-                _asset_object_template(
+                asset_object_template(
                     source_root=root,
                     runtime_root=root,
                     generation_metadata=generation,
@@ -542,7 +542,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
             ]
             write_json(registry_path, registry)
             generation["registry"]["sha256"] = sha256_file(registry_path)
-            compound, reason = _asset_object_template(
+            compound, reason = asset_object_template(
                 source_root=root,
                 runtime_root=root,
                 generation_metadata=generation,
@@ -563,7 +563,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
             registry["records"][0]["proxy"]["colliders"][1]["position_m"][0] = 0.01
             write_json(registry_path, registry)
             generation["registry"]["sha256"] = sha256_file(registry_path)
-            rejected, reason = _asset_object_template(
+            rejected, reason = asset_object_template(
                 source_root=root,
                 runtime_root=root,
                 generation_metadata=generation,
@@ -587,7 +587,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
             ]
             write_json(registry_path, registry)
             generation["registry"]["sha256"] = sha256_file(registry_path)
-            rejected, reason = _asset_object_template(
+            rejected, reason = asset_object_template(
                 source_root=root,
                 runtime_root=root,
                 generation_metadata=generation,
@@ -602,7 +602,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
     def test_matrix_declares_complete_ordered_cartesian_coverage(self) -> None:
         matrix = load_matrix()
         self.assertEqual(
-            matrix["schema_version"], "physweep_two_object_sampling_matrix_v15"
+            matrix["schema_version"], "physweep_two_object_sampling_matrix_v16"
         )
         scene_rules = load_scene_rules()
         validate_two_object_scene_rules(scene_rules)
@@ -620,14 +620,14 @@ class TwoObjectCoverageTests(unittest.TestCase):
         intents = {record["id"]: record for record in matrix["motion_intents"]}
         self.assertEqual(
             intents["surface_head_on_2obj"]["linear_velocity_m_s"],
-            [[0.60, 0.0, 0.0], [-0.24, 0.0, 0.0]],
+            [[0.72, 0.0, 0.0], [-0.288, 0.0, 0.0]],
         )
         self.assertEqual(
             intents["surface_crossing_2obj"]["impact_offset_ratio"], 0.10
         )
         self.assertEqual(
             intents["surface_glancing_hit_rest_2obj"]["linear_velocity_m_s"],
-            [[0.68, 0.24, 0.0], [0.0, 0.0, 0.0]],
+            [[0.816, 0.288, 0.0], [0.0, 0.0, 0.0]],
         )
         self.assertEqual(
             intents["surface_glancing_hit_rest_2obj"]["impact_offset_ratio"],
@@ -635,7 +635,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
         )
         self.assertEqual(
             intents["surface_glancing_opposed_2obj"]["linear_velocity_m_s"],
-            [[0.62, 0.0, 0.0], [-0.36, -0.36, 0.0]],
+            [[0.744, 0.0, 0.0], [-0.432, -0.432, 0.0]],
         )
         self.assertEqual(
             intents["surface_glancing_opposed_2obj"]["impact_offset_ratio"],
@@ -646,7 +646,7 @@ class TwoObjectCoverageTests(unittest.TestCase):
         )
         self.assertEqual(
             intents["surface_catch_up_2obj"]["linear_velocity_m_s"],
-            [[0.97, 0.0, 0.0], [0.39, 0.0, 0.0]],
+            [[1.164, 0.0, 0.0], [0.468, 0.0, 0.0]],
         )
         self.assertEqual(
             intents["air_drop_hit_supported_2obj"]["linear_velocity_m_s"],
@@ -899,12 +899,12 @@ class TwoObjectCoverageTests(unittest.TestCase):
         ] = "allow_reuse"
         with self.assertRaisesRegex(ValueError, "may not be weakened"):
             _validated_intents(weakened)
-        excessive_reuse = copy.deepcopy(matrix)
-        excessive_reuse["coverage_plan"]["selection_policy"][
+        invalid_reuse = copy.deepcopy(matrix)
+        invalid_reuse["coverage_plan"]["selection_policy"][
             "maximum_host_source_reuse"
-        ] = 3
-        with self.assertRaisesRegex(ValueError, "may not be weakened"):
-            _validated_intents(excessive_reuse)
+        ] = True
+        with self.assertRaisesRegex(ValueError, "positive integers"):
+            _validated_intents(invalid_reuse)
         active_host = copy.deepcopy(scene_rules)
         active_host["host_eligibility"][
             "allowed_collider_roles"

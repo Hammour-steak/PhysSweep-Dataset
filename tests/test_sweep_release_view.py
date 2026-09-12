@@ -181,14 +181,26 @@ class SweepReleaseViewTests(unittest.TestCase):
                 object_count=1,
             )
             group = manifest["records"][0]
-            self.assertEqual(group["target_object_id"], "object_a")
-            self.assertTrue(all(set(record) == SWEEP_INDEX_FIELDS for record in group["sweeps"]))
+            self.assertEqual(manifest["schema_version"], "physweep_sweep_group_manifest_v2")
+            self.assertEqual(set(group), {"group_id", "family", "base", "targets"})
+            self.assertEqual(len(group["targets"]), 1)
+            self.assertEqual(group["targets"][0]["target_object_id"], "object_a")
+            self.assertEqual(group["targets"][0]["target_object_index"], 0)
+            self.assertTrue(all(set(record) == SWEEP_INDEX_FIELDS for record in group["targets"][0]["sweeps"]))
 
     def test_multi_object_group_index_nests_complete_target_grids(self) -> None:
+        self._check_two_object_group_index((0, 1))
+
+    def test_two_object_group_index_can_select_only_object_a(self) -> None:
+        self._check_two_object_group_index((0,))
+
+    def _check_two_object_group_index(self, targets) -> None:
         with tempfile.TemporaryDirectory() as directory:
             work = Path(directory)
             results = []
             for target_index, target_id in enumerate(("object_a", "object_b")):
+                if target_index not in targets:
+                    continue
                 for axis in SWEEP_AXES:
                     for level in SWEEP_DERIVED_LEVELS:
                         scene_id = f"scene_{target_index}_{axis}_{level}"
@@ -235,13 +247,14 @@ class SweepReleaseViewTests(unittest.TestCase):
                 },
                 work=work,
                 object_count=2,
+                target_object_indices=targets,
             )
             group = manifest["records"][0]
             self.assertEqual(manifest["schema_version"], "physweep_sweep_group_manifest_v2")
-            self.assertEqual(manifest["sweep_count"], 24)
+            self.assertEqual(manifest["sweep_count"], 12 * len(targets))
             self.assertEqual(
                 [target["target_object_index"] for target in group["targets"]],
-                [0, 1],
+                list(targets),
             )
             self.assertTrue(
                 all(len(target["sweeps"]) == 12 for target in group["targets"])

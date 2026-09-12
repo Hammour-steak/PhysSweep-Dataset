@@ -1,0 +1,78 @@
+{
+  "schema_version": "physweep_three_object_billiards_rules_v1",
+  "status": "development_unvalidated",
+  "family": "billiards",
+  "source_schema": "physweep_billiards_scene_v4",
+  "output_schema": "physweep_billiards_three_object_scene_v1",
+  "motion_rules": {
+    "path": "configs/three_object_motion_rules.json",
+    "sha256": "36c8850f0c88ca3be8021b9efef42a44388f730d9063874d6a4082f3d66a7419"
+  },
+  "scene_rules": {
+    "path": "configs/three_object_scene_rules.json",
+    "sha256": "fb9ebaa5e2d20505dabb6c7c99295d18e6358d516b9227c0d2867dcee4d7e115"
+  },
+  "template_ids": [
+    "chain_transfer"
+  ],
+  "initial_limits": {
+    "speed_m_s": [
+      0.45,
+      0.55
+    ],
+    "PQ_surface_gap_m": [
+      0.11,
+      0.14
+    ],
+    "QR_surface_gap_m": [
+      0.09,
+      0.12
+    ],
+    "Q_reference_x_m": -0.2,
+    "lane_y_m": [
+      -0.04,
+      0.04
+    ],
+    "headings": [
+      1,
+      -1
+    ],
+    "angular_velocity_rad_s": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "support_edge_margin_m": 0.04
+  },
+  "candidate_count": 6,
+  "target_roles": [
+    "P",
+    "Q",
+    "R"
+  ],
+  "hdris_per_target_role": 2,
+  "master_seed": 20260907,
+  "source_object_reuse_limit": 3,
+  "source_host_reuse_limit": 1,
+  "max_source_attempts": 32,
+  "visual_material_slots": [
+    "cue_ball",
+    "object_ball_1",
+    "object_ball_2"
+  ],
+  "visual_variants_per_physics": 1,
+  "media": {
+    "duration_s": 4.0,
+    "output_fps": 24,
+    "frame_count": 97,
+    "resolution": [
+      1280,
+      720
+    ],
+    "samples": 32,
+    "render_engine": "BLENDER_EEVEE",
+    "motion_blur": false,
+    "masks": false
+  },
+  "scope": "Six independent chain candidates, each target role under two actual source HDRIs. Source fixture geometry and seven material values are preserved; slot permutation is an explicit asset-bound appearance choice. No production quota."
+}

@@ -1,0 +1,346 @@
+{
+  "schema_version": "physweep_three_object_marble_rules_v2",
+  "status": "development_unvalidated",
+  "family": "marble_run",
+  "source_schema": "physweep_marble_run_scene_v1",
+  "output_schema": "physweep_marble_run_three_object_scene_v1",
+  "motion_rules": {
+    "path": "configs/three_object_motion_rules.json",
+    "sha256": "36c8850f0c88ca3be8021b9efef42a44388f730d9063874d6a4082f3d66a7419"
+  },
+  "scene_rules": {
+    "path": "configs/three_object_scene_rules.json",
+    "sha256": "fb9ebaa5e2d20505dabb6c7c99295d18e6358d516b9227c0d2867dcee4d7e115"
+  },
+  "visual_sources": {
+    "scene_profiles": {
+      "path": "configs/scene_visual_profiles.json",
+      "sha256": "71d408f544bd5abd5ca870b385d85418d33fe5095d14d01b49e9c3c160b0273f"
+    },
+    "visual_sampling": {
+      "path": "configs/visual_sampling.json",
+      "sha256": "8d4ff84a9ba7f704dc9b0251c95033102400535c2b5a63923c1c6b7f6ab1bc62"
+    },
+    "hdri_manifest": {
+      "path": "assets/manifests/hdri_admission.json",
+      "sha256": "92cf20d0afd566293e7becc1b9f6debc724fe2f72515c00c2e45ebc43d5bb11d"
+    }
+  },
+  "background_contract": {
+    "physics_role": "render_only_context",
+    "profile_ids": [
+      "industrial_bay",
+      "workshop_grid",
+      "lab_storage"
+    ],
+    "minimum_back_wall_distance_m": 2.4,
+    "collision_enabled": false,
+    "full_fixture_visible_with_every_camera": false,
+    "framing_requirement": "All three trajectories, complete three active track segments and catch tray, plus actually contacted support region. All static geometry remains in physics and occlusion tests. Full safety-floor perimeter is not mandatory."
+  },
+  "initial_limits": {
+    "parameter_cases": [
+      {
+        "P_shift_m": -0.006,
+        "PQ_gap_m": 0.09,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.3
+      },
+      {
+        "P_shift_m": -0.006,
+        "PQ_gap_m": 0.09,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.4
+      },
+      {
+        "P_shift_m": -0.006,
+        "PQ_gap_m": 0.1,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.3
+      },
+      {
+        "P_shift_m": -0.006,
+        "PQ_gap_m": 0.1,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.4
+      },
+      {
+        "P_shift_m": 0.0,
+        "PQ_gap_m": 0.09,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.3
+      },
+      {
+        "P_shift_m": 0.0,
+        "PQ_gap_m": 0.09,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.4
+      },
+      {
+        "P_shift_m": 0.0,
+        "PQ_gap_m": 0.1,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.3
+      },
+      {
+        "P_shift_m": 0.0,
+        "PQ_gap_m": 0.1,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.4
+      },
+      {
+        "P_shift_m": 0.006,
+        "PQ_gap_m": 0.09,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.3
+      },
+      {
+        "P_shift_m": 0.006,
+        "PQ_gap_m": 0.09,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.4
+      },
+      {
+        "P_shift_m": 0.006,
+        "PQ_gap_m": 0.1,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.3
+      },
+      {
+        "P_shift_m": 0.006,
+        "PQ_gap_m": 0.1,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.4
+      },
+      {
+        "P_shift_m": -0.004,
+        "PQ_gap_m": 0.095,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.3
+      },
+      {
+        "P_shift_m": -0.004,
+        "PQ_gap_m": 0.095,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.4
+      },
+      {
+        "P_shift_m": -0.004,
+        "PQ_gap_m": 0.105,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.3
+      },
+      {
+        "P_shift_m": -0.004,
+        "PQ_gap_m": 0.105,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.4
+      },
+      {
+        "P_shift_m": 0.0,
+        "PQ_gap_m": 0.095,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.3
+      },
+      {
+        "P_shift_m": 0.0,
+        "PQ_gap_m": 0.095,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.4
+      },
+      {
+        "P_shift_m": 0.0,
+        "PQ_gap_m": 0.105,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.3
+      },
+      {
+        "P_shift_m": 0.0,
+        "PQ_gap_m": 0.105,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.4
+      },
+      {
+        "P_shift_m": 0.004,
+        "PQ_gap_m": 0.095,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.3
+      },
+      {
+        "P_shift_m": 0.004,
+        "PQ_gap_m": 0.095,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.4
+      },
+      {
+        "P_shift_m": 0.004,
+        "PQ_gap_m": 0.105,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.3
+      },
+      {
+        "P_shift_m": 0.004,
+        "PQ_gap_m": 0.105,
+        "QR_gap_m": 0.08,
+        "P_speed_m_s": 0.4
+      }
+    ],
+    "reference_position_m": [
+      -0.288226399591,
+      0.0,
+      1.5896643337736187
+    ],
+    "longitudinal_direction": [
+      0.9902680687415704,
+      0.0,
+      -0.13917310096006544
+    ],
+    "minimum_initial_surface_gap_m": 0.001,
+    "maximum_initial_longitudinal_offset_m": 0.28,
+    "minimum_path_length_per_object_m": 1.5
+  },
+  "first_event_min_s": 0.2,
+  "appearance_palette": {
+    "amber": [
+      0.98,
+      0.62,
+      0.08,
+      1.0
+    ],
+    "blue": [
+      0.16,
+      0.58,
+      0.93,
+      1.0
+    ],
+    "green": [
+      0.35,
+      0.72,
+      0.28,
+      1.0
+    ]
+  },
+  "camera_rules": {
+    "model": "perspective_pinhole",
+    "policy": "base_only_fixed_group",
+    "reference": "world_XYZ_front_positive_Y_up_positive_Z",
+    "view_families": [
+      {
+        "id": "track_front",
+        "azimuth_degrees": 90.0,
+        "elevation_degrees": 65.0
+      },
+      {
+        "id": "track_left",
+        "azimuth_degrees": 86.0,
+        "elevation_degrees": 65.0
+      },
+      {
+        "id": "track_right",
+        "azimuth_degrees": 94.0,
+        "elevation_degrees": 65.0
+      }
+    ],
+    "focal_length_mm": [
+      240.0,
+      120.0
+    ],
+    "minimum_object_extent_px": 24.0,
+    "frame_margin_fraction": 0.04,
+    "audit_policy": "per_object_projection_and_geometric_occlusion_plus_manual_keyframes",
+    "maximum_occluded_fraction": 0.25,
+    "maximum_candidate_count": 24,
+    "whole_fixture_required": false,
+    "mandatory_fixture_components": [
+      "track_1",
+      "track_2",
+      "track_3",
+      "catch_floor",
+      "catch_side_positive_y",
+      "catch_side_negative_y",
+      "catch_end"
+    ],
+    "safety_floor_framing": "Include actual contact/trajectory support region. The unused outer floor boundary need not be visible; complete physical floor remains in simulation and static occlusion checks."
+  },
+  "media": {
+    "duration_s": 4.0,
+    "output_fps": 24,
+    "frame_count": 97,
+    "resolution": [
+      1280,
+      720
+    ],
+    "samples": 32,
+    "render_engine": "BLENDER_EEVEE",
+    "motion_blur": false,
+    "masks": false,
+    "simulation_hz": 7680
+  },
+  "candidate_count": 24,
+  "target_roles": [
+    "P",
+    "Q",
+    "R"
+  ],
+  "source_object_reuse_limit": 3,
+  "source_host_reuse_limit": 1,
+  "master_seed": 20260907,
+  "scope": "Twenty-four finite initial-only ordered-contact layouts using three retained source track segments and the translated original catch assembly. Original sphere radius and seven physical materials retained. Full original safety floor unchanged. Candidate construction/provenance v2 explicitly binds source and transformed fixture. High front and modest +/-4 degree front-oblique views,240mm first; no wide-side or rear coverage. Original1.5m path,24px visibility and numerical thresholds unchanged. No production quota. First twelve physical cases repeat the prior candidate cohort and are not additional unique states across versions; twelve supplemental cases expand the finite initial domain. Source budget:32 objects x3 uses >=72 slots;32 hosts x1 >=24. No sweep outcomes used for expansion.",
+  "motion_template": {
+    "id": "ordered_contacts",
+    "interaction_type": "connected_three",
+    "initially_moving_roles": [
+      "P"
+    ],
+    "required_pairs": [
+      [
+        "P",
+        "Q"
+      ],
+      [
+        "Q",
+        "R"
+      ]
+    ],
+    "allowed_pairs": [
+      [
+        "P",
+        "Q"
+      ],
+      [
+        "Q",
+        "R"
+      ],
+      [
+        "P",
+        "R"
+      ]
+    ],
+    "forbidden_pairs": [],
+    "first_contact_order": [
+      [
+        "P",
+        "Q"
+      ],
+      [
+        "Q",
+        "R"
+      ]
+    ],
+    "constructor": "three_separated_marbles_on_initial_channel",
+    "caption_template": "three_object_marble_initial_v1"
+  },
+  "fixture_layout": {
+    "id": "three_segment_source_fixture_v1",
+    "retained_track_ids": [
+      "track_1",
+      "track_2",
+      "track_3"
+    ],
+    "catch_translation_m": [
+      -0.36,
+      0.0,
+      0.09
+    ]
+  }
+}

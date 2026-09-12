@@ -7,8 +7,8 @@ physics adapters, rendering, and publication contracts are reused explicitly.
 Each base scene stores the random seed, declared matrix choices, exact geometry,
 mass and contact parameters, initial pose and velocity for every object, support
 colliders, visual asset ids, camera request, render request, rule hashes, and
-backend hashes. Stable object ids join text, dense trajectories, masks, and
-per-target sweeps.
+backend hashes. Stable object ids join text, dense trajectories, videos, and
+per-target sweeps. Canonical samples do not contain masks.
 
 Generation has four stages:
 

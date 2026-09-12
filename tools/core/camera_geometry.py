@@ -16,6 +16,35 @@ from tools.core.rigid_geometry import (
 )
 
 
+def validate_pair_camera_fallback_views(views: Any) -> None:
+    """Validate optional, ordered view alternatives stored in pair metadata."""
+    fields = (
+        "relative_azimuth_degrees", "preferred_elevation_degrees",
+        "minimum_elevation_degrees", "maximum_elevation_degrees",
+    )
+    if not isinstance(views, list):
+        raise ValueError("pair camera fallback views must be a list")
+    seen = set()
+    for view in views:
+        if not isinstance(view, dict) or set(view) != {"id", *fields}:
+            raise ValueError("pair camera fallback view fields are invalid")
+        view_id = view["id"]
+        if not isinstance(view_id, str) or not view_id.strip() or view_id in seen:
+            raise ValueError("pair camera fallback view ids must be unique")
+        seen.add(view_id)
+        if any(
+            isinstance(view[field], bool)
+            or not isinstance(view[field], (int, float))
+            or not math.isfinite(view[field]) for field in fields
+        ):
+            raise ValueError("pair camera fallback view angles must be finite")
+        azimuth, preferred, minimum, maximum = (view[field] for field in fields)
+        if not -180.0 <= azimuth <= 180.0 or not (
+            0.0 < minimum <= preferred <= maximum < 90.0 and minimum < maximum
+        ):
+            raise ValueError("pair camera fallback view angles are invalid")
+
+
 BASE_AZIMUTH_OFFSETS_DEGREES = (0.0, -12.0, 12.0, -24.0, 24.0)
 WIDE_AZIMUTH_OFFSETS_DEGREES = (
     -48.0,

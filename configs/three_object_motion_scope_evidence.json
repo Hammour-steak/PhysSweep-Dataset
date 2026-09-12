@@ -1,0 +1,235 @@
+{
+  "schema_version": "physweep_three_object_motion_scope_evidence_v1",
+  "status": "passed_pending_quota",
+  "flat_motion_trial": {
+    "physics_work_id": "three_object_d6a_motion_trial_20260908_r4",
+    "camera_render_work_id": "three_object_d6a_motion_preview_20260908_r2",
+    "preview_package": "outputs/work/three_object_d6a_motion_preview14_20260908_r2",
+    "generation_code_sha256": "74e90e007163bacdb258b7bbf61c63a6752c5da36ee974aaca66b05121dff292",
+    "trial_rules_sha256": "5abed8fce40e4569a67d4fbd75b9ab61a1b1ca0e7635c87ec6bfed66b7e4b725",
+    "candidate_groups": 16,
+    "physics_accepted_groups": 14,
+    "complete_members": 182,
+    "camera_accepted_groups": 14,
+    "rendered_base_videos": 14,
+    "media_contract": {
+      "codec": "h264",
+      "width": 1280,
+      "height": 720,
+      "fps": 24,
+      "frames": 97,
+      "duration_s": 4.0
+    },
+    "sphere_allowed_cells": [
+      {
+        "template": "chain_transfer",
+        "layout_variant": "angled_chain_left",
+        "motion_axis": "world_x",
+        "R_shape": "sphere"
+      },
+      {
+        "template": "chain_transfer",
+        "layout_variant": "angled_chain_left",
+        "motion_axis": "world_y",
+        "R_shape": "sphere"
+      },
+      {
+        "template": "successive_hits",
+        "layout_variant": "offset_successive_left",
+        "motion_axis": "world_x",
+        "R_shape": "sphere"
+      },
+      {
+        "template": "successive_hits",
+        "layout_variant": "offset_successive_left",
+        "motion_axis": "world_y",
+        "R_shape": "sphere"
+      },
+      {
+        "template": "successive_hits",
+        "layout_variant": "offset_successive_right",
+        "motion_axis": "world_x",
+        "R_shape": "sphere"
+      },
+      {
+        "template": "successive_hits",
+        "layout_variant": "offset_successive_right",
+        "motion_axis": "world_y",
+        "R_shape": "sphere"
+      },
+      {
+        "template": "pair_control",
+        "layout_variant": "crossing_control_left",
+        "motion_axis": "world_x",
+        "R_shape": "sphere"
+      },
+      {
+        "template": "pair_control",
+        "layout_variant": "crossing_control_left",
+        "motion_axis": "world_y",
+        "R_shape": "sphere"
+      },
+      {
+        "template": "pair_control",
+        "layout_variant": "crossing_control_right",
+        "motion_axis": "world_x",
+        "R_shape": "sphere"
+      },
+      {
+        "template": "pair_control",
+        "layout_variant": "crossing_control_right",
+        "motion_axis": "world_y",
+        "R_shape": "sphere"
+      }
+    ],
+    "mixed_R_allowed_cells": [
+      {
+        "template": "pair_control",
+        "layout_variant": "crossing_control_left",
+        "motion_axis": "world_x",
+        "R_shape": "cuboid"
+      },
+      {
+        "template": "pair_control",
+        "layout_variant": "crossing_control_right",
+        "motion_axis": "world_y",
+        "R_shape": "cuboid"
+      },
+      {
+        "template": "pair_control",
+        "layout_variant": "crossing_control_left",
+        "motion_axis": "world_y",
+        "R_shape": "cylinder"
+      },
+      {
+        "template": "pair_control",
+        "layout_variant": "crossing_control_right",
+        "motion_axis": "world_x",
+        "R_shape": "cylinder"
+      }
+    ],
+    "rejected_cells": [
+      {
+        "template": "chain_transfer",
+        "layout_variant": "angled_chain_right",
+        "motion_axis": "world_x",
+        "R_shape": "sphere",
+        "reason": "missing required Q-R second transfer in real-material physics admission"
+      },
+      {
+        "template": "chain_transfer",
+        "layout_variant": "angled_chain_right",
+        "motion_axis": "world_y",
+        "R_shape": "sphere",
+        "reason": "missing required Q-R second transfer in real-material physics admission"
+      }
+    ],
+    "policy": "only the fourteen listed accepted cells are admitted; rejection is not reallocated"
+  },
+  "inclined_media_evidence": {
+    "physics_work_id": "three_object_d6b_camera_pilot_20260908_r2",
+    "camera_render_work_id": "three_object_d6b_camera_preview4_20260908_r2",
+    "physics_candidate_groups": 24,
+    "physics_accepted_groups": 16,
+    "complete_physics_members": 208,
+    "joint_camera_accepted_groups": 16,
+    "selected_media_groups": 4,
+    "complete_selected_physics_members": 52,
+    "rendered_selected_base_videos": 4,
+    "media_contract": {
+      "codec": "h264",
+      "width": 1280,
+      "height": 720,
+      "fps": 24,
+      "frames": 97,
+      "duration_s": 4.0
+    },
+    "camera_policy": {
+      "minimum_object_extent_fraction_of_short_side": 0.05,
+      "target_object_extent_fraction_of_short_side": 0.1,
+      "maximum_object_extent_fraction_of_short_side": 0.25,
+      "maximum_safe_frame_violation_fraction": 0.15,
+      "maximum_out_of_frame_fraction": 0.08,
+      "maximum_frame_overflow_fraction": 0.03,
+      "required_fully_visible_frames": "initial_and_required_contact_frames_with_one_frame_padding"
+    },
+    "observed_camera_summary": {
+      "minimum_object_fraction_range": [
+        0.08499732377106521,
+        0.09721700065146838
+      ],
+      "median_object_fraction_range": [
+        0.09414280180867161,
+        0.1039912116437766
+      ],
+      "maximum_object_fraction_range": [
+        0.10021226570507492,
+        0.11592193450727495
+      ],
+      "maximum_out_of_frame_fraction": 0.0,
+      "maximum_frame_overflow_fraction": 0.0,
+      "all_required_event_frames_fully_visible": true,
+      "maximum_safe_frame_violation_fraction": 0.0
+    },
+    "allowed_media_cells": [
+      {
+        "scene_id": "three_object_d6b_camera_pilot_20260908_r2_pair_control_d4ba31598554__base",
+        "host_class": "ground_feature",
+        "scale_pattern": [
+          "medium",
+          "medium",
+          "medium"
+        ],
+        "fixture": "ground_ramp_long_shallow",
+        "target_role": "P",
+        "camera_family": "side_oblique"
+      },
+      {
+        "scene_id": "three_object_d6b_camera_pilot_20260908_r2_pair_control_b3d72e030888__base",
+        "host_class": "ground_feature",
+        "scale_pattern": [
+          "small",
+          "small",
+          "small"
+        ],
+        "fixture": "ground_ramp_long_shallow",
+        "target_role": "R",
+        "camera_family": "front_oblique"
+      },
+      {
+        "scene_id": "three_object_d6b_camera_pilot_20260908_r2_pair_control_629027a88324__base",
+        "host_class": "raised_feature",
+        "scale_pattern": [
+          "medium",
+          "medium",
+          "medium"
+        ],
+        "fixture": "raised_ramp_long_shallow",
+        "target_role": "P",
+        "camera_family": "front_oblique"
+      },
+      {
+        "scene_id": "three_object_d6b_camera_pilot_20260908_r2_pair_control_1c67bd1644fb__base",
+        "host_class": "raised_feature",
+        "scale_pattern": [
+          "small",
+          "small",
+          "small"
+        ],
+        "fixture": "raised_ramp_long_shallow",
+        "target_role": "P",
+        "camera_family": "rear_oblique"
+      }
+    ],
+    "coverage": {
+      "ground_feature": 2,
+      "raised_feature": 2,
+      "small": 2,
+      "medium": 2,
+      "front_oblique": 2,
+      "side_oblique": 1,
+      "rear_oblique": 1
+    },
+    "policy": "inclined support remains pair-control spheres only; base camera uses bounded screen occupancy; sweeps inherit the base camera and visibility remains diagnostic"
+  }
+}

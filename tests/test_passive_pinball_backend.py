@@ -32,7 +32,11 @@ class PassivePinballBackendTests(unittest.TestCase):
         cls.config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
 
     def test_specialized_registry_preserves_existing_backends(self) -> None:
-        pipelines = specialized_by_pipeline(ROOT)
+        pipelines = specialized_by_pipeline(ROOT, object_count=1)
+        all_pipelines = specialized_by_pipeline(ROOT)
+        self.assertEqual(set(all_pipelines) - set(pipelines), {'billiards_three_object','passive_pinball_three_object','marble_run_three_object'})
+        self.assertEqual(all_pipelines['billiards_three_object']['dynamic_object_counts'], [3])
+        self.assertEqual(specialized_by_pipeline(ROOT, object_count=2), pipelines)
         self.assertEqual(
             set(pipelines),
             {"asset_proxy", "billiards", "passive_pinball", "marble_run"},

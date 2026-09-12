@@ -10,7 +10,7 @@ import math
 from collections import Counter
 from itertools import product
 from pathlib import Path
-from typing import Any, Iterator, Sequence
+from typing import Any, Callable, Iterator, Sequence
 
 from tools.core.camera_geometry import (
     pair_camera_geometry_eligible,
@@ -38,7 +38,8 @@ from tools.scene_rules.two_object import (
     load_two_object_scene_rules,
     resolved_two_object_scene_rules,
 )
-from tools.sampling.two_object_sources import declared_within, released_source_pool
+from tools.sampling.two_object_sources import released_source_pool
+from tools.sampling.released_object_sources import declared_within
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -357,14 +358,114 @@ def coverage_cells(
         or not 1 <= limit <= full_count
     ):
         raise ValueError("two-object coverage limit is outside the full matrix")
+    # Finish each Cartesian layer before repeating a logical cell. Keeping r00
+    # first also preserves its camera assignments when more layers are requested.
+    ordered_layers = [
+        cell
+        for replicate_index in range(replicates)
+        for cell in _balanced_cell_order(
+            [cell for cell in cells if cell["replicate_index"] == replicate_index],
+            int(coverage["seed"]),
+        )
+    ]
     ordered = _assign_camera_view_families(
-        _balanced_cell_order(cells, int(coverage["seed"])),
+        ordered_layers,
         coverage["camera_view_families"],
         resolved_scene_rules,
         {str(intent["id"]): intent for intent in intents},
         int(coverage["seed"]),
     )
     return ordered if limit is None else ordered[:limit], full_count
+
+
+def coverage_summary(
+    cells: Sequence[dict[str, Any]], full_cell_count: int, matrix: dict[str, Any]
+) -> dict[str, Any]:
+    """Distinguish logical coverage from completing every requested replicate."""
+    fields = ("motion_id", "shape_pair_id", "scale_pair_id", "scene_class")
+    counts = Counter(tuple(str(cell[field]) for field in fields) for cell in cells)
+    logical_count = full_cell_count // int(matrix["coverage_plan"]["replicates_per_cell"])
+    return {
+        "full_cell_count": full_cell_count,
+        "selected_cell_count": len(cells),
+        "complete_cartesian_product": len(cells) == full_cell_count,
+        "logical_cell_count": logical_count,
+        "selected_logical_cell_count": len(counts),
+        "complete_logical_coverage": len(counts) == logical_count,
+        "replicate_counts": dict(sorted(Counter(int(cell["replicate_index"]) for cell in cells).items())),
+        "logical_cell_multiplicity": dict(sorted(Counter(counts.values()).items())),
+        "axis_counts": _axis_counts(cells),
+    }
+
+
+def source_capacity_bounds(
+    cells: Sequence[dict[str, Any]], objects: Sequence[dict[str, Any]],
+    hosts: Sequence[dict[str, Any]], matrix: dict[str, Any],
+) -> dict[str, Any]:
+    """Necessary capacity bounds; compatible assignment is a separate check."""
+    policy = matrix["coverage_plan"]["selection_policy"]
+    object_limit = int(policy["maximum_object_source_reuse"])
+    host_limit = int(policy["maximum_host_source_reuse"])
+    for label, pool in (("object", objects), ("host", hosts)):
+        ids = [str(record["source"]["scene_id"]) for record in pool]
+        if len(ids) != len(set(ids)):
+            raise ValueError(f"two-object {label} source pool contains duplicate ids")
+    demand = Counter(
+        (str(cell[f"{role}_shape"]), str(cell[f"{role}_scale_bin"]))
+        for cell in cells for role in ("object_a", "object_b")
+    )
+    available = Counter((str(obj["shape_family_id"]), str(obj["scale_bin"])) for obj in objects)
+    host_demand = Counter(str(cell["scene_class"]) for cell in cells)
+    host_available = Counter(str(host["scene_class"]) for host in hosts)
+    buckets = [
+        {"kind": "object_shape_scale", "key": list(key), "required": count,
+         "available": available[key] * object_limit}
+        for key, count in sorted(demand.items())
+    ] + [
+        {"kind": "host_scene_class", "key": key, "required": count,
+         "available": host_available[key] * host_limit}
+        for key, count in sorted(host_demand.items())
+    ]
+    return {
+        "object_sources": len(objects), "host_sources": len(hosts),
+        "object_reuse_limit": object_limit, "host_reuse_limit": host_limit,
+        "buckets": buckets,
+        "deficits": [row for row in buckets if row["required"] > row["available"]],
+        "scope": "Necessary bounds only; dynamics, geometry, camera and pair uniqueness may reduce capacity.",
+    }
+
+
+def source_selection_audit(
+    selections: Sequence[dict[str, Any]], matrix: dict[str, Any]
+) -> dict[str, Any]:
+    """Enforce reuse and unordered-pair uniqueness over the entire selection."""
+    policy = matrix["coverage_plan"]["selection_policy"]
+    cell_ids = [str(value["cell"]["cell_id"]) for value in selections]
+    pairs = []
+    object_use: Counter[str] = Counter()
+    host_use: Counter[str] = Counter()
+    for value in selections:
+        object_ids = [str(obj["source"]["scene_id"]) for obj in value["objects"]]
+        host_id = str(value["host"]["source"]["scene_id"])
+        if len(object_ids) != 2 or len(set(object_ids)) != 2 or host_id in object_ids:
+            raise ValueError("two-object selection must use distinct object and host sources")
+        pairs.append(tuple(sorted(object_ids)))
+        object_use.update(object_ids)
+        host_use[host_id] += 1
+    if len(set(cell_ids)) != len(cell_ids) or len(set(pairs)) != len(pairs):
+        raise ValueError("two-object selection repeats a cell or unordered source pair")
+    for use, key in ((object_use, "maximum_object_source_reuse"), (host_use, "maximum_host_source_reuse")):
+        if max(use.values(), default=0) > int(policy[key]):
+            raise ValueError(f"two-object selection exceeds {key} across replicates")
+    return {
+        "scope": policy["source_reuse_scope"], "unique_unordered_pairs": len(set(pairs)),
+        "distinct_object_sources": len(object_use), "distinct_host_sources": len(host_use),
+        "maximum_object_source_reuse": max(object_use.values(), default=0),
+        "maximum_host_source_reuse": max(host_use.values(), default=0),
+        "object_reuse_histogram": dict(sorted(Counter(object_use.values()).items())),
+        "host_reuse_histogram": dict(sorted(Counter(host_use.values()).items())),
+        "passed": True,
+    }
 
 
 def _resolved_within(root: Path, value: Path) -> Path:
@@ -674,11 +775,16 @@ def select_coverage_sources(
     scene_rules: dict[str, Any] | None = None,
     *,
     require_all_profiles: bool = True,
+    progress: Callable[[int], None] | None = None,
 ) -> list[dict[str, Any]]:
     """Assign compatible sources while balancing profiles and source reuse."""
 
     resolved_scene_rules = resolved_two_object_scene_rules(scene_rules)
     plan = matrix["coverage_plan"]
+    _validated_intents(matrix, resolved_scene_rules)
+    capacity = source_capacity_bounds(cells, objects, hosts, matrix)
+    if capacity["deficits"]:
+        raise ValueError(f"insufficient declared two-object source capacity: {capacity['deficits']}")
     seed = int(plan["seed"])
     intent_regimes = {
         str(intent["id"]): str(intent["kinematic_regime"])
@@ -879,6 +985,7 @@ def select_coverage_sources(
     assignment_cells = sorted(
         cells,
         key=lambda cell: (
+            int(cell.get("replicate_index", 0)),
             not requires_pair_camera_geometry(cell),
             original_cell_order[str(cell["cell_id"])],
         ),
@@ -1240,6 +1347,8 @@ def select_coverage_sources(
                 "objects": [left, right],
             }
         )
+        if progress is not None:
+            progress(len(selected))
     selected.sort(
         key=lambda record: selected_cell_order[str(record["cell"]["cell_id"])]
     )
@@ -1257,6 +1366,7 @@ def select_coverage_sources(
         raise ValueError("coverage selection misses eligible object visual profiles")
     if require_all_profiles and set(host_profile_use) != eligible_host_profiles:
         raise ValueError("coverage selection misses eligible host visual profiles")
+    source_selection_audit(selected, matrix)
     return selected
 
 
@@ -1422,15 +1532,16 @@ def main() -> None:
         matrix=matrix,
         scene_rules=scene_rules,
     )
+    summary = coverage_summary(cells, full_cell_count, matrix)
     selections = select_coverage_sources(
         cells,
         objects,
         hosts,
         matrix,
         scene_rules,
-        require_all_profiles=len(cells) == full_cell_count,
+        require_all_profiles=summary["complete_logical_coverage"],
     )
-    if len(cells) == full_cell_count:
+    if summary["complete_logical_coverage"]:
         _validate_complete_scene_coverage(matrix, scene_rules, selections)
     selected_cells = [selection["cell"] for selection in selections]
     scenes = build_coverage_scenes(selections, matrix, scene_rules)
@@ -1476,11 +1587,9 @@ def main() -> None:
             },
         },
         "coverage": {
-            "schema_version": "physweep_two_object_coverage_selection_v7",
-            "full_cell_count": full_cell_count,
-            "selected_cell_count": len(cells),
-            "complete_cartesian_product": len(cells) == full_cell_count,
-            "axis_counts": _axis_counts(selected_cells),
+            "schema_version": "physweep_two_object_coverage_selection_v8",
+            **coverage_summary(selected_cells, full_cell_count, matrix),
+            "source_reuse": source_selection_audit(selections, matrix),
         },
         "samples": samples,
         "status": "sampled_pending_simulation",

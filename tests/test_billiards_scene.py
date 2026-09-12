@@ -183,7 +183,7 @@ class BilliardsSceneTests(unittest.TestCase):
                 )
 
     def test_generator_writes_complete_visual_contract(self) -> None:
-        with tempfile.TemporaryDirectory(dir=ROOT / "datasets") as temporary:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
             output = Path(temporary) / "billiards"
             completed = subprocess.run(
                 [
@@ -230,7 +230,7 @@ class BilliardsSceneTests(unittest.TestCase):
             self.assertTrue((output / "simulation_record.json").is_file())
 
     def test_generator_rejects_an_unscheduled_support(self) -> None:
-        with tempfile.TemporaryDirectory(dir=ROOT / "datasets") as temporary:
+        with tempfile.TemporaryDirectory(dir=ROOT) as temporary:
             completed = subprocess.run(
                 [
                     sys.executable,

@@ -1,0 +1,304 @@
+{
+  "schema_version": "physweep_three_object_motion_rules_v1",
+  "status": "pilot_unvalidated",
+  "templates": [
+    {
+      "id": "chain_transfer",
+      "interaction": "connected_three",
+      "roles": [
+        "P",
+        "Q",
+        "R"
+      ],
+      "initially_moving_roles": [
+        "P"
+      ],
+      "shape_by_role": {
+        "P": [
+          "sphere"
+        ],
+        "Q": [
+          "sphere"
+        ],
+        "R": [
+          "sphere"
+        ]
+      },
+      "constructor": "separated_collinear_transfer",
+      "required_pairs": [
+        [
+          "P",
+          "Q"
+        ],
+        [
+          "Q",
+          "R"
+        ]
+      ],
+      "forbidden_pairs": [
+        [
+          "P",
+          "R"
+        ]
+      ],
+      "allowed_pairs": [
+        [
+          "P",
+          "Q"
+        ],
+        [
+          "Q",
+          "R"
+        ]
+      ],
+      "first_contact_order": [
+        [
+          "P",
+          "Q"
+        ],
+        [
+          "Q",
+          "R"
+        ]
+      ],
+      "allow_recontacts": true,
+      "sweep_target_roles": [
+        "P",
+        "Q",
+        "R"
+      ],
+      "caption_template": "three_object_initial_state_v1",
+      "motion_evidence": "Q gains speed after P-Q and before Q-R",
+      "camera_event_policy": "all_objects_and_all_required_event_intervals"
+    },
+    {
+      "id": "successive_hits",
+      "interaction": "connected_three",
+      "roles": [
+        "P",
+        "Q",
+        "R"
+      ],
+      "initially_moving_roles": [
+        "P"
+      ],
+      "shape_by_role": {
+        "P": [
+          "sphere"
+        ],
+        "Q": [
+          "sphere"
+        ],
+        "R": [
+          "sphere"
+        ]
+      },
+      "constructor": "offset_first_contact",
+      "required_pairs": [
+        [
+          "P",
+          "Q"
+        ],
+        [
+          "P",
+          "R"
+        ]
+      ],
+      "forbidden_pairs": [
+        [
+          "Q",
+          "R"
+        ]
+      ],
+      "allowed_pairs": [
+        [
+          "P",
+          "Q"
+        ],
+        [
+          "P",
+          "R"
+        ]
+      ],
+      "first_contact_order": [
+        [
+          "P",
+          "Q"
+        ],
+        [
+          "P",
+          "R"
+        ]
+      ],
+      "allow_recontacts": true,
+      "sweep_target_roles": [
+        "P",
+        "Q",
+        "R"
+      ],
+      "caption_template": "three_object_initial_state_v1",
+      "motion_evidence": "declared initial motion and required ordered contacts",
+      "camera_event_policy": "all_objects_and_all_required_event_intervals"
+    },
+    {
+      "id": "converging_hits",
+      "interaction": "connected_three",
+      "roles": [
+        "P",
+        "Q",
+        "R"
+      ],
+      "initially_moving_roles": [
+        "P",
+        "R"
+      ],
+      "shape_by_role": {
+        "P": [
+          "sphere"
+        ],
+        "Q": [
+          "sphere"
+        ],
+        "R": [
+          "sphere"
+        ]
+      },
+      "constructor": "staggered_opposed_arrival",
+      "required_pairs": [
+        [
+          "P",
+          "Q"
+        ],
+        [
+          "Q",
+          "R"
+        ]
+      ],
+      "forbidden_pairs": [
+        [
+          "P",
+          "R"
+        ]
+      ],
+      "allowed_pairs": [
+        [
+          "P",
+          "Q"
+        ],
+        [
+          "Q",
+          "R"
+        ]
+      ],
+      "first_contact_order": [
+        [
+          "P",
+          "Q"
+        ],
+        [
+          "Q",
+          "R"
+        ]
+      ],
+      "allow_recontacts": true,
+      "sweep_target_roles": [
+        "P",
+        "Q",
+        "R"
+      ],
+      "caption_template": "three_object_initial_state_v1",
+      "motion_evidence": "declared initial motion and required ordered contacts",
+      "camera_event_policy": "all_objects_and_all_required_event_intervals"
+    },
+    {
+      "id": "pair_control",
+      "interaction": "pair_plus_independent",
+      "roles": [
+        "P",
+        "Q",
+        "R"
+      ],
+      "initially_moving_roles": [
+        "P",
+        "R"
+      ],
+      "shape_by_role": {
+        "P": [
+          "sphere"
+        ],
+        "Q": [
+          "sphere"
+        ],
+        "R": [
+          "sphere"
+        ]
+      },
+      "constructor": "separated_parallel_control",
+      "required_pairs": [
+        [
+          "P",
+          "Q"
+        ]
+      ],
+      "forbidden_pairs": [
+        [
+          "P",
+          "R"
+        ],
+        [
+          "Q",
+          "R"
+        ]
+      ],
+      "allowed_pairs": [
+        [
+          "P",
+          "Q"
+        ]
+      ],
+      "first_contact_order": [],
+      "allow_recontacts": true,
+      "sweep_target_roles": [
+        "P",
+        "Q",
+        "R"
+      ],
+      "caption_template": "three_object_initial_state_v1",
+      "motion_evidence": "declared initial motion and required ordered contacts",
+      "camera_event_policy": "all_objects_and_all_required_event_intervals"
+    }
+  ],
+  "initial_state": {
+    "motion_mode": "supported_sliding",
+    "angular_velocity_rad_s": [
+      0,
+      0,
+      0
+    ],
+    "initial_speed_m_s": [
+      0.3,
+      2.0
+    ],
+    "separation_in_pair_diameters": [
+      1.5,
+      4.0
+    ],
+    "first_contact_offset_in_pair_radii": [
+      0.0,
+      0.7
+    ],
+    "maximum_role_mass_ratio": 8.0,
+    "construction_policy": "joint_geometry_speed_event_time_bounded_attempts"
+  },
+  "thresholds": {
+    "initial_separation_m": 0.001,
+    "contact_distance_tolerance_m": 0.0001,
+    "stationary_linear_speed_m_s": 0.001,
+    "stationary_angular_speed_rad_s": 0.001,
+    "moving_linear_speed_m_s": 0.02,
+    "transfer_speed_gain_m_s": 0.01,
+    "minimum_event_gap_s": 0.08,
+    "first_event_min_s": 0.2,
+    "last_event_max_s": 3.5
+  }
+}

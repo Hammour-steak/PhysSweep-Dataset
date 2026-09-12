@@ -1,0 +1,209 @@
+{
+  "schema_version": "physweep_three_object_sampling_matrix_v1",
+  "status": "diagnostic_multi_mesh_pair_role_trial",
+  "object_ids": [
+    "object_a",
+    "object_b",
+    "object_c"
+  ],
+  "sweep_target_indices": [
+    0
+  ],
+  "motion_rules": "three_object_d6e_multi_mesh_pair_motion_rules.json",
+  "scene_rules": "three_object_scene_rules.json",
+  "sweep_config": "three_object_physics_sweep.json",
+  "dataset_config": "datasets/three_object.json",
+  "template_ids": [
+    "chain_transfer",
+    "successive_hits",
+    "converging_hits",
+    "pair_control"
+  ],
+  "candidate_budget": 42,
+  "master_seed": 202609098201,
+  "ordering": "stable_cell_id_then_candidate_index",
+  "seed_derivation": "sha256_canonical_json_first_64_bits",
+  "seed_domains": [
+    "physics",
+    "appearance",
+    "camera"
+  ],
+  "maximum_source_attempts_per_candidate": 64,
+  "source": {
+    "families": [
+      "generic",
+      "asset"
+    ],
+    "release_schema": "physweep_base_release_view_v15",
+    "pipeline_schema": "physweep_base_pipeline_view_v13",
+    "sample_schema": "physweep_base_sample_v12",
+    "generation_manifest_schema": "physweep_release_metadata_manifest_v2",
+    "generation_metadata_schemas": {
+      "generic": "physweep_pybullet_rigid_metadata_v1",
+      "asset": "physweep_asset_proxy_scene_v3"
+    },
+    "asset_eligibility": {
+      "body_model": "rigid_body",
+      "required_pose_profile": "support_normal",
+      "asset_proxy_policy": "centered_primitive_or_upright_axisymmetric_compound",
+      "asset_proxy_maximum_aabb_center_offset_m": 0.001,
+      "asset_scale_bin_maximum_extent_m": {
+        "small": 0.18,
+        "medium": 0.23,
+        "large": null
+      }
+    },
+    "distinct_object_sources": true
+  },
+  "source_budgets": {
+    "maximum_object_uses": 16,
+    "maximum_host_uses": 32
+  },
+  "physical_dimensions": [
+    "template",
+    "motion_axis",
+    "shape_by_role",
+    "host",
+    "target_role"
+  ],
+  "visual_dimensions": [
+    "object_visual_by_role",
+    "support_visual",
+    "environment_category",
+    "lighting",
+    "requested_camera_family"
+  ],
+  "required_cross_reports": [
+    [
+      "template",
+      "shape_by_role"
+    ],
+    [
+      "shape_by_role",
+      "target_role"
+    ],
+    [
+      "object_visual_by_role",
+      "source_family"
+    ]
+  ],
+  "appearance_policy": "preserve_bound_object_and_host_assets",
+  "allocation_policy": "pair_control_all_84_generic_visuals_plus_ten_nonball_assets_rotated_across_roles_no_production_quota",
+  "unavailable_cell_policy": "report_no_reallocation",
+  "duplicate_policy": {
+    "physical": "exact_label_permutation_invariant",
+    "max_visual_variants_per_physical_scene": 1,
+    "world_rotations": "distinct",
+    "mirrors": "distinct_trial_cells",
+    "near_duplicates": "report_only"
+  },
+  "shared_resources": [
+    "configs/production_video.json",
+    "configs/visual_sampling.json",
+    "configs/scene_visual_profiles.json",
+    "configs/physical_proxy_pipeline.json",
+    "configs/pybullet_backend.json",
+    "assets/manifests/polyhaven_render_library.json",
+    "assets/manifests/hdri_admission.json"
+  ],
+  "coverage_mode": "multi_mesh_pair_roles_v1",
+  "geometry_scope": "multi_mesh_pair_roles_v1",
+  "required_asset_ids": [
+    "sketchfab_046b94a7775e496aac26ad8c699496e6",
+    "sketchfab_1551616939cc4da7a9d731dfddd4090f",
+    "sketchfab_4ae035ea89ea40bbaa82403b9c36afab",
+    "sketchfab_640b0c8287274629a7f4ff3ce74a5999",
+    "sketchfab_76fa80950b1f48a8ad6a8441fe443241",
+    "sketchfab_b0902ff83cf946c984f9f7e0197ddb7f",
+    "sketchfab_beb69bc08a8f487ab8c5207fb155cbf2",
+    "sketchfab_dae37cc4869a4155b6999efe26df710c",
+    "sketchfab_ebb7c4102dc94ef7ba14d9c5df43c448",
+    "sketchfab_f4d11e48cc52479c802ec2cf0d629f68"
+  ],
+  "required_generic_visual_asset_ids": [
+    "physassets_10282",
+    "physassets_10311",
+    "physassets_10348",
+    "physassets_10575",
+    "physassets_10754",
+    "physassets_11709",
+    "physassets_11899",
+    "physassets_11905",
+    "physassets_12070",
+    "physassets_12411",
+    "physassets_12633",
+    "physassets_12656",
+    "physassets_12670",
+    "physassets_12676",
+    "physassets_1297",
+    "physassets_13003",
+    "physassets_13094",
+    "physassets_13102",
+    "physassets_13207",
+    "physassets_13291",
+    "physassets_13383",
+    "physassets_13740",
+    "physassets_14083",
+    "physassets_1439",
+    "physassets_14593",
+    "physassets_14797",
+    "physassets_14934",
+    "physassets_15118",
+    "physassets_15157",
+    "physassets_15389",
+    "physassets_15412",
+    "physassets_1559",
+    "physassets_15897",
+    "physassets_15974",
+    "physassets_16047",
+    "physassets_16089",
+    "physassets_1619",
+    "physassets_16210",
+    "physassets_16301",
+    "physassets_16599",
+    "physassets_16906",
+    "physassets_17381",
+    "physassets_17617",
+    "physassets_17826",
+    "physassets_18020",
+    "physassets_18415",
+    "physassets_18691",
+    "physassets_19683",
+    "physassets_19920",
+    "physassets_2026",
+    "physassets_20426",
+    "physassets_20799",
+    "physassets_21246",
+    "physassets_2592",
+    "physassets_2957",
+    "physassets_3013",
+    "physassets_3415",
+    "physassets_3431",
+    "physassets_3756",
+    "physassets_38",
+    "physassets_4357",
+    "physassets_487",
+    "physassets_5429",
+    "physassets_5822",
+    "physassets_5837",
+    "physassets_6107",
+    "physassets_6527",
+    "physassets_7009",
+    "physassets_7218",
+    "physassets_7249",
+    "physassets_732",
+    "physassets_7375",
+    "physassets_8032",
+    "physassets_8079",
+    "physassets_8294",
+    "physassets_8335",
+    "physassets_8393",
+    "physassets_873",
+    "physassets_8777",
+    "physassets_8925",
+    "physassets_9429",
+    "physassets_9463",
+    "physassets_9549",
+    "physassets_961"
+  ]
+}

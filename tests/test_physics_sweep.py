@@ -3,8 +3,9 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from tools.core.sweep_values import sweep_values
+from tools.core.sweep_values import counterfactual_mass_values, sweep_values
 from tools.sampling.derive_physics_sweep import (
     collect_inputs,
     derive_one,
@@ -14,10 +15,166 @@ from tools.sampling.derive_physics_sweep import (
     _friction_domain,
     _mass_bounds,
     normalize_canonical_base,
+    load_sweep_config,
 )
 
 
 class PhysicsSweepTests(unittest.TestCase):
+    def test_two_object_mass_overlay_preserves_shared_rules_and_does_not_clip(self):
+        from tools.sampling.derive_physics_sweep import DEFAULT_CONFIG
+        shared = load_json(DEFAULT_CONFIG)
+        self.assertEqual(load_sweep_config(DEFAULT_CONFIG), shared)
+        overlay = load_sweep_config(DEFAULT_CONFIG.with_name("two_object_physics_sweep.json"))
+        self.assertEqual(overlay["required_dynamic_objects"], 2)
+        for axis in ("contact_friction", "contact_restitution"):
+            self.assertEqual(overlay["axes"][axis], shared["axes"][axis])
+        rules = overlay["axes"]["mass_kg"]
+        for bounds in ([0.1, 0.15], None):
+            self.assertEqual(sweep_values(0.123112, rules, bounds, "mass_kg"),
+                             [0.030778, 0.061556, 0.123112, 0.246224, 0.492448])
+        self.assertEqual(sweep_values(1.0, shared["axes"]["mass_kg"], None, "mass_kg",
+                                     endpoint_policy=shared["endpoint_policy"]),
+                         [0.5, 0.707107, 1.0, 1.414214, 2.0])
+
+    def test_counterfactual_mass_rejects_invalid_or_collapsed_levels(self):
+        for base in (0, -1, float("nan"), float("inf"), 1e-8, 1e308):
+            with self.subTest(base=base), self.assertRaises(ValueError):
+                counterfactual_mass_values(base, [0.25, 0.5, 1, 2, 4])
+        for multipliers in ([0.25, 0.5, 1, 2], [0, 0.5, 1, 2, 4],
+                            [0.25, 0.5, 2, 3, 4], [0.25, 0.5, 1, 1, 4],
+                            [True, 0.5, 1, 2, 4], [0.25, 0.5, 1, 2, float("inf")]):
+            with self.subTest(multipliers=multipliers), self.assertRaises(ValueError):
+                counterfactual_mass_values(1, multipliers)
+
+    def test_two_object_overlay_rejects_changed_shared_config(self):
+        from tools.core.hashing import sha256_file
+        from tools.sampling.derive_physics_sweep import DEFAULT_CONFIG
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            shared = root / "physics_sweep.json"
+            shared.write_bytes(DEFAULT_CONFIG.read_bytes())
+            overlay = load_json(DEFAULT_CONFIG.with_name("two_object_physics_sweep.json"))
+            overlay["base_config"]["sha256"] = sha256_file(shared)
+            path = root / "two_object_physics_sweep.json"
+            path.write_text(json.dumps(overlay), encoding="utf-8")
+            load_sweep_config(path)
+            shared.write_bytes(shared.read_bytes() + b"\n")
+            with self.assertRaisesRegex(ValueError, "hash mismatch"):
+                load_sweep_config(path)
+
+    def test_two_object_cli_emits_thirteen_records_without_changing_retained_samples(self):
+        from tools.cli.two_object_admission import SWEEP_TARGET_OBJECT_INDICES
+        from tools.sampling import derive_physics_sweep as generator
+
+        base = {
+            "schema_version": "physweep_pybullet_rigid_metadata_v1",
+            "scene_id": "two_object_target_selection",
+            "dataset_stage": "two_object_base_candidate",
+            "simulation": {"interaction": {"motion_pattern": "surface_head_on_2obj"}, "objects": [
+                {"object_id": object_id, "body_model": "rigid_body",
+                 "semantic_type": "unknown_object",
+                 "material": {"mass_kg": 1.0, "contact_friction": 0.4, "contact_restitution": 0.2},
+                 "initial_state": {"linear_velocity_m_s": velocity}}
+                for object_id, velocity in (("object_a", [1.0, 0.0, 0.0]), ("object_b", [-0.2, 0.0, 0.0]))
+            ]},
+        }
+        self.assertEqual(SWEEP_TARGET_OBJECT_INDICES, (0,))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            config_path = root / "config.json"
+            config_path.write_text(json.dumps(load_json(generator.DEFAULT_CONFIG)), encoding="utf-8")
+            overlay = load_json(generator.DEFAULT_CONFIG.with_name("two_object_physics_sweep.json"))
+            overlay["base_config"] = {"path": config_path.name, "sha256": generator.sha256(config_path)}
+            intervention_config = root / "two_object_physics_sweep.json"
+            intervention_config.write_text(json.dumps(overlay), encoding="utf-8")
+            source = root / "base.json"
+            source.write_text(json.dumps(base), encoding="utf-8")
+            outputs = {}
+            for name, targets in (("all", (0, 1)), ("selected", SWEEP_TARGET_OBJECT_INDICES),
+                                  ("intervention", SWEEP_TARGET_OBJECT_INDICES)):
+                output = root / "outputs" / name
+                argv = ["derive", "--root", str(root), "--base", str(source),
+                        "--config", str(intervention_config if name == "intervention" else config_path),
+                        "--output-dir", str(output)]
+                for target in targets:
+                    argv.extend(("--target-object-index", str(target)))
+                with patch("sys.argv", argv), patch.object(generator, "_load_prior_indexes", return_value=({}, {})), patch.object(generator, "resolve_prior_provenance", return_value={}):
+                    generator.main()
+                outputs[name] = load_json(output / "manifest.json")
+            self.assertEqual(outputs["all"]["sample_count"], 25)
+            selected = outputs["selected"]
+            self.assertEqual(selected["sample_count"], 13)
+            self.assertEqual(selected["target_object_index_filter"], [0])
+            self.assertEqual(sum(r["kind"] == "base" for r in selected["records"]), 1)
+            prior = {r["scene_id"]: r for r in outputs["all"]["records"]}
+            for record in selected["records"]:
+                payload = load_json(root / record["path"])
+                self.assertEqual((root / record["path"]).read_bytes(), (root / prior[record["scene_id"]]["path"]).read_bytes())
+                self.assertEqual(payload["simulation"]["objects"][1], base["simulation"]["objects"][1])
+                if record["kind"] == "sweep":
+                    self.assertEqual(record["target_object_id"], "object_a")
+                    expected = copy.deepcopy(base["simulation"])
+                    expected["objects"][0]["material"][record["axis"]] = record["value"]
+                    self.assertEqual(payload["simulation"], expected)
+            self.assertEqual(load_json(source), base)
+            intervention = outputs["intervention"]
+            self.assertEqual(intervention["sample_count"], 13)
+            masses = []
+            for record in intervention["records"]:
+                payload = load_json(root / record["path"])
+                self.assertEqual(payload["simulation"]["objects"][1], base["simulation"]["objects"][1])
+                expected = copy.deepcopy(base["simulation"])
+                if record["kind"] == "sweep":
+                    expected["objects"][0]["material"][record["axis"]] = record["value"]
+                    if record["axis"] == "mass_kg":
+                        masses.append(record["value"])
+                    else:
+                        self.assertEqual(payload["simulation"], load_json(root / prior[record["scene_id"]]["path"])["simulation"])
+                self.assertEqual(payload["simulation"], expected)
+            self.assertEqual(masses, [0.25, 0.5, 2.0, 4.0])
+            for object_count in (1, 3):
+                invalid = copy.deepcopy(base)
+                invalid["simulation"]["objects"] = [dict(copy.deepcopy(base["simulation"]["objects"][0]),
+                                                          object_id=f"object_{i}") for i in range(object_count)]
+                with self.assertRaisesRegex(ValueError, "exactly 2"):
+                    derive_one(invalid, source, root, load_sweep_config(intervention_config), intervention_config,
+                               "mass_kg", 0, {}, {}, target_object_index=0)
+
+    def test_cli_records_code_provenance_outside_data_root(self):
+        from tools.sampling import derive_physics_sweep as generator
+        from tools.core.hashing import sha256_file
+
+        base = {
+            "schema_version": "physweep_pybullet_rigid_metadata_v1",
+            "scene_id": "separate_data_root",
+            "dataset_stage": "one_object_base_candidate",
+            "semantic_sampling": {"five_dimensions": {"motion": {"family": "roll_or_slide_1obj"}}},
+            "simulation": {"objects": [{
+                "object_id": "object_a", "body_model": "rigid_body",
+                "semantic_type": "unknown_object",
+                "material": {"mass_kg": 1.0, "contact_friction": 0.4, "contact_restitution": 0.2},
+                "initial_state": {"linear_velocity_m_s": [1.0, 0.0, 0.0]},
+            }]},
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            config = root / "config.json"
+            config.write_text(json.dumps(load_json(generator.DEFAULT_CONFIG)), encoding="utf-8")
+            source = root / "base.json"
+            source.write_text(json.dumps(base), encoding="utf-8")
+            output = root / "outputs" / "sweep"
+            argv = ["derive", "--root", str(root), "--base", str(source),
+                    "--config", str(config), "--output-dir", str(output),
+                    "--axis", "contact_friction"]
+            with patch("sys.argv", argv), patch.object(generator, "_load_prior_indexes", return_value=({}, {})), patch.object(generator, "resolve_prior_provenance", return_value={}):
+                generator.main()
+            result = load_json(output / "manifest.json")
+            implementation = Path(generator.__file__).resolve()
+            self.assertEqual(result["implementation"], {
+                "path": str(implementation), "sha256": sha256_file(implementation)})
+            self.assertEqual(result["sample_count"], 5)
+            self.assertEqual(load_json(source), base)
+
     def test_canonical_base_has_no_sweep_target(self):
         derived = {
             "scene_id": "scene__sweep_object_a_mass_kg_02",
@@ -206,7 +363,7 @@ class PhysicsSweepTests(unittest.TestCase):
             inputs = collect_inputs(root, None, None, manifest)
         self.assertEqual(inputs, [metadata.resolve()])
 
-    def test_required_pair_contact_caps_the_friction_domain(self):
+    def test_two_object_friction_uses_configured_domain_without_motion_cap(self):
         metadata = {
             "schema_version": "physweep_pybullet_rigid_metadata_v1",
             "simulation": {
@@ -225,12 +382,12 @@ class PhysicsSweepTests(unittest.TestCase):
                         "expected_motion": {
                             "motion_family": "roll_or_slide_1obj",
                             "minimum_displacement_m": 0.18,
-                            "required_pre_contact_displacement_m": 0.4,
                         },
                         "initial_state": {
                             "linear_velocity_m_s": [0.72, 0.0, 0.0]
                         },
-                    }
+                    },
+                    {"expected_motion": {"motion_family": "rest"}},
                 ],
             },
         }
@@ -239,15 +396,13 @@ class PhysicsSweepTests(unittest.TestCase):
             {
                 "domain": [0.02, 1.0],
                 "transition_margin": 1.25,
-                "contact_preservation_safety": 0.9,
                 "range_policy": {"mode": "global"},
             },
             0.04,
             "contact_friction",
             0,
         )
-        self.assertGreater(domain[1], 0.04)
-        self.assertLess(domain[1], 0.06)
+        self.assertIsNone(domain)
 
     def test_unified_two_object_manifest_uses_declared_records(self):
         root = Path(__file__).resolve().parents[1]

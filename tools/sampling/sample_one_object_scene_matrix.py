@@ -594,7 +594,7 @@ def validate_matrix(root: Path, matrix: dict[str, Any]) -> None:
     registered = {
         record["pipeline"]: record
         for record in load_specialized_backends(
-            root, dependencies["specialized_scene_backends"]
+            root, dependencies["specialized_scene_backends"], object_count=1
         )
     }
     expected_registered = {"asset_proxy"} | {

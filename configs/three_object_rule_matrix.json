@@ -1,0 +1,784 @@
+{
+  "schema_version": "physweep_three_object_rule_matrix_v3",
+  "status": "simplified_validated_pending_quota",
+  "purpose": "One production-facing matrix for the four three-object families. Historical D5/D6 trial matrices remain evidence and are not production dispatch modes.",
+  "group_contract": {
+    "object_count": 3,
+    "object_ids": [
+      "object_a",
+      "object_b",
+      "object_c"
+    ],
+    "roles": [
+      "P",
+      "Q",
+      "R"
+    ],
+    "sweep_target_object_id": "object_a",
+    "members_per_group": 13,
+    "base_members": 1,
+    "sweep_members": 12,
+    "sweep_axes": [
+      "contact_friction",
+      "contact_restitution",
+      "mass_kg"
+    ],
+    "sweep_values_per_axis": 4,
+    "masks": false
+  },
+  "common_sampling_contract": {
+    "ordering": "stable_family_subcase_cell_candidate",
+    "seed_derivation": "sha256_canonical_json_first_64_bits",
+    "camera_policy": "admit_on_base_then_freeze_for_all_13_members",
+    "camera_request_policy": "requested_family_is_a_preference_and_may_fallback_during_base_admission",
+    "camera_diversity_accounting": "count_selected_frozen_family_after_base_admission",
+    "camera_deficit_policy": "replace_inside_the_same_physical_family_and_subcase_without_changing_the_physics_cell",
+    "failure_policy": "bounded_candidate_replacement_inside_the_same_frozen_cell",
+    "duplicate_policy": "physical_label_permutation_invariant",
+    "public_sample_files": [
+      "metadata.json",
+      "trajectory.npz",
+      "video.mp4"
+    ],
+    "appearance_policy": "preserve released object and environment bindings; vary only matrix-declared choices before physics"
+  },
+  "asset_scope": {
+    "path": "configs/three_object_asset_scope.json",
+    "sha256": "54530c9fa2a4bc5edc0d22d5fb99b32e44c459d08cb6aa75db3dd3f11425ca18"
+  },
+  "families": [
+    {
+      "id": "generic",
+      "quota_key": "generic",
+      "subcases": [
+        {
+          "id": "flat",
+          "supports": [
+            "ground_flat",
+            "raised_flat"
+          ],
+          "motion_templates": [
+            {
+              "id": "chain_transfer",
+              "interaction": "connected_three",
+              "initially_moving_roles": [
+                "P"
+              ],
+              "required_contact_order": [
+                [
+                  "P",
+                  "Q"
+                ],
+                [
+                  "Q",
+                  "R"
+                ]
+              ],
+              "variants": [
+                {
+                  "id": "axis_aligned",
+                  "shape_by_role": {
+                    "P": [
+                      "sphere"
+                    ],
+                    "Q": [
+                      "sphere"
+                    ],
+                    "R": [
+                      "sphere"
+                    ]
+                  }
+                },
+                {
+                  "id": "angled_chain_left",
+                  "shape_by_role": {
+                    "P": [
+                      "sphere"
+                    ],
+                    "Q": [
+                      "sphere"
+                    ],
+                    "R": [
+                      "sphere"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "successive_hits",
+              "interaction": "connected_three",
+              "initially_moving_roles": [
+                "P"
+              ],
+              "required_contact_order": [
+                [
+                  "P",
+                  "Q"
+                ],
+                [
+                  "P",
+                  "R"
+                ]
+              ],
+              "variants": [
+                {
+                  "id": "axis_aligned",
+                  "shape_by_role": {
+                    "P": [
+                      "sphere"
+                    ],
+                    "Q": [
+                      "sphere"
+                    ],
+                    "R": [
+                      "sphere"
+                    ]
+                  }
+                },
+                {
+                  "id": "offset_successive_left",
+                  "shape_by_role": {
+                    "P": [
+                      "sphere"
+                    ],
+                    "Q": [
+                      "sphere"
+                    ],
+                    "R": [
+                      "sphere"
+                    ]
+                  }
+                },
+                {
+                  "id": "offset_successive_right",
+                  "shape_by_role": {
+                    "P": [
+                      "sphere"
+                    ],
+                    "Q": [
+                      "sphere"
+                    ],
+                    "R": [
+                      "sphere"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "converging_hits",
+              "interaction": "connected_three",
+              "initially_moving_roles": [
+                "P",
+                "R"
+              ],
+              "required_contacts": [
+                [
+                  "P",
+                  "Q"
+                ],
+                [
+                  "R",
+                  "Q"
+                ]
+              ],
+              "variants": [
+                {
+                  "id": "axis_aligned",
+                  "shape_by_role": {
+                    "P": [
+                      "sphere"
+                    ],
+                    "Q": [
+                      "sphere"
+                    ],
+                    "R": [
+                      "sphere"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "id": "pair_control",
+              "interaction": "pair_plus_independent",
+              "initially_moving_roles": [
+                "P",
+                "R"
+              ],
+              "required_contacts": [
+                [
+                  "P",
+                  "Q"
+                ]
+              ],
+              "forbidden_contacts": [
+                [
+                  "P",
+                  "R"
+                ],
+                [
+                  "Q",
+                  "R"
+                ]
+              ],
+              "variants": [
+                {
+                  "id": "axis_aligned_spheres",
+                  "layout": "axis_aligned",
+                  "shape_by_role": {
+                    "P": [
+                      "sphere"
+                    ],
+                    "Q": [
+                      "sphere"
+                    ],
+                    "R": [
+                      "sphere"
+                    ]
+                  }
+                },
+                {
+                  "id": "axis_aligned_mixed_R",
+                  "layout": "axis_aligned",
+                  "shape_by_role": {
+                    "P": [
+                      "sphere"
+                    ],
+                    "Q": [
+                      "sphere"
+                    ],
+                    "R": [
+                      "sphere",
+                      "cuboid",
+                      "cylinder"
+                    ]
+                  }
+                },
+                {
+                  "id": "axis_aligned_multi_mesh",
+                  "layout": "axis_aligned",
+                  "shape_by_role": {
+                    "P": [
+                      "sphere",
+                      "cuboid",
+                      "cylinder"
+                    ],
+                    "Q": [
+                      "sphere",
+                      "cuboid",
+                      "cylinder"
+                    ],
+                    "R": [
+                      "sphere",
+                      "cuboid",
+                      "cylinder"
+                    ]
+                  },
+                  "maximum_sphere_count": 1,
+                  "true_asset_roles": [
+                    "P",
+                    "Q",
+                    "R"
+                  ],
+                  "maximum_true_assets_per_scene": 1,
+                  "admission": "base_physics_camera_media_passed_27_of_42_probe"
+                },
+                {
+                  "id": "crossing_control_left",
+                  "layout": "crossing_control_left",
+                  "shape_by_role": {
+                    "P": [
+                      "sphere"
+                    ],
+                    "Q": [
+                      "sphere"
+                    ],
+                    "R": [
+                      "sphere",
+                      "cuboid",
+                      "cylinder"
+                    ]
+                  }
+                },
+                {
+                  "id": "crossing_control_right",
+                  "layout": "crossing_control_right",
+                  "shape_by_role": {
+                    "P": [
+                      "sphere"
+                    ],
+                    "Q": [
+                      "sphere"
+                    ],
+                    "R": [
+                      "sphere",
+                      "cuboid",
+                      "cylinder"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "motion_axes": [
+            "world_x",
+            "world_y"
+          ],
+          "target_roles": [
+            "P",
+            "Q",
+            "R"
+          ],
+          "camera": {
+            "policy": "base_only_fixed_group",
+            "view_families": [
+              {
+                "id": "front_oblique",
+                "azimuth_degrees": 45,
+                "elevation_degrees": 25
+              },
+              {
+                "id": "side_oblique",
+                "azimuth_degrees": 90,
+                "elevation_degrees": 30
+              },
+              {
+                "id": "rear_oblique",
+                "azimuth_degrees": 135,
+                "elevation_degrees": 35
+              }
+            ],
+            "focal_length_mm": [
+              35.0,
+              50.0
+            ],
+            "object_extent_fraction_of_short_side": {
+              "minimum": 0.05,
+              "target": 0.1,
+              "maximum": 0.25
+            },
+            "maximum_out_of_frame_fraction": 0.08,
+            "maximum_frame_overflow_fraction": 0.03,
+            "diversity_policy": "balance all three selected frozen families inside every sizeable generic quota"
+          },
+          "asset_policy": {
+            "generic_visuals": "three_object_asset_scope.generic_visuals",
+            "true_nonball_dynamic_assets": "pair_control.axis_aligned_multi_mesh only",
+            "role_rotation": [
+              "P",
+              "Q",
+              "R"
+            ]
+          },
+          "diversity_dimensions": [
+            "motion_template",
+            "layout_variant",
+            "motion_axis",
+            "shape_pattern",
+            "target_role",
+            "support_class",
+            "camera_family",
+            "environment_category",
+            "visual_asset_id"
+          ]
+        },
+        {
+          "id": "inclined",
+          "supports": [
+            "ground_ramp_long_shallow",
+            "raised_ramp_long_shallow"
+          ],
+          "slope_degrees": [
+            8.0,
+            12.0
+          ],
+          "motion_templates": [
+            {
+              "id": "pair_control",
+              "interaction": "pair_plus_independent",
+              "variants": [
+                {
+                  "id": "axis_aligned",
+                  "shape_by_role": {
+                    "P": [
+                      "sphere"
+                    ],
+                    "Q": [
+                      "sphere"
+                    ],
+                    "R": [
+                      "sphere"
+                    ]
+                  }
+                }
+              ]
+            }
+          ],
+          "material_policy": {
+            "contact_friction_minimum": 0.32,
+            "rolling_friction": 0.018
+          },
+          "target_roles": [
+            "P",
+            "Q",
+            "R"
+          ],
+          "camera": {
+            "policy": "base_only_fixed_group",
+            "view_families": [
+              {
+                "id": "front_oblique",
+                "azimuth_degrees": 65,
+                "elevation_degrees": 35
+              },
+              {
+                "id": "side_oblique",
+                "azimuth_degrees": 90,
+                "elevation_degrees": 40
+              },
+              {
+                "id": "rear_oblique",
+                "azimuth_degrees": 115,
+                "elevation_degrees": 50
+              }
+            ],
+            "focal_length_mm": [
+              35.0,
+              50.0
+            ],
+            "object_extent_fraction_of_short_side": {
+              "minimum": 0.05,
+              "target": 0.1,
+              "maximum": 0.25
+            },
+            "maximum_out_of_frame_fraction": 0.08,
+            "maximum_frame_overflow_fraction": 0.03,
+            "diversity_policy": "balance all three selected frozen families; do not inherit flat crossing layouts"
+          },
+          "diversity_dimensions": [
+            "support_class",
+            "scale_pattern",
+            "target_role",
+            "camera_family",
+            "environment_category"
+          ]
+        },
+        {
+          "id": "exact_mesh_support",
+          "supports": "three_object_asset_scope.exact_support_assets",
+          "motion_templates": [
+            "chain_transfer",
+            "pair_control"
+          ],
+          "shape_by_role": {
+            "P": [
+              "sphere"
+            ],
+            "Q": [
+              "sphere"
+            ],
+            "R": [
+              "sphere"
+            ]
+          },
+          "motion_axes": [
+            "world_x",
+            "world_y"
+          ],
+          "target_roles": [
+            "P",
+            "Q",
+            "R"
+          ],
+          "camera": {
+            "policy": "base_only_fixed_group",
+            "view_families": [
+              {
+                "id": "front_oblique",
+                "azimuth_degrees": 45,
+                "elevation_degrees": 25
+              },
+              {
+                "id": "side_oblique",
+                "azimuth_degrees": 90,
+                "elevation_degrees": 30
+              },
+              {
+                "id": "rear_oblique",
+                "azimuth_degrees": 135,
+                "elevation_degrees": 35
+              }
+            ],
+            "focal_length_mm": [
+              35.0,
+              50.0
+            ],
+            "object_extent_fraction_of_short_side": {
+              "minimum": 0.05,
+              "target": 0.1,
+              "maximum": 0.25
+            },
+            "maximum_out_of_frame_fraction": 0.08,
+            "maximum_frame_overflow_fraction": 0.03,
+            "diversity_policy": "balance all three selected frozen families inside every sizeable generic quota"
+          },
+          "diversity_dimensions": [
+            "support_asset_id",
+            "motion_template",
+            "motion_axis",
+            "target_role",
+            "camera_family",
+            "environment_category"
+          ]
+        }
+      ],
+      "implementation_refs": [
+        {
+          "path": "configs/three_object_motion_diversity_rules.json",
+          "sha256": "8b736ce043579d8ec289f294691df9f67901ece717fe593a7ff56e1543a13afc"
+        },
+        {
+          "path": "configs/three_object_scene_rules.json",
+          "sha256": "fb9ebaa5e2d20505dabb6c7c99295d18e6358d516b9227c0d2867dcee4d7e115"
+        },
+        {
+          "path": "configs/three_object_inclined_scene_rules.json",
+          "sha256": "ccaa193a20fd14936db535dcfee12eb4e6234301bc9e30a8c43c19db6c9b532c"
+        }
+      ]
+    },
+    {
+      "id": "billiards",
+      "quota_key": "billiards",
+      "rule_ref": {
+        "path": "configs/three_object_billiards_rules.json",
+        "sha256": "6c40e4ddf936b1b74c67db9a95a8432734aa36094c089a25524fe80f57e8c691"
+      },
+      "motion_templates": [
+        "chain_transfer"
+      ],
+      "shape_by_role": {
+        "P": [
+          "sphere"
+        ],
+        "Q": [
+          "sphere"
+        ],
+        "R": [
+          "sphere"
+        ]
+      },
+      "fixture": "source_pool_table",
+      "forbidden": [
+        "rail_contact",
+        "pocket_sinking"
+      ],
+      "target_roles": [
+        "P",
+        "Q",
+        "R"
+      ],
+      "camera": "generic.flat.camera",
+      "appearance_diversity": {
+        "material_slots": [
+          "cue_ball",
+          "object_ball_1",
+          "object_ball_2"
+        ],
+        "hdris_per_target_role": 2
+      },
+      "diversity_dimensions": [
+        "target_role",
+        "heading",
+        "lane",
+        "camera_family",
+        "hdri",
+        "ball_material_slot_permutation"
+      ]
+    },
+    {
+      "id": "pinball",
+      "quota_key": "pinball",
+      "rule_ref": {
+        "path": "configs/three_object_pinball_rules.json",
+        "sha256": "e7f3a63232bbb4b6370f77a2d7726cd846aceb9a1060d76931b30dabf8ddb431"
+      },
+      "motion_templates": [
+        "pair_control"
+      ],
+      "shape_by_role": {
+        "P": [
+          "sphere"
+        ],
+        "Q": [
+          "sphere"
+        ],
+        "R": [
+          "sphere"
+        ]
+      },
+      "fixture": "exact_analytic_passive_pinfield",
+      "forbidden": [
+        "active_flipper",
+        "plunger",
+        "moving_gate"
+      ],
+      "finite_initial_state_capacity": 12,
+      "target_roles": [
+        "P",
+        "Q",
+        "R"
+      ],
+      "camera": {
+        "policy": "base_only_fixed_group",
+        "view_families": [
+          {
+            "id": "pinfield_front",
+            "azimuth_degrees": 90.0,
+            "elevation_degrees": 12.0
+          },
+          {
+            "id": "pinfield_left",
+            "azimuth_degrees": 65.0,
+            "elevation_degrees": 18.0
+          },
+          {
+            "id": "pinfield_right",
+            "azimuth_degrees": 115.0,
+            "elevation_degrees": 18.0
+          }
+        ],
+        "focal_length_mm": [
+          35.0,
+          50.0
+        ],
+        "minimum_object_extent_px": 24.0,
+        "maximum_occluded_fraction": 0.25,
+        "fixture_framing": "whole_fixture"
+      },
+      "appearance_diversity": {
+        "palette_ids": [
+          "amber",
+          "blue",
+          "green"
+        ],
+        "background_profile_ids": [
+          "industrial_bay",
+          "workshop_grid",
+          "lab_storage"
+        ]
+      },
+      "diversity_dimensions": [
+        "initial_state_index",
+        "target_role",
+        "camera_family",
+        "background_profile",
+        "palette_permutation"
+      ]
+    },
+    {
+      "id": "marble_run",
+      "quota_key": "marble_run",
+      "rule_ref": {
+        "path": "configs/three_object_marble_rules.json",
+        "sha256": "8e09a32ac109c9b470e7c3a8c973c675513b1581ecce81d4d031ad6c64345367"
+      },
+      "motion_templates": [
+        "ordered_contacts"
+      ],
+      "shape_by_role": {
+        "P": [
+          "sphere"
+        ],
+        "Q": [
+          "sphere"
+        ],
+        "R": [
+          "sphere"
+        ]
+      },
+      "fixture": "three_segment_source_fixture_v1",
+      "finite_initial_state_capacity": 24,
+      "target_roles": [
+        "P",
+        "Q",
+        "R"
+      ],
+      "camera": {
+        "policy": "base_only_fixed_group",
+        "view_families": [
+          {
+            "id": "track_front",
+            "azimuth_degrees": 90.0,
+            "elevation_degrees": 65.0
+          },
+          {
+            "id": "track_left",
+            "azimuth_degrees": 86.0,
+            "elevation_degrees": 65.0
+          },
+          {
+            "id": "track_right",
+            "azimuth_degrees": 94.0,
+            "elevation_degrees": 65.0
+          }
+        ],
+        "focal_length_mm": [
+          240.0,
+          120.0
+        ],
+        "minimum_object_extent_px": 24.0,
+        "maximum_occluded_fraction": 0.25,
+        "fixture_framing": "active_fixture_and_trajectory_region"
+      },
+      "appearance_diversity": {
+        "palette_ids": [
+          "amber",
+          "blue",
+          "green"
+        ],
+        "background_profile_ids": [
+          "industrial_bay",
+          "workshop_grid",
+          "lab_storage"
+        ]
+      },
+      "diversity_dimensions": [
+        "initial_state_index",
+        "target_role",
+        "camera_family",
+        "background_profile",
+        "palette_permutation"
+      ]
+    }
+  ],
+  "production_quota_overlay": {
+    "path": "configs/three_object_production_sampling.json",
+    "status": "not_created_waiting_for_user_allocation",
+    "required_family_keys": [
+      "generic",
+      "billiards",
+      "pinball",
+      "marble_run"
+    ],
+    "rule": "quota chooses frequencies only; it cannot widen motion, asset, support or camera compatibility"
+  },
+  "unsupported": [
+    "independent_three",
+    "near_simultaneous_three_body_contact",
+    "airborne_three_object_interaction",
+    "generic_flat_angled_chain_right",
+    "generic_multi_mesh_chain_transfer",
+    "generic_multi_mesh_successive_or_converging",
+    "generic_inclined_chain_successive_or_converging",
+    "non_axisymmetric_or_off_center_dynamic_compound_assets",
+    "rattan_exact_mesh_support",
+    "billiards_rail_contact_or_pocket_sinking",
+    "active_pinball_mechanisms",
+    "unreviewed_marble_fixture_variants",
+    "post_physics_visual_rebinding",
+    "sweep_outcome_based_group_replacement"
+  ]
+}

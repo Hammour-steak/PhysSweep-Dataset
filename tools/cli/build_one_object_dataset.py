@@ -7,7 +7,7 @@ from pathlib import Path
 
 from tools.cli.build_object_dataset import (
     load_config as load_object_config,
-    pipeline_specs,
+    pipeline_specs as pipeline_specs,
     publish_dataset as publish_object_dataset,
     run_cli,
     verify_dataset as verify_object_dataset,

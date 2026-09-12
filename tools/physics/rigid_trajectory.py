@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import math
 from typing import Any
 
 import numpy as np
@@ -21,7 +20,7 @@ from tools.core.kinematics import energy_consistent_linear_speed_limit
 from tools.core.rigid_geometry import declared_collision_descriptors
 from tools.physics.physics_invariants import additional_physics_invariants
 
-SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2)
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2, 3)
 
 
 def _horizontal_displacement(positions: np.ndarray) -> float:
@@ -220,6 +219,9 @@ def audit_trajectory(metadata: dict[str, Any], trajectory: dict[str, np.ndarray]
     objects = require_simulation_objects(
         metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
     )
+    if len(objects) == 3:
+        from tools.motion_rules.three_object.interaction import audit_three_object_motion
+        return audit_three_object_motion(metadata, trajectory)
     if len(objects) == 2:
         from tools.motion_rules.two_object import (  # pylint: disable=import-outside-toplevel
             audit_pair_motion,

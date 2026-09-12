@@ -17,16 +17,21 @@ from pathlib import Path
 from typing import Any, Mapping
 
 import numpy as np
-from PIL import Image
 
 from tools.core.json_io import write_json_atomic_sorted as write_json
+from tools.core.hashing import sha256_json
+from tools.core.rigid_geometry import generic_collision_proxy
+from tools.dataset_contract.trajectory import validate_trajectory_arrays
+from tools.dataset_contract.camera_contract import camera_clipping_range
 from tools.core.sweep_values import SWEEP_AXES, SWEEP_DERIVED_LEVELS
 from tools.release.audit_release_provenance import sha256
+from tools.core.integration_configuration import generic_integration_configuration
+from tools.physics.contact_configuration import contact_processing_threshold
+from tools.physics.solver_configuration import SPECIALIZED_SPHERE_ADAPTERS, normalize_solver, resolved_solver_configuration
 
-BASE_SAMPLE_SCHEMA = "physweep_base_sample_v11"
-SWEEP_SAMPLE_SCHEMA = "physweep_sweep_sample_v1"
+BASE_SAMPLE_SCHEMA = "physweep_base_sample_v12"
+SWEEP_SAMPLE_SCHEMA = "physweep_sweep_sample_v2"
 TRAJECTORY_SCHEMA = "physweep_object_trajectory_v4"
-MASK_MANIFEST_SCHEMA = "physweep_instance_mask_manifest_v4"
 FIXTURE_SCHEMA = "physweep_static_fixture_v1"
 
 SAMPLE_ENTRIES = frozenset(
@@ -34,8 +39,6 @@ SAMPLE_ENTRIES = frozenset(
         "metadata.json",
         "trajectory.npz",
         "video.mp4",
-        "mask_manifest.json",
-        "masks",
     }
 )
 SAMPLE_LAYOUT_CONTRACT = {
@@ -43,8 +46,6 @@ SAMPLE_LAYOUT_CONTRACT = {
     "metadata": "metadata.json",
     "trajectory": "trajectory.npz",
     "video": "video.mp4",
-    "mask_manifest": "mask_manifest.json",
-    "masks": "masks/{object_id}/frame_{one_based_frame:04d}.png",
     "fixture": "fixtures/{metadata.physics.fixture.sha256}.json",
 }
 COMMON_SAMPLE_METADATA_FIELDS = frozenset(
@@ -240,45 +241,16 @@ def canonical_trajectory(
         runtime_material = np.asarray(archive["runtime_material"], dtype=np.float64)
         inertia = np.asarray(archive["inertia_diagonal_kg_m2"], dtype=np.float64)
 
-    object_ids = [
-        str(item)
-        for item in np.asarray(arrays["object_ids"]).reshape(-1).tolist()
-    ]
+    # Check raw values before conversion, particularly integer contact counts.
+    validate_trajectory_arrays(arrays, require_sign_continuity=False)
+    object_ids = np.asarray(arrays["object_ids"]).tolist()
     time_s = np.asarray(arrays["time_s"], dtype=np.float64)
     position = np.asarray(arrays["position_m"], dtype=np.float64)
     quaternion = np.asarray(arrays["quaternion_wxyz"], dtype=np.float64)
     linear = np.asarray(arrays["linear_velocity_m_s"], dtype=np.float64)
     angular = np.asarray(arrays["angular_velocity_rad_s"], dtype=np.float64)
     contact = np.asarray(arrays["contact_count"], dtype=np.int32)
-    frame_count = int(time_s.shape[0])
-    object_count = len(object_ids)
-    expected = {
-        "position_m": (frame_count, object_count, 3),
-        "quaternion_wxyz": (frame_count, object_count, 4),
-        "linear_velocity_m_s": (frame_count, object_count, 3),
-        "angular_velocity_rad_s": (frame_count, object_count, 3),
-        "contact_count": (frame_count, object_count),
-    }
-    actual = {
-        "position_m": position.shape,
-        "quaternion_wxyz": quaternion.shape,
-        "linear_velocity_m_s": linear.shape,
-        "angular_velocity_rad_s": angular.shape,
-        "contact_count": contact.shape,
-    }
-    if actual != expected:
-        raise ValueError(f"canonical trajectory shape mismatch: {actual}")
-    if len(object_ids) != len(set(object_ids)) or any(not value for value in object_ids):
-        raise ValueError("trajectory object_ids must be nonempty and unique")
-    if frame_count < 2 or not np.isfinite(time_s).all() or not np.all(np.diff(time_s) > 0.0):
-        raise ValueError("trajectory time axis is invalid")
-    if not all(np.isfinite(value).all() for value in (position, quaternion, linear, angular)):
-        raise ValueError("trajectory contains non-finite kinematics")
-    norm_error = float(np.max(np.abs(np.linalg.norm(quaternion, axis=2) - 1.0)))
-    if norm_error > 1.0e-6:
-        raise ValueError(f"trajectory quaternion norm error: {norm_error}")
-    if not np.issubdtype(contact.dtype, np.integer) or np.any(contact < 0):
-        raise ValueError("trajectory contact_count must be non-negative integers")
+    frame_count, object_count = len(time_s), len(object_ids)
     if runtime_material.shape != (object_count, 3) or not np.isfinite(runtime_material).all():
         raise ValueError("trajectory runtime_material is invalid")
     if inertia.shape != (object_count, 3) or not np.isfinite(inertia).all() or np.any(inertia <= 0.0):
@@ -298,8 +270,7 @@ def canonical_trajectory(
                     )
                 ) < 0.0:
                     quaternion[frame, object_index] *= -1.0
-    if np.any(np.sum(quaternion[1:] * quaternion[:-1], axis=2) < -1.0e-12):
-        raise ValueError("trajectory quaternion sign continuity failed")
+    validate_trajectory_arrays({**arrays, "quaternion_wxyz": quaternion})
     arrays.update(
         {
             "time_s": time_s,
@@ -361,17 +332,10 @@ def _compact_camera(
         "sensor_width_mm": float(sensor_width),
     }
     source_camera = _mapping(source.get("camera"))
-    clip_start = candidate.get("clip_start_m", source_camera.get("clip_start_m"))
-    clip_end = candidate.get("clip_end_m", source_camera.get("clip_end_m"))
-    if clip_start is None or clip_end is None:
-        # Asset and specialized renderers use this explicit fixed camera range.
-        # Generic renders carry their per-sample values in the camera binding.
-        if str(source.get("schema_version")) == "physweep_pybullet_rigid_metadata_v1":
-            raise ValueError("final generic camera has no clipping range")
-        clip_start = 0.03
-        clip_end = 100.0
-    result["clip_start_m"] = float(clip_start)
-    result["clip_end_m"] = float(clip_end)
+    result["clip_start_m"], result["clip_end_m"] = camera_clipping_range(
+        {**source_camera, **candidate},
+        require_explicit=source.get("schema_version") == "physweep_pybullet_rigid_metadata_v1",
+    )
     if len(result["position_m"]) != 3 or len(result["target_m"]) != 3:
         raise ValueError("final camera vectors must be three-dimensional")
     if not all(math.isfinite(float(item)) for item in (*result["position_m"], *result["target_m"])):
@@ -403,7 +367,7 @@ def _dynamic_material_extras(
                 ).get("dynamic_defaults")
             )
         )
-    elif adapter_id == "billiards_v4":
+    elif adapter_id in {"billiards_v4", "billiards_two_object_v1", "billiards_three_object_v1"}:
         candidates.append(
             _mapping(
                 _mapping(backend.get("billiards_rules")).get("ball_dynamics")
@@ -433,39 +397,30 @@ def _solver_contract(
     source: Mapping[str, Any],
     resolved_scene: Mapping[str, Any],
 ) -> dict[str, Any]:
-    if adapter_id == "generic_rigid_v1":
-        result = copy.deepcopy(_mapping(source.get("simulation")).get("solver"))
-        result.setdefault("enable_cone_friction", True)
-        result.setdefault("use_split_impulse", True)
+    if adapter_id == "generic_rigid_v1" or adapter_id in SPECIALIZED_SPHERE_ADAPTERS:
+        return resolved_solver_configuration(adapter_id, source, resolved_scene)
+    payload = _mapping(resolved_scene.get("adapter_payload"))
+    backend = _mapping(payload.get("backend"))
+    if adapter_id == "asset_proxy_v3":
+        engine = _mapping(_mapping(backend.get("asset_proxy_rules")).get("engine"))
+        result = {
+            "solver_iterations": int(_mapping(backend.get("engine"))["solver_iterations"]),
+            "deterministic_overlapping_pairs": True,
+            "restitution_velocity_threshold_m_s": float(engine["restitution_velocity_threshold_m_s"]),
+            "enable_cone_friction": bool(engine["enable_cone_friction"]),
+            "use_split_impulse": bool(engine["use_split_impulse"]),
+        }
+    elif adapter_id == "billiards_v4":
+        engine = _mapping(_mapping(backend.get("billiards_rules")).get("engine"))
+        result = {
+            "solver_iterations": int(engine["solver_iterations"]),
+            "deterministic_overlapping_pairs": True,
+            "restitution_velocity_threshold_m_s": float(engine["restitution_velocity_threshold_m_s"]),
+            "enable_cone_friction": bool(engine["enable_cone_friction"]),
+            "use_split_impulse": bool(engine["use_split_impulse"]),
+        }
     else:
-        payload = _mapping(resolved_scene.get("adapter_payload"))
-        backend = _mapping(payload.get("backend"))
-        if adapter_id == "asset_proxy_v3":
-            engine = _mapping(_mapping(backend.get("asset_proxy_rules")).get("engine"))
-            result = {
-                "solver_iterations": int(_mapping(backend.get("engine"))["solver_iterations"]),
-                "deterministic_overlapping_pairs": True,
-                "restitution_velocity_threshold_m_s": float(
-                    engine["restitution_velocity_threshold_m_s"]
-                ),
-                "enable_cone_friction": bool(engine["enable_cone_friction"]),
-                "use_split_impulse": bool(engine["use_split_impulse"]),
-            }
-        elif adapter_id == "billiards_v4":
-            engine = _mapping(_mapping(backend.get("billiards_rules")).get("engine"))
-            result = {
-                "solver_iterations": int(engine["solver_iterations"]),
-                "deterministic_overlapping_pairs": True,
-                "restitution_velocity_threshold_m_s": float(
-                    engine["restitution_velocity_threshold_m_s"]
-                ),
-                "enable_cone_friction": bool(engine["enable_cone_friction"]),
-                "use_split_impulse": bool(engine["use_split_impulse"]),
-            }
-        else:
-            result = copy.deepcopy(
-                _mapping(_mapping(source.get("physics")).get("engine"))
-            )
+        result = copy.deepcopy(_mapping(_mapping(source.get("physics")).get("engine")))
     if "iterations" in result:
         if "solver_iterations" in result:
             raise ValueError("both solver iteration field names are present")
@@ -600,7 +555,12 @@ def _compact_semantics(source: Mapping[str, Any]) -> dict[str, Any]:
     if semantics:
         return _without_none(
             {
-                "profile": semantics.get("profile"),
+                "profile": (
+                    semantics.get("motion_profile") or semantics.get("profile")
+                    if (semantics.get("dynamic_object_count") == 2
+                        or source.get('schema_version') in {'physweep_billiards_three_object_scene_v1','physweep_passive_pinball_three_object_scene_v1','physweep_marble_run_three_object_scene_v1'})
+                    else semantics.get("profile")
+                ),
                 "description": semantics.get("description"),
             }
         )
@@ -702,6 +662,7 @@ def _fixture_descriptor(
         or render_record.get("support_binding_sha256")
         or support_binding.get("binding_sha256")
         or environment_binding.get("binding_sha256")
+        or (sha256_json(physics["fixture"]) if physics.get("fixture") else None)
     )
     fixture = _without_none(
         {
@@ -755,6 +716,15 @@ def build_fixture_payload(
         physical = {
             "support": copy.deepcopy(_mapping(source.get("simulation"))["support"])
         }
+        # Older source releases may predate environment bindings. When present,
+        # every static environment body and its contact dynamics are part of the
+        # simulated fixture, even if no object touched it in this trajectory.
+        if "environment_binding" in source:
+            environment = _mapping(source["environment_binding"])
+            physical["environment"] = {
+                "colliders": copy.deepcopy(environment["colliders"]),
+                "dynamics": copy.deepcopy(environment["dynamics"]),
+            }
     elif adapter_id == "asset_proxy_v3":
         backend = _mapping(payload.get("backend"))
         contact = _mapping(_mapping(backend.get("asset_proxy_rules")).get("contact"))
@@ -768,7 +738,7 @@ def build_fixture_payload(
                 "static_prop": copy.deepcopy(contact["static_prop"]),
             },
         }
-    elif adapter_id == "billiards_v4":
+    elif adapter_id in {"billiards_v4", "billiards_two_object_v1", "billiards_three_object_v1"}:
         rules = _mapping(_mapping(payload.get("backend")).get("billiards_rules"))
         physical = {
             "static_support_binding": copy.deepcopy(payload["static_support_binding"]),
@@ -817,11 +787,19 @@ def localize_fixture_assets(
         and any(part in {"mesh", "collision"} for part in context)
         and "visual" not in context
     )
-    if is_collision_asset:
-        source = Path(result["path"])
+    is_environment_mesh = (
+        result.get("primitive") == "static_concave_mesh"
+        and "environment" in context
+        and "colliders" in context
+    )
+    if is_collision_asset or is_environment_mesh:
+        path_key, digest_key = (
+            ("mesh_path", "mesh_sha256") if is_environment_mesh else ("path", "sha256")
+        )
+        source = Path(result[path_key])
         if not source.is_absolute():
             source = project_root / source
-        expected = str(result["sha256"])
+        expected = str(result[digest_key])
         verified_file(source, expected, "fixture collision asset")
         suffix = source.suffix.lower() or ".bin"
         relative = Path("fixture_assets") / f"{expected}{suffix}"
@@ -832,7 +810,7 @@ def localize_fixture_assets(
             except FileExistsError:
                 pass
         verified_file(target, expected, "localized fixture collision asset")
-        result["path"] = relative.as_posix()
+        result[path_key] = relative.as_posix()
     return result
 
 
@@ -926,7 +904,19 @@ def _compact_objects(
             raise ValueError(f"runtime material differs for {object_id}")
         extra_material = _dynamic_material_extras(source, resolved_scene, object_id)
         initial = _mapping(raw.get("initial_state"))
-        collision_proxy = _compact_collision_proxy(_mapping(raw["collision_proxy"]))
+        adapter_id = str(_mapping(resolved_scene.get("backend_binding")).get("adapter_id"))
+        raw_proxy = _mapping(raw["collision_proxy"])
+        if adapter_id == "generic_rigid_v1":
+            source_object = source_objects[object_id]
+            actual_proxy = generic_collision_proxy(source_object)
+            if raw_proxy != actual_proxy:
+                # Frozen older resolved files stored the envelope of a compound.
+                # Recover only that known representation from the verified source;
+                # preserve the immutable trajectory/render hash chain on disk.
+                if actual_proxy["type"] != "compound" or raw_proxy != source_object["geometry"]:
+                    raise ValueError(f"resolved generic collision proxy differs for {object_id}")
+            raw_proxy = actual_proxy
+        collision_proxy = _compact_collision_proxy(raw_proxy)
         compact = {
             "object_id": object_id,
             "object_valid": True,
@@ -936,7 +926,7 @@ def _compact_objects(
                 "contact_friction": float(expected_material[1]),
                 "contact_restitution": float(expected_material[2]),
                 **extra_material,
-                "contact_processing_threshold_m": 0.0,
+                "contact_processing_threshold_m": contact_processing_threshold(resolved_scene),
             },
             "inertia_diagonal_kg_m2": [float(item) for item in inertia[array_index]],
             "initial_state": {
@@ -946,9 +936,11 @@ def _compact_objects(
                 "angular_velocity_rad_s": [float(item) for item in initial["angular_velocity_rad_s"]],
             },
         }
-        if record.get("asset_id") is not None:
+        if adapter_id == 'billiards_three_object_v1':
+            if record.get('asset_id') != fixture_id or source_objects[object_id]['visual_profile']['asset_id'] != fixture_id:
+                raise ValueError('three-object billiards material must come from its bound fixture')
+        elif record.get("asset_id") is not None:
             compact["asset_id"] = str(record["asset_id"])
-        adapter_id = str(_mapping(resolved_scene.get("backend_binding")).get("adapter_id"))
         if adapter_id == "generic_rigid_v1":
             geometry = _mapping(source_objects.get(object_id, {}).get("geometry"))
             size_m = [float(value) for value in geometry.get("size_m", [])]
@@ -961,12 +953,16 @@ def _compact_objects(
             }
         if family == "billiards":
             templates = _mapping((billiards_templates or {}).get(fixture_id))
-            if object_id not in templates or "asset_id" in compact or "visual" in compact:
+            if adapter_id == "billiards_three_object_v1":
+                role = source_objects[object_id]['visual_profile']['material_slot']
+            else:
+                role = f"object_ball_{array_index + 1}" if adapter_id == "billiards_two_object_v1" else object_id
+            if role not in templates or "asset_id" in compact or "visual" in compact:
                 raise ValueError(f"billiards appearance template is incomplete: {object_id}")
             compact["visual"] = {
                 "material_template": {
                     "source_fixture_asset_id": fixture_id,
-                    "source_object_name": str(templates[object_id]),
+                    "source_object_name": str(templates[role]),
                 }
             }
         appearance_sources = int("asset_id" in compact)
@@ -977,44 +973,6 @@ def _compact_objects(
             raise ValueError(f"object has no unique appearance source: {object_id}")
         result.append(compact)
     return result, labels
-
-
-def build_mask_manifest(
-    *, scene_id: str, mask_root: Path, objects: list[dict[str, Any]]
-) -> dict[str, Any]:
-    expected_ids = [
-        safe_path_component(record["object_id"], "mask object id")
-        for record in objects
-    ]
-    actual_ids = sorted(path.name for path in mask_root.iterdir() if path.is_dir())
-    if sorted(expected_ids) != actual_ids:
-        raise ValueError(f"mask object ids differ for {scene_id}")
-    records = []
-    frame_count: int | None = None
-    for record in objects:
-        object_id = safe_path_component(record["object_id"], "mask object id")
-        paths = sorted((mask_root / object_id).glob("frame_*.png"))
-        if not paths:
-            raise ValueError(f"mask frames are missing for {scene_id}/{object_id}")
-        expected_names = [f"frame_{index:04d}.png" for index in range(1, len(paths) + 1)]
-        if [path.name for path in paths] != expected_names:
-            raise ValueError(f"mask frame sequence is not contiguous for {scene_id}/{object_id}")
-        if frame_count is None:
-            frame_count = len(paths)
-        elif frame_count != len(paths):
-            raise ValueError(f"mask object frame counts differ for {scene_id}")
-        records.append(
-            {
-                "object_id": object_id,
-                "frame_sha256": [sha256(path) for path in paths],
-            }
-        )
-    return {
-        "schema_version": MASK_MANIFEST_SCHEMA,
-        "scene_id": scene_id,
-        "frame_count": int(frame_count or 0),
-        "objects": records,
-    }
 
 
 def _build_sample_metadata(
@@ -1147,6 +1105,10 @@ def _build_sample_metadata(
         },
     }
 
+    if backend["adapter_id"] == "generic_rigid_v1":
+        # Older resolved records retained the nominal rate even for mesh impacts.
+        physics["time"]["simulation_hz"] = generic_integration_configuration(source)["simulation_hz"]
+
     artifacts: dict[str, Any] = {
         "trajectory": {"sha256": trajectory_sha256},
         "video": {"sha256": video_sha256},
@@ -1259,7 +1221,6 @@ def _materialize_sample(
     trajectory_source_path: Path,
     video_source_path: Path,
     video_sha256: str,
-    masks_source_path: Path,
     release_root: Path,
     source_project_root: Path,
     billiards_templates: Mapping[str, Mapping[str, str]] | None = None,
@@ -1314,48 +1275,9 @@ def _materialize_sample(
         fixture_sha256=fixture_sha256,
         billiards_templates=billiards_templates,
     )
-    if not masks_source_path.is_dir():
-        raise FileNotFoundError(f"{scene_id} masks: {masks_source_path}")
-    masks_target = target / "masks"
-    masks_target.mkdir()
-    for physics_object in metadata["physics"]["objects"]:
-        object_id = safe_path_component(physics_object["object_id"], "mask object id")
-        source_directory = masks_source_path / object_id
-        source_frames = sorted(source_directory.glob("frame_*.png"))
-        if not source_frames:
-            raise ValueError(f"mask frames are missing for {scene_id}/{object_id}")
-        target_directory = masks_target / object_id
-        target_directory.mkdir()
-        for index, source_frame in enumerate(source_frames, start=1):
-            expected_name = f"frame_{index:04d}.png"
-            if source_frame.name != expected_name:
-                raise ValueError(f"mask frame sequence differs for {scene_id}/{object_id}")
-            target_frame = target_directory / expected_name
-            with Image.open(source_frame) as image:
-                if image.mode == "RGBA":
-                    alpha = image.getchannel("A")
-                elif image.mode == "L":
-                    alpha = image.copy()
-                else:
-                    raise ValueError(f"unsupported source mask mode: {source_frame}")
-                alpha.save(
-                    target_frame,
-                    format="PNG",
-                    compress_level=9,
-                    optimize=False,
-                )
-    mask_manifest = build_mask_manifest(
-        scene_id=scene_id,
-        mask_root=masks_target,
-        objects=metadata["physics"]["objects"],
+    validate_trajectory_arrays(
+        arrays, time=metadata["physics"]["time"], objects=metadata["physics"]["objects"],
     )
-    if int(mask_manifest["frame_count"]) != int(trajectory_info["frame_count"]):
-        raise ValueError(f"mask and trajectory frame counts differ for {scene_id}")
-    mask_manifest_path = target / "mask_manifest.json"
-    write_json(mask_manifest_path, mask_manifest)
-    metadata["artifacts"]["masks"] = {
-        "manifest_sha256": sha256(mask_manifest_path),
-    }
     if sample_kind == "base":
         validate_base_metadata(metadata)
     else:
@@ -1383,7 +1305,6 @@ def materialize_base_sample(
     trajectory_source_path: Path,
     video_source_path: Path,
     video_sha256: str,
-    masks_source_path: Path,
     release_root: Path,
     source_project_root: Path,
     billiards_templates: Mapping[str, Mapping[str, str]] | None = None,
@@ -1402,7 +1323,6 @@ def materialize_base_sample(
         trajectory_source_path=trajectory_source_path,
         video_source_path=video_source_path,
         video_sha256=video_sha256,
-        masks_source_path=masks_source_path,
         release_root=release_root,
         source_project_root=source_project_root,
         billiards_templates=billiards_templates,
@@ -1423,7 +1343,6 @@ def materialize_sweep_sample(
     trajectory_source_path: Path,
     video_source_path: Path,
     video_sha256: str,
-    masks_source_path: Path,
     release_root: Path,
     source_project_root: Path,
     billiards_templates: Mapping[str, Mapping[str, str]] | None = None,
@@ -1442,7 +1361,6 @@ def materialize_sweep_sample(
         trajectory_source_path=trajectory_source_path,
         video_source_path=video_source_path,
         video_sha256=video_sha256,
-        masks_source_path=masks_source_path,
         release_root=release_root,
         source_project_root=source_project_root,
         billiards_templates=billiards_templates,
@@ -1489,11 +1407,12 @@ def _validate_sample_metadata(
         "enable_cone_friction",
         "use_split_impulse",
     }
-    if set(solver) not in (
-        solver_required,
-        solver_required | {"contact_breaking_threshold_m"},
-    ):
+    if physics["backend"]["adapter_id"] == "generic_rigid_v1":
+        solver_required.add("solver_residual_threshold")
+    if (not solver_required.issubset(solver)
+        or set(solver) - (solver_required | {"contact_breaking_threshold_m", "solver_residual_threshold"})):
         raise ValueError("canonical solver fields are invalid")
+    normalize_solver(solver)
     fixture = _mapping(physics.get("fixture"))
     if set(fixture) != {"id", "representation", "sha256"}:
         raise ValueError("canonical fixture binding is invalid")
@@ -1540,7 +1459,11 @@ def _validate_sample_metadata(
             or values["contact_friction"] < 0.0
             or not 0.0 <= values["contact_restitution"] <= 1.0
             or any(values[key] < 0.0 for key in DYNAMIC_MATERIAL_FIELDS[3:])
-            or values["contact_processing_threshold_m"] != 0.0
+            or isinstance(material["contact_processing_threshold_m"], bool)
+            or (
+                values["contact_processing_threshold_m"] != 0.0
+                and physics["backend"]["adapter_id"] not in {"billiards_v4", "billiards_two_object_v1", "billiards_three_object_v1"}
+            )
         ):
             raise ValueError("canonical dynamic material is invalid")
         inertia = np.asarray(record.get("inertia_diagonal_kg_m2"), dtype=np.float64)
@@ -1684,13 +1607,7 @@ def _validate_sample_metadata(
         or len(str(video.get("sha256", ""))) != 64
     ):
         raise ValueError("canonical video binding is invalid")
-    masks = _mapping(artifacts.get("masks"))
-    if (
-        set(masks) != {"manifest_sha256"}
-        or len(str(masks.get("manifest_sha256", ""))) != 64
-    ):
-        raise ValueError("canonical mask binding is invalid")
-    if set(artifacts) != {"trajectory", "video", "masks"}:
+    if set(artifacts) != {"trajectory", "video"}:
         raise ValueError("canonical artifact set is invalid")
     lineage = _mapping(metadata.get("lineage"))
     if (

@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 
 from tools.core.rigid_geometry import PROXY_SHAPE_CODE, quaternion_matrix_wxyz
+from tools.core.rigid_dynamics import principal_inertia
 
 
 def runtime_collision_descriptors(
@@ -71,18 +72,6 @@ def maximum_coulomb_utilization(
         )
         values.append(utilization)
     return max(values, default=0.0)
-
-
-def principal_inertia(shape: str, size_m: np.ndarray, mass_kg: float) -> np.ndarray:
-    x, y, z = np.asarray(size_m, dtype=np.float64)
-    if shape == "sphere":
-        value = 0.4 * mass_kg * (x / 2.0) ** 2
-        return np.repeat(value, 3)
-    if shape == "cylinder":
-        radius = max(x, y) / 2.0
-        transverse = mass_kg * (3.0 * radius * radius + z * z) / 12.0
-        return np.asarray([transverse, transverse, 0.5 * mass_kg * radius * radius])
-    return mass_kg * np.asarray([y * y + z * z, x * x + z * z, x * x + y * y]) / 12.0
 
 
 def quaternion_error_xyzw(left: np.ndarray, right: np.ndarray) -> float:

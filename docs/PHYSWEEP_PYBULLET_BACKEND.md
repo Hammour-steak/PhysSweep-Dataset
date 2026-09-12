@@ -22,6 +22,30 @@ Semantic object names do not extend this API. All 18 profiles compile to the sam
   only for the exact sphere pair. A general 3obj matrix remains deferred; the
   three-ball generator is a specialized backend, not a fallback.
 
+The two-object motion matrix uses the reviewed amplitude increase: horizontal
+launch speeds increase by 20%, supported-impact drop time by sqrt(1.2), and
+independent drop clearance by 20%. Vertical projectile speeds and acceptance
+thresholds are unchanged. These are sampling rules, not a physics sweep axis;
+each derived group still freezes both objects' initial states.
+
+Base camera search checks both objects in the base trajectory before
+selecting a pose by composition score. A failed preferred distance does not
+discard other distances at the same view. Initial/contact frames remain fully
+framed, all trajectory centers remain visible, and at least 90% of frames keep
+each complete AABB visible. The 0.55 envelope span is a soft composition target;
+object readability, structure anchors, and occlusion remain hard constraints.
+`pair_observation.fallback_view_families` declares four symmetric low-angle
+alternatives (+/-30 and +/-150 degrees, elevations 18-34 degrees). Generation
+copies them into `camera_request`; only an exhausted preferred-view search uses
+them. The six coverage views remain the preferred sampling axis. Fallbacks keep
+physics, background, lens/distance limits and every base visibility threshold fixed.
+Sweeps copy the base camera unchanged and may leave the frame; their visibility
+does not reject a group or influence base camera selection. Diagnostics identify the
+preferred and selected views and report the actual solved angles. Metadata
+without alternatives retains its original strict view limits.
+Deterministic replacement prefers new failed-cell source pairs even when the
+camera family changes; passing rows and the full rejection history are retained.
+
 ## Integration
 
 Simulation uses deterministic DIRECT mode and exports trajectories at the

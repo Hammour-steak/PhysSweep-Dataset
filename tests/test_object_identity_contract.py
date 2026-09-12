@@ -296,7 +296,7 @@ class ObjectIdentityContractTests(unittest.TestCase):
             metadata["object_identity"]["text"]["caption"],
             (
                 "In a laboratory studio, the tennis ball falls under gravity "
-                "and collides with the drink carton, which starts at rest on "
+                "toward the drink carton, which starts at rest on "
                 "the laboratory bench."
             ),
         )
@@ -306,16 +306,16 @@ class ObjectIdentityContractTests(unittest.TestCase):
         expected_fragments = {
             "surface_hit_rest_2obj": "which starts at rest",
             "surface_glancing_hit_rest_2obj": "an offset path",
-            "surface_head_on_2obj": "move toward each other",
+            "surface_head_on_2obj": "moving toward each other",
             "surface_glancing_opposed_2obj": "opposed, offset paths",
             "surface_crossing_2obj": "crossing paths",
-            "surface_catch_up_2obj": "catches up",
+            "surface_catch_up_2obj": "a higher initial speed",
             "air_drop_hit_supported_2obj": "falls under gravity",
             "air_projectile_hit_supported_2obj": "launched upward and forward",
             "air_air_collision_2obj": "airborne paths",
-            "surface_single_independent_2obj": "remains at rest",
-            "surface_dual_independent_2obj": "without contacting each other",
-            "air_supported_independent_2obj": "they do not contact",
+            "surface_single_independent_2obj": "starts at rest",
+            "surface_dual_independent_2obj": "separate paths",
+            "air_supported_independent_2obj": "starts at rest",
         }
         for family, fragment in expected_fragments.items():
             with self.subTest(family=family):
@@ -336,6 +336,13 @@ class ObjectIdentityContractTests(unittest.TestCase):
                 caption = metadata["object_identity"]["text"]["caption"]
                 self.assertIn(fragment, caption)
                 self.assertNotIn("_2obj", caption)
+                for kind in ("base", "sweep"):
+                    metadata["sweep"] = {"kind": kind}
+                    attach_object_identity(metadata)
+                    self.assertEqual(metadata["object_identity"]["text"]["caption"], caption)
+                    self.assertNotIn("collide", caption)
+                    self.assertNotIn("do not contact", caption)
+                    self.assertNotIn("remains at rest", caption)
 
     def test_two_identical_labels_remain_two_identity_mentions(self) -> None:
         metadata = {

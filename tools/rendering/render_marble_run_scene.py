@@ -74,12 +74,14 @@ def add_box(binding: dict[str, Any]) -> Any:
     return obj
 
 
-def import_track(component: dict[str, Any]) -> Any:
-    declared = (PROJECT_ROOT / str(component["source_path"])).absolute()
-    declared.relative_to(PROJECT_ROOT)
+def import_track(component: dict[str, Any], *, root: Path = PROJECT_ROOT) -> Any:
+    declared = (root / str(component["source_path"])).absolute()
+    declared.relative_to(root)
     source = declared.resolve()
     if not source.is_file():
         raise FileNotFoundError(source)
+    if sha256(source) != str(component["source_sha256"]):
+        raise ValueError(f"marble-run source hash changed: {component['id']}")
     before = set(bpy.context.scene.objects)
     bpy.ops.import_mesh.stl(filepath=str(source))
     meshes = [
@@ -105,10 +107,15 @@ def import_track(component: dict[str, Any]) -> Any:
     return obj
 
 
-def add_fixture(metadata: dict[str, Any]) -> list[Any]:
+def add_physical_fixture(metadata: dict[str, Any], *, root: Path = PROJECT_ROOT) -> list[Any]:
     fixture = metadata["physics"]["fixture"]
-    result = [import_track(component) for component in fixture["mesh_components"]]
+    result = [import_track(component, root=root) for component in fixture["mesh_components"]]
     result.extend(add_box(collider) for collider in fixture["analytic_colliders"])
+    return result
+
+
+def add_fixture(metadata: dict[str, Any], *, root: Path = PROJECT_ROOT) -> list[Any]:
+    result = add_physical_fixture(metadata, root=root)
     backboard = metadata["render"]["context"]["backboard"]
     if backboard.get("physics_role") != "render_only_context":
         raise ValueError("marble-run backboard must remain render-only")

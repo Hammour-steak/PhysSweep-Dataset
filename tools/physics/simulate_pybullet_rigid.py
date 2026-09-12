@@ -10,7 +10,9 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from tools.physics.solver_configuration import apply_solver_configuration, normalize_solver
 
+from tools.core.integration_configuration import generic_integration_configuration
 from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
@@ -39,7 +41,7 @@ from tools.assets.environment_collision import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2)
+SUPPORTED_DYNAMIC_OBJECT_COUNTS = (1, 2, 3)
 
 
 def create_box_body(pb: Any, collider: dict[str, Any]) -> int:
@@ -179,6 +181,7 @@ def contact_interval_record(
     static_friction_by_body: dict[int, float],
     other_dynamic_bodies: dict[str, int],
     dynamic_friction_by_body: dict[int, float],
+    event_sink: dict[tuple[int, int], float] | None = None,
 ) -> dict[str, Any]:
     contacts = list(pb.getContactPoints(bodyA=body))
     collider_ids = {body_id: collider_id for collider_id, body_id in static_bodies.items()}
@@ -193,6 +196,10 @@ def contact_interval_record(
         other_object_id = object_ids.get(other_body)
         if other_object_id is not None:
             object_contact_counts[other_object_id] += 1
+            if event_sink is not None:
+                pair = tuple(sorted((body, other_body)))
+                distance = float(record[8])
+                event_sink[pair] = min(event_sink.get(pair, distance), distance)
     distances = [float(record[8]) for record in contacts]
     forces = [float(record[9]) for record in contacts]
     return {
@@ -261,7 +268,7 @@ def merge_contact_intervals(target: dict[str, Any], source: dict[str, Any]) -> N
         )
 
 
-def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+def simulate(metadata: dict[str, Any], *, root: Path = PROJECT_ROOT) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     import pybullet as pb  # pylint: disable=import-outside-toplevel
 
     if metadata["schema_version"] != "physweep_pybullet_rigid_metadata_v1":
@@ -271,30 +278,20 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
     objects = require_simulation_objects(
         metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
     )
+    if len(objects) == 3:
+        from tools.motion_rules.three_object.motion import validate_motion_contract
+        validate_motion_contract(metadata)
     if any(obj["body_model"] != "rigid_body" for obj in objects):
         raise ValueError("PyBullet rigid v1 requires rigid-body objects")
 
     simulation = metadata["simulation"]
     time_config = simulation["time"]
-    nominal_simulation_hz = int(time_config["simulation_hz"])
+    integration = generic_integration_configuration(metadata)
     output_fps = int(time_config["output_fps"])
-    if nominal_simulation_hz % output_fps != 0:
-        raise ValueError("simulation_hz must be divisible by output_fps")
-    exact_static_binding = simulation["support"].get("exact_static_binding")
-    contact_modes = {
-        str(obj.get("expected_motion", {}).get("contact_mode", ""))
-        for obj in objects
-    }
-    # Concave static meshes need a finer step only during ballistic impact.
-    integration_substep_factor = (
-        2
-        if exact_static_binding is not None and "ballistic_then_contact" in contact_modes
-        else 1
-    )
-    simulation_hz = nominal_simulation_hz * integration_substep_factor
-    steps_per_frame = simulation_hz // output_fps
+    simulation_hz = integration["simulation_hz"]
+    steps_per_frame = integration["steps_per_frame"]
     frame_count = int(time_config["frame_count"])
-    solver = simulation["solver"]
+    solver = normalize_solver(simulation["solver"], generic=True)
     client = pb.connect(pb.DIRECT)
     if client < 0:
         raise RuntimeError("PyBullet DIRECT connection failed")
@@ -303,14 +300,8 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
         gravity = [float(value) for value in simulation["world"]["gravity_m_s2"]]
         pb.setGravity(*gravity)
         pb.setTimeStep(1.0 / simulation_hz)
-        pb.setPhysicsEngineParameter(
-            numSolverIterations=int(solver["iterations"]),
-            deterministicOverlappingPairs=int(bool(solver["deterministic_overlapping_pairs"])),
-            restitutionVelocityThreshold=float(solver["restitution_velocity_threshold_m_s"]),
-            contactBreakingThreshold=float(solver["contact_breaking_threshold_m"]),
-            enableConeFriction=1,
-            useSplitImpulse=1,
-            solverResidualThreshold=0.0,
+        solver_execution = apply_solver_configuration(
+            pb, solver,
         )
         support_dynamics = simulation["support"]["dynamics"]
         static_bodies: dict[str, int] = {}
@@ -335,7 +326,7 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
                 raise ValueError(
                     "exact support binding conflicts with an analytic support body"
                 )
-            body = create_pybullet_static_support(pb, PROJECT_ROOT, exact_binding)
+            body = create_pybullet_static_support(pb, root, exact_binding)
             pb.changeDynamics(
                 body,
                 -1,
@@ -350,7 +341,7 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
             raise ValueError("simulation has no authoritative primary support body")
         environment_binding = validate_environment_binding(metadata)
         environment_bodies = create_pybullet_environment_bodies(
-            pb, PROJECT_ROOT, environment_binding
+            pb, root, environment_binding
         )
         duplicate_ids = set(static_bodies) & set(environment_bodies)
         if duplicate_ids:
@@ -424,6 +415,17 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
         records_by_object: dict[str, list[dict[str, Any]]] = {
             object_id: [] for object_id in object_by_id
         }
+        collector = None
+        if len(objects) == 3:
+            from tools.physics.contact_events import ContactEventCollector
+            collector = ContactEventCollector(list(dynamic_bodies), simulation_hz,
+                metadata['three_object']['thresholds']['contact_distance_tolerance_m'])
+        def observe_events(step, contacts):
+            if collector is not None:
+                ids = {body: oid for oid, body in dynamic_bodies.items()}
+                collector.observe(step, {tuple(sorted((ids[a], ids[b]))): d for (a,b),d in contacts.items()},
+                    {oid: list(pb.getBaseVelocity(body)[0]) for oid,body in dynamic_bodies.items()})
+        event_contacts = {} if collector is not None else None
         pb.performCollisionDetection()
         initial_environment_contacts = [
             contact
@@ -459,11 +461,13 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
                     static_friction_by_body,
                     other_bodies,
                     dynamic_friction_by_body,
+                    event_contacts,
                 ),
             )
             records_by_object[object_id].append(
                 capture_frame(pb, body, initial_interval)
             )
+        observe_events(0, event_contacts)
         for _frame in range(1, frame_count):
             intervals = {
                 object_id: empty_contact_interval(
@@ -471,7 +475,8 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
                 )
                 for object_id in dynamic_bodies
             }
-            for _ in range(steps_per_frame):
+            for _substep in range(steps_per_frame):
+                event_contacts = {} if collector is not None else None
                 pb.stepSimulation()
                 for object_id, body in dynamic_bodies.items():
                     merge_contact_intervals(
@@ -486,8 +491,10 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
                             static_friction_by_body,
                             other_dynamic_bodies_by_object[object_id],
                             dynamic_friction_by_body,
+                            event_contacts,
                         ),
                     )
+                observe_events((_frame - 1) * steps_per_frame + _substep + 1, event_contacts)
             for object_id, body in dynamic_bodies.items():
                 records_by_object[object_id].append(
                     capture_frame(pb, body, intervals[object_id])
@@ -498,6 +505,8 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
     trajectory: dict[str, np.ndarray] = {
         "time_s": np.arange(frame_count, dtype=np.float64) / float(output_fps),
     }
+    if collector is not None:
+        trajectory['three_object_event_evidence_json'] = np.asarray(json.dumps(collector.evidence(), sort_keys=True))
     vector_keys = (
         "position_m",
         "quaternion_wxyz",
@@ -566,6 +575,8 @@ def simulate(metadata: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str,
             )
     validate_trajectory_contract(metadata, trajectory)
     audit = audit_trajectory(metadata, trajectory)
+    audit["solver_execution"] = solver_execution
+    audit["integration_execution"] = integration
     return trajectory, audit
 
 

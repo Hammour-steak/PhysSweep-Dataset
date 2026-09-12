@@ -8,10 +8,12 @@ import copy
 from pathlib import Path
 from typing import Any
 
+from tools.assets.billiards_template import refresh_billiards_fixture
+
 from tools.assets.visual_environment_binding import (
     resolve_specialized_environment_binding,
 )
-from tools.core.hashing import relative_file_binding, sha256_file
+from tools.core.hashing import implementation_file_binding, relative_file_binding, sha256_file, sha256_json
 from tools.core.json_io import read_json, write_json_atomic
 from tools.dataset_contract.object_identity_contract import attach_object_identity
 from tools.motion_rules.two_object.specialized import (
@@ -22,6 +24,7 @@ from tools.motion_rules.two_object.specialized import (
     resolve_pinball_initial_states,
     resolve_specialized_camera_binding,
 )
+from tools.sampling.two_object_sampling_request import validate_sampling_request, varied_profiles
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -81,6 +84,18 @@ def _sphere_objects(
     return result
 
 
+def prepare_specialized_templates(
+    root: Path, templates: dict[str, dict[str, Any]], rules_path: Path,
+) -> dict[str, dict[str, Any]]:
+    """Rebind current provenance only after verifying unchanged fixture content."""
+    prepared = copy.deepcopy(templates)
+    billiards = prepared["billiards"]
+    billiards = refresh_billiards_fixture(root, billiards)
+    prepared["billiards"] = billiards
+    billiards["semantic_rules"] = _binding(root, rules_path)
+    return prepared
+
+
 def build_specialized_scene(
     root: Path,
     dataset_root: Path,
@@ -90,6 +105,7 @@ def build_specialized_scene(
     profile: dict[str, Any],
     *,
     seed: int,
+    variation: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Create one immutable 2obj source scene without changing fixture physics."""
 
@@ -100,7 +116,11 @@ def build_specialized_scene(
         raise ValueError("specialized templates must be canonical base records")
     scene = copy.deepcopy(template)
     scene.pop("sweep", None)
+    # The hash-bound source template preserves its own 1obj admission evidence.
+    scene.pop("admission", None)
     scene_id = f"physweep2specialized_{profile['id']}"
+    if variation is not None:
+        scene_id += f"_v{variation['variant_index']:03d}_{variation['initial_profile_sha256'][:12]}"
     paths = _output_paths(
         root,
         dataset_root / "physics" / scene_id,
@@ -111,6 +131,8 @@ def build_specialized_scene(
     scene["seed"] = int(seed)
     scene["dataset_id"] = "physweep_two_object"
     scene["dataset_stage"] = "two_object_specialized_base_candidate"
+    if variation is not None:
+        scene['two_object_sampling'] = copy.deepcopy(variation)
     scene["semantics"]["scene_family"] = family_id
     scene["semantics"]["dynamic_object_count"] = 2
     scene["semantics"]["motion_profile"] = str(profile["id"])
@@ -183,10 +205,10 @@ def build_specialized_scene(
         seed=int(seed),
     )
     scene["implementation"] = {
-        "sampler": _binding(root, Path(__file__)),
-        "renderer": _binding(root, RENDERER),
-        "render_evidence": _binding(
-            root, Path("tools/rendering/specialized_render_evidence.py")
+        "sampler": implementation_file_binding(root, Path(__file__)),
+        "renderer": implementation_file_binding(root, PROJECT_ROOT / RENDERER),
+        "render_evidence": implementation_file_binding(
+            root, PROJECT_ROOT / "tools/rendering/specialized_render_evidence.py"
         ),
     }
     attach_object_identity(
@@ -204,35 +226,55 @@ def build_specialized_scenes(
     contract: dict[str, Any],
     *,
     seed: int,
+    sampling_request: dict[str, Any] | None = None,
+    rules_path: Path = DEFAULT_RULES,
 ) -> list[tuple[Path, dict[str, Any]]]:
+    templates = prepare_specialized_templates(root, templates, rules_path)
     families = family_index(contract)
+    if sampling_request is not None:
+        validate_sampling_request(sampling_request, contract)
     result = []
     index = 0
     for family_id in ("billiards", "passive_pinball", "marble_run"):
         family = families[family_id]
-        for profile in family["profiles"]:
+        profiles = (
+            [(profile, None) for profile in family['profiles']]
+            if sampling_request is None else varied_profiles(
+                family, sampling_request['family_base_counts'][family_id],
+                sampling_request['specialized_variation'][family_id], seed,
+            )
+        )
+        for profile, variation in profiles:
             index += 1
+            scene = build_specialized_scene(
+                root, output_root, templates[family_id], contract, family, profile,
+                seed=int(seed) + index, variation=variation,
+            )
             metadata_path = (
                 output_root
                 / "scenes"
                 / family_id
-                / str(profile["id"])
+                / (str(profile['id']) if variation is None else scene['scene_id'])
                 / "metadata.json"
             )
             result.append(
                 (
                     metadata_path,
-                    build_specialized_scene(
-                        root,
-                        output_root,
-                        templates[family_id],
-                        contract,
-                        family,
-                        profile,
-                        seed=int(seed) + index,
-                    ),
+                    scene,
                 )
             )
+    fingerprints = set()
+    for _, scene in result:
+        family_id = scene['semantics']['scene_family']
+        states = (scene['physics']['initial_states'] if family_id == 'billiards'
+                  else [obj['initial_state'] for obj in scene['simulation']['objects']])
+        fingerprint = sha256_json([family_id, [
+            [state['position_m'], state.get('linear_velocity_m_s', state.get('velocity_m_s'))]
+            for state in states
+        ]])
+        if fingerprint in fingerprints:
+            raise ValueError('specialized sampling produced duplicate physical initial states')
+        fingerprints.add(fingerprint)
     return result
 
 
@@ -245,6 +287,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--marble-run-template", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=20260902)
+    parser.add_argument('--sampling-config', type=Path)
     return parser.parse_args()
 
 
@@ -254,6 +297,8 @@ def main() -> None:
     rules_path = (root / args.rules).resolve() if not args.rules.is_absolute() else args.rules.resolve()
     output = (root / args.output_dir).resolve() if not args.output_dir.is_absolute() else args.output_dir.resolve()
     output.relative_to(root)
+    if output.exists() and any(output.iterdir()):
+        raise ValueError('specialized sampling output directory must be empty')
     template_paths = {
         "billiards": args.billiards_template.resolve(),
         "passive_pinball": args.passive_pinball_template.resolve(),
@@ -262,12 +307,17 @@ def main() -> None:
     for path in template_paths.values():
         path.relative_to(root)
     contract = load_two_object_specialized_rules(root, rules_path)
+    request_path = (root / args.sampling_config).resolve() if args.sampling_config else None
+    if request_path is not None:
+        request_path.relative_to(root)
     scenes = build_specialized_scenes(
         root,
         output,
         {family: read_json(path) for family, path in template_paths.items()},
         contract,
         seed=int(args.seed),
+        sampling_request=read_json(request_path) if request_path else None,
+        rules_path=rules_path,
     )
     samples = []
     for metadata_path, scene in scenes:
@@ -299,6 +349,12 @@ def main() -> None:
         "status": "sampled_pending_simulation",
     }
     manifest_path = output / "manifest.json"
+    if request_path is not None:
+        manifest['sampling_request'] = _binding(root, request_path)
+        manifest['family_counts'] = {
+            family: sum(sample['family'] == family for sample in samples)
+            for family in SOURCE_SCHEMAS
+        }
     write_json_atomic(manifest_path, manifest)
     print(manifest_path)
 

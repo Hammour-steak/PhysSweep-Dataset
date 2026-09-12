@@ -9,7 +9,7 @@ from typing import Any
 from tools.core.hashing import sha256_file
 from tools.core.json_io import read_json, write_json_atomic_sorted
 from tools.core.paths import project_relative_path, resolve_project_path_within_root
-from tools.core.sweep_values import sweep_group_size
+from tools.core.sweep_values import sweep_group_size, sweep_target_indices
 from tools.dataset_contract.object_identity_contract import validate_object_identity
 from tools.release.sweep_validation import validate_groups, validate_source_artifacts
 
@@ -121,6 +121,7 @@ def publish_source_release(
     object_count: int,
     dataset_id: str,
     release_schema: str,
+    target_object_indices: tuple[int, ...] | None = None,
 ) -> dict[str, Any]:
     """Publish immutable source manifests after full object/sweep validation."""
 
@@ -158,9 +159,10 @@ def publish_source_release(
         root, metadata_records, expected=object_count, label="sweep record"
     )
     _validate_sweep_record_bindings(metadata_records, validated_sweeps)
+    target_indices = sweep_target_indices(object_count, target_object_indices)
     group_summary = validate_groups(
         metadata_records,
-        expected_target_indices=tuple(range(object_count)),
+        expected_target_indices=target_indices,
     )
 
     parent_paths = {str(record["parent"]) for record in metadata_records}
@@ -202,14 +204,14 @@ def publish_source_release(
     if (
         len(base_records) != group_summary.base_count
         or len(metadata_records)
-        != group_summary.base_count * sweep_group_size(object_count)
+        != group_summary.base_count * sweep_group_size(len(target_indices))
         or group_summary.derived_count
         != len(metadata_records) - len(base_records)
     ):
         raise ValueError("source release group totals differ")
 
     group_count = group_summary.base_count
-    group_size = sweep_group_size(object_count)
+    group_size = sweep_group_size(len(target_indices))
     base_count = len(base_records)
     derived_count = group_summary.derived_count
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -267,6 +269,7 @@ def publish_source_release(
             "schema_version": release_schema,
             "dataset_id": dataset_id,
             "object_count": object_count,
+            "sweep_target_object_indices": list(target_indices),
             "sample_count": len(metadata_records),
             "base_count": base_count,
             "derived_count": derived_count,

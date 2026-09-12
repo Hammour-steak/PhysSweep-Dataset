@@ -23,6 +23,18 @@ def load_module(name: str, path: Path):
 
 
 class PipelineBoundaryTest(unittest.TestCase):
+    def test_two_object_billiards_material_order_is_explicit(self):
+        source = ast.parse((ROOT / "tools/rendering/specialized_sphere_rendering.py").read_text())
+        function = next(node for node in source.body if isinstance(node, ast.FunctionDef) and node.name == "_fixture")
+        namespace = {"Any": object, "PROJECT_ROOT": ROOT, "sha256": lambda path: "hash",
+                     "read_json": lambda path: {"records": [{"asset_id": "table", "component_policy": {}}]},
+                     "add_support": lambda *args, **kwargs: [],
+                     "hidden_ball_materials": lambda *args: {"cue_ball": "unused", "object_ball_2": "red", "object_ball_1": "yellow"}}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), "fixture_test", "exec"), namespace)
+        _, materials = namespace["_fixture"]({"composition_rules": {"path": "composition.json", "sha256": "hash"},
+            "assets": {"support_asset_id": "table"}, "physics": {"static_support_binding": {}}}, "billiards")
+        self.assertEqual(materials, ["yellow", "red"])
+
     def test_gt_interaction_requires_an_explicit_multi_object_target(self):
         metadata = {
             "simulation": {
@@ -80,7 +92,7 @@ class PipelineBoundaryTest(unittest.TestCase):
         plan = module.generation_plan(
             ROOT,
             "smoke",
-            Path("outputs/smoke/one_object"),
+            Path("outputs/releases/one_object"),
             count=17,
             seed=31,
         )
@@ -293,7 +305,7 @@ class PipelineBoundaryTest(unittest.TestCase):
                 encoding="utf-8",
             )
             layout = module.generation_layout(
-                root, "work", Path("outputs/work/one_object")
+                root, "work", Path("outputs/releases/one_object")
             )
             with patch.object(
                 module,
@@ -381,23 +393,26 @@ class PipelineBoundaryTest(unittest.TestCase):
         for forbidden in ("torch", "wan_training", "train_wan", "cache_wan"):
             self.assertNotIn(forbidden, dataset_imports)
 
-    def test_two_object_sweep_is_audited_before_the_group_camera_is_frozen(self):
+    def test_two_object_admission_checks_physics_but_camera_uses_only_base(self):
         admission_source = (
             ROOT / "tools/cli/two_object_admission.py"
         ).read_text(encoding="utf-8")
         self.assertLess(
-            admission_source.index('"tools.sampling.derive_physics_sweep"'),
             admission_source.index(
-                '"tools.rendering.prepare_two_object_base_render_manifests"'
+                'camera_failure = _camera_failure_manifest('
             ),
+            admission_source.index('"tools.sampling.derive_physics_sweep"'),
         )
-        self.assertIn('"--camera-group-manifest"', admission_source)
+        self.assertNotIn('"--camera-group-manifest"', admission_source)
+        generation_source = (ROOT / "tools/cli/generate_two_object_dataset.py").read_text(encoding="utf-8")
+        self.assertNotIn('"tools.rendering.bind_pybullet_visuals"', generation_source)
+        self.assertNotIn('render_base(', generation_source)
         self.assertIn('"--allow-audit-rejections"', admission_source)
         self.assertIn(
             '"tools.sampling.resample_two_object_failures"', admission_source
         )
 
-    def test_two_object_sweep_rejection_maps_to_its_generic_parent(self):
+    def test_two_object_sweep_integrity_failure_never_replaces_its_base(self):
         module = load_module(
             "two_object_admission_entry",
             ROOT / "tools/cli/two_object_admission.py",
@@ -439,25 +454,18 @@ class PipelineBoundaryTest(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            failures = module._physics_rejections(
-                root, manifest_path, {"base"}, sweep=True
-            )
-        self.assertEqual(
-            failures,
-            [
-                {
-                    "scene_id": "base",
-                    "error": "adapter_hard_invariants",
-                }
-            ],
-        )
+            with self.assertRaisesRegex(RuntimeError, "base replacement is forbidden"):
+                module._physics_rejections(
+                    root, manifest_path, {"base"}, sweep=True
+                )
 
-    def test_two_object_renderer_records_video_samples_before_mask_rendering(self):
+    def test_two_object_renderer_records_video_samples_without_mask_rendering(self):
         source = (
-            ROOT / "tools/rendering/render_two_object_specialized_scene.py"
+            ROOT / "tools/rendering/specialized_sphere_rendering.py"
         ).read_text(encoding="utf-8")
         capture = "video_render_samples = int(scene.eevee.taa_render_samples)"
-        self.assertLess(source.index(capture), source.index("render_instance_masks("))
+        self.assertIn(capture, source)
+        self.assertNotIn("render_instance_masks", source)
         self.assertIn('"render_samples": video_render_samples', source)
 
     def test_two_object_generator_binds_blender_below_the_data_root(self):
@@ -470,7 +478,7 @@ class PipelineBoundaryTest(unittest.TestCase):
             Path("runtime/blender-3.4.0-linux-x64/blender"),
         )
         source = Path(module.__file__).read_text(encoding="utf-8")
-        self.assertGreaterEqual(source.count('str(BLENDER_RUNTIME)'), 4)
+        self.assertEqual(source.count('str(BLENDER_RUNTIME)'), 1)
 
     def test_specialized_render_records_hash_the_bound_metadata(self):
         for name in (

@@ -14,15 +14,24 @@ from typing import Any
 import numpy as np
 
 from tools.core.hashing import sha256_file as sha256
+from tools.core.rigid_geometry import generic_collision_proxy
 from tools.core.json_io import write_json_atomic as write_json
 from tools.physics.generate_billiards_scene import simulate as simulate_billiards
 from tools.physics.generate_marble_run_scene import simulate as simulate_marble_run
 from tools.physics.generate_passive_pinball_scene import simulate as simulate_passive_pinball
-from tools.physics.resolved_simulation_scene import compile_resolved_scene
+from tools.physics.resolved_simulation_scene import (
+    compile_resolved_scene, TWO_OBJECT_MATERIAL_EXTRAS,
+)
 from tools.physics.asset_proxy_simulation import simulate_scene as simulate_asset_proxy
 from tools.physics.simulate_pybullet_rigid import simulate as simulate_generic_rigid
 from tools.physics.two_object_specialized_simulation import (
     simulate_two_object_specialized,
+)
+from tools.physics.three_object_specialized_simulation import simulate_three_object_specialized
+from tools.core.integration_configuration import generic_integration_configuration, integration_execution_matches
+from tools.physics.contact_configuration import contact_processing_execution_matches
+from tools.physics.solver_configuration import (
+    TWO_OBJECT_ADAPTERS, SPECIALIZED_SPHERE_ADAPTERS, resolved_solver_configuration, solver_execution_matches,
 )
 
 DISPATCH_RECORD_VERSION = "physweep_dispatched_simulation_record_v1"
@@ -46,7 +55,7 @@ def _xyzw_to_wxyz(values: np.ndarray) -> np.ndarray:
     return values[..., [3, 0, 1, 2]]
 
 
-def _generic(scene: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+def _generic(scene: dict[str, Any], *, root: Path = Path(__file__).resolve().parents[2]) -> tuple[dict[str, np.ndarray], dict[str, Any]]:
     source = copy.deepcopy(scene["source_metadata"])
     source_objects = source["simulation"]["objects"]
     if len(source_objects) != len(scene["objects"]):
@@ -54,8 +63,10 @@ def _generic(scene: dict[str, Any]) -> tuple[dict[str, np.ndarray], dict[str, An
     for source_object, resolved_object in zip(source_objects, scene["objects"]):
         if source_object["object_id"] != resolved_object["object_id"]:
             raise ValueError("resolved and generic source object order differs")
+        if resolved_object["collision_proxy"] != generic_collision_proxy(source_object):
+            raise ValueError("resolved generic collision proxy differs from execution geometry")
         source_object["material"].update(copy.deepcopy(resolved_object["material"]))
-    trajectory, audit = simulate_generic_rigid(source)
+    trajectory, audit = simulate_generic_rigid(source, root=root)
     objects = scene["objects"]
     position = np.stack(
         [trajectory[f"{obj['object_id']}__position_m"] for obj in objects], axis=1
@@ -257,11 +268,49 @@ def _marble_run(
     )
 
 
+def _is_two_object_sweep(scene: dict[str, Any]) -> bool:
+    return (
+        scene.get("variant", {}).get("kind") == "sweep"
+        and len(scene.get("objects", [])) == 2
+        and scene["backend_binding"]["adapter_id"] in {
+            "generic_rigid_v1", "billiards_two_object_v1",
+            "passive_pinball_two_object_v1", "marble_run_two_object_v1",
+        }
+    )
+
+
 def _adapter_hard_results(
     scene: dict[str, Any], adapter_audit: dict[str, Any]
 ) -> list[bool]:
     adapter_id = scene["backend_binding"]["adapter_id"]
     records = adapter_audit.get("checks", {})
+    if adapter_id in {'generic_rigid_v1', 'billiards_three_object_v1', 'passive_pinball_three_object_v1', 'marble_run_three_object_v1'} and len(scene['objects']) == 3:
+        from tools.motion_rules.three_object.interaction import audit_hard_results
+        return audit_hard_results(scene['objects'], adapter_audit, scene['variant']['kind'] == 'sweep')
+    if _is_two_object_sweep(scene):
+        # Base admission owns trajectory quality. Derived outcomes are retained
+        # as raw diagnostics; only execution/metadata integrity can stop a sweep.
+        if adapter_id == "generic_rigid_v1":
+            if not isinstance(records, list):
+                raise ValueError("generic rigid adapter returned invalid audit checks")
+            by_id = {record["id"]: record for record in records}
+            if len(by_id) != len(records):
+                raise ValueError("generic rigid adapter returned duplicate audit checks")
+            integrity_checks = (
+                "finite_state", "initial_position_matches_metadata",
+                "initial_linear_velocity_matches_metadata",
+                "pybullet_dynamics_match_metadata",
+                "pybullet_support_dynamics_match_metadata",
+                "runtime_inertia_is_finite_and_positive",
+                "collision_proxy_matches_definition",
+            )
+            return [
+                bool(by_id.get(f"{obj['object_id']}__{name}", {}).get("passed"))
+                for obj in scene["objects"] for name in integrity_checks
+            ]
+        if not isinstance(records, dict):
+            raise ValueError(f"{adapter_id} adapter returned invalid audit checks")
+        return [bool(records.get(name)) for name in ("finite_trajectory", "two_dynamic_objects")]
     if adapter_id == "generic_rigid_v1":
         return [
             bool(record.get("passed")) or record.get("severity") == "advisory"
@@ -270,12 +319,13 @@ def _adapter_hard_results(
     if not isinstance(records, dict):
         raise ValueError(f"{adapter_id} adapter returned invalid audit checks")
     if adapter_id in {
-        "passive_pinball_v1",
-        "marble_run_v1",
         "billiards_two_object_v1",
         "passive_pinball_two_object_v1",
         "marble_run_two_object_v1",
     }:
+        advisories = adapter_audit.get("advisories", []) if scene["variant"]["kind"] == "sweep" else []
+        return [bool(passed) or name in advisories for name, passed in records.items()]
+    if adapter_id in {"passive_pinball_v1", "marble_run_v1"}:
         return [bool(passed) for passed in records.values()]
     hard_exact = {
         "finite_trajectory",
@@ -319,6 +369,24 @@ def _common_audit(
 
     def check(name: str, passed: bool, value: Any, expected: Any) -> None:
         checks.append({"id": name, "passed": bool(passed), "value": value, "expected": expected})
+
+    adapter = scene["backend_binding"]["adapter_id"]
+    if adapter == "generic_rigid_v1" or adapter in SPECIALIZED_SPHERE_ADAPTERS:
+        expected_solver = resolved_solver_configuration(adapter, scene.get("source_metadata", {}), scene)
+        execution = adapter_audit.get("solver_execution")
+        check("runtime_solver_configuration_exact", solver_execution_matches(expected_solver, execution), execution, expected_solver)
+
+    if adapter == "generic_rigid_v1":
+        integration = generic_integration_configuration(scene["source_metadata"])
+        observed = adapter_audit.get("integration_execution")
+        matches = (scene["time"]["simulation_hz"] == integration["simulation_hz"]
+                   and integration_execution_matches(integration, observed, adapter_audit.get("solver_execution")))
+        check("runtime_integration_configuration_exact", matches, observed, integration)
+
+    if adapter in SPECIALIZED_SPHERE_ADAPTERS:
+        execution = adapter_audit.get("contact_processing_execution")
+        check("runtime_contact_processing_exact", contact_processing_execution_matches(scene, execution),
+              execution, "applied threshold for every dynamic object matches resolved configuration")
 
     position = np.asarray(trajectory["position_m"], dtype=np.float64)
     orientation = np.asarray(trajectory["quaternion_wxyz"], dtype=np.float64)
@@ -439,6 +507,17 @@ def _common_audit(
         material_error,
         1.0e-7,
     )
+    if adapter in SPECIALIZED_SPHERE_ADAPTERS:
+        expected_extras = np.asarray([
+            [obj["material"][key] for key in TWO_OBJECT_MATERIAL_EXTRAS]
+            for obj in scene["objects"]
+        ], dtype=np.float64)
+        runtime_extras = np.asarray(trajectory.get("runtime_material_extras", []), dtype=np.float64)
+        extra_error = (
+            float(np.max(np.abs(runtime_extras - expected_extras)))
+            if runtime_extras.shape == expected_extras.shape else float("inf")
+        )
+        check("runtime_material_extras_exact", extra_error <= 1.0e-7, extra_error, 1.0e-7)
     inertia = np.asarray(trajectory["inertia_diagonal_kg_m2"], dtype=np.float64)
     check(
         "runtime_inertia_valid",
@@ -464,7 +543,10 @@ def _common_audit(
         "checks": checks,
         "adapter_audit": adapter_audit,
         "adapter_audit_passed": bool(adapter_audit.get("passed", False)),
-        "adapter_audit_policy": "diagnostic_for_sweep_semantics",
+        "adapter_audit_policy": (
+            "base_quality_rules_diagnostic_for_two_object_sweep_v1"
+            if _is_two_object_sweep(scene) else "diagnostic_for_sweep_semantics"
+        ),
     }
 
 
@@ -482,7 +564,7 @@ def dispatch_simulation(
         raise RuntimeError("metadata changed while it was being loaded")
     adapter_id = scene["backend_binding"]["adapter_id"]
     if adapter_id == "generic_rigid_v1":
-        trajectory, adapter_audit = _generic(scene)
+        trajectory, adapter_audit = _generic(scene, root=root)
     elif adapter_id == "asset_proxy_v3":
         trajectory, adapter_audit = _asset(scene, root)
     elif adapter_id == "billiards_v4":
@@ -491,11 +573,9 @@ def dispatch_simulation(
         trajectory, adapter_audit = _passive_pinball(scene, root)
     elif adapter_id == "marble_run_v1":
         trajectory, adapter_audit = _marble_run(scene, root)
-    elif adapter_id in {
-        "billiards_two_object_v1",
-        "passive_pinball_two_object_v1",
-        "marble_run_two_object_v1",
-    }:
+    elif adapter_id in {"billiards_three_object_v1", "passive_pinball_three_object_v1", "marble_run_three_object_v1"}:
+        trajectory, adapter_audit = simulate_three_object_specialized(scene, root)
+    elif adapter_id in TWO_OBJECT_ADAPTERS:
         trajectory, adapter_audit = simulate_two_object_specialized(scene, root)
     else:
         raise ValueError(f"unsupported adapter: {adapter_id}")

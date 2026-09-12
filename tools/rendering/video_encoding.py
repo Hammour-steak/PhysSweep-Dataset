@@ -3,9 +3,11 @@
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import time
+from fractions import Fraction
 from pathlib import Path
 from typing import Any
 
@@ -19,47 +21,33 @@ def require_render_finished(result: Any, *, label: str) -> None:
         raise RuntimeError(f"{label} did not finish: {sorted(result)}")
 
 
-def decoded_video_frame_count(
-    video_path: Path,
-    *,
-    ffprobe: str = "ffprobe",
-) -> int:
-    """Return the number of frames that ffprobe can decode from the first video stream."""
+def _decoded_video(video_path: Path, *, ffprobe: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Use one decoder path for encoding completion and release verification."""
     video_path = video_path.resolve()
     if not video_path.is_file() or video_path.stat().st_size == 0:
         raise FileNotFoundError(f"rendered video is missing: {video_path}")
     completed = subprocess.run(
-        [
-            ffprobe,
-            "-v",
-            "error",
-            "-select_streams",
-            "v:0",
-            "-count_frames",
-            "-show_entries",
-            "stream=nb_read_frames",
-            "-of",
-            "default=noprint_wrappers=1:nokey=1",
-            str(video_path),
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        check=False,
+        [ffprobe, "-v", "error", "-select_streams", "v:0", "-count_frames",
+         "-show_entries", "stream=width,height,avg_frame_rate,time_base,nb_read_frames:frame=width,height,best_effort_timestamp",
+         "-of", "json", str(video_path)],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False,
     )
-    values = [value.strip() for value in completed.stdout.splitlines() if value.strip()]
-    if completed.returncode != 0 or len(values) != 1:
-        detail = completed.stderr.strip() or completed.stdout.strip()
-        raise RuntimeError(f"failed to count decoded video frames: {video_path}: {detail}")
+    if completed.returncode != 0 or completed.stderr.strip():
+        raise RuntimeError(f"failed to decode video: {video_path}: {completed.stderr.strip()}")
     try:
-        frame_count = int(values[0])
-    except ValueError as exc:
-        raise RuntimeError(
-            f"ffprobe returned an invalid decoded frame count for {video_path}: {values[0]!r}"
-        ) from exc
-    if frame_count <= 0:
-        raise RuntimeError(f"decoded video contains no frames: {video_path}")
-    return frame_count
+        probe = json.loads(completed.stdout)
+        stream, = probe["streams"]
+        frames = probe["frames"]
+        if not frames or int(stream["nb_read_frames"]) != len(frames):
+            raise ValueError("decoded frame records differ from the positive frame count")
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError(f"invalid decoded video probe: {video_path}: {error}") from error
+    return stream, frames
+
+
+def decoded_video_frame_count(video_path: Path, *, ffprobe: str = "ffprobe") -> int:
+    """Return the number of decoded frames from the first video stream."""
+    return len(_decoded_video(video_path, ffprobe=ffprobe)[1])
 
 
 def require_video_frame_count(
@@ -76,6 +64,43 @@ def require_video_frame_count(
             f"decoded video frame count differs: {video_path}: "
             f"expected={expected_frame_count} observed={observed}"
         )
+    return observed
+
+
+def require_video_contract(
+    video_path: Path,
+    expected_frame_count: int,
+    *,
+    resolution: list[int] | tuple[int, int],
+    fps: int,
+    ffprobe: str = "ffprobe",
+) -> int:
+    """Decode once and verify geometry and the inclusive-endpoint time grid."""
+    if (isinstance(fps, bool) or not isinstance(fps, int) or fps <= 0
+        or expected_frame_count <= 0 or len(resolution) != 2
+        or any(isinstance(v, bool) or not isinstance(v, int) or v <= 0 for v in resolution)):
+        raise ValueError("invalid expected video contract")
+    stream, frames = _decoded_video(video_path, ffprobe=ffprobe)
+    observed = len(frames)
+    try:
+        time_base = Fraction(stream["time_base"])
+        frame_rate = Fraction(stream["avg_frame_rate"])
+        timestamps = [int(frame["best_effort_timestamp"]) * time_base for frame in frames]
+    except (KeyError, TypeError, ValueError, ZeroDivisionError) as error:
+        raise ValueError(f"invalid decoded video probe: {video_path}: {error}") from error
+    if observed != expected_frame_count:
+        raise ValueError(f"decoded video frame count differs: {video_path}: expected={expected_frame_count} observed={observed}")
+    expected_size = tuple(resolution)
+    if any((item.get("width"), item.get("height")) != expected_size for item in [stream, *frames]):
+        raise ValueError(f"video dimensions differ: {video_path}: expected={expected_size}")
+    if frame_rate != fps:
+        raise ValueError(f"video frame rate differs: {video_path}: expected={fps} observed={frame_rate}")
+    # Permit only timestamp rounding to the container's clock. Reject coarse clocks
+    # that could hide a missing interval, as well as nonzero starts and VFR gaps.
+    if (time_base <= 0 or time_base > Fraction(1, fps * 100)
+        or any(abs(t - Fraction(index, fps)) > time_base for index, t in enumerate(timestamps))
+        or any(b <= a for a, b in zip(timestamps, timestamps[1:]))):
+        raise ValueError(f"video frame timestamps differ from output time grid: {video_path}")
     return observed
 
 

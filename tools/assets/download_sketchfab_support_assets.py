@@ -4,48 +4,28 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
-import shutil
-import tempfile
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from tools.core.hashing import sha256_file as sha256
 from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
-from tools.assets.sketchfab_policy import noai_declared, require_glb_download
+from tools.assets import sketchfab_download
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def request_json(url: str, token: str) -> dict[str, Any]:
-    request = urllib.request.Request(
-        url,
-        headers={"Authorization": f"Token {token}", "Accept": "application/json"},
-    )
-    with urllib.request.urlopen(request, timeout=60) as response:
-        return json.loads(response.read().decode("utf-8"))
+    return sketchfab_download.request_json(url, token, attempts=1)
 
 
 def download_file(url: str, output: Path) -> None:
-    output.parent.mkdir(parents=True, exist_ok=True)
-    request = urllib.request.Request(
-        url, headers={"User-Agent": "physweep-support-asset-curation/1.0"}
+    sketchfab_download.download_file(
+        url, output, user_agent="physweep-support-asset-curation/1.0", timeout=600,
     )
-    with tempfile.NamedTemporaryFile(delete=False, dir=output.parent) as temporary:
-        temporary_path = Path(temporary.name)
-        try:
-            with urllib.request.urlopen(request, timeout=600) as response:
-                shutil.copyfileobj(response, temporary)
-            temporary_path.replace(output)
-        except Exception:
-            temporary_path.unlink(missing_ok=True)
-            raise
 
 
 def download_candidate(
@@ -56,65 +36,11 @@ def download_candidate(
     output_root: Path,
     overwrite: bool,
 ) -> dict[str, Any]:
-    allowed = {str(value) for value in policy["allowed_license_slugs"]}
-    uid = str(candidate["source_uid"])
-    model = request_json(f"https://api.sketchfab.com/v3/models/{uid}", token)
-    license_record = model.get("license") or {}
-    license_slug = str(license_record.get("slug", ""))
-    if license_slug not in allowed:
-        raise ValueError(f"disallowed license for {uid}: {license_slug}")
-    if bool(policy.get("reject_noai", True)) and noai_declared(model):
-        raise ValueError(f"NoAI candidate rejected: {uid}")
-    if not bool(model.get("isDownloadable", False)):
-        raise ValueError(f"candidate is not downloadable: {uid}")
-
-    asset_dir = output_root / str(candidate["candidate_id"])
-    archive = asset_dir / "model.glb"
-    status = "exists"
-    if overwrite or not archive.exists():
-        download = require_glb_download(
-            request_json(f"https://api.sketchfab.com/v3/models/{uid}/download", token)
-        )
-        download_file(str(download["url"]), archive)
-        status = "downloaded"
-    author = model.get("user") or {}
-    attribution = {
-        **candidate,
-        "source_name": model.get("name"),
-        "author": {
-            "uid": author.get("uid"),
-            "username": author.get("username"),
-            "display_name": author.get("displayName"),
-            "profile_url": author.get("profileUrl"),
-        },
-        "license": {
-            "slug": license_slug,
-            "label": license_record.get("label"),
-            "url": license_record.get("url"),
-        },
-        "is_downloadable": bool(model.get("isDownloadable")),
-        "noai_detected": noai_declared(model),
-        "downloaded_at": datetime.now(timezone.utc).isoformat(),
-        "archive_path": str(archive),
-        "archive_sha256": sha256(archive),
-        "archive_size_bytes": archive.stat().st_size,
-    }
-    write_json(asset_dir / "attribution.json", attribution)
-    return {
-        "candidate_id": candidate["candidate_id"],
-        "source_uid": uid,
-        "name": model.get("name"),
-        "semantic_category": candidate["semantic_category"],
-        "status": status,
-        "archive_kind": "glb",
-        "archive_path": str(archive),
-        "size_bytes": archive.stat().st_size,
-        "sha256": attribution["archive_sha256"],
-        "license": attribution["license"],
-        "author": attribution["author"],
-        "viewer_url": candidate["viewer_url"],
-        "intended_proxy": candidate["intended_proxy"],
-    }
+    return sketchfab_download.download_candidate(
+        candidate, token=token, policy=policy, output_root=output_root,
+        overwrite=overwrite, category_field="semantic_category", role_field="intended_proxy",
+        request_json_fn=request_json, download_file_fn=download_file,
+    )
 
 
 def main() -> None:

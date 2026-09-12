@@ -9,9 +9,9 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 import numpy as np
-from PIL import Image
 
 from tools.core.paths import safe_scene_id
+from tools.dataset_contract.trajectory import validate_trajectory_arrays
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -29,7 +29,6 @@ from tools.release.base_release_attribution import (
 from tools.release.base_release_schema import (
     BASE_SAMPLE_SCHEMA,
     FIXTURE_SCHEMA,
-    MASK_MANIFEST_SCHEMA,
     SAMPLE_ENTRIES,
     SAMPLE_LAYOUT_CONTRACT,
     TRAJECTORY_FIELDS,
@@ -41,12 +40,14 @@ from tools.release.base_release_schema import (
     write_json,
 )
 from tools.release.layout import dataset_directory_name
-from tools.rendering.video_encoding import require_video_frame_count
+from tools.release.fixture_assets import verify_fixture_catalog_files
+from tools.release.admission_policy import admission_decision_matches
+from tools.rendering.video_encoding import require_video_contract
 
 
-VIEW_SCHEMA = "physweep_base_release_view_v14"
-PIPELINE_SCHEMA = "physweep_base_pipeline_view_v12"
-AUDIT_SCHEMA = "physweep_base_release_view_audit_v14"
+VIEW_SCHEMA = "physweep_base_release_view_v15"
+PIPELINE_SCHEMA = "physweep_base_pipeline_view_v13"
+AUDIT_SCHEMA = "physweep_base_release_view_audit_v15"
 FIXTURE_CATALOG_SCHEMA = "physweep_static_fixture_catalog_v2"
 VIDEO_ENCODING_FIELDS = (
     "codec",
@@ -68,7 +69,6 @@ COMMON_RELEASE_MANIFEST_FIELDS = frozenset(
         "camera_projection_contract",
         "temporal_contract",
         "trajectory_contract",
-        "mask_contract",
         "sample_layout_contract",
         "text_contract",
         "collision_proxy_contract",
@@ -79,7 +79,6 @@ COMMON_RELEASE_MANIFEST_FIELDS = frozenset(
         "object_semantics_contract",
         "sample_schema_version",
         "trajectory_schema_version",
-        "mask_manifest_schema_version",
         "fixture_schema_version",
         "fixture_catalog",
         "asset_attribution",
@@ -140,7 +139,6 @@ TEMPORAL_CONTRACT = {
     "frame_count_rule": "round(duration_s*output_fps)+1",
     "trajectory_time_rule": "time_s[k]=k/output_fps",
     "trajectory_video_alignment": "trajectory_index_k_equals_zero_based_video_frame_k",
-    "mask_alignment": "trajectory_index_k_equals_mask_frame_{k+1:04d}.png",
 }
 
 TRAJECTORY_CONTRACT = {
@@ -157,18 +155,6 @@ TRAJECTORY_CONTRACT = {
         "equivalence": "q_and_neg_q_represent_the_same_rotation",
         "stored_sign": "frame_zero_matches_canonical_initial_sign_then_adjacent_dot_nonnegative",
     },
-}
-
-MASK_CONTRACT = {
-    "encoding": "grayscale_png_uint8",
-    "value_range": [0, 255],
-    "signal": "antialiased_coverage_alpha",
-    "occlusion_policy": "unoccluded_dynamic_silhouette",
-    "static_scene_visibility": "hidden",
-    "nonselected_dynamic_object_visibility": "hidden",
-    "resolution_source": "render_contract.resolution",
-    "path_layout": "masks/{object_id}/frame_{one_based_frame:04d}.png",
-    "cross_modal_key": "object_id",
 }
 
 TEXT_CONTRACT = {
@@ -257,7 +243,6 @@ OBJECT_IDENTITY_CONTRACT = {
     "array_position": "not_a_cross_modal_identity",
     "numeric_instance_ids": "not_used",
     "trajectory_binding": "trajectory.npz:object_ids",
-    "mask_binding": "masks/{object_id}",
     "semantics_binding": "metadata.semantics.objects[].object_id",
     "text_binding": "metadata.text.object_mentions[].object_id_and_char_span",
     "validity_binding": "metadata.physics.objects[].object_valid",
@@ -418,7 +403,6 @@ def release_contract_fields(
         "camera_projection_contract": CAMERA_PROJECTION_CONTRACT,
         "temporal_contract": TEMPORAL_CONTRACT,
         "trajectory_contract": TRAJECTORY_CONTRACT,
-        "mask_contract": MASK_CONTRACT,
         "sample_layout_contract": SAMPLE_LAYOUT_CONTRACT,
         "text_contract": TEXT_CONTRACT,
         "collision_proxy_contract": COLLISION_PROXY_CONTRACT,
@@ -429,7 +413,6 @@ def release_contract_fields(
         "object_semantics_contract": OBJECT_SEMANTICS_CONTRACT,
         "sample_schema_version": sample_schema,
         "trajectory_schema_version": TRAJECTORY_SCHEMA,
-        "mask_manifest_schema_version": MASK_MANIFEST_SCHEMA,
         "fixture_schema_version": FIXTURE_SCHEMA,
     }
 
@@ -571,8 +554,6 @@ def validate_pipeline_specs(
             raise ValueError(f"duplicate pipeline name: {spec.name}")
         if not spec.render_root.is_dir():
             raise FileNotFoundError(f"render root: {spec.render_root}")
-        if not (spec.render_root / "masks").is_dir():
-            raise FileNotFoundError(f"mask root: {spec.render_root / 'masks'}")
         by_schema[spec.source_schema_version] = spec
         names.add(spec.name)
     if not by_schema:
@@ -693,9 +674,6 @@ def render_sources(
                 "trajectory_sha256",
                 "resolved_scene_sha256",
                 "audit_sha256",
-                "audit_passed",
-                "adapter_audit_passed",
-                "failed_checks",
             )
             trajectory_matches = (
                 project_path(
@@ -718,10 +696,15 @@ def render_sources(
                     simulation_record.get(key) == physics_record.get(key)
                     for key in value_fields
                 )
+                and admission_decision_matches(spec.project_root, simulation_record, physics_record)
             )
         if not source_matches or not trajectory_matches:
             raise ValueError(f"render metadata is not bound to release physics: {scene_id}")
         render_metadata = bound
+    if physics_record.get("admission_reclassification"):
+        raw_simulation = load_json(trajectory.with_name("simulation_record.json"))
+        if not admission_decision_matches(spec.project_root, raw_simulation, physics_record):
+            raise ValueError(f"effective admission is not bound to raw physics: {scene_id}")
     if render_record.get("trajectory_sha256") not in (
         None,
         physics_record["trajectory_sha256"],
@@ -734,10 +717,6 @@ def render_sources(
     )
     source_metadata = load_json(metadata)
     resolved_scene = load_json(resolved_scene_path)
-    require_video_frame_count(
-        video,
-        expected_video_frame_count(resolved_scene["time"]),
-    )
     render_config = source_metadata.get("render_request") or source_metadata.get(
         "render"
     )
@@ -764,9 +743,12 @@ def render_sources(
     ):
         raise ValueError(f"render contract is incomplete: {scene_id}")
     render_contract["resolution"] = [int(value) for value in render_contract["resolution"]]
-    masks = spec.render_root / "masks" / scene_id
-    if not masks.is_dir():
-        raise FileNotFoundError(f"{scene_id} mask directory: {masks}")
+    if int(video_encoding["fps"]) != int(resolved_scene["time"]["output_fps"]):
+        raise ValueError(f"video encoding fps differs from physics: {scene_id}")
+    require_video_contract(
+        video, expected_video_frame_count(resolved_scene["time"]),
+        resolution=render_contract["resolution"], fps=int(resolved_scene["time"]["output_fps"]),
+    )
     return {
         "source_metadata": source_metadata,
         "trajectory": trajectory,
@@ -774,7 +756,6 @@ def render_sources(
         "render_record": render_record,
         "render_metadata": render_metadata,
         "video": video,
-        "masks": masks.resolve(),
         "render_contract": render_contract,
         "hashes": {
             "metadata_sha256": str(physics_record["metadata_sha256"]),
@@ -877,7 +858,6 @@ def build_view(
                 trajectory_source_path=sources["trajectory"],
                 video_source_path=sources["video"],
                 video_sha256=sources["hashes"]["video_sha256"],
-                masks_source_path=sources["masks"],
                 release_root=work,
                 source_project_root=spec.project_root,
                 billiards_templates=billiards_templates,
@@ -940,7 +920,6 @@ def build_view(
             "All families share one sample layout and one sample schema.\n"
             "Sample lineage retains generation metadata and original fixture-binding hashes.\n"
             "trajectory.npz uses [frame, object, ...] arrays with sign-continuous wxyz quaternions.\n"
-            "masks/ contains single-channel antialiased unoccluded silhouettes.\n"
             "fixtures/ contains content-addressed static collision context.\n"
             "assets/attribution_manifest.json records source and content provenance.\n",
             encoding="utf-8",
@@ -958,74 +937,10 @@ def validate_trajectory_artifact(path: Path, metadata: dict[str, Any]) -> None:
             raise ValueError(f"non-canonical trajectory fields: {path}")
         if str(np.asarray(archive["schema_version"]).item()) != TRAJECTORY_SCHEMA:
             raise ValueError(f"trajectory schema differs: {path}")
-        object_ids = [str(value) for value in np.asarray(archive["object_ids"]).tolist()]
-        frame_count = int(np.asarray(archive["time_s"]).shape[0])
-        metadata_ids = [
-            str(record["object_id"]) for record in metadata["physics"]["objects"]
-        ]
-        if object_ids != metadata_ids:
-            raise ValueError(f"trajectory object axis differs: {path}")
-        time = metadata["physics"]["time"]
-        expected_frames = round(float(time["duration_s"]) * int(time["output_fps"])) + 1
-        if frame_count != expected_frames:
-            raise ValueError(f"trajectory frame count differs: {path}")
-
-
-def validate_mask_artifacts(sample: Path, metadata: dict[str, Any]) -> None:
-    binding = metadata["artifacts"]["masks"]
-    manifest_path = verified_file(
-        sample / "mask_manifest.json",
-        str(binding["manifest_sha256"]),
-        f"{metadata['scene_id']} mask manifest",
-    )
-    manifest = load_json(manifest_path)
-    if (
-        manifest.get("schema_version") != MASK_MANIFEST_SCHEMA
-        or manifest.get("scene_id") != metadata.get("scene_id")
-    ):
-        raise ValueError("mask manifest identity differs")
-    masks = sample / "masks"
-    if not masks.is_dir() or masks.is_symlink():
-        raise ValueError("mask projection is not a materialized directory")
-    expected_objects = [
-        str(record["object_id"]) for record in metadata["physics"]["objects"]
-    ]
-    records = manifest.get("objects", [])
-    if (
-        [str(record.get("object_id")) for record in records] != expected_objects
-        or any(set(record) != {"object_id", "frame_sha256"} for record in records)
-    ):
-        raise ValueError("mask manifest object axis differs")
-    expected_entries = {safe_scene_id(record["object_id"]) for record in records}
-    if {path.name for path in masks.iterdir()} != expected_entries:
-        raise ValueError("mask projection object directories differ")
-    frame_count = int(manifest["frame_count"])
-    time = metadata["physics"]["time"]
-    expected_frame_count = (
-        round(float(time["duration_s"]) * int(time["output_fps"])) + 1
-    )
-    if frame_count != expected_frame_count:
-        raise ValueError("mask and trajectory frame counts differ")
-    for record in records:
-        object_id = safe_scene_id(record["object_id"])
-        if (masks / object_id).is_symlink() or not (masks / object_id).is_dir():
-            raise ValueError("mask object artifact is not materialized")
-        paths = sorted((masks / object_id).glob("frame_*.png"))
-        hashes = record.get("frame_sha256", [])
-        expected_names = [f"frame_{index:04d}.png" for index in range(1, frame_count + 1)]
-        if [path.name for path in paths] != expected_names or len(hashes) != frame_count:
-            raise ValueError("mask manifest frame count differs")
-        for path, expected_hash in zip(paths, hashes):
-            verified_file(
-                path,
-                str(expected_hash),
-                f"{metadata['scene_id']} mask frame",
-            )
-            if path.is_symlink():
-                raise ValueError("mask frame must be materialized")
-            with Image.open(path) as image:
-                if image.mode != "L":
-                    raise ValueError("mask frame must be grayscale")
+        validate_trajectory_arrays(
+            {key: archive[key] for key in TRAJECTORY_FIELDS},
+            time=metadata["physics"]["time"], objects=metadata["physics"]["objects"],
+        )
 
 
 def enforce_object_count(
@@ -1093,13 +1008,8 @@ def verify_view(
         != len(fixture_manifest.get("records", []))
     ):
         raise ValueError("fixture catalog contract differs")
-    fixture_hashes = set()
-    for record in fixture_manifest["records"]:
-        if set(record) != {"sha256", "usage_count"} or int(record["usage_count"]) <= 0:
-            raise ValueError("fixture catalog record differs")
-        digest = str(record["sha256"])
-        verified_file(output / "fixtures" / f"{digest}.json", digest, "fixture")
-        fixture_hashes.add(digest)
+    expected_fixture_usage = verify_fixture_catalog_files(output, fixture_manifest["records"])
+    fixture_hashes = set(expected_fixture_usage)
     attribution_binding = manifest.get("asset_attribution", {})
     attribution_path = verified_file(
         output / "assets" / "attribution_manifest.json",
@@ -1196,11 +1106,11 @@ def verify_view(
             )
             if video.is_symlink():
                 raise ValueError(f"video must be materialized: {scene_id}")
-            require_video_frame_count(
-                video,
-                expected_video_frame_count(metadata["physics"]["time"]),
+            require_video_contract(
+                video, expected_video_frame_count(metadata["physics"]["time"]),
+                resolution=render_contract["resolution"],
+                fps=int(metadata["physics"]["time"]["output_fps"]),
             )
-            validate_mask_artifacts(sample, metadata)
             if {path.name for path in sample.iterdir()} != SAMPLE_ENTRIES:
                 raise ValueError(f"unexpected base sample files: {scene_id}")
             count += 1
@@ -1213,10 +1123,6 @@ def verify_view(
         raise ValueError("unexpected base root entries")
     if count != int(manifest["sample_count"]):
         raise ValueError("base release totals differ")
-    expected_fixture_usage = {
-        str(record["sha256"]): int(record["usage_count"])
-        for record in fixture_manifest["records"]
-    }
     if observed_fixture_usage != expected_fixture_usage:
         raise ValueError("fixture usage counts differ")
     symlinks = [path for path in output.rglob("*") if path.is_symlink()]

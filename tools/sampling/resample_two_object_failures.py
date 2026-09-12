@@ -13,7 +13,6 @@ from tools.core.hashing import sha256_file
 from tools.core.json_io import read_json, write_json
 from tools.core.paths import resolve_project_path_within_root
 from tools.sampling.sample_two_object_coverage import (
-    _axis_counts,
     _dynamics_profiles_eligible,
     _pair_layout_fits_host,
     _pair_sources_meet_rule_camera_geometry,
@@ -23,6 +22,8 @@ from tools.sampling.sample_two_object_coverage import (
     _source_meets_rule_camera_extent,
     _validate_complete_scene_coverage,
     build_coverage_scenes,
+    coverage_summary,
+    source_selection_audit,
 )
 from tools.sampling.two_object_sources import released_source_pool
 from tools.scene_rules.two_object import (
@@ -174,8 +175,17 @@ def replace_failed_selections(
     rejected.update(
         selection_signature(by_scene_id[scene_id]) for scene_id in failed_scene_ids
     )
+    camera_family_ids = {str(record["id"]) for record in plan["camera_view_families"]}
+
+    def logical_cell_key(cell_id: str) -> tuple[str, ...]:
+        # A view change must not erase this logical cell's failed source pair.
+        parts = cell_id.split("__")
+        if sum(part in camera_family_ids for part in parts) != 1:
+            raise ValueError("replacement cell has no unique camera-family token")
+        return tuple(part for part in parts if part not in camera_family_ids)
+
     rejected_object_pairs = {
-        (cell_id, left_id, right_id)
+        (logical_cell_key(cell_id), left_id, right_id)
         for cell_id, _host_id, left_id, right_id in rejected
     }
 
@@ -186,7 +196,8 @@ def replace_failed_selections(
             continue
         original_cell = original["cell"]
         rule = rules_by_id[str(original_cell["scene_rule_id"])]
-        motion = intents[str(original_cell["motion_id"])]
+        if str(original_cell["motion_id"]) not in intents:
+            raise ValueError("replacement cell has an unknown motion intent")
         camera_families = allowed_camera_view_families(
             rule, str(original_cell["motion_id"])
         )
@@ -209,6 +220,7 @@ def replace_failed_selections(
         else:
             cell = copy.deepcopy(original_cell)
         cell_id = str(cell["cell_id"])
+        cell_key = logical_cell_key(cell_id)
         failure_mode = failure_modes.get(scene_id, "generic")
 
         candidate_hosts = [
@@ -304,7 +316,7 @@ def replace_failed_selections(
                             right_id = _source_id(right)
                             pair = tuple(sorted((left_id, right_id)))
                             signature = (cell_id, host_id, left_id, right_id)
-                            object_pair = (cell_id, left_id, right_id)
+                            object_pair = (cell_key, left_id, right_id)
                             if (
                                 left_id == right_id
                                 or right_id == host_id
@@ -380,6 +392,7 @@ def replace_failed_selections(
         raise AssertionError("replacement exceeded object-source reuse")
     if max(host_use.values()) > maximum_host_reuse:
         raise AssertionError("replacement exceeded host-source reuse")
+    source_selection_audit(result, matrix)
     return result
 
 
@@ -400,17 +413,16 @@ def replacement_coverage(
 ) -> dict[str, Any]:
     """Preserve the source plan's full-versus-prefix coverage semantics."""
 
-    complete = bool(
-        base.get("coverage", {}).get("complete_cartesian_product", False)
+    summary = coverage_summary(
+        [value["cell"] for value in selections],
+        int(base["coverage"]["full_cell_count"]), matrix,
     )
-    if complete:
+    if summary["complete_logical_coverage"]:
         _validate_complete_scene_coverage(matrix, scene_rules, selections)
     return {
-        "schema_version": "physweep_two_object_coverage_selection_v7",
-        "full_cell_count": int(base["coverage"]["full_cell_count"]),
-        "selected_cell_count": len(selections),
-        "complete_cartesian_product": complete,
-        "axis_counts": _axis_counts([value["cell"] for value in selections]),
+        "schema_version": "physweep_two_object_coverage_selection_v8",
+        **summary,
+        "source_reuse": source_selection_audit(selections, matrix),
     }
 
 
@@ -591,7 +603,7 @@ def main() -> None:
         ),
         "replacement": {
             "attempt": attempt,
-            "selection_policy": "failure_aware_source_reselection_v1",
+            "selection_policy": "failure_aware_source_reselection_v2",
             "source_base_manifest": base_path.relative_to(root).as_posix(),
             "source_base_manifest_sha256": sha256_file(base_path),
             "failure_manifest": failure_path.relative_to(root).as_posix(),

@@ -386,7 +386,7 @@ def compile_manifest(args) -> dict:
 
     sweep_manifest = json.loads(sweep_manifest_path.read_text(encoding="utf-8"))
     config_path = (root / sweep_manifest["config"]["path"]).resolve()
-    sweep_config = json.loads(config_path.read_text(encoding="utf-8"))
+    json.loads(config_path.read_text(encoding="utf-8"))  # Validate the declared config before export.
     grouped = defaultdict(list)
     for source in sweep_manifest["records"]:
         grouped[source["parent"]].append(source)

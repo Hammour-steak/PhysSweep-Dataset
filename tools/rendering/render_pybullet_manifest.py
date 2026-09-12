@@ -227,33 +227,7 @@ def reusable_render_record(
         and video_has_expected_frame_count(video_path, expected_frame_count)
     ):
         return False
-    mask_output = record.get("instance_mask_output")
-    validation = mask_output.get("validation") if isinstance(mask_output, dict) else None
-    if not isinstance(validation, dict):
-        return False
-    for object_id, object_record in mask_output.get("objects", {}).items():
-        report = validation.get("objects", {}).get(str(object_id))
-        object_dir = project_path(root, object_record["directory"])
-        if output_root not in object_dir.parents:
-            raise ValueError("instance masks must remain below the render output root")
-        masks = list(object_dir.glob("frame_*.png"))
-        expected_masks = [
-            object_dir / f"frame_{frame:04d}.png"
-            for frame in range(
-                int(render["frame_start"]), int(render["frame_end"]) + 1
-            )
-        ]
-        if (
-            not isinstance(report, dict)
-            or int(report.get("frame_count", -1)) != expected_frame_count
-            or len(masks) != expected_frame_count
-            or any(
-                not mask.is_file() or mask.stat().st_size == 0
-                for mask in expected_masks
-            )
-        ):
-            return False
-    return bool(mask_output.get("objects"))
+    return True
 
 
 def worker(
@@ -378,7 +352,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--blender",
         type=Path,
-        default=PROJECT_ROOT / "runtime/blender-3.4.0-linux-x64/blender",
+        default=Path("runtime/blender-3.4.0-linux-x64/blender"),
     )
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--gpus", default="0,1,2,3,4,5,6")

@@ -18,9 +18,9 @@ from tools.core.sweep_values import (
     SWEEP_AXES,
     SWEEP_DERIVED_LEVELS,
     SWEEP_VARIANTS_PER_TARGET,
+    sweep_target_indices,
 )
 from tools.release.base_release_schema import (
-    FIXTURE_SCHEMA,
     SAMPLE_ENTRIES,
     SWEEP_SAMPLE_SCHEMA,
     materialize_sweep_sample,
@@ -44,25 +44,22 @@ from tools.release.base_release_view import (
     release_documents,
     render_sources,
     safe_scene_id,
-    validate_mask_artifacts,
     validate_pipeline_specs,
     validate_release_manifest_contract,
     validate_trajectory_artifact,
     write_pipeline_manifests,
     write_release_catalogs,
 )
-from tools.rendering.video_encoding import require_video_frame_count
+from tools.rendering.video_encoding import require_video_contract
 from tools.release.layout import dataset_directory_name
+from tools.release.fixture_assets import fixture_asset_bindings as fixture_asset_bindings, verify_fixture_catalog_files
 from tools.release.sweep_validation import validate_target_sweep_grid
 
 
-VIEW_SCHEMA = "physweep_sweep_release_view_v1"
-PIPELINE_SCHEMA = "physweep_sweep_pipeline_view_v1"
-GROUP_SCHEMAS = {
-    "single_target": "physweep_sweep_group_manifest_v1",
-    "multi_target": "physweep_sweep_group_manifest_v2",
-}
-AUDIT_SCHEMA = "physweep_sweep_release_view_audit_v1"
+VIEW_SCHEMA = "physweep_sweep_release_view_v2"
+PIPELINE_SCHEMA = "physweep_sweep_pipeline_view_v2"
+GROUP_SCHEMA = "physweep_sweep_group_manifest_v2"
+AUDIT_SCHEMA = "physweep_sweep_release_view_audit_v2"
 SWEEP_INDEX_FIELDS = {
     "scene_id",
     "path",
@@ -131,21 +128,6 @@ def release_directory_name(output: Path, allow_staging_markers: bool) -> str:
     return safe_scene_id(name)
 
 
-def fixture_asset_bindings(value: Any) -> list[tuple[str, str]]:
-    bindings: list[tuple[str, str]] = []
-    if isinstance(value, list):
-        for item in value:
-            bindings.extend(fixture_asset_bindings(item))
-    elif isinstance(value, dict):
-        path = value.get("path")
-        digest = value.get("sha256")
-        if isinstance(path, str) and path.startswith("fixture_assets/"):
-            bindings.append((path, str(digest)))
-        for item in value.values():
-            bindings.extend(fixture_asset_bindings(item))
-    return bindings
-
-
 def sweep_sort_key(record: dict[str, Any]) -> tuple[int, int]:
     return SWEEP_AXES.index(str(record["parameter"])), int(record["level_index"])
 
@@ -200,6 +182,7 @@ def validate_release_groups(
     base_groups: dict[str, dict[str, Any]],
     *,
     object_count: int,
+    target_object_indices: tuple[int, ...] | None = None,
 ) -> dict[str, str]:
     if isinstance(object_count, bool) or not isinstance(object_count, int):
         raise TypeError("sweep release object_count must be an integer")
@@ -221,7 +204,7 @@ def validate_release_groups(
         grouped[group_id].append(record)
     if set(grouped) != set(base_groups):
         raise ValueError("base and sweep group sets differ")
-    expected_target_indices = set(range(object_count))
+    expected_target_indices = set(sweep_target_indices(object_count, target_object_indices))
     for group_id, records in grouped.items():
         by_target: dict[int, list[dict[str, Any]]] = defaultdict(list)
         target_ids: dict[int, str] = {}
@@ -238,7 +221,7 @@ def validate_release_groups(
             by_target[target_index].append(record)
         if (
             set(by_target) != expected_target_indices
-            or len(set(target_ids.values())) != object_count
+            or len(set(target_ids.values())) != len(expected_target_indices)
         ):
             raise ValueError(f"derived target coverage differs: {group_id}")
         for target_index, target_records in by_target.items():
@@ -290,12 +273,18 @@ def completed_record(
             f"{scene_id} resumed trajectory",
         )
         validate_trajectory_artifact(trajectory, metadata)
-        verified_file(
+        video = verified_file(
             sample_path / "video.mp4",
             str(metadata["artifacts"]["video"]["sha256"]),
             f"{scene_id} resumed video",
         )
-        validate_mask_artifacts(sample_path, metadata)
+        render_contract = marker["render_contract"]
+        if render_contract["video_encoding"]["fps"] != metadata["physics"]["time"]["output_fps"]:
+            return None
+        require_video_contract(
+            video, expected_video_frame_count(metadata["physics"]["time"]),
+            resolution=render_contract["resolution"], fps=int(metadata["physics"]["time"]["output_fps"]),
+        )
         fixture_hash = str(marker["fixture_sha256"])
         if fixture_hash != str(metadata["physics"]["fixture"]["sha256"]):
             return None
@@ -304,7 +293,7 @@ def completed_record(
             fixture_hash,
             f"{scene_id} resumed fixture",
         )
-    except (KeyError, OSError, TypeError, ValueError):
+    except (KeyError, OSError, RuntimeError, TypeError, ValueError):
         return None
     return marker
 
@@ -352,7 +341,6 @@ def materialize_record(
         trajectory_source_path=sources["trajectory"],
         video_source_path=sources["video"],
         video_sha256=sources["hashes"]["video_sha256"],
-        masks_source_path=sources["masks"],
         release_root=work,
         source_project_root=spec.project_root,
         billiards_templates=billiards_templates,
@@ -375,11 +363,13 @@ def group_manifest(
     base_groups: dict[str, dict[str, Any]],
     work: Path,
     object_count: int,
+    target_object_indices: tuple[int, ...] | None = None,
 ) -> dict[str, Any]:
     if isinstance(object_count, bool) or not isinstance(object_count, int):
         raise TypeError("group manifest object_count must be an integer")
     if object_count < 1:
         raise ValueError("group manifest object_count must be positive")
+    expected_targets = sweep_target_indices(object_count, target_object_indices)
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for result in results:
         family = str(result["family"])
@@ -418,10 +408,10 @@ def group_manifest(
         by_target: dict[int, list[dict[str, Any]]] = defaultdict(list)
         for sweep in grouped[group_id]:
             by_target[int(sweep["target_object_index"])].append(sweep)
-        if set(by_target) != set(range(object_count)):
+        if set(by_target) != set(expected_targets):
             raise ValueError(f"sweep group target coverage differs: {group_id}")
         target_records = []
-        for target_index in range(object_count):
+        for target_index in expected_targets:
             target_sweeps = sorted(by_target[target_index], key=sweep_sort_key)
             target_ids = {str(record["target_object_id"]) for record in target_sweeps}
             if len(target_ids) != 1:
@@ -436,36 +426,20 @@ def group_manifest(
                     "sweeps": target_sweeps,
                 }
             )
-        if object_count == 1:
-            target = target_records[0]
-            records.append(
-                {
-                    "group_id": group_id,
-                    "family": base["family"],
-                    "target_object_id": target["target_object_id"],
-                    "base": base_record,
-                    "sweeps": target["sweeps"],
-                }
-            )
-        else:
-            records.append(
-                {
-                    "group_id": group_id,
-                    "family": base["family"],
-                    "base": base_record,
-                    "targets": target_records,
-                }
-            )
+        records.append(
+            {
+                "group_id": group_id,
+                "family": base["family"],
+                "base": base_record,
+                "targets": target_records,
+            }
+        )
     sweep_count = sum(
-        len(record["sweeps"])
-        if object_count == 1
-        else sum(len(target["sweeps"]) for target in record["targets"])
+        sum(len(target["sweeps"]) for target in record["targets"])
         for record in records
     )
     return {
-        "schema_version": GROUP_SCHEMAS[
-            "single_target" if object_count == 1 else "multi_target"
-        ],
+        "schema_version": GROUP_SCHEMA,
         "path_base": "release_parent",
         "group_count": len(records),
         "sweep_count": sweep_count,
@@ -517,11 +491,13 @@ def build_view(
         output.parent,
         expected_object_count=expected_object_count,
     )
+    targets = sweep_target_indices(expected_object_count, release.get("sweep_target_object_indices"))
     group_by_scene = validate_release_groups(
         sweep_records,
         base_by_source,
         base_groups,
         object_count=expected_object_count,
+        target_object_indices=targets,
     )
     for record in sweep_records:
         scene_id = safe_scene_id(record["scene_id"])
@@ -602,6 +578,7 @@ def build_view(
         base_groups=base_groups,
         work=work,
         object_count=expected_object_count,
+        target_object_indices=targets,
     )
     group_path = work / "group_manifest.json"
     write_json(group_path, groups)
@@ -621,9 +598,7 @@ def build_view(
             "manifest_sha256": sha256(base_manifest_path),
         },
         "group_index": {
-            "schema_version": GROUP_SCHEMAS[
-                "single_target" if expected_object_count == 1 else "multi_target"
-            ],
+            "schema_version": GROUP_SCHEMA,
             "manifest": "group_manifest.json",
             "manifest_sha256": sha256(group_path),
             "group_count": len(base_groups),
@@ -640,12 +615,12 @@ def build_view(
         f"each base and its {SWEEP_VARIANTS_PER_TARGET} one-factor variants"
         if expected_object_count == 1
         else (
-            f"each base and each of its {expected_object_count} target objects' "
+            f"each base and each of its {len(targets)} selected target objects' "
             f"{SWEEP_VARIANTS_PER_TARGET} one-factor variants"
         )
     )
     (work / "README.txt").write_text(
-        "Canonical PhysSweep derived sweep release v1.\n"
+        "Canonical PhysSweep derived sweep release v2.\n"
         "metadata.json is the sample authority; group_manifest.json indexes "
         f"{group_description}.\n"
         "The release excludes base samples and generation-only frames, logs, and source metadata copies.\n",
@@ -761,33 +736,10 @@ def verify_view(
         != len(fixture_manifest.get("records", []))
     ):
         raise ValueError("sweep fixture catalog differs")
-    fixture_hashes = set()
-    expected_fixture_usage = {}
-    expected_fixture_assets: set[str] = set()
-    for record in fixture_manifest["records"]:
-        if set(record) != {"sha256", "usage_count"} or int(record["usage_count"]) <= 0:
-            raise ValueError("sweep fixture catalog record differs")
-        digest = str(record["sha256"])
-        if digest in fixture_hashes:
-            raise ValueError("duplicate sweep fixture hash")
-        fixture_document = load_json(
-            verified_file(
-                output / "fixtures" / f"{digest}.json", digest, "sweep fixture"
-            )
-        )
-        if fixture_document.get("schema_version") != FIXTURE_SCHEMA:
-            raise ValueError("sweep fixture schema differs")
-        for relative, asset_digest in fixture_asset_bindings(fixture_document):
-            if Path(relative).parent.as_posix() != "fixture_assets":
-                raise ValueError("nested fixture asset path differs")
-            verified_file(output / relative, asset_digest, "sweep fixture asset")
-            expected_fixture_assets.add(Path(relative).name)
-        fixture_hashes.add(digest)
-        expected_fixture_usage[digest] = int(record["usage_count"])
+    expected_fixture_usage = verify_fixture_catalog_files(output, fixture_manifest["records"])
+    fixture_hashes = set(expected_fixture_usage)
     group_binding = manifest["group_index"]
-    expected_group_schema = GROUP_SCHEMAS[
-        "single_target" if expected_object_count == 1 else "multi_target"
-    ]
+    expected_group_schema = GROUP_SCHEMA
     if (
         set(group_binding)
         != {"schema_version", "manifest", "manifest_sha256", "group_count"}
@@ -836,31 +788,19 @@ def verify_view(
             }
         ):
             raise ValueError(f"sweep group record differs: {group_id}")
-        if expected_object_count == 1:
-            if set(group) != {
-                "group_id",
-                "family",
-                "target_object_id",
-                "base",
-                "sweeps",
-            }:
-                raise ValueError(f"sweep group record differs: {group_id}")
-            targets = [
-                {
-                    "target_object_id": group["target_object_id"],
-                    "target_object_index": 0,
-                    "sweeps": group["sweeps"],
-                }
-            ]
-        else:
-            targets = group.get("targets", [])
-            if (
-                set(group) != {"group_id", "family", "base", "targets"}
-                or not isinstance(targets, list)
-                or len(targets) != expected_object_count
-            ):
-                raise ValueError(f"sweep target groups differ: {group_id}")
-        for expected_target_index, target in enumerate(targets):
+        targets = group.get("targets", [])
+        if (
+            set(group) != {"group_id", "family", "base", "targets"}
+            or not isinstance(targets, list)
+            or not targets
+        ):
+            raise ValueError(f"sweep target groups differ: {group_id}")
+        if any(not isinstance(target, dict) for target in targets):
+            raise ValueError(f"sweep target groups differ: {group_id}")
+        target_indices = sweep_target_indices(
+            expected_object_count, [target.get("target_object_index") for target in targets]
+        )
+        for expected_target_index, target in zip(target_indices, targets, strict=True):
             if (
                 set(target)
                 != {"target_object_id", "target_object_index", "sweeps"}
@@ -1011,11 +951,11 @@ def verify_view(
             )
             if video.is_symlink():
                 raise ValueError(f"sweep video must be materialized: {scene_id}")
-            require_video_frame_count(
-                video,
-                expected_video_frame_count(metadata["physics"]["time"]),
+            require_video_contract(
+                video, expected_video_frame_count(metadata["physics"]["time"]),
+                resolution=render_contract["resolution"],
+                fps=int(metadata["physics"]["time"]["output_fps"]),
             )
-            validate_mask_artifacts(sample, metadata)
             if {path.name for path in sample.iterdir()} != SAMPLE_ENTRIES:
                 raise ValueError(f"unexpected sweep sample files: {scene_id}")
             count += 1
@@ -1026,15 +966,6 @@ def verify_view(
         raise ValueError("sweep release totals differ")
     if dict(observed_fixture_usage) != expected_fixture_usage:
         raise ValueError("sweep fixture usage differs")
-    if {path.name for path in (output / "fixtures").iterdir()} != {
-        "manifest.json",
-        *(f"{digest}.json" for digest in fixture_hashes),
-    }:
-        raise ValueError("unexpected sweep fixture files")
-    if {path.name for path in (output / "fixture_assets").iterdir()} != (
-        expected_fixture_assets
-    ):
-        raise ValueError("unexpected sweep fixture assets")
     if {path.name for path in (output / "assets").iterdir()} != {
         "attribution_manifest.json"
     }:

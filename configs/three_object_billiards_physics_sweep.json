@@ -1,0 +1,17 @@
+{
+  "base_config": {
+    "path": "physics_sweep.json",
+    "sha256": "3647d703e3c033bc16624c9fb1540600442f41160cc985d9a198c30d3f8fe088"
+  },
+  "required_dynamic_objects": 3,
+  "mass_intervention_multipliers": [
+    0.25,
+    0.5,
+    1.0,
+    2.0,
+    4.0
+  ],
+  "source_schema_aliases": {
+    "physweep_billiards_three_object_scene_v1": "physweep_billiards_scene_v4"
+  }
+}

@@ -31,6 +31,10 @@ class ResolvedSimulationSceneTests(unittest.TestCase):
                             "mass_kg": 0.120208,
                             "contact_friction": 0.16,
                             "contact_restitution": 0.55,
+                            "rolling_friction": 0.0025,
+                            "spinning_friction": 0.0006,
+                            "linear_damping": 0.025,
+                            "angular_damping": 0.01,
                         },
                         "initial_state": {
                             "position_m": [0.0, 0.0, 1.5],
@@ -154,6 +158,7 @@ class ResolvedSimulationSceneTests(unittest.TestCase):
                     {
                         "object_id": "object_a",
                         "geometry": {"type": "sphere", "size_m": [0.2, 0.2, 0.2]},
+                        "collision_profile": {"type": "sphere", "size_m": [0.2, 0.2, 0.2]},
                         "material": {
                             "mass_kg": 1.0,
                             "contact_friction": 0.4,
@@ -302,7 +307,7 @@ class ResolvedSimulationSceneTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "frame count"):
             compile_resolved_scene(metadata, Path("."))
 
-    def test_generic_adapter_declares_two_object_limit(self):
+    def test_generic_adapter_preserves_two_object_contract_and_requires_three_object_rules(self):
         metadata = self.generic_metadata()
         second = copy.deepcopy(metadata["simulation"]["objects"][0])
         second["object_id"] = "object_b"
@@ -326,8 +331,14 @@ class ResolvedSimulationSceneTests(unittest.TestCase):
         metadata["object_identity"]["objects"].append(
             {"object_id": "object_c", "role": "dynamic"}
         )
-        with self.assertRaisesRegex(ValueError, "does not support 3"):
+        with self.assertRaisesRegex(ValueError, "requires an explicit motion contract"):
             compile_resolved_scene(metadata, Path("."))
+
+    def test_generic_adapter_accepts_an_explicit_three_object_contract(self):
+        from tests.three_object_fixtures import scene
+        resolved = compile_resolved_scene(scene(), Path('.'))
+        self.assertEqual(resolved['backend_binding']['supported_dynamic_object_counts'], [1, 2, 3])
+        self.assertEqual([o['object_id'] for o in resolved['objects']], ['object_a','object_b','object_c'])
 
     def test_non_finite_material_is_rejected(self):
         metadata = self.generic_metadata()

@@ -375,88 +375,74 @@ def _two_object_caption(
     support = _support_label(metadata) or "support surface"
     clauses = {
         "surface_hit_rest_2obj": (
-            f"{left} moves across the {support} and collides with {right}, "
+            f"{left} starts moving across the {support} toward {right}, "
             "which starts at rest"
         ),
         "surface_glancing_hit_rest_2obj": (
-            f"{left} approaches along an offset path across the {support} and "
-            f"collides obliquely with {right}, which starts at rest"
+            f"{left} starts along an offset path across the {support} toward "
+            f"{right}, which starts at rest"
         ),
         "surface_head_on_2obj": (
-            f"{left} and {right} move toward each other across the {support} "
-            "and collide"
+            f"{left} and {right} start moving toward each other across the {support}"
         ),
         "surface_glancing_opposed_2obj": (
-            f"{left} and {right} approach along opposed, offset paths across "
-            f"the {support} and collide obliquely"
+            f"{left} and {right} start along opposed, offset paths across the {support}"
         ),
         "surface_crossing_2obj": (
-            f"{left} and {right} move along crossing paths across the {support} "
-            "and collide"
+            f"{left} and {right} start along crossing paths across the {support}"
         ),
         "surface_catch_up_2obj": (
-            f"{left} catches up with {right} while both move in the same "
-            f"direction across the {support}, and they collide"
+            f"{left} starts behind {right} with a higher initial speed, while both "
+            f"move in the same direction across the {support}"
         ),
         "air_drop_hit_supported_2obj": (
-            f"{left} falls under gravity and collides with {right}, which "
+            f"{left} falls under gravity toward {right}, which "
             f"starts at rest on the {support}"
         ),
         "air_projectile_hit_supported_2obj": (
-            f"{left} is launched upward and forward, then collides with "
+            f"{left} is launched upward and forward toward "
             f"{right}, which starts at rest on the {support}"
         ),
         "air_air_collision_2obj": (
-            f"{left} and {right} travel along airborne paths above the "
-            f"{support} and collide"
+            f"{left} and {right} start along converging airborne paths above the {support}"
         ),
         "surface_single_independent_2obj": (
-            f"{left} moves across the {support} while {right} remains at rest; "
-            "they do not contact"
+            f"{left} starts moving across the {support} while {right} starts at rest"
         ),
         "surface_dual_independent_2obj": (
-            f"{left} and {right} move separately across the {support} without "
-            "contacting each other"
+            f"{left} and {right} start on separate paths across the {support}"
         ),
         "air_supported_independent_2obj": (
-            f"{left} falls under gravity beside {right}, which remains at rest "
-            f"on the {support}; they do not contact"
+            f"{left} falls under gravity beside {right}, which starts at rest on the {support}"
         ),
         "two_ball_direct_collision": (
-            f"{left} moves directly across a billiards table and collides with "
+            f"{left} starts moving directly across a billiards table toward "
             f"{right}, which starts at rest"
         ),
         "two_ball_glancing_collision": (
-            f"{left} approaches at an offset across a billiards table and "
-            f"collides obliquely with {right}"
+            f"{left} starts along an offset path across a billiards table toward {right}"
         ),
         "two_ball_opposed_collision": (
-            f"{left} and {right} move toward each other across a billiards "
-            "table and collide"
+            f"{left} and {right} start moving toward each other across a billiards table"
         ),
         "two_ball_top_collision": (
-            f"{left} and {right} move toward each other above a passive "
-            "pinball field and collide"
+            f"{left} and {right} start moving toward each other above a passive pinball field"
         ),
         "two_ball_offset_collision": (
-            f"{left} and {right} approach along offset paths above a passive "
-            "pinball field and collide"
+            f"{left} and {right} start along offset paths above a passive pinball field"
         ),
         "two_ball_diagonal_catch_up_collision": (
-            f"{left} catches up diagonally with {right} above a passive "
-            "pinball field and collides with it"
+            f"{left} starts behind {right} with a higher initial speed along a "
+            "diagonal path above a passive pinball field"
         ),
         "two_marble_catch_up_collision": (
-            f"{left} catches up with {right} on a passive marble-run channel "
-            "and collides with it"
+            f"{left} starts behind {right} with a higher initial speed on a passive marble-run channel"
         ),
         "two_marble_delayed_catch_up_collision": (
-            f"{left} starts farther behind, catches up with {right} on a "
-            "passive marble-run channel, and collides with it"
+            f"{left} starts farther behind {right} with a higher initial speed on a passive marble-run channel"
         ),
         "two_marble_counterflow_collision": (
-            f"{left} and {right} move toward each other along a passive "
-            "marble-run channel and collide"
+            f"{left} and {right} start moving toward each other along a passive marble-run channel"
         ),
     }
     if pattern not in clauses:
@@ -464,6 +450,98 @@ def _two_object_caption(
             f"two-object motion needs an explicit caption: {pattern}"
         )
     return _environment_prefix(metadata) + clauses[pattern] + "."
+
+
+def _three_object_caption(metadata: Mapping[str, Any], dynamic: list[dict[str, Any]]) -> str:
+    """Initial facts in identity order, without claiming a future collision."""
+    import math
+
+    contract = _as_mapping(metadata.get("three_object"))
+    template = _as_mapping(contract.get("template"))
+    if template.get("id") not in {"chain_transfer", "successive_hits", "converging_hits", "pair_control", "ordered_contacts"} or template.get("caption_template") not in {"three_object_initial_state_v1", "three_object_initial_state_v2", "three_object_pinball_initial_v1", "three_object_marble_initial_v1"}:
+        raise ValueError("three-object motion needs an implemented initial caption template")
+    if template.get('id')=='ordered_contacts' or template.get('caption_template')=='three_object_marble_initial_v1':
+        if metadata.get('schema_version')!='physweep_marble_run_three_object_scene_v1' or template.get('id')!='ordered_contacts' or template.get('caption_template')!='three_object_marble_initial_v1':
+            raise ValueError('marble ordered-contact caption requires its explicit schema')
+    roles = _as_mapping(contract.get("roles"))
+    ids = [r["object_id"] for r in dynamic]
+    if len(ids) != 3 or set(roles) != {"P", "Q", "R"} or set(roles.values()) != set(ids):
+        raise ValueError("three-object caption role binding is invalid")
+    by_id = {obj["object_id"]: obj for obj in metadata["simulation"]["objects"]}
+    thresholds = contract["thresholds"]
+    descriptions = {"chain_transfer": {
+        "P": "starts moving from one end along a line of three separated balls",
+        "Q": "starts at rest in the middle of that line",
+        "R": "starts at rest at the far end of that line",
+    }, "successive_hits": {
+        "P": "starts moving forward from behind two separated stationary balls",
+        "Q": "starts at rest ahead and to one side of the moving ball's initial path",
+        "R": "starts at rest ahead on the opposite side of that initial path",
+    }, "converging_hits": {
+        "P": "starts moving inward from one end of a line of three separated balls",
+        "Q": "starts at rest in the middle of that line",
+        "R": "starts moving inward from the opposite end of that line",
+    }, "pair_control": {
+        "P": "starts moving forward toward an initially separated stationary ball",
+        "Q": "starts at rest ahead on that moving ball's initial path",
+        "R": "starts moving in the same direction along a separate parallel lane",
+    }, "ordered_contacts": {
+        "P": "starts moving along the inclined channel toward two separated marbles ahead",
+        "Q": "starts at rest in the middle of the three marbles",
+        "R": "starts at rest farther ahead along the same initial channel",
+    }}[template['id']]
+    layout_variant=contract.get('layout_variant','axis_aligned')
+    if layout_variant.startswith('angled_chain_'):
+        side='left' if layout_variant.endswith('_left') else 'right'
+        descriptions={
+            'P':f"starts moving toward a stationary object offset to its {side}",
+            'Q':f"starts at rest ahead and to the {side}, with another stationary object farther along the deflected path",
+            'R':'starts at rest farther along the intended deflected transfer path',
+        }
+    elif layout_variant.startswith('crossing_control_'):
+        side='left' if layout_variant.endswith('_left') else 'right'
+        descriptions={
+            'P':'starts moving forward toward an initially separated stationary object',
+            'Q':"starts at rest ahead on that moving object's initial path",
+            'R':f"starts moving across that path from the {side} along a separate crossing lane",
+        }
+    if template['caption_template']=='three_object_pinball_initial_v1':
+        if metadata.get('schema_version')!='physweep_passive_pinball_three_object_scene_v1' or template['id']!='pair_control':
+            raise ValueError('pinball caption requires its explicit pair-control schema')
+        descriptions={'P':'starts moving across the upper pinfield toward an initially separated stationary ball',
+            'Q':"starts at rest along that approaching ball's initial path",
+            'R':'starts moving down the board from a separate initial position'}
+    if template['caption_template']=='three_object_initial_state_v2':
+        descriptions={role:text.replace('balls','objects').replace('ball','object') for role,text in descriptions.items()}
+    moving=set(template['initially_moving_roles'])
+    reverse = {value: key for key, value in roles.items()}
+    clauses = []
+    for record in dynamic:
+        role = reverse[record["object_id"]]
+        initial = by_id[record["object_id"]]["initial_state"]
+        linear = math.sqrt(sum(float(v)**2 for v in initial["linear_velocity_m_s"]))
+        angular = math.sqrt(sum(float(v)**2 for v in initial["angular_velocity_rad_s"]))
+        if (not math.isfinite(linear + angular) or
+                (role in moving and linear < thresholds["moving_linear_speed_m_s"]) or
+                (role not in moving and (linear > thresholds["stationary_linear_speed_m_s"] or angular > thresholds["stationary_angular_speed_rad_s"]))):
+            raise ValueError("three-object caption contradicts the initial motion")
+        clauses.append(f"the {record['semantic_label']} {descriptions[role]}")
+    support = ("billiards table" if metadata.get("schema_version") == "physweep_billiards_three_object_scene_v1"
+               else _support_label(metadata) or "flat support surface")
+    if metadata.get("schema_version") == "physweep_billiards_three_object_scene_v1":
+        # HDRI role/tier are inventory priorities, not descriptions of a room.
+        environment = _as_mapping(_as_mapping(metadata.get("render")).get("environment"))
+        prefix = "In an indoor room, " if _as_mapping(environment.get("room")) else ""
+    else:
+        prefix = _environment_prefix(metadata)
+    if metadata.get('schema_version')=='physweep_passive_pinball_three_object_scene_v1':
+        support='passive pinball board'
+        prefix='In an indoor room, '
+    if metadata.get('schema_version')=='physweep_marble_run_three_object_scene_v1':
+        support='passive marble-run track'
+        environment=_as_mapping(_as_mapping(metadata.get('render')).get('environment'))
+        prefix='In an indoor room, ' if _as_mapping(environment.get('room')) else ''
+    return prefix + "; ".join(clauses) + f", on the {support}."
 
 
 def _trajectory_keys(object_id: str) -> dict[str, str]:
@@ -476,6 +554,8 @@ def _trajectory_keys(object_id: str) -> dict[str, str]:
 
 
 def _is_billiards_layout(metadata: Mapping[str, Any]) -> bool:
+    if metadata.get("schema_version") == "physweep_billiards_three_object_scene_v1":
+        return True
     simulation = _as_mapping(metadata.get("simulation"))
     physics = _as_mapping(metadata.get("physics"))
     return not _as_list(simulation.get("objects")) and bool(
@@ -594,6 +674,8 @@ def build_object_identity(
 
     if len(dynamic) == 1:
         caption = _one_object_caption(metadata, dynamic)
+    elif len(dynamic) == 3 and metadata.get("schema_version") in {"physweep_pybullet_rigid_metadata_v1", "physweep_billiards_three_object_scene_v1", "physweep_passive_pinball_three_object_scene_v1", "physweep_marble_run_three_object_scene_v1"}:
+        caption = _three_object_caption(metadata, dynamic)
     else:
         caption = _two_object_caption(metadata, dynamic)
     if caption is None:
@@ -613,7 +695,12 @@ def build_object_identity(
         "text": {
             "caption": caption,
             "object_mentions": mentions,
-            "template_version": "physweep_object_caption_v3",
+            "template_version": ("physweep_object_caption_v10" if len(dynamic)==3 and metadata.get("schema_version")=="physweep_marble_run_three_object_scene_v1" else
+                                 "physweep_object_caption_v9" if len(dynamic)==3 and metadata.get("schema_version")=="physweep_passive_pinball_three_object_scene_v1" else
+                                 "physweep_object_caption_v8" if len(dynamic) == 3 and metadata.get("schema_version") == "physweep_billiards_three_object_scene_v1" else
+                                 "physweep_object_caption_v7" if len(dynamic) == 3 and _as_mapping(_as_mapping(metadata.get("three_object")).get("template")).get("caption_template")=="three_object_initial_state_v2" else
+                                 "physweep_object_caption_v6" if len(dynamic) == 3 and metadata.get("three_object") else
+                                 "physweep_object_caption_v4" if len(dynamic) == 2 else "physweep_object_caption_v3"),
         },
         "trajectory": {
             "format": "npz",

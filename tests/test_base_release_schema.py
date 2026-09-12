@@ -7,20 +7,23 @@ from pathlib import Path
 
 import numpy as np
 
+from tools.core.hashing import sha256_json
 from tools.release.base_release_schema import (
     BASE_SAMPLE_SCHEMA,
-    MASK_MANIFEST_SCHEMA,
     SAMPLE_METADATA_FIELDS,
     SWEEP_SAMPLE_SCHEMA,
     TRAJECTORY_FIELDS,
     TRAJECTORY_SCHEMA,
     build_base_metadata,
     build_sweep_metadata,
-    build_mask_manifest,
     canonical_trajectory,
     _compact_generic_object_annotations,
     _clean_text,
     _dynamic_material_extras,
+    _fixture_descriptor,
+    _compact_objects,
+    _solver_contract,
+    build_fixture_payload,
     sha256,
     validate_base_metadata,
     validate_sweep_metadata,
@@ -29,6 +32,52 @@ from tools.release.base_release_schema import (
 
 
 class BaseReleaseSchemaTests(unittest.TestCase):
+    def test_two_object_billiards_reuses_fixture_dynamics_and_solver_contracts(self):
+        dynamics = {"rolling_friction": 0.01, "spinning_friction": 0.02, "linear_damping": 0.03, "angular_damping": 0.04}
+        engine = {"solver_iterations": 100, "restitution_velocity_threshold_m_s": 0.02, "enable_cone_friction": True, "use_split_impulse": True}
+        payload = {"static_support_binding": {"representation": "mesh"}, "backend": {
+            "billiards_rules": {"ball_dynamics": dynamics, "engine": engine, "support_dynamics": {"lateral_friction": 0.3, "restitution": 0.4}}}}
+        source = {"object_identity": {"objects": [{"object_id": name, "semantic_label": "ball"} for name in ("object_a", "object_b")]}}
+        scene = {"backend_binding": {"adapter_id": "billiards_two_object_v1"}, "adapter_payload": payload,
+                 "objects": [{"object_id": name, "collision_proxy": {"type": "sphere", "size_m": [0.1]*3},
+                              "material": {"mass_kg": 0.2, "contact_friction": 0.3, "contact_restitution": 0.4},
+                              "initial_state": {"position_m": [index,0,1], "orientation_quaternion_xyzw": [0,0,0,1],
+                                                "linear_velocity_m_s": [0,0,0], "angular_velocity_rad_s": [0,0,0]}}
+                             for index,name in enumerate(("object_a", "object_b"))]}
+        for adapter in ("billiards_v4", "billiards_two_object_v1"):
+            self.assertEqual(build_fixture_payload(adapter, source, scene)["physical"], {
+                "static_support_binding": payload["static_support_binding"],
+                "support_dynamics": payload["backend"]["billiards_rules"]["support_dynamics"]})
+            self.assertEqual(_solver_contract(adapter, source, scene), {**engine, "deterministic_overlapping_pairs": True})
+        self.assertEqual(_dynamic_material_extras(source, scene, "object_a"), dynamics)
+        objects, _ = _compact_objects("billiards", source, scene, {
+            "object_ids": ["object_a", "object_b"], "runtime_material": [[0.2,0.3,0.4]]*2,
+            "inertia_diagonal_kg_m2": [[0.001]*3]*2}, "table", {
+                "table": {"cue_ball": "unused", "object_ball_2": "red", "object_ball_1": "yellow"}})
+        self.assertEqual([obj["visual"]["material_template"]["source_object_name"] for obj in objects], ["yellow", "red"])
+        dynamics["contact_processing_threshold_m"] = 0.02
+        objects, _ = _compact_objects("billiards", source, scene, {
+            "object_ids": ["object_a", "object_b"], "runtime_material": [[0.2,0.3,0.4]]*2,
+            "inertia_diagonal_kg_m2": [[0.001]*3]*2}, "table", {
+                "table": {"cue_ball": "unused", "object_ball_2": "red", "object_ball_1": "yellow"}})
+        self.assertEqual([obj["material"]["contact_processing_threshold_m"] for obj in objects], [.02, .02])
+
+    def test_fixture_binding_comes_from_metadata_without_a_redundant_render_hash(self):
+        for family in ("passive_pinball", "marble_run"):
+            fixture = {"representation": "analytic", "colliders": [{"id": "board"}]}
+            source = {"semantics": {"profile": family}, "physics": {"fixture": fixture}}
+            expected = sha256_json(fixture)
+            with self.subTest(family=family):
+                identity, digest = _fixture_descriptor(source, {})
+                self.assertEqual(identity, {"id": family, "representation": "analytic"})
+                self.assertEqual(digest, expected)
+                self.assertEqual(_fixture_descriptor(source, {"fixture_sha256": expected}), (identity, digest))
+                fixture["colliders"][0]["id"] = "changed_board"
+                self.assertNotEqual(_fixture_descriptor(source, {})[1], digest)
+        with self.assertRaisesRegex(ValueError, "source binding hash is incomplete"):
+            _fixture_descriptor({"semantics": {"profile": "missing"}, "simulation": {
+                "support": {"collision_authority": "analytic"}}}, {})
+
     def test_text_binding_supports_two_objects_with_the_same_label(self) -> None:
         source = {
             "object_identity": {
@@ -306,9 +355,6 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                 video_sha256="c" * 64,
                 fixture_sha256="f" * 64,
             )
-            metadata["artifacts"]["masks"] = {
-                "manifest_sha256": "d" * 64,
-            }
             summary = validate_base_metadata(metadata)
             self.assertEqual(metadata["schema_version"], BASE_SAMPLE_SCHEMA)
             self.assertEqual(set(metadata), SAMPLE_METADATA_FIELDS["base"])
@@ -331,9 +377,6 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                 video_sha256="c" * 64,
                 fixture_sha256="f" * 64,
             )
-            sweep_metadata["artifacts"]["masks"] = {
-                "manifest_sha256": "d" * 64,
-            }
             sweep_summary = validate_sweep_metadata(sweep_metadata)
             self.assertEqual(sweep_metadata["schema_version"], SWEEP_SAMPLE_SCHEMA)
             self.assertEqual(set(sweep_metadata), SAMPLE_METADATA_FIELDS["sweep"])
@@ -342,10 +385,6 @@ class BaseReleaseSchemaTests(unittest.TestCase):
             sweep_metadata["sweep"]["value"] = 0.3
             with self.assertRaisesRegex(ValueError, "differs from object material"):
                 validate_sweep_metadata(sweep_metadata)
-            mask_binding = metadata["artifacts"].pop("masks")
-            with self.assertRaisesRegex(ValueError, "mask binding"):
-                validate_base_metadata(metadata)
-            metadata["artifacts"]["masks"] = mask_binding
             self.assertEqual(metadata["sample_kind"], "base")
             metadata["kind"] = "base"
             with self.assertRaisesRegex(ValueError, "base fields"):
@@ -393,6 +432,15 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                     "contact_processing_threshold_m": 0.0,
                 },
             )
+            original_adapter = metadata["physics"]["backend"]["adapter_id"]
+            obj["material"]["contact_processing_threshold_m"] = .02
+            with self.assertRaisesRegex(ValueError, "dynamic material"):
+                validate_base_metadata(metadata)
+            for adapter in ("billiards_v4", "billiards_two_object_v1"):
+                metadata["physics"]["backend"]["adapter_id"] = adapter
+                validate_base_metadata(metadata)
+            metadata["physics"]["backend"]["adapter_id"] = original_adapter
+            obj["material"]["contact_processing_threshold_m"] = 0.0
             linear_damping = obj["material"].pop("linear_damping")
             with self.assertRaisesRegex(ValueError, "dynamic material"):
                 validate_base_metadata(metadata)
@@ -444,37 +492,6 @@ class BaseReleaseSchemaTests(unittest.TestCase):
                     trajectory_sha256="b" * 64,
                     video_sha256="c" * 64,
                     fixture_sha256="f" * 64,
-                )
-
-    def test_mask_manifest_uses_object_axis_and_ordered_hashes(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            mask_dir = root / "ball"
-            mask_dir.mkdir()
-            for index in (1, 2):
-                (mask_dir / f"frame_{index:04d}.png").write_bytes(
-                    f"frame-{index}".encode("ascii")
-                )
-            manifest = build_mask_manifest(
-                scene_id="scene__base",
-                mask_root=root,
-                objects=[{"object_id": "ball"}],
-            )
-            self.assertEqual(manifest["schema_version"], MASK_MANIFEST_SCHEMA)
-            self.assertEqual(manifest["frame_count"], 2)
-            self.assertEqual(len(manifest["objects"][0]["frame_sha256"]), 2)
-            self.assertNotIn("filename", json.dumps(manifest))
-            with self.assertRaisesRegex(ValueError, "invalid mask object id"):
-                build_mask_manifest(
-                    scene_id="scene__base",
-                    mask_root=root,
-                    objects=[{"object_id": "../ball"}],
-                )
-            with self.assertRaisesRegex(ValueError, "invalid mask object id"):
-                build_mask_manifest(
-                    scene_id="scene__base",
-                    mask_root=root,
-                    objects=[{"object_id": None}],
                 )
 
 

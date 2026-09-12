@@ -1,0 +1,12 @@
+{
+  "schema_version": "physweep_three_object_billiards_integrity_v1",
+  "status": "development_unvalidated",
+  "parameter_absolute_tolerance": 0.0000001,
+  "time_absolute_tolerance_s": 0.000000001,
+  "inertia_relative_tolerance": 0.000001,
+  "inertia_absolute_tolerance_kg_m2": 0.0000000001,
+  "maximum_contact_penetration_m": 0.002,
+  "maximum_unforced_energy_gain_fraction": 0.05,
+  "maximum_unforced_energy_gain_j_per_kg": 0.01,
+  "scope": "Integrity for all base and sweep members; motion/event semantics come from the frozen candidate contract. No sweep outcome, contact-count or travel-distance minimum."
+}

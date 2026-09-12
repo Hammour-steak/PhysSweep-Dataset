@@ -235,8 +235,10 @@ def implementation_is_reusable(
     declared = metadata.get("implementation")
     expected_paths = {
         "renderer": script.resolve(),
-        "render_evidence": (root / "tools/rendering/specialized_render_evidence.py").resolve(),
+        "render_evidence": (script.parent / "specialized_render_evidence.py").resolve(),
     }
+    if script.name in {'render_three_object_billiards_scene.py','render_three_object_pinball_scene.py','render_three_object_marble_scene.py'}:
+        expected_paths['sphere_render_core'] = (script.parent / 'specialized_sphere_rendering.py').resolve()
     if not isinstance(declared, dict):
         return False
     for label, expected_path in expected_paths.items():
@@ -263,6 +265,9 @@ def render_record_implementation_is_reusable(
         "renderer": script.resolve(),
         "render_evidence": (script.parent / "specialized_render_evidence.py").resolve(),
     }
+    core = script.parent / 'specialized_sphere_rendering.py'
+    if script.name in {'render_three_object_billiards_scene.py','render_three_object_pinball_scene.py','render_three_object_marble_scene.py'} or (script.name == 'render_two_object_specialized_scene.py' and core.exists()):
+        expected['sphere_render_core'] = core.resolve()
     if not isinstance(implementation, dict):
         return False
     return all(
@@ -374,11 +379,13 @@ def reusable_render_record(
         metadata.get("render", {}).get("evidence_contract") == EVIDENCE_CONTRACT
     )
     schema = str(metadata.get("schema_version", ""))
+    two_object = int(metadata.get("semantics", {}).get("dynamic_object_count", 1)) == 2
+    maskless_three = schema in {'physweep_billiards_three_object_scene_v1','physweep_passive_pinball_three_object_scene_v1','physweep_marble_run_three_object_scene_v1'}
     renderer_requires_masks = schema in MASK_REQUIRED_SCHEMAS
     render_record_binds_implementation = (
-        schema in RENDER_RECORD_IMPLEMENTATION_SCHEMAS
+        two_object or maskless_three or schema in RENDER_RECORD_IMPLEMENTATION_SCHEMAS
     )
-    require_instance_masks = strict_evidence or renderer_requires_masks
+    require_instance_masks = not (two_object or maskless_three) and (strict_evidence or renderer_requires_masks)
     expected_mask_objects = None
     expected_mask_directory = None
     expected_mask_samples = None
@@ -441,7 +448,7 @@ def reusable_render_record(
             for frame in inspection_frames
         )
         and render_samples_are_reusable(metadata, render_record)
-        and instance_masks_are_reusable(
+        and (two_object or instance_masks_are_reusable(
             root,
             render_record,
             frame_count,
@@ -449,7 +456,7 @@ def reusable_render_record(
             expected_objects=expected_mask_objects,
             expected_directory=expected_mask_directory,
             expected_render_samples=expected_mask_samples,
-        )
+        ))
         and implementation_is_reusable(
             root,
             metadata,
@@ -576,7 +583,10 @@ def worker(
         "--inspection-frame-dir",
         str(frame_dir),
     ]
-    command.extend(("--instance-mask-dir", str(mask_directory)))
+    if script.name in {"render_two_object_specialized_scene.py", "render_three_object_billiards_scene.py", "render_three_object_pinball_scene.py", "render_three_object_marble_scene.py"}:
+        command.extend(("--root", str(root)))
+    else:
+        command.extend(("--instance-mask-dir", str(mask_directory)))
     started = time.perf_counter()
     with isolated_blender_environment(gpu, selector_path) as (
         environment,
@@ -751,7 +761,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--manifest", type=Path, required=True)
-    parser.add_argument("--blender", type=Path, default=PROJECT_ROOT / "runtime/blender-3.4.0-linux-x64/blender")
+    parser.add_argument("--blender", type=Path, default=Path("runtime/blender-3.4.0-linux-x64/blender"))
     parser.add_argument("--workers", type=int, default=2)
     parser.add_argument("--gpus", default="0,1,2,3,4,5,6,7")
     parser.add_argument("--renderer", default="asset")
@@ -792,13 +802,14 @@ def main() -> None:
     if not gpus:
         raise SystemExit("--gpus must contain at least one id")
     code_root = Path(__file__).resolve().parents[2]
-    renderers = renderer_table(code_root if args.mask_only else root)
+    # Legacy one-object renderers without --root still execute beside their data.
+    script_root = code_root if args.mask_only or args.renderer in {"two_object_specialized", "billiards_three_object", "passive_pinball_three_object", "marble_run_three_object"} else root
+    renderers = renderer_table(script_root)
     if args.renderer not in renderers:
         raise ValueError(f"unknown specialized renderer: {args.renderer}")
     if args.mask_only and args.renderer not in {"asset", "billiards"}:
         raise ValueError("mask-only backfill supports asset and billiards renderers")
     script_name, schema_version, result_name = renderers[args.renderer][:3]
-    script_root = code_root if args.mask_only else root
     script = (script_root / script_name).resolve()
     script.relative_to(script_root)
     if not script.is_file():

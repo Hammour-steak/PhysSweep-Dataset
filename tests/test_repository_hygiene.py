@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import ast
+import hashlib
+import json
 import re
 import subprocess
 import unittest
@@ -10,9 +12,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 TEXT_SUFFIXES = {".json", ".md", ".py", ".sh", ".txt", ".toml", ".yaml", ".yml"}
 FORBIDDEN = (
-    re.compile("/home/" + "yueconghan"),
-    re.compile("/mnt/data/" + "yueconghan"),
-    re.compile(r"C:\\Users\\" + "11659", re.IGNORECASE),
+    re.compile(r"/(?:home|Users)/[A-Za-z0-9_.-]+"),
+    re.compile(r"/mnt/data/[A-Za-z0-9_.-]+"),
+    re.compile(r"[A-Za-z]:[\\/]+Users[\\/]+[A-Za-z0-9_.-]+", re.IGNORECASE),
     re.compile(r"hf_[A-Za-z0-9]{20,}"),
     re.compile(r"-----BEGIN (?:OPENSSH |RSA |EC )?PRIVATE KEY-----"),
 )
@@ -24,6 +26,33 @@ PROVENANCE_FROZEN_INFRASTRUCTURE = {
 
 
 class RepositoryHygieneTest(unittest.TestCase):
+    def test_machine_path_rules_cover_user_names_and_platforms(self) -> None:
+        cases = [
+            "/".join(("", "home", "fixture-user", "project")),
+            "/".join(("", "Users", "fixture-user", "project")),
+            "/".join(("", "mnt", "data", "fixture-user", "project")),
+            "/".join(("D:", "Users", "fixture-user", "project")),
+            "\\".join(("C:", "Users", "fixture-user", "project")),
+            "\\\\".join(("C:", "Users", "fixture-user", "project")),
+        ]
+        for text in cases:
+            with self.subTest(path=text):
+                self.assertTrue(any(pattern.search(text) for pattern in FORBIDDEN))
+
+    def test_machine_path_rules_allow_portable_references(self) -> None:
+        for text in ("outputs/three_object/base", "/tmp/fixture.glb", "/proc", "/usr/bin/env", "<project_root>/assets"):
+            with self.subTest(path=text):
+                self.assertFalse(any(pattern.search(text) for pattern in FORBIDDEN))
+
+    def test_checked_out_proxy_records_match_the_frozen_catalog(self) -> None:
+        catalog = json.loads((ROOT / "assets/proxies/catalog.json").read_text())
+        for path, expected in (
+            (catalog["records_path"], catalog["records_sha256"]),
+            (catalog["validation"]["path"], catalog["validation"]["sha256"]),
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(hashlib.sha256((ROOT / path).read_bytes()).hexdigest(), expected)
+
     @staticmethod
     def imported_modules(path: Path) -> list[str]:
         modules = []
@@ -386,7 +415,14 @@ class RepositoryHygieneTest(unittest.TestCase):
                         for target in node.targets
                     )
                 ]
-                self.assertEqual(declarations, [(1, 2)])
+                expected_counts = ((1, 2, 3) if relative in {
+                    "tools/physics/rigid_trajectory.py",
+                    "tools/physics/simulate_pybullet_rigid.py",
+                    "tools/rendering/bind_pybullet_visuals.py",
+                    "tools/rendering/camera_solver.py",
+                    "tools/rendering/render_pybullet_rigid.py",
+                } else (1, 2))
+                self.assertEqual(declarations, [expected_counts])
 
         validation = ast.parse(
             (ROOT / "tools/release/sweep_validation.py").read_text(

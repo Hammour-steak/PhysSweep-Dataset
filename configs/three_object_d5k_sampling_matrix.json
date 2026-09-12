@@ -1,0 +1,121 @@
+{
+  "schema_version": "physweep_three_object_sampling_matrix_v1",
+  "status": "pilot_unvalidated",
+  "object_ids": ["object_a", "object_b", "object_c"],
+  "sweep_target_indices": [0],
+  "motion_rules": "three_object_motion_rules.json",
+  "scene_rules": "three_object_scene_rules.json",
+  "sweep_config": "three_object_physics_sweep.json",
+  "dataset_config": "datasets/three_object.json",
+  "template_ids": ["chain_transfer", "successive_hits", "converging_hits", "pair_control"],
+  "candidate_budget": 18,
+  "master_seed": 20260907,
+  "ordering": "stable_cell_id_then_candidate_index",
+  "seed_derivation": "sha256_canonical_json_first_64_bits",
+  "seed_domains": ["physics", "appearance", "camera"],
+  "maximum_source_attempts_per_candidate": 1,
+  "source": {
+    "families": ["generic", "asset"],
+    "release_schema": "physweep_base_release_view_v15",
+    "pipeline_schema": "physweep_base_pipeline_view_v13",
+    "sample_schema": "physweep_base_sample_v12",
+    "generation_manifest_schema": "physweep_release_metadata_manifest_v2",
+    "generation_metadata_schemas": {
+      "generic": "physweep_pybullet_rigid_metadata_v1",
+      "asset": "physweep_asset_proxy_scene_v3"
+    },
+    "asset_eligibility": {
+      "body_model": "rigid_body",
+      "required_pose_profile": "support_normal",
+      "asset_proxy_policy": "centered_primitive_or_upright_axisymmetric_compound",
+      "asset_proxy_maximum_aabb_center_offset_m": 0.001,
+      "asset_scale_bin_maximum_extent_m": {"small": 0.18, "medium": 0.23, "large": null}
+    },
+    "distinct_object_sources": true
+  },
+  "source_budgets": {"maximum_object_uses": 1, "maximum_host_uses": 1},
+  "physical_dimensions": ["template", "scale_by_role", "exact_mesh_host", "motion_axis", "target_role"],
+  "visual_dimensions": ["object_visual_by_role", "support_visual", "environment_category", "lighting", "requested_camera_family"],
+  "required_cross_reports": [["template", "exact_mesh_host"], ["motion_axis", "final_camera_family"], ["exact_mesh_host", "environment_category"]],
+  "appearance_policy": "preserve_bound_objects_exact_support_visual_and_released_room_context",
+  "allocation_policy": "one_predeclared_timing_and_capacity_compatible_cell_per_admitted_exact_mesh_host",
+  "unavailable_cell_policy": "report_no_reallocation",
+  "duplicate_policy": {
+    "physical": "exact_label_permutation_invariant",
+    "max_visual_variants_per_physical_scene": 1,
+    "world_rotations": "distinct",
+    "mirrors": "distinct",
+    "near_duplicates": "report_only"
+  },
+  "shared_resources": [
+    "configs/production_video.json",
+    "configs/visual_sampling.json",
+    "configs/scene_visual_profiles.json",
+    "configs/physical_proxy_pipeline.json",
+    "configs/pybullet_backend.json",
+    "assets/manifests/polyhaven_render_library.json",
+    "assets/manifests/hdri_admission.json"
+  ],
+  "geometry_scope": "sphere_flat_v1",
+  "coverage_mode": "exact_mesh_host_v1",
+  "required_support_asset_ids": [
+    "sketchfab_bg_93bf119e2bb443b49006c6b12efe06ae",
+    "support_school_picnic_8e2a51a4",
+    "support_old_table_e53a5ef2",
+    "support_wood_table_4618e562",
+    "support_workbench_01c0b599",
+    "support_pub_table_9e540ae2",
+    "support_school_desk_4044a253",
+    "support_weathered_round_6cd4d250",
+    "sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf",
+    "sketchfab_bg_2039a113435b47d585b2c51e4f3a096d",
+    "sketchfab_bg_459ebb7c75a14feb8ad690d00a085b9f",
+    "sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d",
+    "sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa",
+    "sketchfab_bg_bb73599044cf49e186b75842d63a280e",
+    "support_concrete_desk_ce2eb8c2",
+    "support_dining_table_ed94c79a",
+    "support_work_table_239b18eb",
+    "support_writing_desk_f411b33b"
+  ],
+  "excluded_support_asset_ids": [
+    "support_rattan_coffee_c434f22e"
+  ],
+  "exact_mesh_timing_policy": {
+    "schema_version": "physweep_exact_mesh_timing_policy_v1",
+    "nominal_first_contact_time_s": 0.21,
+    "extra_capacity_reserve_fraction": 0.1,
+    "maximum_initial_speed_m_s_by_template": {
+      "chain_transfer": 1.1,
+      "pair_control": 0.4
+    },
+    "chain_transfer_minimum_driver_to_receiver_mass_ratio": 0.8
+  },
+  "effective_safe_surface_overrides": {
+    "sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa": {
+      "center_xy_m": [0.0, 0.0],
+      "size_xy_m": [0.962, 0.462],
+      "z_m": 0.78
+    }
+  },
+  "mesh_host_assignments": [
+    {"asset_id": "sketchfab_bg_93bf119e2bb443b49006c6b12efe06ae", "template": "chain_transfer", "motion_axis": "world_y", "scale": "small"},
+    {"asset_id": "support_writing_desk_f411b33b", "template": "pair_control", "motion_axis": "world_x", "scale": "medium"},
+    {"asset_id": "support_school_picnic_8e2a51a4", "template": "chain_transfer", "motion_axis": "world_y", "scale": "medium"},
+    {"asset_id": "support_old_table_e53a5ef2", "template": "chain_transfer", "motion_axis": "world_y", "scale": "medium"},
+    {"asset_id": "support_wood_table_4618e562", "template": "chain_transfer", "motion_axis": "world_y", "scale": "medium"},
+    {"asset_id": "support_workbench_01c0b599", "template": "pair_control", "motion_axis": "world_y", "scale": "medium"},
+    {"asset_id": "support_pub_table_9e540ae2", "template": "pair_control", "motion_axis": "world_x", "scale": "small"},
+    {"asset_id": "support_school_desk_4044a253", "template": "pair_control", "motion_axis": "world_y", "scale": "small"},
+    {"asset_id": "support_weathered_round_6cd4d250", "template": "pair_control", "motion_axis": "world_x", "scale": "small"},
+    {"asset_id": "sketchfab_bg_0dc1c7d6cbab4d74bef7c4f82abf2caf", "template": "chain_transfer", "motion_axis": "world_x", "scale": "medium"},
+    {"asset_id": "sketchfab_bg_2039a113435b47d585b2c51e4f3a096d", "template": "pair_control", "motion_axis": "world_y", "scale": "medium"},
+    {"asset_id": "sketchfab_bg_459ebb7c75a14feb8ad690d00a085b9f", "template": "chain_transfer", "motion_axis": "world_x", "scale": "medium"},
+    {"asset_id": "sketchfab_bg_8a5b41d6445c4f1fbefb2e4abfeebb0d", "template": "pair_control", "motion_axis": "world_y", "scale": "medium"},
+    {"asset_id": "sketchfab_bg_a776babee9144e71ba90b473a4a5cfaa", "template": "pair_control", "motion_axis": "world_x", "scale": "small"},
+    {"asset_id": "sketchfab_bg_bb73599044cf49e186b75842d63a280e", "template": "chain_transfer", "motion_axis": "world_x", "scale": "medium"},
+    {"asset_id": "support_concrete_desk_ce2eb8c2", "template": "chain_transfer", "motion_axis": "world_x", "scale": "medium"},
+    {"asset_id": "support_dining_table_ed94c79a", "template": "pair_control", "motion_axis": "world_y", "scale": "medium"},
+    {"asset_id": "support_work_table_239b18eb", "template": "chain_transfer", "motion_axis": "world_x", "scale": "medium"}
+  ]
+}

@@ -547,7 +547,29 @@ def audit_pair_motion(
             minimum_closing_speed,
         )
     advisories: list[dict[str, Any]] = []
-    passed = all(record["passed"] for record in checks)
+    if metadata.get("sweep", {}).get("kind") == "sweep":
+        # Admission outcomes describe the base, not its counterfactuals.
+        # Keep failed observations visible without selecting sweeps by outcome.
+        motion_checks = {
+            "required_pair_collision", "forbidden_pair_collision",
+            "pair_collision_time", "pair_pre_contact_approach",
+        } | {
+            f"{object_id}__{suffix}"
+            for object_id in object_ids
+            for suffix in (
+                "visible_motion", "bounded_independent_rest_path_length",
+                "pre_contact_arc_vertical_ascent", "primary_support_contact",
+                "primary_support_contact_fraction",
+            )
+        }
+        for record in checks:
+            if record["id"] in motion_checks and not record["passed"]:
+                record["severity"] = "advisory"
+                advisories.append(record)
+    passed = all(
+        record["passed"] or record.get("severity") == "advisory"
+        for record in checks
+    )
     return {
         "schema_version": "physweep_rigid_trajectory_audit_v1",
         "scene_id": metadata["scene_id"],

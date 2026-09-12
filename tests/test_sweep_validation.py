@@ -11,6 +11,7 @@ from tools.core.sweep_values import (
     SWEEP_DERIVED_LEVELS,
     SWEEP_VARIANTS_PER_TARGET,
     sweep_group_size,
+    sweep_target_indices,
 )
 from tools.release.sweep_validation import validate_groups
 from tools.release.source_release import (
@@ -52,6 +53,13 @@ class SweepValidationTests(unittest.TestCase):
         self.assertEqual(sweep_group_size(1), 13)
         self.assertEqual(sweep_group_size(2), 25)
         self.assertEqual(sweep_group_size(3), 37)
+
+    def test_target_selection_is_distinct_from_dynamic_object_count(self) -> None:
+        self.assertEqual(sweep_target_indices(2, [0]), (0,))
+        self.assertEqual(sweep_target_indices(2), (0, 1))
+        for invalid in ([], [True], [2], [-1], [0, 0], [1, 0], ["0"]):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                sweep_target_indices(2, invalid)
 
     def test_two_object_group_requires_a_complete_grid_per_target(self) -> None:
         records = sweep_records(2)
@@ -113,6 +121,12 @@ class SweepValidationTests(unittest.TestCase):
             _validate_sweep_record_bindings([record], validated)
 
     def test_two_object_source_release_publishes_twenty_four_variants(self) -> None:
+        self._publish_two_object_source_release((0, 1), None)
+
+    def test_two_object_source_release_publishes_twelve_variants_for_object_a(self) -> None:
+        self._publish_two_object_source_release((0,), (0,))
+
+    def _publish_two_object_source_release(self, targets, selection) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             base_records = [
@@ -122,7 +136,7 @@ class SweepValidationTests(unittest.TestCase):
                     "metadata_sha256": "a" * 64,
                 }
             ]
-            metadata_records = sweep_records(2)
+            metadata_records = sweep_records(len(targets))
             for record in metadata_records:
                 record.update(
                     {
@@ -190,15 +204,17 @@ class SweepValidationTests(unittest.TestCase):
                     sweep_physics_manifest_path=physics_manifest,
                     output=output,
                     object_count=2,
+                    target_object_indices=selection,
                     dataset_id="physweep_two_object",
                     release_schema="physweep_two_object_source_release_v1",
                 )
             self.assertEqual(release["base_count"], 1)
-            self.assertEqual(release["derived_count"], 24)
+            self.assertEqual(release["derived_count"], 12 * len(targets))
+            self.assertEqual(release["sweep_target_object_indices"], list(targets))
             published = json.loads(
                 (output / "metadata_manifest.json").read_text(encoding="utf-8")
             )
-            self.assertEqual(published["group_size"], 25)
+            self.assertEqual(published["group_size"], 1 + 12 * len(targets))
 
 
 if __name__ == "__main__":

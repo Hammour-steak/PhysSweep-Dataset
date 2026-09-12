@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import copy
 import math
 from dataclasses import dataclass
 from typing import Any
@@ -168,6 +169,19 @@ def declared_collision_descriptors(record: dict[str, Any]) -> dict[str, list[Any
         "positions_m": positions,
         "quaternions_xyzw": quaternions,
     }
+
+
+def generic_collision_proxy(record: dict[str, Any]) -> dict[str, Any]:
+    """Return the collision shape actually created by the generic simulator.
+
+    Geometry is only the envelope for compound assets. The child shapes and
+    their local transforms are authoritative for collisions.
+    """
+    declared_collision_descriptors(record)
+    profile = record["collision_profile"]
+    if profile["type"] == "compound":
+        return {"type": "compound", "colliders": copy.deepcopy(profile["colliders"])}
+    return copy.deepcopy(record["geometry"])
 
 
 def quaternion_matrix_wxyz(value: Any) -> list[list[float]]:

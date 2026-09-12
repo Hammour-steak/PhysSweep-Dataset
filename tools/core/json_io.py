@@ -56,6 +56,16 @@ def write_json(
         temporary.unlink(missing_ok=True)
 
 
+def frozen_json(path: Path, value: Any) -> None:
+    """Write a checkpoint once; an identical resume leaves the file untouched."""
+
+    if path.exists():
+        if read_json(path) != value:
+            raise ValueError(f"frozen input differs: {path}")
+    else:
+        write_json_atomic_sorted(path, value)
+
+
 def write_json_atomic(path: Path, value: Any) -> None:
     """Write JSON with atomic replacement while preserving key order."""
 

@@ -9,4 +9,5 @@
 *.pt binary
 *.pth binary
 *.safetensors binary
+# Frozen catalog hashes include CRLF bytes; do not normalize this file to LF.
 /assets/proxies/objects/records.jsonl text eol=crlf

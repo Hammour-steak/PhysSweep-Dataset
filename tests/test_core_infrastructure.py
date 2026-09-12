@@ -17,6 +17,7 @@ from tools.core.hashing import (
     sha256_json_without_field,
 )
 from tools.core.json_io import (
+    frozen_json,
     read_json,
     read_jsonl,
     write_json,
@@ -41,6 +42,17 @@ from tools.rendering.blender_scene import parse_scene_render_args
 
 
 class CoreInfrastructureTest(unittest.TestCase):
+    def test_frozen_json_resume_preserves_file_and_rejects_changed_input(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "inputs" / "checkpoint.json"
+            frozen_json(path, {"seed": 7})
+            before = path.read_bytes(), path.stat().st_mtime_ns
+            frozen_json(path, {"seed": 7})
+            self.assertEqual((path.read_bytes(), path.stat().st_mtime_ns), before)
+            with self.assertRaisesRegex(ValueError, "frozen input differs"):
+                frozen_json(path, {"seed": 8})
+            self.assertEqual((path.read_bytes(), path.stat().st_mtime_ns), before)
+
     def test_quaternion_matrix_is_normalized_and_backend_neutral(self) -> None:
         self.assertEqual(
             quaternion_matrix_wxyz([2.0, 0.0, 0.0, 0.0]),

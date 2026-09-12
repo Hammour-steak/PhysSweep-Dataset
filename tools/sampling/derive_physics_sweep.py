@@ -15,6 +15,7 @@ from tools.core.json_io import read_json as load_json
 from tools.core.json_io import write_json
 from tools.core.sweep_values import (
     allowed_sweep_domain,
+    counterfactual_mass_values,
     resolve_sweep_domain,
     round_sweep_value,
     sweep_values,
@@ -23,6 +24,49 @@ from tools.dataset_contract.object_identity_contract import attach_object_identi
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = PROJECT_ROOT / "configs/physics_sweep.json"
+
+
+def load_sweep_config(path: Path) -> dict[str, Any]:
+    """Load legacy rules or a hash-pinned two/three-object mass overlay."""
+    overlay = load_json(path)
+    if "base_config" not in overlay:
+        return overlay
+    required = {"base_config", "required_dynamic_objects", "mass_intervention_multipliers"}
+    if not required <= set(overlay) or set(overlay) - required - {"source_schema_aliases"}:
+        raise ValueError("invalid object-count sweep overlay")
+    if type(overlay["required_dynamic_objects"]) is not int or overlay["required_dynamic_objects"] not in (2, 3):
+        raise ValueError("mass intervention overlay requires two or three objects")
+    binding = overlay["base_config"]
+    base_path = path.parent / binding["path"]
+    if sha256(base_path) != binding["sha256"]:
+        raise ValueError("shared sweep configuration hash mismatch")
+    config = load_json(base_path)
+    if "base_config" in config:
+        raise ValueError("nested sweep overlays are not supported")
+    multipliers = overlay["mass_intervention_multipliers"]
+    counterfactual_mass_values(1.0, multipliers)
+    config["required_dynamic_objects"] = overlay["required_dynamic_objects"]
+    aliases = overlay.get("source_schema_aliases", {})
+    if aliases:
+        allowed_aliases={'physweep_billiards_three_object_scene_v1':'physweep_billiards_scene_v4',
+            'physweep_passive_pinball_three_object_scene_v1':'physweep_passive_pinball_scene_v1',
+            'physweep_marble_run_three_object_scene_v1':'physweep_marble_run_scene_v1'}
+        if overlay['required_dynamic_objects'] != 3 or any(allowed_aliases.get(k)!=v for k,v in aliases.items()):
+            raise ValueError('unsupported count-bound sweep schema alias')
+        for new, existing in aliases.items():
+            if existing not in config['base_schema_versions'] or new in config['base_schema_versions']:
+                raise ValueError('invalid sweep schema alias source')
+            config['base_schema_versions'].append(new)
+            for axis in config['axes'].values():
+                domains = axis.get('schema_domains', {})
+                if existing in domains:
+                    domains[new] = copy.deepcopy(domains[existing])
+    config["axes"]["mass_kg"].update(
+        domain_policy="counterfactual_relative_mass",
+        range_policy={"mode": "global"},
+        level_multipliers=multipliers,
+    )
+    return config
 
 
 def validate_output_dir(root: Path, output_dir: Path) -> None:
@@ -270,6 +314,9 @@ def _friction_domain(
         return None
     if _schema(metadata) != "physweep_pybullet_rigid_metadata_v1":
         return None
+    if len(_dynamic_objects(metadata)) in (2, 3):
+        # Multi-object counterfactuals need not reproduce base contact events.
+        return None
     obj = _objects(metadata)[object_index]
     expected = obj.get("expected_motion", {})
     motion = str(expected.get("motion_family", ""))
@@ -304,13 +351,6 @@ def _friction_domain(
                 expected["minimum_displacement_m"],
             )
         )
-        required_contact_distance = expected.get(
-            "required_pre_contact_displacement_m"
-        )
-        if required_contact_distance is not None:
-            minimum_distance = max(
-                minimum_distance, float(required_contact_distance)
-            )
     except (KeyError, TypeError, ValueError) as error:
         raise ValueError(
             f"{motion_family} lacks the analytic support-frame contract "
@@ -362,26 +402,7 @@ def _friction_domain(
     configured_low, configured_high = [
         float(value) for value in axis_rules["domain"]
     ]
-    if required_contact_distance is not None:
-        minimum_closing_speed = float(
-            metadata["simulation"]["interaction"][
-                "minimum_pre_contact_closing_speed_m_s"
-            ]
-        )
-        if not 0.0 <= minimum_closing_speed < speed:
-            raise ValueError(
-                "contact-preserving friction sweep has no closing-speed margin"
-            )
-        theoretical_max = (
-            (speed * speed - minimum_closing_speed * minimum_closing_speed)
-            / (2.0 * minimum_distance)
-            + gravity_tangent_component
-        ) / normal_acceleration
-        safety = float(axis_rules["contact_preservation_safety"])
-        if not 0.0 < safety < 1.0:
-            raise ValueError("contact-preservation safety must lie in (0, 1)")
-        feasible_high = max(base_value, theoretical_max * safety)
-    elif "transition_margin" in axis_rules:
+    if "transition_margin" in axis_rules:
         # A high-friction endpoint deliberately crosses the calculated motion
         # transition; downstream audits still enforce hard physical checks.
         transition_threshold = theoretical_max
@@ -417,6 +438,9 @@ def validate_base(
         "physweep_pybullet_rigid_metadata_v1",
         "physweep_asset_proxy_scene_v3",
         "physweep_billiards_scene_v4",
+        "physweep_billiards_three_object_scene_v1",
+        "physweep_passive_pinball_three_object_scene_v1",
+        "physweep_marble_run_three_object_scene_v1",
         "physweep_passive_pinball_scene_v1",
         "physweep_marble_run_scene_v1",
     }
@@ -468,6 +492,9 @@ def derive_one(
         supported_schemas={str(value) for value in config["base_schema_versions"]},
     )
     objects = _dynamic_objects(base)
+    required_count = config.get("required_dynamic_objects")
+    if required_count is not None and len(objects) != required_count:
+        raise ValueError(f"sweep configuration requires exactly {required_count} dynamic objects")
     if target_object_index < 0 or target_object_index >= len(objects):
         raise IndexError(f"invalid target object index: {target_object_index}")
     target_object_id = _object_id(objects[target_object_index], target_object_index)
@@ -517,14 +544,13 @@ def derive_one(
             "base_value_policy", "preserve_exactly_at_nearest_position"
         )
     )
-    if requested_base_policy == "preserve_exactly_at_middle_position":
-        if base_level_index != len(values) // 2:
-            raise ValueError(
-                f"{axis} derived values do not place the base at the middle level"
-            )
-        applied_base_policy = requested_base_policy
-    else:
-        applied_base_policy = requested_base_policy
+    if (
+        requested_base_policy == "preserve_exactly_at_middle_position"
+        and base_level_index != len(values) // 2
+    ):
+        raise ValueError(
+            f"{axis} derived values do not place the base at the middle level"
+        )
 
     derived = copy.deepcopy(base)
     _clear_parent_outputs(derived)
@@ -567,7 +593,7 @@ def derive_one(
         "value": values[level_index],
         "base_value": rounded_base,
         "base_level_index": base_level_index,
-        "base_value_policy_applied": applied_base_policy,
+        "base_value_policy_applied": requested_base_policy,
         "domain": [round_sweep_value(value) for value in resolved_domain],
         "allowed_domain": [round_sweep_value(value) for value in allowed_domain],
         "object_field": object_field,
@@ -712,7 +738,7 @@ def main() -> int:
     )
     if not args.dry_run:
         validate_output_dir(root, output_dir)
-    config = load_json(config_path)
+    config = load_sweep_config(config_path)
     axes = args.axis or list(config["axes"])
     for axis in axes:
         if axis not in config["axes"]:
@@ -860,7 +886,7 @@ def main() -> int:
             "sha256": sha256(config_path),
         },
         "implementation": {
-            "path": str(Path(__file__).resolve().relative_to(root)),
+            "path": str(Path(__file__).resolve()),
             "sha256": sha256(Path(__file__).resolve()),
         },
         "prior_sources": prior_provenance,
