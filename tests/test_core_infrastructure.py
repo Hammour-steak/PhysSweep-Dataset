@@ -95,15 +95,15 @@ class CoreInfrastructureTest(unittest.TestCase):
                 "scene.json",
                 "--root",
                 "project",
-                "--mask-only",
+                "--video-path", "video.mp4",
             ],
         ):
             args = parse_scene_render_args(
-                "test", project_root=Path("default"), include_masks=True
+                "test", project_root=Path("default")
             )
             self.assertEqual(args.metadata, Path("scene.json"))
             self.assertEqual(args.root, Path("project"))
-            self.assertTrue(args.mask_only)
+            self.assertEqual(args.video_path, Path("video.mp4"))
         with mock.patch.object(
             sys,
             "argv",

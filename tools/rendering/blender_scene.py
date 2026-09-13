@@ -14,8 +14,6 @@ def parse_scene_render_args(
     description: str | None,
     *,
     project_root: Path | None = None,
-    include_masks: bool = False,
-    include_mask_output: bool = False,
 ) -> argparse.Namespace:
     """Parse the common metadata/video arguments used by Blender scene renderers."""
 
@@ -25,10 +23,6 @@ def parse_scene_render_args(
         parser.add_argument("--root", type=Path, default=project_root)
     parser.add_argument("--video-path", type=Path)
     parser.add_argument("--inspection-frame-dir", type=Path)
-    if include_masks:
-        parser.add_argument("--mask-only", action="store_true")
-    if include_masks or include_mask_output:
-        parser.add_argument("--instance-mask-dir", type=Path)
     values = blender_argv() if "--" in sys.argv else []
     return parser.parse_args(values)
 

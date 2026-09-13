@@ -34,7 +34,8 @@ order; `object_identity.sweep_target` identifies the intervened object.
 
 The internal `instance_masks.objects` mapping remains an identity descriptor for
 schema compatibility. Canonical generation neither renders nor publishes masks;
-a null mask path is valid.
+a null mask path is valid. Render entry points do not offer mask rendering or
+backfill options, and video resume checks do not require mask files.
 
 Validation lives in
 [object_identity_contract.py](../tools/dataset_contract/object_identity_contract.py).

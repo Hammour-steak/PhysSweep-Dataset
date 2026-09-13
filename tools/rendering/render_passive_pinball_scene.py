@@ -166,100 +166,10 @@ def configure_scene(metadata: dict[str, Any]) -> None:
     background.inputs["Strength"].default_value = 0.32
 
 
-def render_instance_masks(
-    metadata: dict[str, Any],
-    ball: Any,
-    fixture_objects: list[Any],
-    frame_dir: Path,
-    mask_root_override: Path | None = None,
-) -> dict[str, Any]:
-    scene = bpy.context.scene
-    object_id = str(metadata["simulation"]["objects"][0]["object_id"])
-    declared = metadata["object_identity"]["instance_masks"].get("path")
-    if mask_root_override is not None:
-        mask_root = mask_root_override.resolve()
-    elif declared:
-        declared_root = Path(str(declared))
-        if declared_root.is_absolute():
-            raise ValueError("passive-pinball mask path must be project-relative")
-        mask_root = (PROJECT_ROOT / declared_root).resolve()
-    else:
-        mask_root = frame_dir.parent.parent / "masks" / str(metadata["scene_id"])
-    if PROJECT_ROOT.resolve() not in mask_root.parents:
-        raise ValueError("passive-pinball mask path is outside the project")
-    mask_dir = mask_root / object_id
-    mask_dir.mkdir(parents=True, exist_ok=True)
-    for obj in fixture_objects:
-        obj.hide_render = True
-    mask_material = bpy.data.materials.new("pinball_mask_material")
-    mask_material.use_nodes = True
-    nodes = mask_material.node_tree.nodes
-    links = mask_material.node_tree.links
-    for node in list(nodes):
-        nodes.remove(node)
-    output = nodes.new("ShaderNodeOutputMaterial")
-    emission = nodes.new("ShaderNodeEmission")
-    emission.inputs["Color"].default_value = (1.0, 1.0, 1.0, 1.0)
-    emission.inputs["Strength"].default_value = 1.0
-    links.new(emission.outputs["Emission"], output.inputs["Surface"])
-    ball.data.materials.clear()
-    ball.data.materials.append(mask_material)
-    scene.render.film_transparent = True
-    scene.render.image_settings.file_format = "PNG"
-    scene.render.image_settings.color_mode = "RGBA"
-    paths = []
-    for frame in range(scene.frame_start, scene.frame_end + 1):
-        scene.frame_set(frame)
-        path = mask_dir / f"frame_{frame:04d}.png"
-        scene.render.filepath = str(path)
-        bpy.ops.render.render(write_still=True)
-        paths.append(path)
-    probes = [paths[0], paths[len(paths) // 2], paths[-1]]
-    nonempty = 0
-    for path in probes:
-        image = bpy.data.images.load(str(path), check_existing=False)
-        alpha = np.asarray(image.pixels[:], dtype=np.float32)[3::4]
-        nonempty += int(bool(alpha.size and float(alpha.max()) > 0.01))
-        bpy.data.images.remove(image)
-    if nonempty != len(probes):
-        raise RuntimeError("passive-pinball instance mask is empty")
-    mask_manifest_path = mask_root / "mask_manifest.json"
-    mask_manifest = {
-        "schema_version": "physweep_instance_mask_manifest_v1",
-        "scene_id": str(metadata["scene_id"]),
-        "object_id": object_id,
-        "frame_count": len(paths),
-        "records": [
-            {"filename": path.name, "sha256": sha256(path)} for path in paths
-        ],
-    }
-    write_json(mask_manifest_path, mask_manifest)
-    return {
-        "encoding": "rgba_alpha_antialiased_silhouette_mask",
-        "occlusion_policy": "unoccluded_dynamic_silhouette",
-        "directory": str(mask_dir),
-        "manifest_path": str(mask_manifest_path),
-        "manifest_sha256": sha256(mask_manifest_path),
-        "objects": {
-            object_id: {
-                "instance_id": 1,
-                "directory": str(mask_dir),
-                "frame_count": len(paths),
-            }
-        },
-        "validation": {
-            "policy_version": "physweep_antialiased_silhouette_validation_v1",
-            "pixel_probe_frames": [1, (len(paths) + 1) // 2, len(paths)],
-            "nonempty_probe_count": nonempty,
-        },
-    }
-
-
 def render(
     metadata_path: Path,
     video_path_override: Path | None = None,
     frame_dir_override: Path | None = None,
-    mask_root_override: Path | None = None,
 ) -> dict[str, Any]:
     started = time.perf_counter()
     metadata_path = metadata_path.resolve()
@@ -279,8 +189,8 @@ def render(
         trajectory = adapter_trajectory_view({key: source[key] for key in source.files})
     clear_scene()
     configure_scene(metadata)
-    fixture_objects = add_fixture(metadata)
-    ball = add_ball(metadata, trajectory)
+    add_fixture(metadata)
+    add_ball(metadata, trajectory)
     camera = add_camera(metadata["camera"])
     add_bound_lights(metadata)
     scene = bpy.context.scene
@@ -318,9 +228,6 @@ def render(
         video_path,
         expected_frame_count=scene.frame_end - scene.frame_start + 1,
     )
-    instance_mask_output = render_instance_masks(
-        metadata, ball, fixture_objects, frame_dir, mask_root_override
-    )
     fixture_payload = json.dumps(
         metadata["physics"]["fixture"], sort_keys=True, separators=(",", ":")
     ).encode("utf-8")
@@ -338,7 +245,7 @@ def render(
         "video_path": str(video_path),
         "video_sha256": sha256(video_path),
         "inspection_frames": [str(path) for path in inspection_paths],
-        "instance_mask_output": instance_mask_output,
+        "instance_mask_output": None,
         "camera": camera,
         "render_engine": scene.render.engine,
         "render_samples": int(scene.eevee.taa_render_samples),
@@ -351,10 +258,9 @@ def render(
 
 
 if __name__ == "__main__":
-    args = parse_scene_render_args(__doc__, include_mask_output=True)
+    args = parse_scene_render_args(__doc__)
     render(
         args.metadata,
         args.video_path,
         args.inspection_frame_dir,
-        args.instance_mask_dir,
     )

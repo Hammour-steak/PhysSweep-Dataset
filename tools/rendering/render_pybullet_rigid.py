@@ -868,131 +868,6 @@ def add_dynamic_animation(
     return dynamic_objects
 
 
-def validate_instance_mask_output(
-    output: dict[str, Any] | None,
-    frames: list[int],
-) -> dict[str, Any] | None:
-    """Reject malformed compositor output before it enters a dataset."""
-    if output is None:
-        return None
-    object_reports = {}
-    for object_id, record in output["objects"].items():
-        paths = [
-            Path(record["directory"]) / f"frame_{frame:04d}.png"
-            for frame in frames
-        ]
-        missing = [str(path) for path in paths if not path.is_file()]
-        if missing:
-            raise FileNotFoundError(f"missing instance masks: {missing[:3]}")
-        probe_indices = sorted(
-            {0, len(frames) // 4, len(frames) // 2, 3 * len(frames) // 4, len(frames) - 1}
-        )
-        occupancies = []
-        soft_edge_fractions = []
-        for index in probe_indices:
-            path = paths[index]
-            image = bpy.data.images.load(str(path), check_existing=False)
-            try:
-                width, height = [int(value) for value in image.size]
-                rgba = np.asarray(image.pixels[:], dtype=np.float32).reshape(
-                    height, width, 4
-                )
-                alpha = rgba[:, :, 3]
-                if (
-                    not np.isfinite(alpha).all()
-                    or float(alpha.min()) < 0.0
-                    or float(alpha.max()) > 1.0
-                ):
-                    raise ValueError(f"instance mask alpha is invalid: {path}")
-                occupancies.append(float(np.mean(alpha > 1.0e-6)))
-                soft_edge_fractions.append(
-                    float(np.mean((alpha > 1.0e-6) & (alpha < 1.0 - 1.0e-6)))
-                )
-            finally:
-                bpy.data.images.remove(image)
-        if not 0.0 < occupancies[0] < 1.0:
-            raise ValueError(
-                f"initial instance mask must be nonempty and non-full: {object_id}"
-            )
-        if max(soft_edge_fractions) <= 0.0:
-            raise ValueError(
-                f"instance masks lack antialiased coverage edges: {object_id}"
-            )
-        object_reports[str(object_id)] = {
-            "frame_count": len(frames),
-            "pixel_probe_frames": [frames[index] for index in probe_indices],
-            "nonempty_probe_count": sum(value > 0.0 for value in occupancies),
-            "minimum_occupancy_fraction": round(min(occupancies), 9),
-            "maximum_occupancy_fraction": round(max(occupancies), 9),
-            "maximum_soft_edge_fraction": round(max(soft_edge_fractions), 9),
-        }
-    return {
-        "policy_version": "physweep_antialiased_silhouette_validation_v1",
-        "objects": object_reports,
-    }
-
-
-def render_unoccluded_instance_masks(
-    render: dict[str, Any], metadata: dict[str, Any], dynamic_objects: list[Any]
-) -> dict[str, Any]:
-    """Render a conservative silhouette tube using the bound camera and trajectory."""
-    mask_dir = resolve_project_path(str(render["instance_mask_dir"]))
-    records = require_simulation_objects(
-        metadata, SUPPORTED_DYNAMIC_OBJECT_COUNTS, __name__
-    )
-    if len(records) != len(dynamic_objects):
-        raise ValueError("dynamic render objects differ from simulation objects")
-    scene = bpy.context.scene
-    scene.render.use_compositing = False
-    scene.use_nodes = False
-    scene.render.film_transparent = True
-    scene.render.image_settings.file_format = "PNG"
-    scene.render.image_settings.color_mode = "RGBA"
-    scene.render.image_settings.color_depth = "8"
-    if scene.render.engine == "BLENDER_EEVEE":
-        scene.eevee.taa_render_samples = max(8, min(int(render["samples"]), 16))
-    material = bpy.data.materials.new("physweep_motion_mask")
-    material.use_nodes = True
-    nodes = material.node_tree.nodes
-    links = material.node_tree.links
-    nodes.clear()
-    emission = nodes.new("ShaderNodeEmission")
-    emission.inputs["Color"].default_value = (1.0, 1.0, 1.0, 1.0)
-    emission.inputs["Strength"].default_value = 1.0
-    output = nodes.new("ShaderNodeOutputMaterial")
-    links.new(emission.outputs["Emission"], output.inputs["Surface"])
-    object_outputs = {}
-    for record, dynamic in zip(records, dynamic_objects):
-        object_id = str(record["object_id"])
-        object_dir = mask_dir / object_id
-        object_dir.mkdir(parents=True, exist_ok=True)
-        for stale_mask in object_dir.glob("frame_*.png"):
-            stale_mask.unlink()
-        for obj in scene.objects:
-            if obj.type in {"MESH", "CURVE", "SURFACE", "META", "FONT"}:
-                obj.hide_render = obj != dynamic
-        dynamic.data.materials.clear()
-        dynamic.data.materials.append(material)
-        scene.render.filepath = str(object_dir / "frame_")
-        scene.frame_set(int(render["frame_start"]))
-        require_render_finished(
-            bpy.ops.render.render(animation=True),
-            label=f"instance-mask animation render for {object_id}",
-        )
-        object_outputs[object_id] = {
-            "instance_id": int(dynamic.pass_index),
-            "directory": str(object_dir),
-        }
-    return {
-        "encoding": "rgba_alpha_antialiased_silhouette_mask",
-        "occlusion_policy": "unoccluded_dynamic_silhouette",
-        "path_layout": "object_id_subdirectories",
-        "directory": str(mask_dir),
-        "filename_pattern": "frame_{frame:04d}.png",
-        "objects": object_outputs,
-    }
-
-
 def configure_video_output(
     render: dict[str, Any],
 ) -> tuple[Path, dict[str, Any]]:
@@ -1100,9 +975,6 @@ def adapt_rendered_frame_exposure(
 def render(
     metadata_path: Path,
     first_frame_only: bool = False,
-    mask_only: bool = False,
-    instance_mask_dir: str | None = None,
-    mask_resolution: tuple[int, int] | None = None,
 ) -> dict[str, Any]:
     started = time.perf_counter()
     metadata = load_json(metadata_path)
@@ -1133,16 +1005,6 @@ def render(
         from tools.assets.three_object_resources import validate_resources
         validate_resources(PROJECT_ROOT, metadata, visual['resource_binding'])
     render_config = dict(visual["render"])
-    if instance_mask_dir is not None:
-        render_config["instance_mask_dir"] = instance_mask_dir
-    if mask_only:
-        if not render_config.get("instance_mask_dir"):
-            raise ValueError("mask-only rendering requires an instance mask directory")
-        if mask_resolution is not None:
-            render_config["resolution_x"] = int(mask_resolution[0])
-            render_config["resolution_y"] = int(mask_resolution[1])
-        render_config["resolution_percentage"] = 100
-        render_config["samples"] = 1
     expected_frames = (
         int(render_config["frame_end"]) - int(render_config["frame_start"]) + 1
     )
@@ -1162,52 +1024,6 @@ def render(
     )
     if not dynamic_objects:
         raise RuntimeError("dynamic objects were not created")
-    if mask_only:
-        scene = bpy.context.scene
-        instance_mask_output = render_unoccluded_instance_masks(
-            render_config, metadata, dynamic_objects
-        )
-        instance_mask_output["validation"] = validate_instance_mask_output(
-            instance_mask_output,
-            list(
-                range(
-                    int(render_config["frame_start"]),
-                    int(render_config["frame_end"]) + 1,
-                )
-            ),
-        )
-        record = {
-            "schema_version": "physweep_pybullet_render_record_v1",
-            "implementation": {
-                "path": str(Path(__file__).resolve()),
-                "sha256": sha256(Path(__file__).resolve()),
-            },
-            "scene_id": metadata["scene_id"],
-            "metadata_path": str(metadata_path),
-            "metadata_sha256": sha256(metadata_path),
-            "trajectory_path": str(trajectory_path),
-            "trajectory_sha256": sha256(trajectory_path),
-            "video_path": None,
-            "video_sha256": None,
-            "inspection_frames": [],
-            "blender_version": bpy.app.version_string,
-            "render_engine": scene.render.engine,
-            "video_encoding": None,
-            "instance_mask_output": instance_mask_output,
-            "lighting_adaptation": None,
-            "render_scope": "instance_masks_only",
-            "mask_resolution": [
-                int(render_config["resolution_x"]),
-                int(render_config["resolution_y"]),
-            ],
-            "wall_time_s": round(time.perf_counter() - started, 6),
-        }
-        record_path = (
-            resolve_project_path(str(render_config["instance_mask_dir"]))
-            / "render_record.json"
-        )
-        write_json(record_path, record)
-        return record
     if first_frame_only:
         render_config["inspection_frames"] = [int(render_config["frame_start"])]
     if is_three:
@@ -1262,38 +1078,20 @@ def render(
     return record
 
 
-def parse_resolution(value: str) -> tuple[int, int]:
-    parts = value.lower().split("x")
-    if len(parts) != 2:
-        raise argparse.ArgumentTypeError("resolution must look like 320x180")
-    width, height = (int(part) for part in parts)
-    if min(width, height) <= 0:
-        raise argparse.ArgumentTypeError("resolution must be positive")
-    return width, height
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--metadata", type=Path, required=True)
     parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
     parser.add_argument("--first-frame-only", action="store_true")
-    parser.add_argument("--mask-only", action="store_true")
-    parser.add_argument("--instance-mask-dir")
-    parser.add_argument("--mask-resolution", type=parse_resolution)
     return parser.parse_args(blender_argv())
 
 
 def main() -> None:
     args = parse_args()
     configure_project_root(args.root)
-    if args.first_frame_only and args.mask_only:
-        raise ValueError("first-frame-only and mask-only are mutually exclusive")
     record = render(
         args.metadata.resolve(),
         first_frame_only=args.first_frame_only,
-        mask_only=args.mask_only,
-        instance_mask_dir=args.instance_mask_dir,
-        mask_resolution=args.mask_resolution,
     )
     print(json.dumps(record, indent=2, ensure_ascii=True))
 

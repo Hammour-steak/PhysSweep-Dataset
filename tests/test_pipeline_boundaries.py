@@ -11,7 +11,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -139,8 +138,8 @@ class PipelineBoundaryTest(unittest.TestCase):
             renderer_source = (ROOT / "tools/rendering" / renderer).read_text(
                 encoding="utf-8"
             )
-            self.assertIn("include_mask_output=True", renderer_source)
-            self.assertIn("args.instance_mask_dir", renderer_source)
+            self.assertNotIn("render_instance_masks", renderer_source)
+            self.assertNotIn("--instance-mask-dir", renderer_source)
 
     def test_matrix_sampler_defaults_to_the_formal_release_size(self):
         tree = ast.parse(
@@ -333,8 +332,6 @@ class PipelineBoundaryTest(unittest.TestCase):
             roots["generic"], layout.sweep_render / "generic" / "bound"
         )
         self.assertEqual(roots["asset"], layout.sweep_render / "asset")
-
-
 
 
     def test_source_ownership_is_one_way(self):

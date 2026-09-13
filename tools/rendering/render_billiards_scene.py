@@ -43,8 +43,6 @@ from tools.rendering.video_encoding import (
 )
 from tools.dataset_contract.trajectory_contract import adapter_trajectory_view
 from tools.rendering.specialized_render_evidence import (
-    render_instance_mask_record,
-    render_instance_masks,
     render_implementation,
 )
 
@@ -125,9 +123,6 @@ def render(
     metadata_path: Path,
     video_path_override: Path | None = None,
     frame_dir_override: Path | None = None,
-    *,
-    mask_only: bool = False,
-    instance_mask_dir: Path | None = None,
 ) -> dict[str, Any]:
     started = time.perf_counter()
     metadata = load_json(metadata_path)
@@ -165,8 +160,7 @@ def render(
     trajectory = adapter_trajectory_view(trajectory)
     clear_scene()
     setup_scene(metadata)
-    if not mask_only:
-        apply_hdri(metadata["render"]["environment"])
+    apply_hdri(metadata["render"]["environment"])
     support_meshes = add_support(
         metadata["physics"]["static_support_binding"],
         include_all_source_meshes=True,
@@ -187,25 +181,6 @@ def render(
     if len(balls) != len(roles):
         raise ValueError("rendered ball count does not match the identity contract")
     camera = add_camera(metadata["camera"])
-    if mask_only:
-        if frame_dir_override is None or instance_mask_dir is None:
-            raise ValueError(
-                "mask-only rendering requires an inspection record directory and mask directory"
-            )
-        frame_dir = frame_dir_override.resolve()
-        frame_dir.mkdir(parents=True, exist_ok=True)
-        record = render_instance_mask_record(
-            root=PROJECT_ROOT,
-            metadata_path=metadata_path,
-            metadata=metadata,
-            camera=camera,
-            dynamic_objects={role: [ball] for role, ball in zip(roles, balls)},
-            mask_root=instance_mask_dir,
-            renderer_path=Path(__file__),
-        )
-        write_json(frame_dir / "render_record.json", record)
-        print(json.dumps(record, indent=2))
-        return record
     add_environment(metadata["render"]["environment"], camera)
     add_lighting(
         mathutils.Vector(camera["target_m"]),
@@ -250,17 +225,6 @@ def render(
         video_path,
         expected_frame_count=scene.frame_end - scene.frame_start + 1,
     )
-    mask_path = metadata["object_identity"]["instance_masks"].get("path")
-    instance_mask_output = None
-    if instance_mask_dir is not None or (
-        isinstance(mask_path, str) and bool(mask_path)
-    ):
-        instance_mask_output = render_instance_masks(
-            root=PROJECT_ROOT,
-            metadata=metadata,
-            dynamic_objects={role: [ball] for role, ball in zip(roles, balls)},
-            mask_root_override=instance_mask_dir,
-        )
     record = {
         "schema_version": "physweep_billiards_render_record_v1",
         "scene_id": metadata["scene_id"],
@@ -279,7 +243,7 @@ def render(
         "render_engine": scene.render.engine,
         "render_samples": render_samples,
         "video_encoding": video_encoding,
-        "instance_mask_output": instance_mask_output,
+        "instance_mask_output": None,
         "implementation": render_implementation(Path(__file__)),
         "wall_time_s": round(time.perf_counter() - started, 6),
     }
@@ -290,7 +254,7 @@ def render(
 
 if __name__ == "__main__":
     args = parse_scene_render_args(
-        __doc__, project_root=PROJECT_ROOT, include_masks=True
+        __doc__, project_root=PROJECT_ROOT
     )
     PROJECT_ROOT = args.root.resolve()
     configure_project_root(PROJECT_ROOT)
@@ -298,6 +262,4 @@ if __name__ == "__main__":
         args.metadata.resolve(),
         args.video_path,
         args.inspection_frame_dir,
-        mask_only=args.mask_only,
-        instance_mask_dir=args.instance_mask_dir,
     )
