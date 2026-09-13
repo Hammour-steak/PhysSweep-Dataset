@@ -86,6 +86,20 @@ wrapper uses `--run-id` and `--output`:
 .venv/bin/python -m tools.cli.generate_three_object_dataset --help
 ```
 
+The public wrapper exposes no generation stage-stop option. Direct entry points have
+different historical defaults; specify count/seed explicitly where supported.
+Their stop controls are:
+
+| Entry point | Stop control | Resume |
+|---|---|---|
+| 1obj | No unified stage-stop option; runs the complete pipeline | Repeat the request with `--resume` |
+| 2obj | `--metadata-only`: sampled metadata, before simulation | Remove the stop flag and add `--resume` |
+| 2obj | `--admission-only`: physics admission and sweeps, before final render preparation | Remove the stop flag and add `--resume`; `--accepted-base-cameras` can supply reviewed specialized cameras |
+| 3obj | `--stage base`, `physics` or `all` | Keep the request and use `--stage all --resume` |
+
+The two 2obj stop flags are mutually exclusive. They are not aliases for the
+3obj stage options. Metadata/physics stop points do not produce videos.
+
 Custom 2obj quotas use `--sampling-config` with a copy of
 [two_object_production_sampling.json](../configs/two_object_production_sampling.json).
 Keep fixture variation domains and supply the source/template arguments required
@@ -102,7 +116,7 @@ Thus nine modes produce four output families. Active generic matrices retain
 D-prefixed filenames, but no historical development run is required. Asset,
 motion and camera boundaries are in the [3obj rule guide](PHYSWEEP_THREE_OBJECT_RULE_MATRIX.md).
 
-| 3obj `--stage` | Stops after |
+| 3obj `--stage` detail | Stops after |
 |---|---|
 | `base` | Base metadata, physics and camera admission; no videos |
 | `physics` | Base admission and sweep simulations; no videos |

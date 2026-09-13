@@ -27,7 +27,8 @@ from tools.rendering.three_object_pinball_camera import solve_pinball_camera
 from tools.rendering.three_object_marble_camera import solve_marble_camera
 from tools.sampling.derive_physics_sweep import load_sweep_config, _load_prior_indexes
 from tools.sampling.three_object_fingerprints import physics_fingerprint
-from tools.sampling.three_object_generation import CandidateFactory, allocate_counts, GENERIC_RULES
+from tools.core.sampling_counts import allocate_counts
+from tools.sampling.three_object_generation import CandidateFactory, GENERIC_RULES
 from tools.sampling.three_object_sweeps import derive_group
 from tools.sampling.three_object_rule_matrix import load_and_validate_rule_matrix
 

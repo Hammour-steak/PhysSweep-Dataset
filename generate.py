@@ -32,7 +32,7 @@ def parser():
 
 
 def two_object_request(count, seed):
-    from tools.sampling.three_object_generation import allocate_counts
+    from tools.core.sampling_counts import allocate_counts
     from tools.sampling.two_object_sampling_request import validate_sampling_request
     rules = json.loads((ROOT/'configs/two_object_specialized_scene_rules.json').read_text())
     request = json.loads((ROOT/'configs/two_object_production_sampling.json').read_text())
@@ -55,7 +55,7 @@ def two_object_request(count, seed):
 def source_inputs(work_id):
     from tools.core.json_io import frozen_json
     from tools.sampling.released_object_sources import verified_generation_records
-    from tools.sampling.sample_three_object_marble import localize_marble_source_rows
+    from tools.sampling.released_object_sources import localize_marble_source_rows
     source = ROOT/'assets/source_pool/generation'
     manifest = source/'datasets/one_object_v5/release/metadata_manifest.json'
     released = ROOT/'assets/source_pool/released/base/manifest.json'

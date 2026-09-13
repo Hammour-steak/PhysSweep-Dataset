@@ -3,7 +3,8 @@ from pathlib import Path
 from unittest.mock import patch
 from tools.core.hashing import sha256_file,sha256_json
 from tools.physics.resolved_simulation_scene import compile_resolved_scene
-from tools.sampling.sample_three_object_marble import load_marble_rules,build_three_object_marble_scene,localize_marble_source_rows
+from tools.sampling.sample_three_object_marble import load_marble_rules,build_three_object_marble_scene
+from tools.sampling.released_object_sources import localize_marble_source_rows
 from tools.sampling.derive_physics_sweep import load_sweep_config
 from tools.sampling.three_object_sweeps import derive_group
 from tools.sampling.three_object_fingerprints import physics_fingerprint

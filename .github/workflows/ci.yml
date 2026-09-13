@@ -18,6 +18,6 @@ jobs:
           cache: pip
       - run: pip install -r requirements.txt
       - name: Compile Python sources
-        run: python -m compileall -q tools tests
+        run: python -m compileall -q generate.py tools tests
       - name: Repository test suite
         run: python tests/run_ci.py

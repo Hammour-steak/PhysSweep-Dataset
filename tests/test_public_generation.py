@@ -3,6 +3,8 @@ import hashlib
 import io
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tarfile
 import tempfile
 import unittest
@@ -10,10 +12,18 @@ from unittest.mock import patch
 
 import generate
 from tools.assets import prepare_runtime as setup
-from tools.sampling.three_object_generation import allocate_counts
+from tools.core.sampling_counts import allocate_counts
 
 
 class PublicGenerationTests(unittest.TestCase):
+    def test_two_object_request_does_not_load_three_object_pipeline(self):
+        subprocess.run([sys.executable, '-c',
+            "import sys, generate; "
+            "request = generate.two_object_request(10, 31); "
+            "assert sum(request['family_base_counts'].values()) == 10; "
+            "assert not any('three_object' in name for name in sys.modules)"],
+            cwd=generate.ROOT, check=True)
+
     def test_plan_needs_no_assets_or_processes(self):
         output = io.StringIO()
         with patch.object(generate.subprocess, 'run', side_effect=AssertionError('must not execute')), contextlib.redirect_stdout(output):

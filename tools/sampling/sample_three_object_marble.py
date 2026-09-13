@@ -1,6 +1,5 @@
 """Compose source-preserving marble metadata; physics and camera admission are later."""
 import copy,random
-from pathlib import Path
 from tools.core.hashing import sha256_file,sha256_json
 from tools.core.json_io import read_json
 from tools.core.paths import safe_scene_id
@@ -8,29 +7,6 @@ from tools.core.marble_fixture_layout import construct_marble_fixture
 from tools.dataset_contract.object_identity_contract import attach_object_identity
 from tools.assets.visual_environment_binding import choose_specialized_environment
 from tools.motion_rules.three_object.marble import IDS,ROLES,SCHEMA,initial_states,validate_marble_contract
-
-
-def localize_marble_source_rows(rows,source_root,data_root,collision_directory):
-    """Copy verified collision contents into the new work; retain original bindings."""
-    collision_directory=Path(collision_directory)
-    collision_directory.resolve().relative_to(data_root.resolve())
-    result=copy.deepcopy(rows)
-    for row in result:
-        bindings=[]
-        for c in row['metadata']['physics']['fixture']['mesh_components']:
-            original=copy.deepcopy(c['collision']);source=source_root/original['path']
-            if sha256_file(source)!=original['sha256']:raise ValueError('original marble collision hash mismatch')
-            target=collision_directory/(original['sha256']+'.obj')
-            target.parent.mkdir(parents=True,exist_ok=True)
-            if target.exists():
-                if sha256_file(target)!=original['sha256']:raise ValueError('localized marble collision changed')
-            else:
-                with target.open('xb') as output:output.write(source.read_bytes())
-                if sha256_file(target)!=original['sha256']:raise ValueError('marble collision copy failed')
-            c['collision']['path']=target.relative_to(data_root).as_posix()
-            bindings.append({'component_id':c['id'],'original':{'path':str(source),'sha256':original['sha256']},'localized':copy.deepcopy(c['collision'])})
-        row['fixture_resource_localization']=bindings
-    return result
 
 
 def load_marble_rules(code_root,data_root):

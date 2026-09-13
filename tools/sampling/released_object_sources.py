@@ -1,10 +1,12 @@
 """Strict release/lineage reading shared by object-count source selectors.
 
-This module verifies provenance only. Shape and host eligibility belong to the
-consumer's scene rules; an old admission is never a new scene's admission.
+This module verifies provenance and localizes hash-verified collision resources.
+Shape and host eligibility belong to the consumer's scene rules; an old
+admission is never a new scene's admission.
 """
 from __future__ import annotations
 
+import copy
 import os
 from pathlib import Path
 from typing import Any
@@ -116,4 +118,27 @@ def verified_generation_records(*, root: Path, released_base_manifest_path: Path
         result.append({'record': record, 'metadata': metadata, 'release_metadata': released_record[2],
             'source': source_reference(root=root, source_root=source_root, generation_record=record,
                                       generation_metadata=metadata, release_record=released_record)})
+    return result
+
+
+def localize_marble_source_rows(rows,source_root,data_root,collision_directory):
+    """Copy verified collision contents into the new work; retain original bindings."""
+    collision_directory=Path(collision_directory)
+    collision_directory.resolve().relative_to(data_root.resolve())
+    result=copy.deepcopy(rows)
+    for row in result:
+        bindings=[]
+        for c in row['metadata']['physics']['fixture']['mesh_components']:
+            original=copy.deepcopy(c['collision']);source=source_root/original['path']
+            if sha256(source)!=original['sha256']:raise ValueError('original marble collision hash mismatch')
+            target=collision_directory/(original['sha256']+'.obj')
+            target.parent.mkdir(parents=True,exist_ok=True)
+            if target.exists():
+                if sha256(target)!=original['sha256']:raise ValueError('localized marble collision changed')
+            else:
+                with target.open('xb') as output:output.write(source.read_bytes())
+                if sha256(target)!=original['sha256']:raise ValueError('marble collision copy failed')
+            c['collision']['path']=target.relative_to(data_root).as_posix()
+            bindings.append({'component_id':c['id'],'original':{'path':str(source),'sha256':original['sha256']},'localized':copy.deepcopy(c['collision'])})
+        row['fixture_resource_localization']=bindings
     return result

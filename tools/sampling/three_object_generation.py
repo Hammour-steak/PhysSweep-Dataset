@@ -9,10 +9,10 @@ from pathlib import Path
 from tools.assets.three_object_resources import resource_snapshot
 from tools.core.hashing import sha256_json
 from tools.sampling.derive_physics_sweep import load_sweep_config
-from tools.sampling.released_object_sources import verified_generation_records
+from tools.sampling.released_object_sources import verified_generation_records, localize_marble_source_rows
 from tools.sampling.sample_three_object_billiards import load_billiards_rules, build_three_object_billiards_scene
 from tools.sampling.sample_three_object_pinball import load_pinball_rules, build_three_object_pinball_scene
-from tools.sampling.sample_three_object_marble import load_marble_rules, build_three_object_marble_scene, localize_marble_source_rows
+from tools.sampling.sample_three_object_marble import load_marble_rules, build_three_object_marble_scene
 from tools.sampling.three_object_coverage import build_plan, candidates
 from tools.sampling.three_object_sampling_request import candidate_seed, load_pilot_rules
 from tools.sampling.three_object_sources import load_sources
@@ -31,20 +31,6 @@ SPECIAL_SCHEMAS = {
     'passive_pinball': 'physweep_passive_pinball_scene_v1',
     'marble_run': 'physweep_marble_run_scene_v1',
 }
-
-
-def allocate_counts(count: int, weights: dict[str, float], *, minimum: int = 0) -> dict[str, int]:
-    if count < 1 or not weights or any(value <= 0 for value in weights.values()):
-        raise ValueError('count and family weights must be positive')
-    if minimum * len(weights) > count:
-        raise ValueError('count is too small to cover the requested families')
-    remaining = count - minimum * len(weights)
-    total = sum(weights.values())
-    exact = {key: remaining * value / total for key, value in weights.items()}
-    result = {key: minimum + int(value) for key, value in exact.items()}
-    for key in sorted(weights, key=lambda key: (-(exact[key] % 1), key))[:count-sum(result.values())]:
-        result[key] += 1
-    return result
 
 
 class CandidateFactory:
