@@ -52,8 +52,9 @@ python3 generate.py --objects all --count 100 --run-id demo \
   --output outputs/demo --plan-only
 ```
 
-Preview prints counts and output paths without downloads or generation; it does
-not validate GPU readiness, resources, detailed quotas or physics acceptance.
+Preview checks count and output-path constraints, then prints counts and paths
+without downloads or generation. It does not validate GPU readiness, resources,
+detailed quotas or physics acceptance.
 
 ## Directories and long runs
 
@@ -68,6 +69,7 @@ from the repository root. For `--objects 3 --run-id demo --output outputs/demo`:
 
 Defaults are `--run-id generation --output outputs`. Output selection does not
 relocate checkpoints or intermediates; work and release paths must not overlap.
+All selected output paths are checked before setup or generation starts.
 Consume the final directory and manifests, not intermediate video counts.
 
 The README shows resume commands and how to isolate a new dataset. Resume cannot

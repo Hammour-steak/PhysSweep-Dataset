@@ -32,6 +32,23 @@ class PublicGenerationTests(unittest.TestCase):
         self.assertEqual(plan['samples_per_object_count'], 1300)
         self.assertEqual(plan['objects'], [1, 2, 3])
 
+    def test_invalid_output_stops_before_setup_inputs_or_any_generation(self):
+        cases = [('2', '../outside'), ('all', 'outputs/demo_two_object'),
+                 ('all', 'outputs/demo_three_object')]
+        for objects, output in cases:
+            for flags in ([], ['--setup'], ['--plan-only']):
+                with self.subTest(objects=objects, output=output, flags=flags), tempfile.TemporaryDirectory() as directory:
+                    root = Path(directory)
+                    with patch.object(generate, 'ROOT', root), \
+                            patch.object(setup, 'setup_environment', side_effect=AssertionError('must not install')), \
+                            patch.object(generate.subprocess, 'run', side_effect=AssertionError('must not generate')), \
+                            patch.object(generate, 'two_object_request', return_value={}), \
+                            patch.object(generate, 'source_inputs', side_effect=AssertionError('must not stage inputs')), \
+                            contextlib.redirect_stdout(io.StringIO()):
+                        with self.assertRaisesRegex(ValueError, 'canonical release|must not overlap'):
+                            generate.main(['--objects', objects, '--run-id', 'demo', '--output', output, *flags])
+                    self.assertEqual(list(root.iterdir()), [])
+
     def test_two_object_quota_preserves_total_profiles_and_seed(self):
         for count in (10, 100, 3077):
             request = generate.two_object_request(count, 31)

@@ -87,6 +87,10 @@ def main(argv=None):
     objects = list(NAMES) if args.objects == 'all' else [int(args.objects)]
     if not args.setup_only and ((1 in objects and args.count < 24) or (2 in objects and args.count < 10) or (3 in objects and args.count < 9)):
         raise ValueError('Use at least 24 bases for 1obj, 10 for 2obj and 9 for 3obj')
+    if not args.setup_only:
+        from tools.cli.dataset_generation import generation_layout
+        for count in objects:
+            generation_layout(ROOT, args.run_id+'_'+NAMES[count], args.output/NAMES[count], object_count=count)
     if args.plan_only:
         print(json.dumps({'objects': objects, 'bases_per_object_count': args.count,
             'samples_per_object_count': args.count*13, 'seed': args.seed,
