@@ -15,14 +15,31 @@ import sys
 import tarfile
 import tempfile
 import time
+from typing import Any
+import urllib.error
 import urllib.request
 import venv
 
-from tools.assets.sketchfab_download import request_json
 from tools.assets.sketchfab_policy import noai_declared, require_glb_download
 
 BLENDER = 'blender-3.4.0-linux-x64'
 BLENDER_SHA256 = 'f9aaf69339e4aad3b7927a4cf7ba372453e393df662c92bc1fedf94e0c6b5382'
+
+
+def request_json(url: str, token: str, attempts: int = 5) -> dict[str, Any]:
+    for attempt in range(attempts):
+        request = urllib.request.Request(
+            url,
+            headers={"Authorization": f"Token {token}", "Accept": "application/json"},
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            if exc.code not in {429, 500, 502, 503, 504} or attempt + 1 == attempts:
+                raise
+            time.sleep(2 ** attempt)
+    raise RuntimeError("unreachable")
 
 
 def digest(path):

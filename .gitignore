@@ -45,7 +45,6 @@ Thumbs.db
 # Secrets and machine-local configuration
 .env
 .env.*
-!.env.example
 *.pem
 *.key
 *_ssh
