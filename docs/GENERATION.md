@@ -4,6 +4,10 @@ Follow the [README](../README.md) for setup, generation, resume and output.
 This page covers options beyond that workflow. Commands assume Bash in the
 repository root; list public options with `python3 generate.py --help`.
 
+For supported motions, assets, scenes and cameras, use the
+[1obj](PHYSWEEP_ONE_OBJECT_RULE_MATRIX.md), [2obj](PHYSWEEP_TWO_OBJECT_RULE_MATRIX.md)
+and [3obj](PHYSWEEP_THREE_OBJECT_RULE_MATRIX.md) rule guides.
+
 ## Setup and resources
 
 The README lists host requirements and token setup. On Ubuntu, `python3-venv`,

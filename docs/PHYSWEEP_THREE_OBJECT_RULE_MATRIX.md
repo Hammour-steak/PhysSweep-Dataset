@@ -1,6 +1,6 @@
 # 3obj 规则与多样性
 
-生成命令、数量和续跑见 [生成说明](GENERATION.md)，输出、身份和 sweep 共享契约见 [数据规范](PHYSWEEP_SPEC.md)。本文只补充 3obj 的能力边界。
+生成命令见 [生成说明](GENERATION.md)，共同约束见 [共享规则](PHYSWEEP_RULEBOOK.md) 和 [数据规范](PHYSWEEP_SPEC.md)。本文只补充 3obj 的能力边界。
 
 [规则矩阵](../configs/three_object_rule_matrix.json) 声明运动、支撑和相机兼容关系，[资产范围](../configs/three_object_asset_scope.json) 声明允许资产、代理及排除原因。实际分发见 [three_object_generation.py](../tools/sampling/three_object_generation.py)：六个 generic 模式加三个特殊场景，发布为四个 family。部分 D5/D6 文件仍是运行时输入；顶层配置的历史状态文字不代表当前 CLI 分发方式。
 

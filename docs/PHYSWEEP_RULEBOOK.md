@@ -1,10 +1,11 @@
 # Physics and visual rules
 
-This reference describes shared contracts and the 1obj sampling matrix.
-Start with the [README](../README.md) to generate data. Multi-object behavior
-uses the [2obj matrix](../configs/two_object_sampling_matrix.json),
-[2obj fixture rules](../configs/two_object_specialized_scene_rules.json) and
-[3obj rule guide](PHYSWEEP_THREE_OBJECT_RULE_MATRIX.md).
+This reference describes shared physics and visual constraints.
+Start with the [README](../README.md) to generate data. Object-count-specific
+motions, assets, environments and cameras are documented in the
+[1obj](PHYSWEEP_ONE_OBJECT_RULE_MATRIX.md),
+[2obj](PHYSWEEP_TWO_OBJECT_RULE_MATRIX.md) and
+[3obj](PHYSWEEP_THREE_OBJECT_RULE_MATRIX.md) rule guides.
 Numerical limits belong to the configuration and solver for each branch.
 
 ## Sampling and assets
@@ -13,18 +14,6 @@ Concrete assets and scenes belong in profiles and scene kits; compatibility
 belongs in declared rules. Python branches on reusable behavior types, never
 individual scene IDs. Seeded selection balances compatible candidates within
 the requested quota. Small batches do not imply exhaustive asset coverage.
-
-The 1obj matrix allocates motion independently of environment, then matches
-compatible supports, physical proxies and visual assets. Incompatible
-environments do not change the requested motion. The matcher preserves exact
-environment quotas whenever a legal assignment exists. Scene classes distinguish
-ground/raised and flat/feature supports; compatibility determines which can host
-each motion.
-
-Identity-bearing environments keep narrow semantics: regulation balls for
-billiards, gravity descent for passive pinball, and reviewed clear-zone motions
-for workbenches. Curated supports use named dynamic-object pools. Prop-bearing
-scenes admit only declared clear-lane motion and reject unintended prop contact.
 
 Each admitted asset binds a source hash, license, metric transform, component
 partition and collision proxy. Dynamic GLBs use reviewed analytic primitives,
@@ -74,11 +63,6 @@ speed and angular-speed bounds are audited over the required trajectory.
 
 A base camera is admitted from simulated motion and then frozen for its complete
 base/sweep group. Sweep motion may leave the frame; it cannot select a new camera.
-
-The generic 1obj solver separates motion observation intent from structure
-context. Observation selects the relevant temporal interval; structure selects
-anchors such as a slope, impact wall, edge or landing. These belong in
-`camera_request.observation`, not the physics-only `expected_motion`.
 
 Camera admission checks object size, initial visibility, observed/full-trajectory
 coverage, structural anchors and occlusion. Distant floor boundaries are soft
@@ -130,9 +114,7 @@ base's selected motion outcome. The [dataset specification](PHYSWEEP_SPEC.md)
 defines identity, trajectory and media publication checks.
 
 Physics is authoritative for the declared proxy, not every triangle of its
-visual mesh. Under uniform gravity and Coulomb contact, mass-only changes in an
-isolated single-object scene normally leave the trajectory unchanged. The sampler
-must not invent visible mass effects.
+visual mesh. The sampler must not invent effects merely to create visible diversity.
 
 ## Configuration ownership
 
@@ -141,7 +123,7 @@ document does not maintain a second table of numeric constants.
 
 | Concern | Authoritative inputs |
 |---|---|
-| 1obj sampling and dependency hashes | [matrix](../configs/one_object_sampling_matrix.json), [rules](../configs/one_object_sampling_rules.json), [bundle](../configs/one_object_sampling_bundle.json) |
+| Object-count sampling and compatibility | [1obj guide](PHYSWEEP_ONE_OBJECT_RULE_MATRIX.md), [2obj guide](PHYSWEEP_TWO_OBJECT_RULE_MATRIX.md), [3obj guide](PHYSWEEP_THREE_OBJECT_RULE_MATRIX.md) and their linked matrices |
 | Motion/environment compatibility | [compatibility](../configs/compatibility.json), [semantic rules](../configs/asset_semantic_scene_rules.json), [capabilities](../configs/backend_capabilities.json) |
 | Object identity, dimensions and ranges | [object profiles](../configs/physassets_core_object_profiles.json), [visual curation](../configs/object_visual_curation.json) |
 | Proxy geometry and component roles | [proxy registry](../configs/asset_proxy_registry.json), [catalog](../assets/proxies/catalog.json), [composition](../configs/asset_scene_composition.json) |

@@ -94,8 +94,8 @@ They may leave the frame and are not filtered by base motion-selection rules.
 
 - [Generation guide](docs/GENERATION.md): counts, preview, resources, advanced stages and troubleshooting.
 - [Dataset specification](docs/PHYSWEEP_SPEC.md): pipeline and shared data contracts.
-- [Physics and visual rules](docs/PHYSWEEP_RULEBOOK.md): shared rules and 1obj details.
-- [3obj rule guide](docs/PHYSWEEP_THREE_OBJECT_RULE_MATRIX.md): motion, assets, scenes and cameras.
+- [Shared physics and visual rules](docs/PHYSWEEP_RULEBOOK.md): common constraints and configuration ownership.
+- Object-count rules: [1obj](docs/PHYSWEEP_ONE_OBJECT_RULE_MATRIX.md), [2obj](docs/PHYSWEEP_TWO_OBJECT_RULE_MATRIX.md), [3obj](docs/PHYSWEEP_THREE_OBJECT_RULE_MATRIX.md). Each covers motion, assets, scenes, cameras and supported scope.
 
 `configs/` holds rules, `tools/` implements generation, and `assets/` holds
 runtime indexes and attribution. Downloaded binaries and generated data stay
