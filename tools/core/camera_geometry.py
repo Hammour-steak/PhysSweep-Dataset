@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import math
 from collections.abc import Sequence
 from typing import Any
@@ -108,21 +107,6 @@ def pair_approach_axis_xy(
     ):
         raise ValueError("pair approach axis needs a finite horizontal projection")
     return x / norm, y / norm
-
-
-def deterministic_pair_side_azimuths(
-    scene_id: str, approach_axis_xyz: Sequence[float]
-) -> tuple[float, float]:
-    """Return both side-on pair views in deterministic preference order."""
-
-    x, y = pair_approach_axis_xy(approach_axis_xyz)
-    approach_degrees = math.degrees(math.atan2(y, x))
-    digest = hashlib.sha256(
-        f"joint-camera-side:{scene_id}".encode("utf-8")
-    ).digest()
-    preferred_side = -1.0 if digest[0] % 2 else 1.0
-    preferred = approach_degrees + preferred_side * 90.0
-    return preferred, preferred + 180.0
 
 
 def pair_view_azimuth_degrees(

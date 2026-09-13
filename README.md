@@ -1,8 +1,7 @@
 # PhysSweep
 
-Generate physics-controlled videos with one, two or three moving objects.
-One command samples bases, simulates counterfactual sweeps, freezes each base
-camera, renders videos and publishes verified metadata.
+Generate physics-controlled videos with one, two or three moving objects,
+including verified base/sweep metadata, trajectories and videos.
 
 ## 1. Prepare the host
 
@@ -31,26 +30,23 @@ physics checkpoints, render intermediates and final videos.
 
 ## 2. Generate
 
-Install the runtime, download resources and generate all three object counts:
+Install dependencies, Blender 3.4.0 and assets, then generate:
 
 ```bash
 python3 generate.py --setup --objects all --count 100 --gpus 0 \
   --run-id demo --output outputs/demo
 ```
 
-This creates `.venv`, installs dependencies and pinned Blender 3.4.0, then runs
-1obj, 2obj and 3obj **sequentially**. `--count 100` means **100 bases for each
-object count**. Every base has 12 sweep variants, giving 1,300 videos per object
-count and **3,900 videos in total**.
+This creates `.venv` and runs 1obj, 2obj and 3obj **sequentially**.
+`--count 100` means **100 bases per object count**. Each has 12 sweep variants:
+1,300 videos per object count, **3,900 in total**.
 
 For a smaller first run, replace `--objects all --count 100` with
 `--objects 3 --count 9` (117 videos). This is an alternative to the command above.
 
-If you prefer to prepare resources before generating, run
-`python3 generate.py --setup-only`, then use the generation command without
-`--setup`, through `.venv/bin/python`. Once prepared, further runs need no setup.
-**2obj and 3obj do not require you to generate 1obj first**: setup supplies their
-frozen source metadata separately from your new output.
+To prepare without generating, use `python3 generate.py --setup-only`.
+After preparation, run through `.venv/bin/python` without `--setup`.
+**2obj and 3obj can run independently** using the source metadata supplied by setup.
 
 For a new, independent run using prepared resources:
 
@@ -86,14 +82,13 @@ outputs/demo/
 ```
 
 Every sample contains `metadata.json`, `trajectory.npz` and `video.mp4`.
-All object counts use `physweep_base_sample_v12` and
-`physweep_sweep_sample_v2`, with root and family manifests. There are no masks.
+The shared schemas and manifests are described in the
+[dataset specification](docs/PHYSWEEP_SPEC.md). There are no masks.
 Videos are 1280 × 720 at 24 FPS. They include both endpoints of the 4-second
 simulation: **97 frames**, with timestamps from 0 to 4 seconds.
 
-Sweeps vary mass, friction or restitution on object A; the other objects retain
-their base parameters. Every group keeps its admitted base camera. Sweeps may
-leave the frame and are not filtered by base motion-selection rules.
+Sweeps vary object A's mass, friction or restitution and keep the base camera.
+They may leave the frame and are not filtered by base motion-selection rules.
 
 ## Details and development
 
@@ -102,16 +97,9 @@ leave the frame and are not filtered by base motion-selection rules.
 - [Physics and visual rules](docs/PHYSWEEP_RULEBOOK.md): shared rules and 1obj details.
 - [3obj rule guide](docs/PHYSWEEP_THREE_OBJECT_RULE_MATRIX.md): motion, assets, scenes and cameras.
 
-`generate.py` is the public entry point. `configs/` holds generation rules;
-`tools/` implements sampling, simulation, rendering and publication; `assets/`
-holds runtime indexes and attribution. Downloaded binaries and generated data
-are not committed. Source metadata lives in `assets/source_pool`.
-
-Generation and physical-contract regression checks:
-
-```bash
-.venv/bin/python -m unittest discover -s tests
-```
+`configs/` holds rules, `tools/` implements generation, and `assets/` holds
+runtime indexes and attribution. Downloaded binaries and generated data stay
+outside Git. See [contributing](CONTRIBUTING.md) for regression checks.
 
 Third-party assets retain their own licenses. See
 [asset attribution](assets/THIRD_PARTY_ASSETS.json) and

@@ -747,28 +747,6 @@ def create_procedural_support(support: dict[str, Any], metadata: dict[str, Any])
     }
 
 
-def fallback_color(asset: dict[str, Any]) -> tuple[float, float, float, float]:
-    category = asset.get("semantic_category") or asset.get("role") or ""
-    role = asset.get("composition_role") or asset.get("slot") or ""
-    if "table" in category or "bench" in category or "support" in role:
-        return (0.52, 0.34, 0.20, 1.0)
-    if "wall" in category or "context" in role:
-        return (0.58, 0.57, 0.53, 1.0)
-    if "lamp" in category:
-        return (0.25, 0.24, 0.22, 1.0)
-    if "books" in category:
-        return (0.34, 0.24, 0.18, 1.0)
-    if "tableware" in category:
-        return (0.86, 0.82, 0.75, 1.0)
-    if asset.get("slot") == "object_a":
-        return (0.80, 0.16, 0.12, 1.0)
-    if asset.get("slot") == "object_b":
-        return (0.12, 0.26, 0.70, 1.0)
-    if asset.get("slot") == "object_c":
-        return (0.92, 0.76, 0.14, 1.0)
-    return (0.55, 0.42, 0.31, 1.0)
-
-
 def light_location(light_rule: dict[str, Any], fallback: tuple[float, float, float]) -> tuple[float, float, float]:
     location = light_rule.get("location", fallback)
     if not isinstance(location, list) or len(location) < 3:

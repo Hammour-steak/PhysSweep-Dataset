@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import json
 import math
 from collections import Counter
 from pathlib import Path
@@ -38,17 +37,6 @@ REPRESENTATIONS = {
     "none",
 }
 QUALITY_GRADES = {"A", "B", "C", "reject"}
-
-
-def write_jsonl(path: Path, records: Iterable[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    with temporary.open("w", encoding="utf-8", newline="\n") as destination:
-        for record in records:
-            destination.write(
-                json.dumps(record, ensure_ascii=True, sort_keys=True) + "\n"
-            )
-    temporary.replace(path)
 
 
 def _validate_analytic_proxy(record: dict[str, Any]) -> None:

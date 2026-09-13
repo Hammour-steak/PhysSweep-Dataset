@@ -62,15 +62,6 @@ def sphere_front_samples(camera: np.ndarray, center: np.ndarray, radius: float) 
     return center+radius*(tangent+np.sqrt(1-radial*radial)[:,None]*toward)
 
 
-def projected_surface_inside_frame(projected: np.ndarray, camera: dict, margin: float) -> bool:
-    """Check one object's sampled physical surface against the camera safe frame."""
-    projected=np.asarray(projected,dtype=float)
-    if projected.ndim!=2 or projected.shape[1]!=3 or not np.isfinite(projected).all():
-        raise ValueError('projected surface must be a finite N x 3 array')
-    return bool(np.all((projected[:,:2]>=margin)&(projected[:,:2]<=1-margin))
-                and np.all((projected[:,2]>camera['clip_start_m'])&(projected[:,2]<camera['clip_end_m'])))
-
-
 def projected_frames_inside(projected: np.ndarray, camera: dict, margin: float) -> np.ndarray:
     """Return whether every physical-envelope point is inside each frame bound."""
     projected=np.asarray(projected,dtype=float)

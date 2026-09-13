@@ -21,10 +21,6 @@ def center_layout_envelope(xy: dict[str,np.ndarray],extents: dict[str,np.ndarray
     return {role:value-offset for role,value in xy.items()},offset
 
 
-def apply_chain_motion(scene: dict, rules: dict, *, role_order: list[str], speed_m_s: float, spacing_ratio: float) -> dict:
-    return apply_motion(scene,rules,role_order=role_order,speed_m_s=speed_m_s,spacing_ratio=spacing_ratio,template_id='chain_transfer')
-
-
 def apply_motion(scene: dict, rules: dict, *, role_order: list[str], speed_m_s: float,
                  spacing_ratio: float, template_id: str, offset_ratio: float=0.6,
                  motion_axis: str='world_x',layout_variant: str='axis_aligned') -> dict:
