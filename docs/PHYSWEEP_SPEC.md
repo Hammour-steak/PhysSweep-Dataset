@@ -10,13 +10,30 @@ colliders, visual asset ids, camera request, render request, rule hashes, and
 backend hashes. Stable object ids join text, dense trajectories, videos, and
 per-target sweeps. Canonical samples do not contain masks.
 
-Generation has four stages:
+The public workflow is documented in the [generation guide](GENERATION.md).
+Each object-count pipeline performs these logical steps:
 
 1. Sample metadata from the matrix.
-2. Simulate and audit the trajectory.
-3. Bind camera, lighting, and render paths from accepted data.
-4. Render video without changing physics.
+2. Simulate and admit base physics and camera framing.
+3. Derive 12 sweeps per base and simulate them, keeping the admitted base camera.
+4. Bind rendering from accepted data and render without changing physics.
+5. Verify and publish complete base/sweep groups in the canonical output layout.
 
-Only declared capabilities may enter a released split. Failed candidates remain diagnostic records and are not repaired individually. A failed generic candidate is replaced with a deterministic, slot-specific seed while preserving the requested motion; the released manifest contains exactly one accepted candidate per matrix slot. The candidate-attempt manifest records every replacement and rejection reason.
+Only declared capabilities may enter a released split. Base selection uses
+bounded deterministic retries inside the requested rule scope. Exhausting the
+attempt budget is an error, not permission to publish an unaccepted candidate.
+Sweeps need not reproduce the base's motion outcome or remain in frame; they
+still require valid simulations, complete artifacts and consistent identities.
 
 The generic bundle hashes every rule, backend, material-manifest, and HDRI-manifest dependency. The outer scene-family manifest likewise hashes its matrix, generic bundle, asset registry, composition rules, semantic rules, backend, and capability declaration. Every branch must finish physics audit before the outer manifest is accepted.
+
+Each canonical sample contains only `metadata.json`, `trajectory.npz` and
+`video.mp4`. The sample schemas are `physweep_base_sample_v12` and
+`physweep_sweep_sample_v2` for all three object counts. Source/checkpoint schemas
+are internal and differ by physics adapter; they are not the canonical format.
+
+Detailed contracts:
+
+- [Object identity](PHYSWEEP_OBJECT_IDENTITY_CONTRACT.md): text, trajectories and sweep targets.
+- [Collision and trajectory integrity](collision_trajectory_contract.md): executed proxies and numerical consistency.
+- [Solver and media checks](solver_and_media_contract.md): video timestamps, 97-frame endpoint convention and resume verification.

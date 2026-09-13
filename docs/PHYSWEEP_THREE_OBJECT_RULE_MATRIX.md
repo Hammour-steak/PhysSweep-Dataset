@@ -1,13 +1,15 @@
 # PhysSweep 3obj 正式规则矩阵
 
-状态：规则已用于完成正式批次 `three_object_production_20260909_r7`，1,538 条 base 与 18,456 条 sweep 已发布并通过对齐审计。配额保持为独立输入，详见 [当前代码与发布说明](GENERATION.md)。
+本文说明当前 3obj 的资产、运动、场景和相机边界。生成命令、数量、续跑和输出见 [生成说明](GENERATION.md)；使用公开入口不需要复现历史试产流程。
 
-正式入口只有两份配置：
+顶层能力边界由两份配置声明：
 
-- `configs/three_object_rule_matrix.json` 定义 family、运动、支撑、相机和兼容关系。
-- `configs/three_object_asset_scope.json` 保存较长的资产 allowlist、碰撞代理类型和排除原因。
+- [three_object_rule_matrix.json](../configs/three_object_rule_matrix.json) 定义 family、运动、支撑、相机和兼容关系。
+- [three_object_asset_scope.json](../configs/three_object_asset_scope.json) 保存资产 allowlist、碰撞代理类型和排除原因。
 
-历史 D5/D6 配置与试产 scene ID 只作为验证证据，不参与正式 family 分发。后续配额文件只决定各项数量，不能扩大规则范围。
+实际采样还读取六份 generic 子矩阵和三个特殊场景分支；映射集中在 [three_object_generation.py](../tools/sampling/three_object_generation.py)。部分文件保留 D5/D6 名称，仍是运行时输入，不是要求用户执行的开发阶段。顶层配置中的历史状态和 purpose 描述不代表当前 CLI 的分发方式。
+
+CLI 的九个采样模式是 `sphere`、`mixed`、`motion`、`multi_mesh`、`inclined`、`exact_support`、`billiards`、`passive_pinball`、`marble_run`。前六项发布到 `generic`，因此最终仍是四个 family。顶层规则中 `pinball` 对应 CLI 和发布目录的 `passive_pinball`。默认数量按模式权重分配，每个选中模式至少一个 base；小批次不保证穷举全部资产或相机。
 
 ## 共同契约
 
@@ -15,7 +17,7 @@
 - 每组 1 条 base 加 12 条 sweep；只干预 `object_a` 的摩擦、恢复系数或质量，每轴 4 个值。
 - 物理初态、对象与角色、几何、支撑、环境、外观、caption 和相机在组内固定。
 - 相机只在 base 上准入并冻结给整组；sweep 不按运动结果重新筛选。
-- 请求视角只是求解偏好；配额按 base 准入后实际选中的冻结视角统计。若实际视角不足，只在同一物理 family/subcase 内补采，不改变物理 cell。
+- 请求视角只是求解偏好；相机覆盖应按 base 准入后实际选中的冻结视角统计。当前公开入口按采样模式分配数量，不保证实际视角的精确配额；若另行补足视角覆盖，应保持同一物理 family/subcase 和物理 cell。
 - 缺额只在同一规则 cell 中重采，不跨 family 或 subcase 调数。
 - 正式样本只发布 `metadata.json`、`trajectory.npz`、`video.mp4`，不生成 mask。
 
@@ -25,7 +27,7 @@
 |---|---|---|---|
 | `generic` | 平面、浅斜面、真实静态 mesh 支撑；四种通用运动 | 84 个 1obj 通用视觉、10 个角色安全非球 mesh、1 个球形资产、18 个真实静态支撑 | 平面 25°/30°/35° 三向斜视；斜面 35°/40°/50° 三向斜视 |
 | `billiards` | 三球连锁传递，禁止撞库和落袋 | 复用球桌、球材质槽排列及 HDRI | 复用 generic 平面三向相机 |
-| `pinball` | 被动钉板 pair control，禁止主动挡板、发射器和活动门 | 三色排列与 3 个背景；单一已验收夹具 | 修正后前视 12°、左右视 8°；方位角 90°/82°/98°，完整夹具入画 |
+| `passive_pinball` | 被动钉板 pair control，禁止主动挡板、发射器和活动门 | 三色排列与 3 个背景；单一已验收夹具 | 前视 12°、左右视 8°；方位角 90°/82°/98°，完整夹具入画 |
 | `marble_run` | 三段轨道 ordered contacts；有限初态表 | 三色排列与 3 个背景；单一已验收轨道 | 65° 的前、左、右高视角，只用于小配额轨道分支 |
 
 ## Generic 运动与形状兼容
@@ -68,7 +70,7 @@
 
 物体投影短边占画面短边的目标为 10%，允许范围 5–25%。候选相机检查完整 base 轨迹与关键接触帧；准入后整组固定。
 
-相机求解允许从请求视角回退到另一种合格视角，因此不能用请求标签冒充实际视觉覆盖。已验收的 27 个 multi-mesh base 中，请求分布为 front/side/rear = 10/7/10，最终冻结分布为 10/9/8，其中 10 个发生回退；正式配额必须读取最终冻结的 `selected_view_family`。
+相机求解允许从请求视角回退到另一种合格视角，因此不能用请求标签冒充实际视觉覆盖。统计时读取最终冻结的 `selected_view_family`，不能仅统计请求标签。
 
 斜面提高到 35°/40°/50°，用于同时看清坡面和运动。弹珠台采用修正后的前视 12°、左右视 8° 专用视图。轨道弹珠的 65° 高视角是唯一高俯视范围，因为必须显示三个轨道段和接盘；它不能被 generic 继承，正式配额应保持很小。
 

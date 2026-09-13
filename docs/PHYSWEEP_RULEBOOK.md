@@ -1,8 +1,16 @@
 # PhysSweep Rulebook
 
+This is a reference for shared physics/visual contracts and the 1obj sampling
+matrix, not an installation checklist. Start generation with the
+[README](../README.md). Multi-object interactions and camera limits use their
+own declared rules: [2obj matrix](../configs/two_object_sampling_matrix.json),
+[2obj fixtures](../configs/two_object_specialized_scene_rules.json) and
+[3obj rule guide](PHYSWEEP_THREE_OBJECT_RULE_MATRIX.md). Numerical values below
+apply to the named solver or branch, not automatically to every object count.
+
 ## Architecture rule
 
-Concrete objects and scenes belong in profiles and scene kits. Compatibility belongs in `compatibility.json`. Python may branch only on reusable behavior types; it must not branch on concrete ids. The active bundle and full boundary are documented in `PHYSWEEP_SAMPLING_ARCHITECTURE.md`.
+Concrete objects and scenes belong in profiles and scene kits. Compatibility belongs in `compatibility.json`. Python may branch only on reusable behavior types; it must not branch on concrete ids. The [active 1obj bundle](../configs/one_object_sampling_bundle.json) declares its runtime dependencies. See the [generation guide](GENERATION.md) for entry points and repository layout.
 
 ## Camera rule
 
@@ -16,7 +24,7 @@ The active generic solver is `motion_structure_camera_v12`.
 - A solid wedge is represented by all four outer slope corners. `ramp_and_landing` adds the trajectory-local landing contact. The remote bounds of a large environment floor are never structural anchors.
 - Camera minimum distance is derived from support size. Motion intent supplies the permitted elevation range, target blend, distance allowance, and partial-exit policy.
 - `ground_flat` intersects the motion-specific elevation range with the shared 18-28 degree ground corridor. This preserves a wall, column, or environment boundary as scale context instead of filling the frame with an undifferentiated floor; raised supports and inclined structures retain their own ranges.
-- The solver starts with the declared lens, normally 44 mm. Only when no pose satisfies every framing constraint may it try 40, 36, then 32 mm; focal fallback never relaxes object size, initial visibility, trajectory coverage, context, or occlusion thresholds.
+- The solver starts with the declared lens, normally 44 mm. Only when no pose satisfies every framing constraint may it try shorter candidates from 40, 36, 32 and 28 mm; focal fallback never relaxes object size, initial visibility, trajectory coverage, context, or occlusion thresholds.
 - Object readability is evaluated over the observed interval, not only at frame zero. The median projected AABB span must meet the intent threshold; the initial AABB must still span at least 6%, remain fully visible, and keep its center inside the declared margin.
 - At least 80% of observed trajectory centers remain inside the actual image. Full-trajectory center coverage is also measured against the exact `[0, 1]` image bounds; its motion-specific threshold controls permitted late exit. At least 90% of primary-motion samples and the declared fraction of the full trajectory remain unoccluded.
 - Visible support geometry marked `occludes_camera` and every visible, collision-enabled environment box block the camera. This includes walls, cabinets, decor, legs, impact boundaries, and rails; the primary environment floor is not duplicated as an environment box.
@@ -75,14 +83,13 @@ The generic solver remains one implementation. Motion and structure change its o
   frame, so a physically valid collision impulse is never counted as airborne
   drift. Rebound-height tolerance is derived from gravity and output frame rate
   to account for a continuous peak falling between two stored frames.
-- A proxy is admitted only after a deterministic physics probe and a three-state Blender overlay review.
+- Proxy admission includes a deterministic physics probe and a three-state Blender overlay review. Public generation installs the already admitted proxies and verifies frozen bindings; recreating historical review images is not a setup step.
 - Asset identity does not imply scene compatibility. `asset_semantic_scene_rules.json` excludes game tables from generic object pairing and routes them to explicit billiards families.
 - Support identity also constrains dynamic-object semantics. Curated support and
   support/prop entries select from named dynamic pools in
   `one_object_sampling_matrix.json`. Prop-bearing pools are specific to tray,
-  tableware, or office-context semantics; the validation runner exercises every
-  reachable support/prop/dynamic/profile combination rather than maintaining a
-  second hard-coded candidate table.
+  tableware, or office-context semantics; runtime validation uses these declared
+  combinations rather than maintaining a second hard-coded candidate table.
 - Every sampled static prop is instantiated as its declared zero-mass compound collider. Ordinary drop and push profiles route the moving object through a separate lane and reject any unplanned prop contact; a future intentional prop-impact profile must declare that contact explicitly.
 - Prop-bearing environments currently admit straight clear-lane push only.
   Drop and diagonal motion remain available in generic and prop-free curated
@@ -93,8 +100,8 @@ The generic solver remains one implementation. Motion and structure change its o
   `vertical_drop`; push, roll, and edge-exit remain disabled until a complete
   support/profile/dynamic compatibility probe passes.
 - The billiards 1obj family contains one regulation cue ball. Its supported profiles are free rolling without rail contact and one rail impact followed by rebound. Static table, bed, and rails do not count as dynamic objects.
-- The billiards v1 family uses three regulation-sized balls, requires a central ball-ball collision, and rejects rail or pocket contact because pocket sinking is not yet represented by the collision proxy.
-- The passive-pinball family contains one unforced sphere and one exact analytic static fixture. Dense and offset profiles differ only through declared seeded launch offsets; both use the same board, rails, peg field, catch geometry, material rules, and camera mechanism. Active mechanisms and per-scene fixture edits are forbidden.
+- Multi-object billiards uses the declared number of regulation-sized balls and its object-count-specific contact rules. 3obj requires the declared chain transfer and rejects rail or pocket contact; see the 3obj rule guide.
+- The 1obj passive-pinball family contains one unforced sphere and one exact analytic static fixture. Dense and offset profiles differ only through declared seeded launch offsets; both use the same board, rails, peg field, catch geometry, material rules, and camera mechanism. Active mechanisms and per-scene fixture edits are forbidden.
 - Asset scenes must bind a hashed HDRI plus hashed PBR floor and wall materials in metadata. A neutral fallback plane is not a valid background.
 - Asset-scene metadata also binds color management, HDRI strength, light scaling, and every area light. The renderer may not inject private lights. One dominant key plus weak fill and rim lights preserves contact shadows without washing out light-colored supports.
 - After material binding, the renderer measures the actual Base Color texture pixels for the dynamic object and visible support assets separately. This pre-render policy may adjust exposure, HDRI strength, and fill/rim energy for light-light, very-light-support, and dark-dark combinations. It may not inspect semantic names or use a rendered image, and every decision and measurement must be recorded in `render_record.json`.
@@ -167,7 +174,10 @@ of the motion distribution.
 4. Camera and framing: six view families and three framing profiles.
 5. Appearance and lighting: curated Poly Haven materials, semantic contrast, room structure, and curated HDRIs.
 
-Axes use deterministic balanced cycles. A 198-scene coverage batch visits every combination of eleven motion families and eighteen object profiles exactly once while balancing the remaining axes. A sample records every chosen axis value, seed, rule hash, backend hash, asset id, initial state, and expected-motion contract.
+Axes use deterministic balanced cycles over compatible candidates. Coverage
+depends on the active matrix and requested count; a small batch does not imply
+exhaustive asset coverage. A sample records every chosen axis value, seed, rule
+hash, backend hash, asset id, initial state, and expected-motion contract.
 
 ## Scene-Class Selection
 
