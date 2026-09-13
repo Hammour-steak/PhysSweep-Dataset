@@ -88,6 +88,10 @@ wrapper uses `--run-id` and `--output`:
 .venv/bin/python -m tools.cli.generate_three_object_dataset --help
 ```
 
+Canonical publication and verification share `tools.cli.build_object_dataset`;
+select `--objects 1`, `2` or `3` and use `--help` for its options. The generation
+entry points already perform this step automatically.
+
 The public wrapper exposes no generation stage-stop option. Direct entry points have
 different historical defaults; specify count/seed explicitly where supported.
 Their stop controls are:

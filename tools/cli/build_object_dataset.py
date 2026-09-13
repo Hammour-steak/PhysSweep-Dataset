@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from typing import Any, Callable, Iterable
+from typing import Any, Iterable
 
 from tools.core.hashing import sha256_file
 from tools.core.paths import resolve_project_path_within_root
@@ -110,10 +110,6 @@ def publish_dataset(
     workers: int,
     resume: bool,
     expected_object_count: int,
-    build_base_view_fn=build_base_view,
-    verify_base_view_fn=verify_base_view,
-    build_sweep_view_fn=build_sweep_view,
-    verify_sweep_view_fn=verify_sweep_view,
 ) -> dict[str, Any]:
     base_root, sweep_root = release_roots(
         release_root, object_count=expected_object_count
@@ -130,11 +126,11 @@ def publish_dataset(
             base_root.parent,
             source_release_binding(release_project_root, release_manifest),
         )
-        base = verify_base_view_fn(
+        base = verify_base_view(
             base_root, expected_object_count=expected_object_count
         )
     else:
-        base = build_base_view_fn(
+        base = build_base_view(
             release_project_root=release_project_root,
             release_manifest=release_manifest,
             output=base_root,
@@ -142,13 +138,13 @@ def publish_dataset(
             expected_object_count=expected_object_count,
         )
     if sweep_exists:
-        sweep = verify_sweep_view_fn(
+        sweep = verify_sweep_view(
             sweep_root,
             base_root=base_root,
             expected_object_count=expected_object_count,
         )
     else:
-        sweep = build_sweep_view_fn(
+        sweep = build_sweep_view(
             release_project_root=release_project_root,
             release_manifest=release_manifest,
             base_root=base_root,
@@ -165,18 +161,16 @@ def verify_dataset(
     release_root: Path,
     *,
     expected_object_count: int,
-    verify_base_view_fn=verify_base_view,
-    verify_sweep_view_fn=verify_sweep_view,
 ) -> dict[str, Any]:
     base_root, sweep_root = release_roots(
         release_root, object_count=expected_object_count
     )
     return {
         "release_root": str(release_root),
-        "base": verify_base_view_fn(
+        "base": verify_base_view(
             base_root, expected_object_count=expected_object_count
         ),
-        "sweep": verify_sweep_view_fn(
+        "sweep": verify_sweep_view(
             sweep_root,
             base_root=base_root,
             expected_object_count=expected_object_count,
@@ -184,20 +178,13 @@ def verify_dataset(
     }
 
 
-def run_cli(
-    *,
-    description: str,
-    default_config: Path,
-    project_root: Path,
-    load_config_fn: Callable[[Path], dict[str, Any]],
-    publish_dataset_fn: Callable[..., dict[str, Any]],
-    verify_dataset_fn: Callable[[Path], dict[str, Any]],
-) -> None:
-    """Run the shared object-dataset publication CLI."""
+def main() -> None:
+    """Publish or verify canonical data for the selected object count."""
 
-    parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("--root", type=Path, default=project_root)
-    parser.add_argument("--config", type=Path, default=default_config)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--objects", type=int, choices=(1, 2, 3), required=True)
+    parser.add_argument("--root", type=Path, default=PROJECT_ROOT)
+    parser.add_argument("--config", type=Path)
     parser.add_argument("--release-project-root", type=Path)
     parser.add_argument("--release-manifest", type=Path)
     parser.add_argument(
@@ -211,11 +198,13 @@ def run_cli(
     parser.add_argument("--verify-only", action="store_true")
     args = parser.parse_args()
     root = args.root.resolve()
-    config_path = args.config if args.config.is_absolute() else root / args.config
-    config = load_config_fn(config_path)
+    config_path = args.config or Path("configs/datasets") / f"{dataset_directory_name(args.objects)}.json"
+    if not config_path.is_absolute():
+        config_path = root / config_path
+    config = load_config(config_path, expected_object_count=args.objects)
     release_root = root / config["release_root"]
     if args.verify_only:
-        result = verify_dataset_fn(release_root)
+        result = verify_dataset(release_root, expected_object_count=args.objects)
     else:
         if args.release_project_root is None or args.release_manifest is None:
             raise SystemExit(
@@ -223,7 +212,8 @@ def run_cli(
             )
         if not args.pipeline:
             raise SystemExit("at least one --pipeline is required")
-        result = publish_dataset_fn(
+        result = publish_dataset(
+            expected_object_count=args.objects,
             release_project_root=args.release_project_root,
             release_manifest=args.release_manifest,
             release_root=release_root,
@@ -232,3 +222,7 @@ def run_cli(
             resume=args.resume,
         )
     print(json.dumps(result, indent=2, sort_keys=True))
+
+
+if __name__ == "__main__":
+    main()

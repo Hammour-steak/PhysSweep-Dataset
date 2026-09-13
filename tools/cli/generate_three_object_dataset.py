@@ -12,7 +12,7 @@ import sys
 import numpy as np
 
 from tools.cli.dataset_generation import bind_generation_plan, generation_code_sha256, generation_layout, run, verify_render_manifest
-from tools.cli.build_three_object_dataset import publish_dataset, verify_dataset
+from tools.cli.build_object_dataset import publish_dataset, verify_dataset
 from tools.core.hashing import sha256_file
 from tools.core.json_io import frozen_json, read_json
 from tools.dataset_contract.trajectory_contract import object_trajectory_view
@@ -224,10 +224,10 @@ def execute(args):
         run(command)
         verify_render_manifest(result_path, len(records))
         specs.append(PipelineSpec(family, SCHEMAS[family], root, layout.sweep_render/family))
-    result = publish_dataset(release_project_root=root, release_manifest=layout.source_release/'manifest.json',
+    result = publish_dataset(expected_object_count=3, release_project_root=root, release_manifest=layout.source_release/'manifest.json',
                              release_root=layout.canonical_release, pipeline_specs=specs,
                              workers=args.render_workers, resume=args.resume)
-    verify_dataset(layout.canonical_release)
+    verify_dataset(layout.canonical_release, expected_object_count=3)
     return result
 
 

@@ -10,7 +10,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from tools.cli.build_two_object_dataset import publish_dataset
+from tools.cli.build_object_dataset import publish_dataset
 from tools.cli.dataset_generation import (
     Layout,
     bind_generation_plan,
@@ -553,6 +553,7 @@ def main() -> None:
         resume=args.resume,
     )
     result = publish_dataset(
+        expected_object_count=2,
         release_project_root=root,
         release_manifest=layout.source_release / "manifest.json",
         release_root=layout.canonical_release,

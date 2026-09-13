@@ -1,4 +1,6 @@
 import importlib.util
+import contextlib
+import io
 import ast
 import json
 import subprocess
@@ -43,19 +45,45 @@ class PipelineBoundaryTest(unittest.TestCase):
     def test_dataset_config_has_no_model_settings(self):
         module = load_module(
             "dataset_build_entry",
-            ROOT / "tools/cli/build_one_object_dataset.py",
+            ROOT / "tools/cli/build_object_dataset.py",
         )
-        config = module.load_config(ROOT / "configs/datasets/one_object.json")
+        config = module.load_config(ROOT / "configs/datasets/one_object.json", expected_object_count=1)
         self.assertEqual(
             set(config), {"schema_version", "release_root", "object_count"}
         )
         self.assertEqual(config["release_root"], "outputs/one_object")
         self.assertEqual(config["object_count"], 1)
 
+    def test_shared_publication_cli_selects_matching_config_and_object_count(self):
+        module = load_module("shared_publication_cli", ROOT / "tools/cli/build_object_dataset.py")
+        for count, name in enumerate(("one", "two", "three"), 1):
+            config_path = ROOT / f"configs/datasets/{name}_object.json"
+            with self.assertRaises(ValueError):
+                module.load_config(config_path, expected_object_count=count % 3 + 1)
+            for verify_only in (False, True):
+                argv = ["build", "--objects", str(count)]
+                argv += (["--verify-only"] if verify_only else [
+                    "--release-project-root", str(ROOT), "--release-manifest", "release.json",
+                    "--pipeline", "generic", "schema", str(ROOT), "render"])
+                with self.subTest(count=count, verify_only=verify_only), \
+                        patch.object(module, "verify_dataset", return_value={}) as verify, \
+                        patch.object(module, "publish_dataset", return_value={}) as publish, \
+                        patch.object(sys, "argv", argv), contextlib.redirect_stdout(io.StringIO()):
+                    module.main()
+                release_root = ROOT / f"outputs/{name}_object"
+                if verify_only:
+                    verify.assert_called_once_with(release_root, expected_object_count=count)
+                    publish.assert_not_called()
+                else:
+                    verify.assert_not_called()
+                    self.assertEqual(publish.call_count, 1)
+                    self.assertEqual(publish.call_args.kwargs["expected_object_count"], count)
+                    self.assertEqual(publish.call_args.kwargs["release_root"], release_root)
+
     def test_dataset_entry_requires_explicit_published_sources(self):
         module = load_module(
             "dataset_publish_entry",
-            ROOT / "tools/cli/build_one_object_dataset.py",
+            ROOT / "tools/cli/build_object_dataset.py",
         )
         specs = module.pipeline_specs(
             [("generic", "schema", "project", "render")]
@@ -133,7 +161,7 @@ class PipelineBoundaryTest(unittest.TestCase):
     def test_dataset_entry_propagates_the_one_object_boundary(self):
         module = load_module(
             "dataset_boundary_entry",
-            ROOT / "tools/cli/build_one_object_dataset.py",
+            ROOT / "tools/cli/build_object_dataset.py",
         )
         with tempfile.TemporaryDirectory() as directory:
             release_root = Path(directory) / "one_object"
@@ -141,7 +169,7 @@ class PipelineBoundaryTest(unittest.TestCase):
                 patch.object(module, "verify_base_view", return_value={"passed": True}) as base,
                 patch.object(module, "verify_sweep_view", return_value={"passed": True}) as sweep,
             ):
-                module.verify_dataset(release_root)
+                module.verify_dataset(release_root, expected_object_count=1)
         base.assert_called_once_with(
             release_root / "base", expected_object_count=1
         )
@@ -154,7 +182,7 @@ class PipelineBoundaryTest(unittest.TestCase):
     def test_base_and_sweep_share_one_render_source_contract(self):
         module = load_module(
             "dataset_shared_render_entry",
-            ROOT / "tools/cli/build_one_object_dataset.py",
+            ROOT / "tools/cli/build_object_dataset.py",
         )
         spec = module.pipeline_specs(
             [("generic", "schema", "project", "sweep_render")]
@@ -166,6 +194,7 @@ class PipelineBoundaryTest(unittest.TestCase):
                 patch.object(module, "build_sweep_view", return_value={"passed": True}) as sweep,
             ):
                 module.publish_dataset(
+                    expected_object_count=1,
                     release_project_root=Path(directory),
                     release_manifest=Path("release.json"),
                     release_root=release_root,
@@ -179,7 +208,7 @@ class PipelineBoundaryTest(unittest.TestCase):
     def test_existing_release_requires_resume(self):
         module = load_module(
             "dataset_existing_release_entry",
-            ROOT / "tools/cli/build_one_object_dataset.py",
+            ROOT / "tools/cli/build_object_dataset.py",
         )
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -187,6 +216,7 @@ class PipelineBoundaryTest(unittest.TestCase):
             (release_root / "base").mkdir(parents=True)
             with self.assertRaisesRegex(FileExistsError, "already exists"):
                 module.publish_dataset(
+                    expected_object_count=1,
                     release_project_root=root,
                     release_manifest=Path("release.json"),
                     release_root=release_root,
@@ -198,7 +228,7 @@ class PipelineBoundaryTest(unittest.TestCase):
     def test_resume_rejects_a_different_source_release(self):
         module = load_module(
             "dataset_resume_binding_entry",
-            ROOT / "tools/cli/build_one_object_dataset.py",
+            ROOT / "tools/cli/build_object_dataset.py",
         )
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -232,6 +262,7 @@ class PipelineBoundaryTest(unittest.TestCase):
                 self.assertRaisesRegex(ValueError, "different source release"),
             ):
                 module.publish_dataset(
+                    expected_object_count=1,
                     release_project_root=root,
                     release_manifest=release,
                     release_root=release_root,
@@ -307,7 +338,7 @@ class PipelineBoundaryTest(unittest.TestCase):
 
 
     def test_source_ownership_is_one_way(self):
-        dataset_source = (ROOT / "tools/cli/build_one_object_dataset.py").read_text()
+        dataset_source = (ROOT / "tools/cli/build_object_dataset.py").read_text()
         dataset_imports = {
             node.names[0].name.split(".")[0]
             for node in ast.walk(ast.parse(dataset_source))
