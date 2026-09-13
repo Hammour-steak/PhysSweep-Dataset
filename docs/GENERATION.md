@@ -92,6 +92,9 @@ Canonical publication and verification share `tools.cli.build_object_dataset`;
 select `--objects 1`, `2` or `3` and use `--help` for its options. The generation
 entry points already perform this step automatically.
 
+Shared Blender materials and scene helpers live in `tools/rendering/blender_scene.py`;
+asset import and mesh utilities live in `tools/assets/blender_asset_import.py`.
+
 The public wrapper exposes no generation stage-stop option. Direct entry points have
 different historical defaults; specify count/seed explicitly where supported.
 Their stop controls are:

@@ -29,7 +29,8 @@ from tools.core.json_io import write_json
 from tools.dataset_contract.object_identity_contract import (
     require_simulation_objects,
 )
-from tools.rendering import render_sketchfab_background_compositions as composition
+from tools.rendering.blender_scene import make_strict_polyhaven_material
+from tools.assets.blender_asset_import import mesh_world_bounds, meshes_have_image_texture
 from tools.rendering.appearance_adaptation import (
     apply_material_lightness_adaptation,
     choose_rendered_frame_exposure_adjustment,
@@ -91,7 +92,7 @@ def material_from_binding(
         float(value)
         for value in binding.get("semantic_color_srgb", [0.45, 0.42, 0.38, 1.0])
     )
-    material = composition.make_strict_polyhaven_material(
+    material = make_strict_polyhaven_material(
         name,
         record,
         fallback,
@@ -434,7 +435,7 @@ def create_static_mesh(record: dict[str, Any]) -> list[Any]:
         obj.parent = None
         obj.matrix_world = matrix
 
-    low, high = composition.bbox_for_objects(meshes)
+    low, high = mesh_world_bounds(meshes)
     source_size = np.asarray(high - low, dtype=np.float64)
     expected_size = np.asarray(record["source_bbox_size"], dtype=np.float64)
     relative_error = np.abs(source_size - expected_size) / np.maximum(
@@ -593,7 +594,7 @@ def create_static_mesh(record: dict[str, Any]) -> list[Any]:
         )
     if bool(
         record.get("requires_image_texture", False)
-    ) and not composition.object_has_image_texture(meshes):
+    ) and not meshes_have_image_texture(meshes):
         raise ValueError(
             f"static visual mesh has no image texture: {record['asset_id']}"
         )
@@ -625,7 +626,7 @@ def create_exact_support_visual(
             obj.data.materials.append(material)
     elif bool(
         record.get("requires_image_texture", False)
-    ) and not composition.object_has_image_texture(meshes):
+    ) and not meshes_have_image_texture(meshes):
         raise ValueError(
             f"support visual mesh has no image texture: {binding['asset_id']}"
         )

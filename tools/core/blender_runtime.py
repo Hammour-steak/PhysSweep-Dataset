@@ -14,15 +14,6 @@ def blender_argv() -> list[str]:
     return sys.argv[1:]
 
 
-def patch_numpy_for_blender_gltf() -> None:
-    """Restore the NumPy alias expected by Blender's bundled glTF importer."""
-
-    import numpy as np  # pylint: disable=import-outside-toplevel
-
-    if not hasattr(np, "bool"):
-        np.bool = bool  # type: ignore[attr-defined]
-
-
 def clear_blender_scene(data_collections: Iterable[str] = ()) -> None:
     """Delete scene objects and optionally purge named orphan data collections."""
 
